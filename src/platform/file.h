@@ -10,6 +10,6 @@ typedef struct {
 } ReadFileResult;
 
 ReadFileResult Platform_ReadEntireFile(String path, Allocator allocator);
-ssize          Platform_GetFileSize(String path, Allocator allocator);
+ssize          Platform_GetFileSize(String path, LinearArena scratch);
 
 #endif //FILE_H

@@ -93,6 +93,7 @@ static void TestsArena()
         LinearArena arena = LinearArena_Create(DefaultAllocator, size);
 
         byte *arr1 = LinearArena_Alloc(&arena, 1, size, 256);
+        Assert(IsAligned((ssize)arr1, 256));
 
         LinearArena_Destroy(&arena);
     }
@@ -195,18 +196,35 @@ static void TestsUtils()
     Assert(Max(-1, 10) == 10);
 }
 
+static void TestsFile()
+{
+    LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
+
+    {
+        ssize file_size = Platform_GetFileSize(String_Literal(__FILE__), arena);
+        Assert(file_size != -1);
+    }
+
+
+    {
+        ReadFileResult contents = Platform_ReadEntireFile(String_Literal(__FILE__), LinearArena_Allocator(&arena));
+        Assert(contents.file_data);
+        Assert(contents.file_size != -1);
+    }
+    LinearArena_Destroy(&arena);
+}
+
 int main()
 {
     TestsArena();
     TestsString();
     TestsUtils();
+    TestsFile();
 
-    LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
-    ReadFileResult contents = Platform_ReadEntireFile(String_Literal("src/main.c"), LinearArena_Allocator(&arena));
 
     //printf("%s", contents.file_data);
 
-    LinearArena_Destroy(&arena);
+
 
     return 0;
 }

@@ -55,9 +55,9 @@ ReadFileResult Platform_ReadEntireFile(String path, Allocator allocator)
     return result;
 }
 
-ssize Platform_GetFileSize(String path, Allocator allocator)
+ssize Platform_GetFileSize(String path, LinearArena scratch)
 {
-    String null_terminated = String_NullTerminate(path, allocator);
+    String null_terminated = String_NullTerminate(path, LinearArena_Allocator(&scratch));
 
     return Platform_GetFileSizeImpl(null_terminated.data);
 }

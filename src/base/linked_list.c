@@ -10,14 +10,14 @@ void List_Init(List *list)
     list->tail.next = 0;
 }
 
-void List_PushFront(List *list, ListNode *elem)
+void List_PushFront(List *list, ListNode *node)
 {
-    List_InsertBefore(elem, List_Begin(list));
+    List_InsertBefore(node, List_Begin(list));
 }
 
-void List_PushBack(List *list, ListNode *elem)
+void List_PushBack(List *list, ListNode *node)
 {
-    List_InsertBefore(elem, List_End(list));
+    List_InsertBefore(node, List_End(list));
 }
 
 void List_InsertAfter(ListNode *node, ListNode *head)

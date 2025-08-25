@@ -7,6 +7,7 @@
 #include "base/linear_arena.h"
 #include "base/allocator.h"
 #include "base/utils.h"
+#include "base/linked_list.h"
 #include "platform/file.h"
 
 static void TestsArena()
@@ -312,14 +313,136 @@ static void TestsFile()
     }
 }
 
+static void TestsList()
+{
+    typedef struct {
+        ListNode node;
+        s32 data;
+    } Elem;
+
+
+    {
+        Elem elem = {
+            .node = {0},
+            .data = 123
+        };
+
+        Elem *elem_ptr = List_GetItem(&elem.node, Elem, node);
+        Assert(elem_ptr->data == 123);
+    }
+
+    {
+        List list;
+        List_Init(&list);
+
+        Assert(List_IsEmpty(&list));
+
+        Elem elem;
+        elem.data = 123;
+
+        List_PushBack(&list, &elem.node);
+        Assert(!List_IsEmpty(&list));
+
+        ListNode *node = List_Front(&list);
+        Assert(List_Back(&list) == node);
+
+        List_PopBack(&list);
+        Assert(List_IsEmpty(&list));
+    }
+
+    {
+        List list;
+        List_Init(&list);
+
+        Elem elem;
+        elem.data = 123;
+
+        List_PushFront(&list, &elem.node);
+        ListNode *back = List_Back(&list);
+        Assert(List_GetItem(back, Elem, node)->data == 123);
+    }
+
+    {
+        List list;
+        List_Init(&list);
+
+        Elem first;
+        first.data = 0;
+
+        Elem second;
+        second.data = 1;
+
+        Elem third;
+        third.data = 2;
+
+        List_PushBack(&list, &first.node);
+        List_PushBack(&list, &second.node);
+        List_PushBack(&list, &third.node);
+
+        Assert(List_GetItem(List_Front(&list), Elem, node)->data == 0);
+        Assert(List_GetItem(List_Back(&list), Elem, node)->data == 2);
+
+        ListNode *curr = List_Begin(&list);
+        for (s32 i = 0;; ++i) {
+            Elem *item = List_GetItem(curr, Elem, node);
+            Assert(item->data == i);
+
+            curr = List_Next(curr);
+
+            if (curr == List_End(&list)) {
+                break;
+            }
+        }
+
+        List_Remove(&second.node);
+
+        Assert(List_GetItem(List_Front(&list), Elem, node)->data == 0);
+        Assert(List_GetItem(List_Back(&list), Elem, node)->data == 2);
+    }
+}
+
+typedef struct S {
+    ListNode node;
+    s32 data;
+} S;
+
 int main()
 {
+    /* List list; */
+    /* List_Init(&list); */
+
+    /* S a = {0}; */
+    /* a.data = 123; */
+
+    /* S b = {0}; */
+    /* b.data = 456; */
+
+    /* S c = {0}; */
+    /* c.data = 789; */
+
+    /* Assert(List_IsEmpty(&list)); */
+
+    /* List_PushBack(&list, &a.node); */
+    /* List_PushBack(&list, &b.node); */
+    /* List_PushBack(&list, &c.node); */
+
+    /* List_Remove(&b.node); */
+
+    /* ListNode *curr = List_Begin(&list); */
+    /* while (curr != List_End(&list)) { */
+    /*     S *item = List_GetItem(curr, S, node); */
+
+    /*     printf("%d\n", item->data); */
+    /*     curr = List_Next(curr); */
+    /* } */
+
+    /* Assert(!List_IsEmpty(&list)); */
+
     TestsArena();
     TestsString();
     TestsUtils();
     TestsFile();
-
-    //printf("%s", contents.file_data);
+    TestsList();
 
     return 0;
 }

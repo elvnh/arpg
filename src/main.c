@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <limits.h>
 
 #include "base/typedefs.h"
@@ -11,7 +12,7 @@
 static void TestsArena()
 {
     {
-        LinearArena arena = LinearArena_Create(1024);
+        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
 
         s32 *ptr1 = LinearArena_AllocItem(&arena, s32);
         s32 *ptr2 = LinearArena_AllocItem(&arena, s32);
@@ -34,11 +35,81 @@ static void TestsArena()
 
         LinearArena_Destroy(&arena);
     }
+
+    {
+        const s32 size = 1024;
+        LinearArena arena = LinearArena_Create(DefaultAllocator, size);
+
+        byte *arr1 = LinearArena_AllocArray(&arena, byte, size / 2);
+        byte *arr2 = LinearArena_AllocArray(&arena, byte, size / 2);
+
+        Assert(arr1);
+        Assert(arr2);
+
+        LinearArena_Destroy(&arena);
+    }
+
+    {
+        const s32 size = 1024;
+        LinearArena arena = LinearArena_Create(DefaultAllocator, size);
+
+        byte *arr1 = LinearArena_AllocArray(&arena, byte, size / 2);
+        byte *arr2 = LinearArena_AllocArray(&arena, byte, size / 2 + 1);
+
+        Assert(arr1);
+        Assert(arr2);
+
+        byte *arr3 = LinearArena_AllocArray(&arena, byte, 14);
+        Assert(arr3);
+
+        LinearArena_Reset(&arena);
+        byte *ptr1 = LinearArena_AllocItem(&arena, byte);
+        Assert(ptr1 == arr1);
+
+        byte *ptr2 = LinearArena_AllocArray(&arena, byte, size);
+        Assert(ptr2 == arr2);
+
+        LinearArena_Destroy(&arena);
+    }
+
+    {
+        const s32 size = 1024;
+        LinearArena arena = LinearArena_Create(DefaultAllocator, size);
+
+        byte *first = LinearArena_AllocItem(&arena, byte);
+        byte *arr1 = LinearArena_Alloc(&arena, 1, 4, 32);
+
+        Assert(first != (arr1 + 1));
+        Assert(IsAligned((ssize)arr1, 32));
+
+        byte *arr2 = LinearArena_Alloc(&arena, 1, 4, 256);
+        Assert(IsAligned((ssize)arr2, 256));
+
+        LinearArena_Destroy(&arena);
+    }
+
+    {
+        // Zero out new allocations
+        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+
+        byte *arr1 = LinearArena_AllocArray(&arena, byte, 16);
+        memset(arr1, 0xFF, 16);
+
+        LinearArena_Reset(&arena);
+        byte *arr2 = LinearArena_AllocArray(&arena, byte, 16);
+        Assert(arr2 == arr1);
+
+        for (s32 i = 0; i < 16; ++i) {
+            Assert(arr2[i] == 0);
+        }
+
+        LinearArena_Destroy(&arena);
+    }
 }
 
 static void TestsString()
 {
-    LinearArena arena = LinearArena_Create(Megabytes(1));
+    LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
     Allocator allocator = LinearArena_Allocator(&arena);
 
     {
@@ -109,6 +180,10 @@ static void TestsUtils()
     Assert(!IsAligned(4, 8));
     Assert(!IsAligned(5, 4));
     Assert(IsAligned(5, 1));
+
+    Assert(Max(1, 2) == 2);
+    Assert(Max(2, 1) == 2);
+    Assert(Max(-1, 10) == 10);
 }
 
 int main()
@@ -117,10 +192,10 @@ int main()
     TestsString();
     TestsUtils();
 
-    LinearArena arena = LinearArena_Create(Megabytes(1));
+    LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
     ReadFileResult contents = Platform_ReadEntireFile(String_Literal("src/main.c"), LinearArena_Allocator(&arena));
 
-    printf("%s", contents.file_data);
+    //printf("%s", contents.file_data);
 
     LinearArena_Destroy(&arena);
 

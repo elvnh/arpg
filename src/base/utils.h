@@ -10,6 +10,7 @@ void abort();
 #define Kilobytes(n) (n * 1024)
 #define Megabytes(n) (Kilobytes(n) * 1024)
 #define IsPow2(n) (((n) != 0) && (((n) & ((n) - 1)) == 0))
+#define Max(a, b) ((a) > (b) ? (a) : (b))
 
 #if defined(__GNUC__)
     #define AlignOf(t) __alignof__(t)

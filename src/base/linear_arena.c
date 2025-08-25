@@ -72,7 +72,7 @@ void LinearArena_Reset(LinearArena* arena)
     arena->used_size = 0;
 }
 
-Allocator LinearArena_CreateAllocator(LinearArena* arena)
+Allocator LinearArena_Allocator(LinearArena* arena)
 {
     Allocator allocator = {
         .alloc = LinearArena_Alloc,

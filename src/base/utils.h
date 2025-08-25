@@ -11,7 +11,6 @@ void abort();
 #define Megabytes(n) (Kilobytes(n) * 1024)
 #define IsPow2(n) (((n) != 0) && (((n) & ((n) - 1)) == 0))
 
-
 #if defined(__GNUC__)
     #define AlignOf(t) __alignof__(t)
 #else
@@ -21,6 +20,15 @@ void abort();
 static inline bool MultiplicationOverflows_s64(s64 a, s64 b)
 {
     if ((a > 0) && (b > 0) && (a > (S64_MAX / b))) {
+        return true;
+    }
+
+    return false;
+}
+
+static inline bool AdditionOverflows_ssize(ssize a, ssize b)
+{
+    if (a > (S_SIZE_MAX - b)) {
         return true;
     }
 

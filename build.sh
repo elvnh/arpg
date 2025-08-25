@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 CC="gcc"
-SOURCES="src/main.c src/base/linear_arena.c src/base/string8.c";
+SOURCES="src/main.c src/base/linear_arena.c src/base/string8.c src/platform/linux/file.c";
 FLAGS="
       -std=c99
       -fsanitize=address,undefined
@@ -30,6 +30,8 @@ FLAGS="
       -Werror=incompatible-pointer-types
       -Werror=int-conversion
       -Werror=implicit-function-declaration
+
+      -Isrc
 "
 
 ${CC} ${SOURCES} ${FLAGS};

@@ -20,6 +20,6 @@ void        LinearArena_Destroy(LinearArena *arena);
 void       *LinearArena_Alloc(void *context, s64 item_count, s64 item_size, s64 alignment);
 void        LinearArena_Free(void *context, void *ptr);
 void        LinearArena_Reset(LinearArena* arena);
-Allocator   LinearArena_CreateAllocator(LinearArena* arena);
+Allocator   LinearArena_Allocator(LinearArena* arena);
 
 #endif //LINEAR_ARENA_H

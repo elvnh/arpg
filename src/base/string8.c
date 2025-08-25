@@ -35,6 +35,8 @@ bool String_Equal(String a, String b)
 String String_NullTerminate(String str, Allocator alloc)
 {
     char *new_string = AllocArray(alloc, char, str.size + 1);
+
+    memcpy(new_string, str.data, Cast_s64_usize(str.size));
     new_string[str.size] = '\0';
 
     String result = {

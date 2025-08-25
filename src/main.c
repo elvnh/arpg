@@ -6,6 +6,7 @@
 #include "base/linear_arena.h"
 #include "base/allocator.h"
 #include "base/utils.h"
+#include "platform/file.h"
 
 static void TestsArena()
 {
@@ -38,7 +39,7 @@ static void TestsArena()
 static void TestsString()
 {
     LinearArena arena = LinearArena_Create(Megabytes(1));
-    Allocator allocator = LinearArena_CreateAllocator(&arena);
+    Allocator allocator = LinearArena_Allocator(&arena);
 
     {
 
@@ -64,6 +65,7 @@ static void TestsString()
         String terminated = String_NullTerminate(copy, allocator);
         Assert(terminated.data != copy.data);
         Assert(terminated.data[terminated.size] == '\0');
+        Assert(String_Equal(copy, terminated));
     }
 
     LinearArena_Destroy(&arena);
@@ -87,6 +89,13 @@ static void TestsUtils()
     Assert(!MultiplicationOverflows_s64(S64_MAX, 0));
     Assert(!MultiplicationOverflows_s64(0, 2));
 
+    Assert(AdditionOverflows_ssize(S_SIZE_MAX, 1));
+    Assert(AdditionOverflows_ssize(S_SIZE_MAX - 1, 2));
+    Assert(!AdditionOverflows_ssize(S_SIZE_MAX, 0));
+    Assert(!AdditionOverflows_ssize(0, 1));
+
+    Assert(S_SIZE_MAX == S64_MAX);
+
     Assert(Align(5, 8) == 8);
     Assert(Align(8, 8) == 8);
     Assert(Align(16, 8) == 16);
@@ -107,6 +116,13 @@ int main()
     TestsArena();
     TestsString();
     TestsUtils();
+
+    LinearArena arena = LinearArena_Create(Megabytes(1));
+    ReadFileResult contents = Platform_ReadEntireFile(String_Literal("src/main.c"), LinearArena_Allocator(&arena));
+
+    printf("%s", contents.file_data);
+
+    LinearArena_Destroy(&arena);
 
     return 0;
 }

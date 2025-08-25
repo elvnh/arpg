@@ -11,8 +11,7 @@
 
 typedef struct ArenaBlock {
     struct ArenaBlock *next_block;
-    s64         used_size;
-    s64         capacity;
+    s64 capacity;
 } ArenaBlock;
 
 typedef struct {
@@ -20,6 +19,7 @@ typedef struct {
 
     ArenaBlock *first_block;
     ArenaBlock *top_block;
+    ssize       offset_into_top_block;
 } LinearArena;
 
 LinearArena LinearArena_Create(Allocator parent, s64 capacity);

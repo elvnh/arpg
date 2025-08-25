@@ -19,6 +19,11 @@ void abort();
     #error Unsupported compiler
 #endif
 
+static inline void *ByteOffset(void *ptr, ssize offset)
+{
+    return (void *)((byte *)ptr + offset);
+}
+
 static inline bool MultiplicationOverflows_ssize(ssize a, ssize b)
 {
     if ((a > 0) && (b > 0) && (a > (S64_MAX / b))) {

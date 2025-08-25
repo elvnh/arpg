@@ -141,6 +141,25 @@ void LinearArena_Reset(LinearArena* arena)
     arena->top_block = arena->first_block;
 }
 
+bool LinearArena_TryExtend(LinearArena *arena, void *ptr, ssize old_size, ssize new_size)
+{
+    Assert(new_size > old_size);
+
+    // TODO: create function for this
+    // NOTE: extending only works if this is the last allocation, hence only checking top block
+    void *current_top = (void *)((s64)(arena->top_block + 1) + arena->top_block->used_size);
+
+    if (ByteOffset(ptr, old_size) == current_top) {
+        void *result = TryAllocateInBlock(arena->top_block, new_size - old_size, 1);
+
+        if (result) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 Allocator LinearArena_Allocator(LinearArena* arena)
 {
     Allocator allocator = {

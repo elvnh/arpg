@@ -198,20 +198,40 @@ static void TestsUtils()
 
 static void TestsFile()
 {
-    LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
+    {
+        LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
+        ssize file_size = Platform_GetFileSize(String_Literal(__FILE__), arena);
+
+        Assert(file_size != -1);
+
+        LinearArena_Destroy(&arena);
+    }
 
     {
+        // Check that scratch arena works
+        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+        LinearArena_AllocArray(&arena, byte, 1022);
+        byte *last = LinearArena_AllocArray(&arena, byte, 1);
+
+
         ssize file_size = Platform_GetFileSize(String_Literal(__FILE__), arena);
         Assert(file_size != -1);
+
+        byte *next = LinearArena_AllocItem(&arena, byte);
+        Assert(next == last + 1);
+
+        LinearArena_Destroy(&arena);
     }
 
 
     {
+        LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
         ReadFileResult contents = Platform_ReadEntireFile(String_Literal(__FILE__), LinearArena_Allocator(&arena));
         Assert(contents.file_data);
         Assert(contents.file_size != -1);
+
+        LinearArena_Destroy(&arena);
     }
-    LinearArena_Destroy(&arena);
 }
 
 int main()

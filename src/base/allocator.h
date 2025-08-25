@@ -11,7 +11,7 @@
 #define AllocAligned(alloc, size, alignment) (void *)Allocate(alloc, size, 1, alignment)
 
 // TODO: make into const global variable
-#define DefaultAllocator (Allocator){ .alloc = DefaultAllocate, .dealloc = DefaultFree }
+#define DefaultAllocator (Allocator){ .alloc = DefaultAllocate, .dealloc = DefaultFree, .try_extend = DefaultTryExtend }
 
 typedef void *(*AllocFunction)(void*, s64, s64, s64);
 typedef void  (*FreeFunction)(void*, void*);
@@ -26,7 +26,6 @@ typedef struct {
     void *context;
 } Allocator;
 
-// TODO: move into implementation file
 static inline void *Allocate(Allocator allocator, s64 item_count, s64 item_size, s64 alignment)
 {
     return allocator.alloc(allocator.context, item_count, item_size, alignment);
@@ -42,27 +41,8 @@ static inline bool TryExtendAllocation(Allocator allocator, void *ptr, ssize old
     return allocator.try_extend(allocator.context, ptr, old_size, new_size);
 }
 
-static inline void *DefaultAllocate(void *ctx, s64 item_count, s64 item_size, s64 alignment)
-{
-    (void)ctx;
-    (void)alignment;
-
-    if (MultiplicationOverflows_ssize(item_count, item_size)) {
-        return 0;
-    }
-
-    const s64 byte_count = item_count * item_size;
-
-    void *ptr = malloc(Cast_s64_usize(byte_count));
-    Assert(IsAligned((s64)ptr, alignment));
-
-    return ptr;
-}
-
-static inline void DefaultFree(void *ctx, void *ptr)
-{
-    (void)ctx;
-    free(ptr);
-}
+void *DefaultAllocate(void *ctx, s64 item_count, s64 item_size, s64 alignment);
+void  DefaultFree(void *ctx, void *ptr);
+bool  DefaultTryExtend(void *ctx, void *ptr, ssize old_size, ssize new_size);
 
 #endif //ALLOCATOR_H

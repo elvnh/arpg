@@ -313,6 +313,8 @@ static void TestsFile()
 
 int main()
 {
+    Assert(false);
+
     TestsArena();
     TestsString();
     TestsUtils();

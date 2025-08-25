@@ -17,7 +17,7 @@ static ArenaBlock *AllocateBlock(Allocator parent, s64 size)
     block->capacity = size;
 
     // TODO: memzero macro/func
-    memset(block + 1, 0, Cast_s64_usize(size));
+    MemZero(block + 1, Cast_s64_usize(size));
 
     return block;
 }
@@ -69,7 +69,7 @@ static void *TryAllocateInBlock(ArenaBlock *block, s64 byte_count, s64 alignment
 
     Assert(IsAligned((s64)result, alignment));
 
-    memset(result, 0, Cast_s64_usize(byte_count));
+    MemZero(result, Cast_s64_usize(byte_count));
 
     return result;
 }
@@ -98,8 +98,6 @@ void *AllocBytes(LinearArena *arena, s64 byte_count, s64 alignment)
     arena->top_block->next_block = new_block;
     arena->top_block = new_block;
 
-    Assert(IsAligned((s64)(new_block + 1), alignment));
-
     void *result = TryAllocateInBlock(new_block, byte_count, alignment);
     Assert(result);
 
@@ -112,7 +110,8 @@ void *LinearArena_Alloc(void *context, s64 count, s64 item_size, s64 alignment)
 
     LinearArena *arena = context;
 
-    if (MultiplicationOverflows_s64(count, item_size)) {
+    // TODO: just crash when this happens
+    if (MultiplicationOverflows_ssize(count, item_size)) {
         Assert(false);
         return 0;
     }

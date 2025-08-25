@@ -3,11 +3,11 @@
 
 #include "allocator.h"
 
-#define String_Literal(str) (String){ .data = (str), .size = ArrayCount((str)) - 1 }
+#define String_Literal(str) (String){ .data = (str), .length = ArrayCount((str)) - 1 }
 
 typedef struct {
     char *data;
-    s64   size;
+    s64   length;
 } String;
 
 // TODO: concat in place, TryExtend in allocators

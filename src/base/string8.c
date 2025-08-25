@@ -5,19 +5,19 @@
 
 String String_Concat(String a, String b, Allocator alloc)
 {
-    const ssize total_size = a.size + b.size;
+    const ssize total_size = a.length + b.length;
 
     char *new_string = AllocArray(alloc, char, total_size);
 
-    const usize a_size = Cast_s64_usize(a.size);
-    const usize b_size = Cast_s64_usize(b.size);
+    const usize a_length = Cast_s64_usize(a.length);
+    const usize b_length = Cast_s64_usize(b.length);
 
-    memcpy(new_string, a.data, a_size);
-    memcpy(new_string + a_size, b.data,  b_size);
+    memcpy(new_string, a.data, a_length);
+    memcpy(new_string + a_length, b.data,  b_length);
 
     String result = {
         .data = new_string,
-        .size = total_size
+        .length = total_size
     };
 
     return result;
@@ -25,23 +25,23 @@ String String_Concat(String a, String b, Allocator alloc)
 
 bool String_Equal(String a, String b)
 {
-    if (a.size != b.size) {
+    if (a.length != b.length) {
         return false;
     }
 
-    return (memcmp(a.data, b.data, Cast_s64_usize(a.size)) == 0);
+    return (memcmp(a.data, b.data, Cast_s64_usize(a.length)) == 0);
 }
 
 String String_NullTerminate(String str, Allocator alloc)
 {
-    char *new_string = AllocArray(alloc, char, str.size + 1);
+    char *new_string = AllocArray(alloc, char, str.length + 1);
 
-    memcpy(new_string, str.data, Cast_s64_usize(str.size));
-    new_string[str.size] = '\0';
+    memcpy(new_string, str.data, Cast_s64_usize(str.length));
+    new_string[str.length] = '\0';
 
     String result = {
         .data = new_string,
-        .size = str.size
+        .length = str.length
     };
 
     return result;
@@ -49,12 +49,12 @@ String String_NullTerminate(String str, Allocator alloc)
 
 String String_Copy(String str, Allocator alloc)
 {
-    char *new_string = AllocArray(alloc, char, str.size);
-    memcpy(new_string, str.data, Cast_s64_usize(str.size));
+    char *new_string = AllocArray(alloc, char, str.length);
+    memcpy(new_string, str.data, Cast_s64_usize(str.length));
 
     String result = {
         .data = new_string,
-        .size = str.size
+        .length = str.length
     };
 
     return result;

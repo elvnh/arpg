@@ -89,6 +89,15 @@ static void TestsArena()
     }
 
     {
+        const s32 size = 1024;
+        LinearArena arena = LinearArena_Create(DefaultAllocator, size);
+
+        byte *arr1 = LinearArena_Alloc(&arena, 1, size, 256);
+
+        LinearArena_Destroy(&arena);
+    }
+
+    {
         // Zero out new allocations
         LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
 
@@ -135,7 +144,7 @@ static void TestsString()
 
         String terminated = String_NullTerminate(copy, allocator);
         Assert(terminated.data != copy.data);
-        Assert(terminated.data[terminated.size] == '\0');
+        Assert(terminated.data[terminated.length] == '\0');
         Assert(String_Equal(copy, terminated));
     }
 
@@ -155,10 +164,10 @@ static void TestsUtils()
     Assert(IsPow2(16));
 
     Assert(!IsPow2(0));
-    Assert(MultiplicationOverflows_s64(S64_MAX, 2));
-    Assert(!MultiplicationOverflows_s64(S64_MAX, 1));
-    Assert(!MultiplicationOverflows_s64(S64_MAX, 0));
-    Assert(!MultiplicationOverflows_s64(0, 2));
+    Assert(MultiplicationOverflows_ssize(S64_MAX, 2));
+    Assert(!MultiplicationOverflows_ssize(S64_MAX, 1));
+    Assert(!MultiplicationOverflows_ssize(S64_MAX, 0));
+    Assert(!MultiplicationOverflows_ssize(0, 2));
 
     Assert(AdditionOverflows_ssize(S_SIZE_MAX, 1));
     Assert(AdditionOverflows_ssize(S_SIZE_MAX - 1, 2));

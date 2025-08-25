@@ -11,6 +11,7 @@ void abort();
 #define Megabytes(n) (Kilobytes(n) * 1024)
 #define IsPow2(n) (((n) != 0) && (((n) & ((n) - 1)) == 0))
 #define Max(a, b) ((a) > (b) ? (a) : (b))
+#define MemZero(ptr, size) memset((ptr), 0, size)
 
 #if defined(__GNUC__)
     #define AlignOf(t) __alignof__(t)
@@ -18,7 +19,7 @@ void abort();
     #error Unsupported compiler
 #endif
 
-static inline bool MultiplicationOverflows_s64(s64 a, s64 b)
+static inline bool MultiplicationOverflows_ssize(ssize a, ssize b)
 {
     if ((a > 0) && (b > 0) && (a > (S64_MAX / b))) {
         return true;

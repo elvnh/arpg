@@ -39,7 +39,7 @@ static inline void *DefaultAllocate(void *ctx, s64 item_count, s64 item_size, s6
     (void)ctx;
     (void)alignment;
 
-    if (MultiplicationOverflows_s64(item_count, item_size)) {
+    if (MultiplicationOverflows_ssize(item_count, item_size)) {
         return 0;
     }
 

@@ -4,6 +4,7 @@
 #include "allocator.h"
 
 #define String_Literal(str) (String){ .data = (str), .length = ArrayCount((str)) - 1 }
+#define NullString (String) { .data = 0, .length = 0 }
 
 typedef struct {
     char *data;

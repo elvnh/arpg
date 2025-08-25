@@ -6,13 +6,18 @@
 String String_Concat(String a, String b, Allocator alloc)
 {
     const ssize total_size = a.length + b.length;
-
-    char *new_string = AllocArray(alloc, char, total_size);
-
     const usize a_length = Cast_s64_usize(a.length);
     const usize b_length = Cast_s64_usize(b.length);
 
-    memcpy(new_string, a.data, a_length);
+    char *new_string = 0;
+    if (TryExtendAllocation(alloc, a.data, a.length, total_size)) {
+        new_string = a.data;
+    } else {
+        new_string = AllocArray(alloc, char, total_size);
+
+        memcpy(new_string, a.data, a_length);
+    }
+
     memcpy(new_string + a_length, b.data,  b_length);
 
     String result = {
@@ -34,9 +39,20 @@ bool String_Equal(String a, String b)
 
 String String_NullTerminate(String str, Allocator alloc)
 {
-    char *new_string = AllocArray(alloc, char, str.length + 1);
+    if (AdditionOverflows_ssize(str.length, 1)) {
+        Assert(false);
+        return NullString;
+    }
 
-    memcpy(new_string, str.data, Cast_s64_usize(str.length));
+    char *new_string = 0;
+
+    if (TryExtendAllocation(alloc, str.data, str.length, str.length + 1)) {
+        new_string = str.data;
+    } else {
+        new_string = AllocArray(alloc, char, str.length + 1);
+        memcpy(new_string, str.data, Cast_s64_usize(str.length));
+    }
+
     new_string[str.length] = '\0';
 
     String result = {

@@ -115,6 +115,40 @@ static void TestsArena()
 
         LinearArena_Destroy(&arena);
     }
+
+    {
+        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+
+        byte *ptr = LinearArena_AllocArray(&arena, byte, 16);
+        const bool extended = LinearArena_TryExtend(&arena, ptr, 16, 32);
+        Assert(extended);
+
+        byte *ptr2 = LinearArena_AllocArray(&arena, byte, 16);
+        Assert(ptr2 == (ptr + 32));
+
+        LinearArena_Destroy(&arena);
+    }
+
+    {
+        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+
+        byte *ptr = LinearArena_AllocArray(&arena, byte, 16);
+        byte *ptr2 = LinearArena_AllocArray(&arena, byte, 16);
+        bool extended = LinearArena_TryExtend(&arena, ptr, 16, 32);
+        Assert(!extended);
+
+        LinearArena_Destroy(&arena);
+    }
+
+    {
+        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+
+        byte *ptr = LinearArena_AllocArray(&arena, byte, 16);
+        bool extended = LinearArena_TryExtend(&arena, ptr, 16, 2000);
+        Assert(!extended);
+
+        LinearArena_Destroy(&arena);
+    }
 }
 
 static void TestsString()
@@ -143,10 +177,54 @@ static void TestsString()
         Assert(String_Equal(lit, copy));
         Assert(lit.data != copy.data);
 
+        LinearArena_AllocItem(&arena, byte); // To prevent from extending in place
+
         String terminated = String_NullTerminate(copy, allocator);
         Assert(terminated.data != copy.data);
         Assert(terminated.data[terminated.length] == '\0');
         Assert(String_Equal(copy, terminated));
+    }
+
+    {
+        String lit = String_Literal("abcdef");
+        String copy = String_Copy(lit, allocator);
+
+        String terminated = String_NullTerminate(copy, allocator);
+
+        Assert(terminated.data == copy.data);
+        Assert(terminated.data[terminated.length] == '\0');
+        Assert(String_Equal(copy, terminated));
+    }
+
+    {
+        // Extend in place
+        LinearArena ar = LinearArena_Create(DefaultAllocator, 100);
+        Allocator alloc = LinearArena_Allocator(&ar);
+        String a = String_Copy(String_Literal("abc"), alloc);
+        String b = String_Literal("def");
+
+        String c = String_Concat(a, b, alloc);
+        Assert(c.data == a.data);
+
+        LinearArena_Destroy(&ar);
+    }
+
+    {
+        // Fail to extend in place
+        LinearArena ar = LinearArena_Create(DefaultAllocator, 100);
+        Allocator alloc = LinearArena_Allocator(&ar);
+        String a = String_Copy(String_Literal("abc"), alloc);
+
+        AllocItem(alloc, byte);
+
+        String b = String_Literal("def");
+
+        String c = String_Concat(a, b, alloc);
+        Assert(String_Equal(c, String_Literal("abcdef")));
+
+        Assert(c.data != a.data);
+
+        LinearArena_Destroy(&ar);
     }
 
     LinearArena_Destroy(&arena);
@@ -223,7 +301,6 @@ static void TestsFile()
         LinearArena_Destroy(&arena);
     }
 
-
     {
         LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
         ReadFileResult contents = Platform_ReadEntireFile(String_Literal(__FILE__), LinearArena_Allocator(&arena));
@@ -241,10 +318,7 @@ int main()
     TestsUtils();
     TestsFile();
 
-
     //printf("%s", contents.file_data);
-
-
 
     return 0;
 }

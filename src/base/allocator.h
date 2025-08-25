@@ -15,10 +15,13 @@
 
 typedef void *(*AllocFunction)(void*, s64, s64, s64);
 typedef void  (*FreeFunction)(void*, void*);
+typedef bool  (*TryExtendFunction)(void*, void*, ssize, ssize);
 
+// TODO: should these be allowed to be null?
 typedef struct {
-    AllocFunction alloc;
-    FreeFunction  dealloc;
+    AllocFunction     alloc;
+    FreeFunction      dealloc;
+    TryExtendFunction try_extend;
 
     void *context;
 } Allocator;
@@ -32,6 +35,11 @@ static inline void *Allocate(Allocator allocator, s64 item_count, s64 item_size,
 static inline void Free(Allocator allocator, void *ptr)
 {
     allocator.dealloc(allocator.context, ptr);
+}
+
+static inline bool TryExtendAllocation(Allocator allocator, void *ptr, ssize old_size, ssize new_size)
+{
+    return allocator.try_extend(allocator.context, ptr, old_size, new_size);
 }
 
 static inline void *DefaultAllocate(void *ctx, s64 item_count, s64 item_size, s64 alignment)

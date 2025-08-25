@@ -8,8 +8,8 @@
 #define PTR_SIZE sizeof(void*)
 
 #define S64_MAX (s64)(((u64)1 << (u64)63) - 1)
-#define USIZE_MAX ((usize)-1)
 #define S_SIZE_MAX (ssize)(((u64)1 << (PTR_SIZE * 8 - 1)) - 1)
+#define USIZE_MAX ((usize)-1)
 
 typedef int8_t    s8;
 typedef int16_t   s16;

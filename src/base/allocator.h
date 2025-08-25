@@ -13,7 +13,7 @@
 // TODO: make into const global variable
 #define DefaultAllocator (Allocator){ .alloc = DefaultAllocate, .dealloc = DefaultFree, .try_extend = DefaultTryExtend }
 
-typedef void *(*AllocFunction)(void*, s64, s64, s64);
+typedef void *(*AllocFunction)(void*, ssize, ssize, ssize);
 typedef void  (*FreeFunction)(void*, void*);
 typedef bool  (*TryExtendFunction)(void*, void*, ssize, ssize);
 
@@ -26,7 +26,7 @@ typedef struct {
     void *context;
 } Allocator;
 
-static inline void *Allocate(Allocator allocator, s64 item_count, s64 item_size, s64 alignment)
+static inline void *Allocate(Allocator allocator, ssize item_count, ssize item_size, ssize alignment)
 {
     return allocator.alloc(allocator.context, item_count, item_size, alignment);
 }
@@ -41,7 +41,7 @@ static inline bool TryExtendAllocation(Allocator allocator, void *ptr, ssize old
     return allocator.try_extend(allocator.context, ptr, old_size, new_size);
 }
 
-void *DefaultAllocate(void *ctx, s64 item_count, s64 item_size, s64 alignment);
+void *DefaultAllocate(void *ctx, ssize item_count, ssize item_size, ssize alignment);
 void  DefaultFree(void *ctx, void *ptr);
 bool  DefaultTryExtend(void *ctx, void *ptr, ssize old_size, ssize new_size);
 

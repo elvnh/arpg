@@ -7,11 +7,10 @@
 #define NullString (String) { .data = 0, .length = 0 }
 
 typedef struct {
-    char *data;
-    s64   length;
+    char  *data;
+    ssize  length;
 } String;
 
-// TODO: concat in place, TryExtend in allocators
 String String_Concat(String a, String b, Allocator alloc);
 bool   String_Equal(String a, String b);
 String String_NullTerminate(String str, Allocator alloc);

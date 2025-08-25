@@ -46,7 +46,7 @@ static inline void *ByteOffset(void *ptr, ssize offset)
 
 static inline bool MultiplicationOverflows_ssize(ssize a, ssize b)
 {
-    if ((a > 0) && (b > 0) && (a > (S64_MAX / b))) {
+    if ((a > 0) && (b > 0) && (a > (S_SIZE_MAX / b))) {
         return true;
     }
 

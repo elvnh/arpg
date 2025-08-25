@@ -1,6 +1,6 @@
 #include "allocator.h"
 
-void *DefaultAllocate(void *ctx, s64 item_count, s64 item_size, s64 alignment)
+void *DefaultAllocate(void *ctx, ssize item_count, ssize item_size, ssize alignment)
 {
     (void)ctx;
     (void)alignment;
@@ -9,10 +9,10 @@ void *DefaultAllocate(void *ctx, s64 item_count, s64 item_size, s64 alignment)
         return 0;
     }
 
-    const s64 byte_count = item_count * item_size;
+    const ssize byte_count = item_count * item_size;
 
     void *ptr = malloc(Cast_s64_usize(byte_count));
-    Assert(IsAligned((s64)ptr, alignment));
+    Assert(IsAligned((ssize)ptr, alignment));
 
     return ptr;
 }

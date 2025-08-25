@@ -21,8 +21,8 @@ static void TestsArena()
         *ptr2 = 456;
 
         Assert(*ptr1 == 123);
-        Assert(IsAligned((s64)ptr1, AlignOf(s32)));
-        Assert(IsAligned((s64)ptr2, AlignOf(s32)));
+        Assert(IsAligned((ssize)ptr1, AlignOf(s32)));
+        Assert(IsAligned((ssize)ptr2, AlignOf(s32)));
 
         *ptr1 = 0;
 
@@ -133,7 +133,8 @@ static void TestsArena()
         LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
 
         byte *ptr = LinearArena_AllocArray(&arena, byte, 16);
-        byte *ptr2 = LinearArena_AllocArray(&arena, byte, 16);
+        LinearArena_AllocArray(&arena, byte, 16);
+
         bool extended = LinearArena_TryExtend(&arena, ptr, 16, 32);
         Assert(!extended);
 

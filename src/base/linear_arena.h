@@ -4,8 +4,8 @@
 #include "typedefs.h"
 #include "allocator.h"
 
-#define LinearArena_AllocArray(arena, type, count) (type *)(LinearArena_Alloc(arena, count, sizeof(type), AlignOf(type)))
-#define LinearArena_AllocItem(arena, type) LinearArena_AllocArray(arena, type, 1)
+#define arena_allocate_array(arena, type, count) (type *)(arena_allocate(arena, count, sizeof(type), ALIGNOF(type)))
+#define arena_allocate_item(arena, type) arena_allocate_array(arena, type, 1)
 
 typedef struct {
     Allocator           parent;
@@ -14,11 +14,11 @@ typedef struct {
     ssize               offset_into_top_block;
 } LinearArena;
 
-LinearArena LinearArena_Create(Allocator parent, ssize capacity);
-void        LinearArena_Destroy(LinearArena *arena);
-void       *LinearArena_Alloc(void *context, ssize item_count, ssize item_size, ssize alignment);
-void        LinearArena_Reset(LinearArena *arena);
-bool        LinearArena_TryExtend(void *context, void *ptr, ssize old_size, ssize new_size);
-Allocator   LinearArena_Allocator(LinearArena *arena);
+LinearArena  arena_create(Allocator parent, ssize capacity);
+void         arena_destroy(LinearArena *arena);
+void        *arena_allocate(void *context, ssize item_count, ssize item_size, ssize alignment);
+void         arena_reset(LinearArena *arena);
+bool         arena_try_extend(void *context, void *ptr, ssize old_size, ssize new_size);
+Allocator    arena_create_allocator(LinearArena *arena);
 
 #endif //LINEAR_ARENA_H

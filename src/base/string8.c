@@ -3,17 +3,17 @@
 #include "string8.h"
 #include "utils.h"
 
-String String_Concat(String a, String b, Allocator alloc)
+String str_concat(String a, String b, Allocator alloc)
 {
     const ssize total_size = a.length + b.length;
-    const usize a_length = Cast_s64_usize(a.length);
-    const usize b_length = Cast_s64_usize(b.length);
+    const usize a_length = cast_s64_to_usize(a.length);
+    const usize b_length = cast_s64_to_usize(b.length);
 
     char *new_string = 0;
-    if (TryExtendAllocation(alloc, a.data, a.length, total_size)) {
+    if (try_extend_allocation(alloc, a.data, a.length, total_size)) {
         new_string = a.data;
     } else {
-        new_string = AllocArray(alloc, char, total_size);
+        new_string = allocate_array(alloc, char, total_size);
 
         memcpy(new_string, a.data, a_length);
     }
@@ -28,29 +28,29 @@ String String_Concat(String a, String b, Allocator alloc)
     return result;
 }
 
-bool String_Equal(String a, String b)
+bool str_equal(String a, String b)
 {
     if (a.length != b.length) {
         return false;
     }
 
-    return (memcmp(a.data, b.data, Cast_s64_usize(a.length)) == 0);
+    return (memcmp(a.data, b.data, cast_s64_to_usize(a.length)) == 0);
 }
 
-String String_NullTerminate(String str, Allocator alloc)
+String str_null_terminate(String str, Allocator alloc)
 {
-    if (AdditionOverflows_ssize(str.length, 1)) {
-        Assert(false);
-        return NullString;
+    if (add_overflows_ssize(str.length, 1)) {
+        ASSERT(false);
+        return null_string;
     }
 
     char *new_string = 0;
 
-    if (TryExtendAllocation(alloc, str.data, str.length, str.length + 1)) {
+    if (try_extend_allocation(alloc, str.data, str.length, str.length + 1)) {
         new_string = str.data;
     } else {
-        new_string = AllocArray(alloc, char, str.length + 1);
-        memcpy(new_string, str.data, Cast_s64_usize(str.length));
+        new_string = allocate_array(alloc, char, str.length + 1);
+        memcpy(new_string, str.data, cast_s64_to_usize(str.length));
     }
 
     new_string[str.length] = '\0';
@@ -63,10 +63,10 @@ String String_NullTerminate(String str, Allocator alloc)
     return result;
 }
 
-String String_Copy(String str, Allocator alloc)
+String str_copy(String str, Allocator alloc)
 {
-    char *new_string = AllocArray(alloc, char, str.length);
-    memcpy(new_string, str.data, Cast_s64_usize(str.length));
+    char *new_string = allocate_array(alloc, char, str.length);
+    memcpy(new_string, str.data, cast_s64_to_usize(str.length));
 
     String result = {
         .data = new_string,

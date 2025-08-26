@@ -9,7 +9,7 @@ typedef struct {
     ssize  file_size;
 } ReadFileResult;
 
-ReadFileResult Platform_ReadEntireFile(String path, Allocator allocator);
-ssize          Platform_GetFileSize(String path, LinearArena scratch);
+ReadFileResult platform_read_entire_file(String path, Allocator allocator);
+ssize          platform_get_file_size(String path, LinearArena scratch);
 
 #endif //FILE_H

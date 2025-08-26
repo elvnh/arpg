@@ -10,316 +10,321 @@
 #include "base/linked_list.h"
 #include "platform/file.h"
 
-static void TestsArena()
+static void tests_arena()
 {
     {
-        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+        LinearArena arena = arena_create(default_allocator, 1024);
 
-        s32 *ptr1 = LinearArena_AllocItem(&arena, s32);
-        s32 *ptr2 = LinearArena_AllocItem(&arena, s32);
+        s32 *ptr1 = arena_allocate_item(&arena, s32);
+        s32 *ptr2 = arena_allocate_item(&arena, s32);
 
         *ptr1 = 123;
         *ptr2 = 456;
 
-        Assert(*ptr1 == 123);
-        Assert(IsAligned((ssize)ptr1, AlignOf(s32)));
-        Assert(IsAligned((ssize)ptr2, AlignOf(s32)));
+        ASSERT(*ptr1 == 123);
+        ASSERT(is_aligned((ssize)ptr1, ALIGNOF(s32)));
+        ASSERT(is_aligned((ssize)ptr2, ALIGNOF(s32)));
 
         *ptr1 = 0;
 
-        Assert(*ptr2 == 456);
+        ASSERT(*ptr2 == 456);
 
-        LinearArena_Reset(&arena);
-        s32 *p = LinearArena_AllocItem(&arena, s32);
-        Assert(p == ptr1);
+        arena_reset(&arena);
+        s32 *p = arena_allocate_item(&arena, s32);
+        ASSERT(p == ptr1);
 
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
         const s32 size = 1024;
-        LinearArena arena = LinearArena_Create(DefaultAllocator, size);
+        LinearArena arena = arena_create(default_allocator, size);
 
-        byte *arr1 = LinearArena_AllocArray(&arena, byte, size / 2);
-        byte *arr2 = LinearArena_AllocArray(&arena, byte, size / 2);
+        byte *arr1 = arena_allocate_array(&arena, byte, size / 2);
+        byte *arr2 = arena_allocate_array(&arena, byte, size / 2);
 
-        Assert(arr1);
-        Assert(arr2);
+        ASSERT(arr1);
+        ASSERT(arr2);
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
         const s32 size = 1024;
-        LinearArena arena = LinearArena_Create(DefaultAllocator, size);
+        LinearArena arena = arena_create(default_allocator, size);
 
-        byte *arr1 = LinearArena_AllocArray(&arena, byte, size / 2);
-        byte *arr2 = LinearArena_AllocArray(&arena, byte, size / 2 + 1);
+        byte *arr1 = arena_allocate_array(&arena, byte, size / 2);
+        byte *arr2 = arena_allocate_array(&arena, byte, size / 2 + 1);
 
-        Assert(arr1);
-        Assert(arr2);
+        ASSERT(arr1);
+        ASSERT(arr2);
 
-        byte *arr3 = LinearArena_AllocArray(&arena, byte, 14);
-        Assert(arr3);
+        byte *arr3 = arena_allocate_array(&arena, byte, 14);
+        ASSERT(arr3);
 
-        LinearArena_Reset(&arena);
-        byte *ptr1 = LinearArena_AllocItem(&arena, byte);
-        Assert(ptr1 == arr1);
+        arena_reset(&arena);
+        byte *ptr1 = arena_allocate_item(&arena, byte);
+        ASSERT(ptr1 == arr1);
 
-        byte *ptr2 = LinearArena_AllocArray(&arena, byte, size);
-        Assert(ptr2 == arr2);
+        byte *ptr2 = arena_allocate_array(&arena, byte, size);
+        ASSERT(ptr2 == arr2);
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
         const s32 size = 1024;
-        LinearArena arena = LinearArena_Create(DefaultAllocator, size);
+        LinearArena arena = arena_create(default_allocator, size);
 
-        byte *first = LinearArena_AllocItem(&arena, byte);
-        byte *arr1 = LinearArena_Alloc(&arena, 1, 4, 32);
+        byte *first = arena_allocate_item(&arena, byte);
+        byte *arr1 = arena_allocate(&arena, 1, 4, 32);
 
-        Assert(first != (arr1 + 1));
-        Assert(IsAligned((ssize)arr1, 32));
+        ASSERT(first != (arr1 + 1));
+        ASSERT(is_aligned((ssize)arr1, 32));
 
-        byte *arr2 = LinearArena_Alloc(&arena, 1, 4, 256);
-        Assert(IsAligned((ssize)arr2, 256));
+        byte *arr2 = arena_allocate(&arena, 1, 4, 256);
+        ASSERT(is_aligned((ssize)arr2, 256));
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
         const s32 size = 1024;
-        LinearArena arena = LinearArena_Create(DefaultAllocator, size);
+        LinearArena arena = arena_create(default_allocator, size);
 
-        byte *arr1 = LinearArena_Alloc(&arena, 1, size, 256);
-        Assert(IsAligned((ssize)arr1, 256));
+        byte *arr1 = arena_allocate(&arena, 1, size, 256);
+        ASSERT(is_aligned((ssize)arr1, 256));
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
         // Zero out new allocations
-        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+        LinearArena arena = arena_create(default_allocator, 1024);
 
-        byte *arr1 = LinearArena_AllocArray(&arena, byte, 16);
+        byte *arr1 = arena_allocate_array(&arena, byte, 16);
         memset(arr1, 0xFF, 16);
 
-        LinearArena_Reset(&arena);
-        byte *arr2 = LinearArena_AllocArray(&arena, byte, 16);
-        Assert(arr2 == arr1);
+        arena_reset(&arena);
+        byte *arr2 = arena_allocate_array(&arena, byte, 16);
+        ASSERT(arr2 == arr1);
 
         for (s32 i = 0; i < 16; ++i) {
-            Assert(arr2[i] == 0);
+            ASSERT(arr2[i] == 0);
         }
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
-        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+        LinearArena arena = arena_create(default_allocator, 1024);
 
-        byte *ptr = LinearArena_AllocArray(&arena, byte, 16);
-        const bool extended = LinearArena_TryExtend(&arena, ptr, 16, 32);
-        Assert(extended);
+        byte *ptr = arena_allocate_array(&arena, byte, 16);
+        const bool extended = arena_try_extend(&arena, ptr, 16, 32);
+        ASSERT(extended);
 
-        byte *ptr2 = LinearArena_AllocArray(&arena, byte, 16);
-        Assert(ptr2 == (ptr + 32));
+        byte *ptr2 = arena_allocate_array(&arena, byte, 16);
+        ASSERT(ptr2 == (ptr + 32));
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
-        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+        LinearArena arena = arena_create(default_allocator, 1024);
 
-        byte *ptr = LinearArena_AllocArray(&arena, byte, 16);
-        LinearArena_AllocArray(&arena, byte, 16);
+        byte *ptr = arena_allocate_array(&arena, byte, 16);
+        arena_allocate_array(&arena, byte, 16);
 
-        bool extended = LinearArena_TryExtend(&arena, ptr, 16, 32);
-        Assert(!extended);
+        bool extended = arena_try_extend(&arena, ptr, 16, 32);
+        ASSERT(!extended);
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
-        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
+        LinearArena arena = arena_create(default_allocator, 1024);
 
-        byte *ptr = LinearArena_AllocArray(&arena, byte, 16);
-        bool extended = LinearArena_TryExtend(&arena, ptr, 16, 2000);
-        Assert(!extended);
+        byte *ptr = arena_allocate_array(&arena, byte, 16);
+        bool extended = arena_try_extend(&arena, ptr, 16, 2000);
+        ASSERT(!extended);
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 }
 
-static void TestsString()
+static void tests_string()
 {
-    LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
-    Allocator allocator = LinearArena_Allocator(&arena);
+    LinearArena arena = arena_create(default_allocator, MB(1));
+    Allocator allocator = arena_create_allocator(&arena);
 
     {
 
-        String a = String_Literal("hello ");
-        String b = String_Literal("world");
+        String a = str_literal("hello ");
+        String b = str_literal("world");
 
-        Assert(!String_Equal(a, b));
+        ASSERT(!str_equal(a, b));
 
-        String c = String_Concat(a, b, allocator);
-        Assert(String_Equal(c, String_Literal("hello world")));
-        Assert(c.data != a.data);
-        Assert(c.data != b.data);
+        String c = str_concat(a, b, allocator);
+        ASSERT(str_equal(c, str_literal("hello world")));
+        ASSERT(c.data != a.data);
+        ASSERT(c.data != b.data);
 
     }
 
     {
-        String lit = String_Literal("abcdef");
-        String copy = String_Copy(lit, allocator);
+        String lit = str_literal("abcdef");
+        String copy = str_copy(lit, allocator);
 
-        Assert(String_Equal(lit, copy));
-        Assert(lit.data != copy.data);
+        ASSERT(str_equal(lit, copy));
+        ASSERT(lit.data != copy.data);
 
-        LinearArena_AllocItem(&arena, byte); // To prevent from extending in place
+        arena_allocate_item(&arena, byte); // To prevent from extending in place
 
-        String terminated = String_NullTerminate(copy, allocator);
-        Assert(terminated.data != copy.data);
-        Assert(terminated.data[terminated.length] == '\0');
-        Assert(String_Equal(copy, terminated));
+        String terminated = str_null_terminate(copy, allocator);
+        ASSERT(terminated.data != copy.data);
+        ASSERT(terminated.data[terminated.length] == '\0');
+        ASSERT(str_equal(copy, terminated));
     }
 
     {
-        String lit = String_Literal("abcdef");
-        String copy = String_Copy(lit, allocator);
+        String lit = str_literal("abcdef");
+        String copy = str_copy(lit, allocator);
 
-        String terminated = String_NullTerminate(copy, allocator);
+        String terminated = str_null_terminate(copy, allocator);
 
-        Assert(terminated.data == copy.data);
-        Assert(terminated.data[terminated.length] == '\0');
-        Assert(String_Equal(copy, terminated));
+        ASSERT(terminated.data == copy.data);
+        ASSERT(terminated.data[terminated.length] == '\0');
+        ASSERT(str_equal(copy, terminated));
     }
 
     {
         // Extend in place
-        LinearArena ar = LinearArena_Create(DefaultAllocator, 100);
-        Allocator alloc = LinearArena_Allocator(&ar);
-        String a = String_Copy(String_Literal("abc"), alloc);
-        String b = String_Literal("def");
+        LinearArena ar = arena_create(default_allocator, 100);
+        Allocator alloc = arena_create_allocator(&ar);
+        String a = str_copy(str_literal("abc"), alloc);
+        String b = str_literal("def");
 
-        String c = String_Concat(a, b, alloc);
-        Assert(c.data == a.data);
+        String c = str_concat(a, b, alloc);
+        ASSERT(c.data == a.data);
 
-        LinearArena_Destroy(&ar);
+        arena_destroy(&ar);
     }
 
     {
         // Fail to extend in place
-        LinearArena ar = LinearArena_Create(DefaultAllocator, 100);
-        Allocator alloc = LinearArena_Allocator(&ar);
-        String a = String_Copy(String_Literal("abc"), alloc);
+        LinearArena ar = arena_create(default_allocator, 100);
+        Allocator alloc = arena_create_allocator(&ar);
+        String a = str_copy(str_literal("abc"), alloc);
 
-        AllocItem(alloc, byte);
+        allocate_item(alloc, byte);
 
-        String b = String_Literal("def");
+        String b = str_literal("def");
 
-        String c = String_Concat(a, b, alloc);
-        Assert(String_Equal(c, String_Literal("abcdef")));
+        String c = str_concat(a, b, alloc);
+        ASSERT(str_equal(c, str_literal("abcdef")));
 
-        Assert(c.data != a.data);
+        ASSERT(c.data != a.data);
 
-        LinearArena_Destroy(&ar);
+        arena_destroy(&ar);
     }
 
-    LinearArena_Destroy(&arena);
+    arena_destroy(&arena);
 }
 
-static void TestsUtils()
+static void tests_utils()
 {
     {
         char str[] = "hello";
-        Assert(ArrayCount(str) == 6);
+        ASSERT(ARRAY_COUNT(str) == 6);
     }
 
-    Assert(IsPow2(2));
-    Assert(IsPow2(4));
-    Assert(IsPow2(8));
-    Assert(IsPow2(16));
+    ASSERT(is_pow2(2));
+    ASSERT(is_pow2(4));
+    ASSERT(is_pow2(8));
+    ASSERT(is_pow2(16));
 
-    Assert(!IsPow2(0));
-    Assert(MultiplicationOverflows_ssize(S64_MAX, 2));
-    Assert(!MultiplicationOverflows_ssize(S64_MAX, 1));
-    Assert(!MultiplicationOverflows_ssize(S64_MAX, 0));
-    Assert(!MultiplicationOverflows_ssize(0, 2));
+    ASSERT(!is_pow2(0));
+    ASSERT(multiply_overflows_ssize(S64_MAX, 2));
+    ASSERT(!multiply_overflows_ssize(S64_MAX, 1));
+    ASSERT(!multiply_overflows_ssize(S64_MAX, 0));
+    ASSERT(!multiply_overflows_ssize(0, 2));
 
-    Assert(AdditionOverflows_ssize(S_SIZE_MAX, 1));
-    Assert(AdditionOverflows_ssize(S_SIZE_MAX - 1, 2));
-    Assert(!AdditionOverflows_ssize(S_SIZE_MAX, 0));
-    Assert(!AdditionOverflows_ssize(0, 1));
+    ASSERT(add_overflows_ssize(S_SIZE_MAX, 1));
+    ASSERT(add_overflows_ssize(S_SIZE_MAX - 1, 2));
+    ASSERT(!add_overflows_ssize(S_SIZE_MAX, 0));
+    ASSERT(!add_overflows_ssize(0, 1));
 
-    Assert(S_SIZE_MAX == S64_MAX);
+    ASSERT(S_SIZE_MAX == S64_MAX);
 
-    Assert(Align(5, 8) == 8);
-    Assert(Align(8, 8) == 8);
-    Assert(Align(16, 8) == 16);
-    Assert(Align(17, 8) == 24);
-    Assert(Align(0, 8) == 0);
-    Assert(Align(4, 2) == 4);
+    ASSERT(align_s64(5, 8) == 8);
+    ASSERT(align_s64(8, 8) == 8);
+    ASSERT(align_s64(16, 8) == 16);
+    ASSERT(align_s64(17, 8) == 24);
+    ASSERT(align_s64(0, 8) == 0);
+    ASSERT(align_s64(4, 2) == 4);
 
-    Assert(IsAligned(8, 8));
-    Assert(IsAligned(8, 4));
+    ASSERT(is_aligned(8, 8));
+    ASSERT(is_aligned(8, 4));
 
-    Assert(!IsAligned(4, 8));
-    Assert(!IsAligned(5, 4));
-    Assert(IsAligned(5, 1));
+    ASSERT(!is_aligned(4, 8));
+    ASSERT(!is_aligned(5, 4));
+    ASSERT(is_aligned(5, 1));
 
-    Assert(Max(1, 2) == 2);
-    Assert(Max(2, 1) == 2);
-    Assert(Max(-1, 10) == 10);
+    ASSERT(MAX(1, 2) == 2);
+    ASSERT(MAX(2, 1) == 2);
+    ASSERT(MAX(-1, 10) == 10);
+
+    {
+        s32 *ptr = (s32 *)123;
+        ASSERT((s64)byte_offset(ptr, 5) == 128);
+        ASSERT((s64)byte_offset(ptr, -3) == 120);
+    }
 }
 
-static void TestsFile()
+static void tests_file()
 {
     {
-        LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
-        ssize file_size = Platform_GetFileSize(String_Literal(__FILE__), arena);
+        LinearArena arena = arena_create(default_allocator, MB(1));
+        ssize file_size = platform_get_file_size(str_literal(__FILE__), arena);
 
-        Assert(file_size != -1);
+        ASSERT(file_size != -1);
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
         // Check that scratch arena works
-        LinearArena arena = LinearArena_Create(DefaultAllocator, 1024);
-        LinearArena_AllocArray(&arena, byte, 1022);
-        byte *last = LinearArena_AllocArray(&arena, byte, 1);
+        LinearArena arena = arena_create(default_allocator, 1024);
+        arena_allocate_array(&arena, byte, 1022);
+        byte *last = arena_allocate_array(&arena, byte, 1);
 
 
-        ssize file_size = Platform_GetFileSize(String_Literal(__FILE__), arena);
-        Assert(file_size != -1);
+        ssize file_size = platform_get_file_size(str_literal(__FILE__), arena);
+        ASSERT(file_size != -1);
 
-        byte *next = LinearArena_AllocItem(&arena, byte);
-        Assert(next == last + 1);
+        byte *next = arena_allocate_item(&arena, byte);
+        ASSERT(next == last + 1);
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 
     {
-        LinearArena arena = LinearArena_Create(DefaultAllocator, Megabytes(1));
-        ReadFileResult contents = Platform_ReadEntireFile(String_Literal(__FILE__), LinearArena_Allocator(&arena));
-        Assert(contents.file_data);
-        Assert(contents.file_size != -1);
+        LinearArena arena = arena_create(default_allocator, MB(1));
+        ReadFileResult contents = platform_read_entire_file(str_literal(__FILE__), arena_create_allocator(&arena));
+        ASSERT(contents.file_data);
+        ASSERT(contents.file_size != -1);
 
-        LinearArena_Destroy(&arena);
+        arena_destroy(&arena);
     }
 }
 
-static void TestsList()
+static void tests_list()
 {
     typedef struct {
         ListNode node;
         s32 data;
     } Elem;
-
 
     {
         Elem elem = {
@@ -327,44 +332,44 @@ static void TestsList()
             .data = 123
         };
 
-        Elem *elem_ptr = List_GetItem(&elem.node, Elem, node);
-        Assert(elem_ptr->data == 123);
+        Elem *elem_ptr = list_get_item(&elem.node, Elem, node);
+        ASSERT(elem_ptr->data == 123);
     }
 
     {
         List list;
-        List_Init(&list);
+        list_init(&list);
 
-        Assert(List_IsEmpty(&list));
+        ASSERT(list_is_empty(&list));
 
         Elem elem;
         elem.data = 123;
 
-        List_PushBack(&list, &elem.node);
-        Assert(!List_IsEmpty(&list));
+        list_push_back(&list, &elem.node);
+        ASSERT(!list_is_empty(&list));
 
-        ListNode *node = List_Front(&list);
-        Assert(List_Back(&list) == node);
+        ListNode *node = list_front(&list);
+        ASSERT(list_back(&list) == node);
 
-        List_PopBack(&list);
-        Assert(List_IsEmpty(&list));
+        list_pop_back(&list);
+        ASSERT(list_is_empty(&list));
     }
 
     {
         List list;
-        List_Init(&list);
+        list_init(&list);
 
         Elem elem;
         elem.data = 123;
 
-        List_PushFront(&list, &elem.node);
-        ListNode *back = List_Back(&list);
-        Assert(List_GetItem(back, Elem, node)->data == 123);
+        list_push_front(&list, &elem.node);
+        ListNode *back = list_back(&list);
+        ASSERT(list_get_item(back, Elem, node)->data == 123);
     }
 
     {
         List list;
-        List_Init(&list);
+        list_init(&list);
 
         Elem first;
         first.data = 0;
@@ -375,29 +380,29 @@ static void TestsList()
         Elem third;
         third.data = 2;
 
-        List_PushBack(&list, &first.node);
-        List_PushBack(&list, &second.node);
-        List_PushBack(&list, &third.node);
+        list_push_back(&list, &first.node);
+        list_push_back(&list, &second.node);
+        list_push_back(&list, &third.node);
 
-        Assert(List_GetItem(List_Front(&list), Elem, node)->data == 0);
-        Assert(List_GetItem(List_Back(&list), Elem, node)->data == 2);
+        ASSERT(list_get_item(list_front(&list), Elem, node)->data == 0);
+        ASSERT(list_get_item(list_back(&list), Elem, node)->data == 2);
 
-        ListNode *curr = List_Begin(&list);
+        ListNode *curr = list_begin(&list);
         for (s32 i = 0;; ++i) {
-            Elem *item = List_GetItem(curr, Elem, node);
-            Assert(item->data == i);
+            Elem *item = list_get_item(curr, Elem, node);
+            ASSERT(item->data == i);
 
-            curr = List_Next(curr);
+            curr = list_next(curr);
 
-            if (curr == List_End(&list)) {
+            if (curr == list_end(&list)) {
                 break;
             }
         }
 
-        List_Remove(&second.node);
+        list_remove(&second.node);
 
-        Assert(List_GetItem(List_Front(&list), Elem, node)->data == 0);
-        Assert(List_GetItem(List_Back(&list), Elem, node)->data == 2);
+        ASSERT(list_get_item(list_front(&list), Elem, node)->data == 0);
+        ASSERT(list_get_item(list_back(&list), Elem, node)->data == 2);
     }
 }
 
@@ -408,41 +413,11 @@ typedef struct S {
 
 int main()
 {
-    /* List list; */
-    /* List_Init(&list); */
-
-    /* S a = {0}; */
-    /* a.data = 123; */
-
-    /* S b = {0}; */
-    /* b.data = 456; */
-
-    /* S c = {0}; */
-    /* c.data = 789; */
-
-    /* Assert(List_IsEmpty(&list)); */
-
-    /* List_PushBack(&list, &a.node); */
-    /* List_PushBack(&list, &b.node); */
-    /* List_PushBack(&list, &c.node); */
-
-    /* List_Remove(&b.node); */
-
-    /* ListNode *curr = List_Begin(&list); */
-    /* while (curr != List_End(&list)) { */
-    /*     S *item = List_GetItem(curr, S, node); */
-
-    /*     printf("%d\n", item->data); */
-    /*     curr = List_Next(curr); */
-    /* } */
-
-    /* Assert(!List_IsEmpty(&list)); */
-
-    TestsArena();
-    TestsString();
-    TestsUtils();
-    TestsFile();
-    TestsList();
+    tests_arena();
+    tests_string();
+    tests_utils();
+    tests_file();
+    tests_list();
 
     return 0;
 }

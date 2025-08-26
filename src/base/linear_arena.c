@@ -9,33 +9,33 @@ typedef struct ArenaBlock {
     ssize  capacity;
 } ArenaBlock;
 
-static ArenaBlock *AllocateBlock(Allocator parent, ssize size)
+static ArenaBlock *allocate_block(Allocator parent, ssize size)
 {
-    if (AdditionOverflows_ssize(size, sizeof(ArenaBlock))) {
+    if (add_overflows_ssize(size, sizeof(ArenaBlock))) {
         return 0;
     }
 
     ssize size_required = size + (ssize)sizeof(ArenaBlock);
 
-    ArenaBlock *block = AllocAligned(parent, size_required, AlignOf(ArenaBlock));
+    ArenaBlock *block = allocate_aligned(parent, size_required, ALIGNOF(ArenaBlock));
     block->next_block = 0;
     block->capacity = size;
 
-    MemZero(block + 1, Cast_s64_usize(size));
+    mem_zero(block + 1, cast_s64_to_usize(size));
 
     return block;
 }
 
-static void SwitchToBlock(LinearArena *arena, ArenaBlock *block)
+static void switch_to_block(LinearArena *arena, ArenaBlock *block)
 {
     arena->offset_into_top_block = 0;
     arena->top_block = block;
 }
 
-LinearArena LinearArena_Create(Allocator parent, ssize capacity)
+LinearArena arena_create(Allocator parent, ssize capacity)
 {
-    ArenaBlock *block = AllocateBlock(parent, capacity);
-    Assert(block);
+    ArenaBlock *block = allocate_block(parent, capacity);
+    ASSERT(block);
 
     LinearArena result = {
         .parent = parent,
@@ -46,14 +46,14 @@ LinearArena LinearArena_Create(Allocator parent, ssize capacity)
     return result;
 }
 
-void LinearArena_Destroy(LinearArena *arena)
+void arena_destroy(LinearArena *arena)
 {
     ArenaBlock *current_block = arena->first_block;
 
     while (current_block) {
         ArenaBlock *next_block = current_block->next_block;
 
-        Free(arena->parent, current_block);
+        deallocate(arena->parent, current_block);
 
         current_block = next_block;
     }
@@ -63,91 +63,91 @@ void LinearArena_Destroy(LinearArena *arena)
     arena->offset_into_top_block = 0;
 }
 
-static void *TryAllocateInTopBlock(LinearArena *arena, ssize byte_count, ssize alignment)
+static void *try_allocate_in_top_block(LinearArena *arena, ssize byte_count, ssize alignment)
 {
     ssize block_address = (ssize)(arena->top_block + 1);
     ssize top_address = block_address + arena->offset_into_top_block;
-    ssize aligned_address = Align(top_address, alignment);
+    ssize aligned_address = align_s64(top_address, alignment);
     ssize aligned_top_offset = aligned_address - block_address;
 
-    if (AdditionOverflows_ssize(aligned_top_offset, byte_count)
+    if (add_overflows_ssize(aligned_top_offset, byte_count)
     || ((aligned_top_offset + byte_count) > arena->top_block->capacity)) {
         return 0;
     }
 
     byte *result = (byte *)(block_address + aligned_top_offset);
-    Assert(IsAligned((ssize)result, alignment));
+    ASSERT(is_aligned((ssize)result, alignment));
 
-    MemZero(result, Cast_s64_usize(byte_count));
+    mem_zero(result, cast_s64_to_usize(byte_count));
 
     arena->offset_into_top_block = aligned_top_offset + byte_count;
 
     return result;
 }
 
-void *AllocBytes(LinearArena *arena, ssize byte_count, ssize alignment)
+void *alloc_bytes(LinearArena *arena, ssize byte_count, ssize alignment)
 {
-    void *result = TryAllocateInTopBlock(arena, byte_count, alignment);
+    void *result = try_allocate_in_top_block(arena, byte_count, alignment);
 
     while (!result && arena->top_block->next_block) {
-        SwitchToBlock(arena, arena->top_block->next_block);
+        switch_to_block(arena, arena->top_block->next_block);
 
-        result = TryAllocateInTopBlock(arena, byte_count, alignment);
+        result = try_allocate_in_top_block(arena, byte_count, alignment);
     }
 
     if (!result) {
         // No space found, allocate a new block
-        ssize aligned_header_size = Align(sizeof(ArenaBlock), alignment);
+        ssize aligned_header_size = align_s64(sizeof(ArenaBlock), alignment);
         ssize padding_required = (aligned_header_size - (ssize)sizeof(ArenaBlock));
         ssize min_size_required = padding_required + byte_count;
-        ssize new_block_size = Max(min_size_required, arena->top_block->capacity); // TODO: growth strategy?
+        ssize new_block_size = MAX(min_size_required, arena->top_block->capacity); // TODO: growth strategy?
 
-        ArenaBlock *new_block = AllocateBlock(arena->parent, new_block_size);
+        ArenaBlock *new_block = allocate_block(arena->parent, new_block_size);
         arena->top_block->next_block = new_block;
-        SwitchToBlock(arena, new_block);
+        switch_to_block(arena, new_block);
 
-        result = TryAllocateInTopBlock(arena, byte_count, alignment);
-        Assert(result);
+        result = try_allocate_in_top_block(arena, byte_count, alignment);
+        ASSERT(result);
     }
 
-    Assert(result);
+    ASSERT(result);
 
     return result;
 }
 
-void *LinearArena_Alloc(void *context, ssize count, ssize item_size, ssize alignment)
+void *arena_allocate(void *context, ssize count, ssize item_size, ssize alignment)
 {
-    Assert(IsPow2(alignment));
+    ASSERT(is_pow2(alignment));
 
     LinearArena *arena = context;
 
     // TODO: just crash when this happens
-    if (MultiplicationOverflows_ssize(count, item_size)) {
-        Assert(false);
+    if (multiply_overflows_ssize(count, item_size)) {
+        ASSERT(false);
         return 0;
     }
 
     ssize byte_count = count * item_size;
 
-    return AllocBytes(arena, byte_count, alignment);
+    return alloc_bytes(arena, byte_count, alignment);
 }
 
-void LinearArena_Reset(LinearArena* arena)
+void arena_reset(LinearArena* arena)
 {
-    SwitchToBlock(arena, arena->first_block);
+    switch_to_block(arena, arena->first_block);
 }
 
-bool LinearArena_TryExtend(void *context, void *ptr, ssize old_size, ssize new_size)
+bool arena_try_extend(void *context, void *ptr, ssize old_size, ssize new_size)
 {
     LinearArena *arena = context;
 
-    Assert(new_size > old_size);
+    ASSERT(new_size > old_size);
 
     // NOTE: extending only works if this is the last allocation, hence only checking top block
-    void *current_top = ByteOffset(arena->top_block + 1, arena->offset_into_top_block);
+    void *current_top = byte_offset(arena->top_block + 1, arena->offset_into_top_block);
 
-    if (ByteOffset(ptr, old_size) == current_top) {
-        void *result = TryAllocateInTopBlock(arena, new_size - old_size, 1);
+    if (byte_offset(ptr, old_size) == current_top) {
+        void *result = try_allocate_in_top_block(arena, new_size - old_size, 1);
 
         if (result) {
             return true;
@@ -157,12 +157,12 @@ bool LinearArena_TryExtend(void *context, void *ptr, ssize old_size, ssize new_s
     return false;
 }
 
-Allocator LinearArena_Allocator(LinearArena* arena)
+Allocator arena_create_allocator(LinearArena* arena)
 {
     Allocator allocator = {
-        .alloc = LinearArena_Alloc,
-        .dealloc = DefaultFree,
-        .try_extend = LinearArena_TryExtend,
+        .alloc = arena_allocate,
+        .dealloc = stub_deallocate,
+        .try_extend = arena_try_extend,
         .context = arena
     };
 

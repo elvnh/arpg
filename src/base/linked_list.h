@@ -3,11 +3,9 @@
 
 #include "typedefs.h"
 
-// TODO: use ByteOffset
-#define List_GetItem(node, item_type, memb_name) ((item_type *)((byte *)&(node)->next \
-            - offsetof(item_type, memb_name.next)))
+#define list_get_item(node, item_type, memb_name) ((item_type *)byte_offset(&(node)->next, \
+            -offsetof(item_type, memb_name.next)))
 
-// TODO: test
 // TODO: make this work even if there are no dummy nodes
 
 typedef struct ListNode {
@@ -20,20 +18,20 @@ typedef struct {
     ListNode tail;
 } List;
 
-void        List_Init(List *list);
-void        List_PushFront(List *list, ListNode *node);
-void        List_PushBack(List *list, ListNode *node);
-void        List_InsertAfter(ListNode *node, ListNode *head);
-void        List_InsertBefore(ListNode *node, ListNode *head);
-void        List_Remove(ListNode *node);
-void        List_PopFront(List *list);
-void        List_PopBack(List *list);
-ListNode   *List_Begin(List *list);
-ListNode   *List_End(List *list);
-ListNode   *List_Front(List *list);
-ListNode   *List_Back(List *list);
-ListNode   *List_Next(ListNode *node);
-ListNode   *List_Prev(ListNode *node);
-bool        List_IsEmpty(List *list);
+void        list_init(List *list);
+void        list_push_front(List *list, ListNode *node);
+void        list_push_back(List *list, ListNode *node);
+void        list_insert_after(ListNode *node, ListNode *head);
+void        list_insert_before(ListNode *node, ListNode *head);
+void        list_remove(ListNode *node);
+void        list_pop_front(List *list);
+void        list_pop_back(List *list);
+ListNode   *list_begin(List *list);
+ListNode   *list_end(List *list);
+ListNode   *list_front(List *list);
+ListNode   *list_back(List *list);
+ListNode   *list_next(ListNode *node);
+ListNode   *list_prev(ListNode *node);
+bool        list_is_empty(List *list);
 
 #endif //LINKED_LIST_H

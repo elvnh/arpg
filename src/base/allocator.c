@@ -3,15 +3,8 @@
 void *default_allocate(void *ctx, ssize item_count, ssize item_size, ssize alignment)
 {
     (void)ctx;
-    (void)alignment;
 
-    if (multiply_overflows_ssize(item_count, item_size)) {
-        return 0;
-    }
-
-    const ssize byte_count = item_count * item_size;
-
-    void *ptr = malloc(cast_s64_to_usize(byte_count));
+    void *ptr = calloc((size_t)item_count, (size_t)item_size);
     ASSERT(is_aligned((ssize)ptr, alignment));
 
     return ptr;

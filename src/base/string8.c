@@ -75,18 +75,3 @@ String str_copy(String str, Allocator alloc)
 
     return result;
 }
-
-String str_allocate(ssize length, Allocator allocator)
-{
-    ASSERT(length > 0);
-
-    char *data = allocate_array(allocator, char, length);
-    ASSERT(data);
-
-    String result = {
-        .data = data,
-        .length = length
-    };
-
-    return result;
-}

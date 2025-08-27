@@ -3,11 +3,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include "platform/file.h"
+#include "os/file.h"
 #include "base/utils.h"
 
 // NOTE: path must be null terminated
-ssize platform_get_file_size_impl(const char *path)
+ssize os_get_file_size_impl(const char *path)
 {
     struct stat st;
     s32 result = stat(path, &st);
@@ -21,13 +21,15 @@ ssize platform_get_file_size_impl(const char *path)
     return st.st_size;
 }
 
-ReadFileResult platform_read_entire_file(String path, Allocator allocator)
+ReadFileResult os_read_entire_file(String path, Allocator allocator)
 {
     String null_terminated = str_null_terminate(path, allocator);
-    ssize file_size = platform_get_file_size_impl(null_terminated.data);
+    ssize file_size = os_get_file_size_impl(null_terminated.data);
+
+    ReadFileResult result = {0};
 
     if ((file_size == -1) || add_overflows_ssize(file_size, 1)) {
-        return (ReadFileResult){0};
+        goto done;
     }
 
     ssize alloc_size = file_size + 1;
@@ -38,7 +40,7 @@ ReadFileResult platform_read_entire_file(String path, Allocator allocator)
     s32 fd = open(null_terminated.data, O_RDONLY);
 
     if (fd == -1) {
-        return (ReadFileResult){0};
+        goto done;
     }
 
     ssize bytes_read = read(fd, file_data, cast_s64_to_usize(file_size));
@@ -47,18 +49,18 @@ ReadFileResult platform_read_entire_file(String path, Allocator allocator)
     // TODO: is null terminating really necessary?
     file_data[file_size] = '\0';
 
-    ReadFileResult result = {
-        .file_data = file_data,
-        .file_size = file_size
-    };
+    result.file_data = file_data;
+    result.file_size = file_size;
+
+  done:
+    deallocate(allocator, null_terminated.data);
 
     return result;
 }
 
-ssize platform_get_file_size(String path, LinearArena scratch)
+ssize os_get_file_size(String path, LinearArena scratch)
 {
     String null_terminated = str_null_terminate(path, arena_create_allocator(&scratch));
 
-
-    return platform_get_file_size_impl(null_terminated.data);
+    return os_get_file_size_impl(null_terminated.data);
 }

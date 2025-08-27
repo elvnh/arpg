@@ -1,7 +1,15 @@
 #!/usr/bin/env sh
 
 CC="gcc"
-SOURCES="src/main.c src/base/linear_arena.c src/base/string8.c src/platform/linux/file.c src/base/allocator.c src/base/linked_list.c ";
+SOURCES="src/main.c
+src/base/linear_arena.c
+src/base/string8.c
+src/os/linux/file.c
+src/os/linux/path.c
+src/base/allocator.c
+src/base/linked_list.c
+
+";
 FLAGS="
       -std=c99
       -fsanitize=address,undefined

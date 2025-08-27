@@ -23,7 +23,7 @@ void default_deallocate(void *ctx, void *ptr)
     free(ptr);
 }
 
-bool default_try_extend(void *ctx, void *ptr, ssize old_size, ssize new_size)
+bool default_try_resize(void *ctx, void *ptr, ssize old_size, ssize new_size)
 {
     (void)ctx;
     (void)ptr;
@@ -49,7 +49,7 @@ void stub_deallocate(void *ctx, void *ptr)
     (void)ptr;
 }
 
-bool stub_try_extend(void *ctx, void *ptr, ssize old_size, ssize new_size)
+bool stub_try_resize(void *ctx, void *ptr, ssize old_size, ssize new_size)
 {
     (void)ctx;
     (void)ptr;

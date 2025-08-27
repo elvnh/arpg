@@ -10,7 +10,7 @@ String str_concat(String a, String b, Allocator alloc)
     const usize b_length = cast_s64_to_usize(b.length);
 
     char *new_string = 0;
-    if (try_extend_allocation(alloc, a.data, a.length, total_size)) {
+    if (try_resize_allocation(alloc, a.data, a.length, total_size)) {
         new_string = a.data;
     } else {
         new_string = allocate_array(alloc, char, total_size);
@@ -46,7 +46,7 @@ String str_null_terminate(String str, Allocator alloc)
 
     char *new_string = 0;
 
-    if (try_extend_allocation(alloc, str.data, str.length, str.length + 1)) {
+    if (try_resize_allocation(alloc, str.data, str.length, str.length + 1)) {
         new_string = str.data;
     } else {
         new_string = allocate_array(alloc, char, str.length + 1);
@@ -71,6 +71,21 @@ String str_copy(String str, Allocator alloc)
     String result = {
         .data = new_string,
         .length = str.length
+    };
+
+    return result;
+}
+
+String str_allocate(ssize length, Allocator allocator)
+{
+    ASSERT(length > 0);
+
+    char *data = allocate_array(allocator, char, length);
+    ASSERT(data);
+
+    String result = {
+        .data = data,
+        .length = length
     };
 
     return result;

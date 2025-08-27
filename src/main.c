@@ -8,7 +8,8 @@
 #include "base/allocator.h"
 #include "base/utils.h"
 #include "base/linked_list.h"
-#include "platform/file.h"
+#include "os/file.h"
+#include "os/path.h"
 
 static void tests_arena()
 {
@@ -121,7 +122,7 @@ static void tests_arena()
         LinearArena arena = arena_create(default_allocator, 1024);
 
         byte *ptr = arena_allocate_array(&arena, byte, 16);
-        const bool extended = arena_try_extend(&arena, ptr, 16, 32);
+        const bool extended = arena_try_resize(&arena, ptr, 16, 32);
         ASSERT(extended);
 
         byte *ptr2 = arena_allocate_array(&arena, byte, 16);
@@ -136,7 +137,7 @@ static void tests_arena()
         byte *ptr = arena_allocate_array(&arena, byte, 16);
         arena_allocate_array(&arena, byte, 16);
 
-        bool extended = arena_try_extend(&arena, ptr, 16, 32);
+        bool extended = arena_try_resize(&arena, ptr, 16, 32);
         ASSERT(!extended);
 
         arena_destroy(&arena);
@@ -146,8 +147,21 @@ static void tests_arena()
         LinearArena arena = arena_create(default_allocator, 1024);
 
         byte *ptr = arena_allocate_array(&arena, byte, 16);
-        bool extended = arena_try_extend(&arena, ptr, 16, 2000);
+        bool extended = arena_try_resize(&arena, ptr, 16, 2000);
         ASSERT(!extended);
+
+        arena_destroy(&arena);
+    }
+
+    {
+        LinearArena arena = arena_create(default_allocator, 1024);
+
+        byte *first = arena_allocate_array(&arena, byte, 16);
+        bool resized = arena_try_resize(&arena, first, 16, 1);
+        ASSERT(resized);
+
+        byte *next = arena_allocate_item(&arena, byte);
+        ASSERT(next == first + 1);
 
         arena_destroy(&arena);
     }
@@ -286,7 +300,7 @@ static void tests_file()
 {
     {
         LinearArena arena = arena_create(default_allocator, MB(1));
-        ssize file_size = platform_get_file_size(str_literal(__FILE__), arena);
+        ssize file_size = os_get_file_size(str_literal(__FILE__), arena);
 
         ASSERT(file_size != -1);
 
@@ -300,7 +314,7 @@ static void tests_file()
         byte *last = arena_allocate_array(&arena, byte, 1);
 
 
-        ssize file_size = platform_get_file_size(str_literal(__FILE__), arena);
+        ssize file_size = os_get_file_size(str_literal(__FILE__), arena);
         ASSERT(file_size != -1);
 
         byte *next = arena_allocate_item(&arena, byte);
@@ -311,7 +325,7 @@ static void tests_file()
 
     {
         LinearArena arena = arena_create(default_allocator, MB(1));
-        ReadFileResult contents = platform_read_entire_file(str_literal(__FILE__), arena_create_allocator(&arena));
+        ReadFileResult contents = os_read_entire_file(str_literal(__FILE__), arena_create_allocator(&arena));
         ASSERT(contents.file_data);
         ASSERT(contents.file_size != -1);
 
@@ -413,11 +427,18 @@ typedef struct S {
 
 int main()
 {
+    /* String path = os_get_executable_directory(default_allocator); */
+
+    /* deallocate(default_allocator, path.data); */
+
+
+
     tests_arena();
     tests_string();
     tests_utils();
     tests_file();
     tests_list();
+
 
     return 0;
 }

@@ -137,19 +137,27 @@ void arena_reset(LinearArena* arena)
     switch_to_block(arena, arena->first_block);
 }
 
-bool arena_try_extend(void *context, void *ptr, ssize old_size, ssize new_size)
+bool arena_try_resize(void *context, void *ptr, ssize old_size, ssize new_size)
 {
+    ASSERT(new_size >= 0);
+
     LinearArena *arena = context;
-
-    ASSERT(new_size > old_size);
-
     // NOTE: extending only works if this is the last allocation, hence only checking top block
     void *current_top = byte_offset(arena->top_block + 1, arena->offset_into_top_block);
 
     if (byte_offset(ptr, old_size) == current_top) {
-        void *result = try_allocate_in_top_block(arena, new_size - old_size, 1);
+        // TODO: later if popping is implemented, do that here
+        ASSERT(new_size);
 
-        if (result) {
+        if (new_size > old_size) {
+            void *result = try_allocate_in_top_block(arena, new_size - old_size, 1);
+
+            if (result) {
+                return true;
+            }
+        } else {
+            arena->offset_into_top_block -= old_size - new_size;
+
             return true;
         }
     }
@@ -162,7 +170,7 @@ Allocator arena_create_allocator(LinearArena* arena)
     Allocator allocator = {
         .alloc = arena_allocate,
         .dealloc = stub_deallocate,
-        .try_extend = arena_try_extend,
+        .try_resize = arena_try_resize,
         .context = arena
     };
 

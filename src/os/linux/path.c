@@ -31,7 +31,7 @@ String os_get_executable_directory(Allocator allocator)
         // the size of the string
         result.length = bytes_written;
 
-        String parent_dir = os_get_absolute_parent_path(result, allocator);
+        String parent_dir = os_get_parent_path(result, allocator);
         ASSERT(parent_dir.data == result.data);
 
         bool resized = try_resize_allocation(allocator, result.data, buffer_size, parent_dir.length);
@@ -113,7 +113,7 @@ String os_get_working_directory(Allocator allocator)
     return result;
 }
 
-String os_get_absolute_parent_path(String path, Allocator allocator)
+String os_get_parent_path(String path, Allocator allocator)
 {
     String absolute = os_get_absolute_path(path, allocator);
     ssize last_slash_pos = str_find_last_occurence(absolute, '/');
@@ -121,7 +121,7 @@ String os_get_absolute_parent_path(String path, Allocator allocator)
 
     String result = {
         .data = absolute.data,
-        .length = last_slash_pos + 1
+        .length = MAX(1, last_slash_pos) // In case path is only a /
     };
 
     return result;

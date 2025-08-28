@@ -489,6 +489,9 @@ static void tests_list()
 
 void tests_path()
 {
+    LinearArena arena = arena_create(default_allocator, MB(2));
+    Allocator alloc = arena_create_allocator(&arena);
+
     {
         ASSERT(os_path_is_absolute(str_literal("/foo")));
         ASSERT(os_path_is_absolute(str_literal("/")));
@@ -496,6 +499,15 @@ void tests_path()
         ASSERT(!os_path_is_absolute(str_literal("./")));
         ASSERT(!os_path_is_absolute(str_literal("../foo")));
     }
+
+    {
+        ASSERT(str_equal(os_get_parent_path(str_literal("/home/foo"), alloc), str_literal("/home")));
+        ASSERT(str_equal(os_get_parent_path(str_literal("/home/foo/a.out"), alloc), str_literal("/home/foo")));
+        ASSERT(str_equal(os_get_parent_path(str_literal("/home/foo/"), alloc), str_literal("/home/foo")));
+        ASSERT(str_equal(os_get_parent_path(str_literal("/"), alloc), str_literal("/")));
+    }
+
+    arena_destroy(&arena);
 }
 
 int main()
@@ -505,14 +517,13 @@ int main()
 
     String executable = os_get_executable_directory(alloc);
     String path = os_get_absolute_path(str_literal("./a.out"), alloc);
-    String parent = os_get_absolute_parent_path(path, alloc);
-    String p = str_literal(".././");
-    String abc = os_get_canonical_path(p, alloc);
+    String abc = os_get_canonical_path(path, alloc);
+    String parent = os_get_parent_path(abc, alloc);
 
     printf("%.*s\n", (s32)executable.length, executable.data);
     printf("%.*s\n", (s32)path.length, path.data);
-    printf("%.*s\n", (s32)parent.length, parent.data);
     printf("%.*s\n", (s32)abc.length, abc.data);
+    printf("%.*s\n", (s32)parent.length, parent.data);
 
     arena_destroy(&arena);
 

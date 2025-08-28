@@ -91,6 +91,17 @@ bool str_starts_with(String str, String substr)
     return (memcmp(str.data, substr.data, cast_s64_to_usize(substr.length)) == 0);
 }
 
+bool str_ends_with(String str, String substr)
+{
+    if (substr.length > str.length) {
+        return false;
+    }
+
+    String span = str_create_span(str, str.length - substr.length, substr.length);
+
+    return str_equal(span, substr);
+}
+
 ssize str_find_first_occurence(String str, char ch)
 {
     for (s64 i = 0; i < str.length; ++i) {
@@ -128,4 +139,19 @@ String str_allocate(ssize length, Allocator allocator)
 ssize str_get_null_terminated_length(String str)
 {
     return str_find_first_occurence(str, '\0');
+}
+
+String str_create_span(String str, ssize start_index, ssize length)
+{
+    ASSERT(str.data);
+    ASSERT(str.length);
+    ASSERT(start_index + length <= str.length);
+    ASSERT(length > 0);
+
+    String result = {
+        .data = str.data + start_index,
+        .length = length
+    };
+
+    return result;
 }

@@ -268,6 +268,48 @@ static void tests_string()
         ASSERT(str_find_first_occurence(a, 'd') == -1);
     }
 
+    {
+        String a = str_literal("abcdef");
+        String span = str_create_span(a, 1, 3);
+
+        ASSERT(str_equal(span, str_literal("bcd")));
+    }
+
+    {
+        String a = str_literal("abcdef");
+        String span = str_create_span(a, 2, 4);
+
+        ASSERT(str_equal(span, str_literal("cdef")));
+    }
+
+    {
+        String a = str_literal("a");
+        String span = str_create_span(a, 0, 1);
+
+        ASSERT(str_equal(span, str_literal("a")));
+    }
+
+    {
+        String a = str_literal("ab");
+        String span = str_create_span(a, 1, 1);
+
+        ASSERT(str_equal(span, str_literal("b")));
+    }
+
+    {
+        String str = str_literal("abcdef");
+        ASSERT(str_ends_with(str, str_literal("f")));
+        ASSERT(str_ends_with(str, str_literal("ef")));
+        ASSERT(str_ends_with(str, str_literal("def")));
+        ASSERT(str_ends_with(str, str_literal("cdef")));
+        ASSERT(str_ends_with(str, str_literal("bcdef")));
+        ASSERT(str_ends_with(str, str_literal("abcdef")));
+
+        ASSERT(!str_ends_with(str, str_literal("a")));
+        ASSERT(!str_ends_with(str, str_literal("e")));
+        ASSERT(!str_ends_with(str, str_literal("aabcdef")));
+    }
+
     arena_destroy(&arena);
 }
 

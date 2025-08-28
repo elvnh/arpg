@@ -243,6 +243,31 @@ static void tests_string()
         arena_destroy(&ar);
     }
 
+    {
+        ASSERT(str_starts_with(str_literal("abc"), str_literal("a")));
+        ASSERT(str_starts_with(str_literal("abc"), str_literal("ab")));
+        ASSERT(str_starts_with(str_literal("abc"), str_literal("abc")));
+        ASSERT(!str_starts_with(str_literal("abc"), str_literal("abcd")));
+        ASSERT(!str_starts_with(str_literal("abc"), str_literal("b")));
+
+    }
+
+    {
+        String a = str_literal("abac");
+        ASSERT(str_find_last_occurence(a, 'a') == 2);
+        ASSERT(str_find_last_occurence(a, 'c') == 3);
+        ASSERT(str_find_last_occurence(a, 'b') == 1);
+        ASSERT(str_find_last_occurence(a, 'd') == -1);
+    }
+
+    {
+        String a = str_literal("abac");
+        ASSERT(str_find_first_occurence(a, 'a') == 0);
+        ASSERT(str_find_first_occurence(a, 'b') == 1);
+        ASSERT(str_find_first_occurence(a, 'c') == 3);
+        ASSERT(str_find_first_occurence(a, 'd') == -1);
+    }
+
     arena_destroy(&arena);
 }
 
@@ -420,25 +445,41 @@ static void tests_list()
     }
 }
 
-typedef struct S {
-    ListNode node;
-    s32 data;
-} S;
+void tests_path()
+{
+    {
+        ASSERT(os_path_is_absolute(str_literal("/foo")));
+        ASSERT(os_path_is_absolute(str_literal("/")));
+        ASSERT(!os_path_is_absolute(str_literal("~/code")));
+        ASSERT(!os_path_is_absolute(str_literal("./")));
+        ASSERT(!os_path_is_absolute(str_literal("../foo")));
+    }
+}
 
 int main()
 {
-    /* String path = os_get_executable_directory(default_allocator); */
+    LinearArena arena = arena_create(default_allocator, MB(4));
+    Allocator alloc = arena_create_allocator(&arena);
 
-    /* deallocate(default_allocator, path.data); */
+    String executable = os_get_executable_directory(alloc);
+    String path = os_get_absolute_path(str_literal("./a.out"), alloc);
+    String parent = os_get_absolute_parent_path(path, alloc);
+    String p = str_literal(".././");
+    String abc = os_get_canonical_path(p, alloc);
 
+    printf("%.*s\n", (s32)executable.length, executable.data);
+    printf("%.*s\n", (s32)path.length, path.data);
+    printf("%.*s\n", (s32)parent.length, parent.data);
+    printf("%.*s\n", (s32)abc.length, abc.data);
 
+    arena_destroy(&arena);
 
     tests_arena();
     tests_string();
     tests_utils();
     tests_file();
     tests_list();
-
+    tests_path();
 
     return 0;
 }

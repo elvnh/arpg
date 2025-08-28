@@ -75,3 +75,57 @@ String str_copy(String str, Allocator alloc)
 
     return result;
 }
+
+bool str_starts_with(String str, String substr)
+{
+    ASSERT(str.data);
+    ASSERT(str.length);
+
+    ASSERT(substr.data);
+    ASSERT(substr.length);
+
+    if (substr.length > str.length) {
+        return false;
+    }
+
+    return (memcmp(str.data, substr.data, cast_s64_to_usize(substr.length)) == 0);
+}
+
+ssize str_find_first_occurence(String str, char ch)
+{
+    for (s64 i = 0; i < str.length; ++i) {
+        if (str.data[i] == ch) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+ssize str_find_last_occurence(String str, char ch)
+{
+    for (s64 i = str.length - 1; i >= 0; --i) {
+        if (str.data[i] == ch) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+String str_allocate(ssize length, Allocator allocator)
+{
+    char *data = allocate_array(allocator, char, length);
+
+    String result = {
+        .data = data,
+        .length = length
+    };
+
+    return result;
+}
+
+ssize str_get_null_terminated_length(String str)
+{
+    return str_find_first_occurence(str, '\0');
+}

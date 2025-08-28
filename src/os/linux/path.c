@@ -1,13 +1,13 @@
-#define _POSIX_C_SOURCE 200112L
+#define _DEFAULT_SOURCE
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <linux/limits.h>
+#include <stdlib.h>
 
 #include "os/path.h"
-#include "base/allocator.h"
-#include "base/string8.h"
+#include "base/linear_arena.h"
 
 String os_get_executable_directory(Allocator allocator)
 {
@@ -20,19 +20,108 @@ String os_get_executable_directory(Allocator allocator)
       stay at PATH_MAX bytes which is probably equal to 4096.
     */
 
-
-    char *result_path = allocate_array(allocator, char, PATH_MAX);
-    ssize bytes_written = readlink("/proc/self/exe", result_path, PATH_MAX);
+    ssize buffer_size = PATH_MAX;
+    String result = str_allocate(buffer_size, allocator);
+    ssize bytes_written = readlink("/proc/self/exe", result.data, cast_s64_to_usize(result.length));
 
     if (bytes_written == -1) {
-        deallocate(allocator, result_path);
+        deallocate(allocator, result.data);
     } else {
-        try_resize_allocation(allocator, result_path, PATH_MAX, bytes_written);
+        // NOTE: os_get_absolute_parent_path doesn't reallocate so we can just update
+        // the size of the string
+        result.length = bytes_written;
+
+        String parent_dir = os_get_absolute_parent_path(result, allocator);
+        ASSERT(parent_dir.data == result.data);
+
+        bool resized = try_resize_allocation(allocator, result.data, buffer_size, parent_dir.length);
+        (void)resized;
+        ASSERT(resized);
+
+        result.length = parent_dir.length;
     }
 
+    return result;
+}
+
+bool os_path_is_absolute(String path)
+{
+    return str_starts_with(path, str_literal("/"));
+}
+
+String os_get_absolute_path(String path, Allocator allocator)
+{
+    if (os_path_is_absolute(path)) {
+        return path;
+    }
+
+    // TODO: get thread scratch arena
+    LinearArena scratch_arena = arena_create(allocator, PATH_MAX * 2);
+    Allocator scratch_alloc = arena_create_allocator(&scratch_arena);
+
+    String working_dir = str_concat(os_get_working_directory(scratch_alloc), str_literal("/"), scratch_alloc);
+    String result = str_concat(working_dir, path, allocator);
+
+    arena_destroy(&scratch_arena);
+
+    return result;
+}
+
+String os_get_canonical_path(String path, Allocator allocator)
+{
+    LinearArena scratch_arena = arena_create(allocator, PATH_MAX * 2);
+    Allocator scratch = arena_create_allocator(&scratch_arena);
+
+    String absolute = str_null_terminate(os_get_absolute_path(path, scratch), scratch);
+
+    String canonical = str_allocate(PATH_MAX, allocator);
+    char *realpath_result = realpath(absolute.data, canonical.data);
+
+    if (!realpath_result) {
+        deallocate(allocator, canonical.data);
+        canonical = (String){0};
+    } else {
+        ASSERT(realpath_result == canonical.data);
+
+        ssize path_length = str_get_null_terminated_length(canonical);
+        try_resize_allocation(allocator, canonical.data, canonical.length, path_length);
+
+        canonical.length = path_length;
+    }
+
+    arena_destroy(&scratch_arena);
+
+    return canonical;
+}
+
+String os_get_working_directory(Allocator allocator)
+{
+    String result = str_allocate(PATH_MAX + 1, allocator);
+
+    char *getcwd_result = getcwd(result.data, cast_s64_to_usize(result.length));
+    ASSERT(getcwd_result == result.data);
+
+    if (!getcwd_result) {
+        deallocate(allocator, result.data);
+    } else {
+        ssize str_length = str_get_null_terminated_length(result);
+        try_resize_allocation(allocator, result.data, result.length, str_length);
+
+        result.length = str_length;
+    }
+
+    return result;
+}
+
+String os_get_absolute_parent_path(String path, Allocator allocator)
+{
+    String absolute = os_get_absolute_path(path, allocator);
+    ssize last_slash_pos = str_find_last_occurence(absolute, '/');
+    ASSERT(last_slash_pos != -1);
+
     String result = {
-        .data = result_path,
-        .length = bytes_written
+        .data = absolute.data,
+        .length = last_slash_pos + 1
     };
 
     return result;

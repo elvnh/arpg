@@ -109,7 +109,7 @@ String os_get_working_directory(Allocator allocator)
 String os_get_parent_path(String path, Allocator allocator)
 {
     String absolute = os_get_absolute_path(path, allocator);
-    ssize last_slash_pos = str_find_last_occurence(absolute, '/');
+    ssize last_slash_pos = str_find_last_occurence(absolute, str_literal("/"));
     ASSERT(last_slash_pos != -1);
 
     String result = {

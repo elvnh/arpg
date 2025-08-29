@@ -248,18 +248,29 @@ static void tests_string()
 
     {
         String a = str_literal("abac");
-        ASSERT(str_find_last_occurence(a, 'a') == 2);
-        ASSERT(str_find_last_occurence(a, 'c') == 3);
-        ASSERT(str_find_last_occurence(a, 'b') == 1);
-        ASSERT(str_find_last_occurence(a, 'd') == -1);
+        ASSERT(str_find_last_occurence(a, str_literal("a")) == 2);
+        ASSERT(str_find_last_occurence(a, str_literal("c")) == 3);
+        ASSERT(str_find_last_occurence(a, str_literal("b")) == 1);
+        ASSERT(str_find_last_occurence(a, str_literal("d")) == -1);
+
+        ASSERT(str_find_last_occurence(a, str_literal("ab")) == 0);
+        ASSERT(str_find_last_occurence(a, str_literal("ba")) == 1);
+        ASSERT(str_find_last_occurence(a, str_literal("bac")) == 1);
+        ASSERT(str_find_last_occurence(a, str_literal("ac")) == 2);
+        ASSERT(str_find_last_occurence(a, str_literal("acb")) == -1);
     }
 
     {
         String a = str_literal("abac");
-        ASSERT(str_find_first_occurence(a, 'a') == 0);
-        ASSERT(str_find_first_occurence(a, 'b') == 1);
-        ASSERT(str_find_first_occurence(a, 'c') == 3);
-        ASSERT(str_find_first_occurence(a, 'd') == -1);
+        ASSERT(str_find_first_occurence(a, str_literal("a")) == 0);
+        ASSERT(str_find_first_occurence(a, str_literal("b")) == 1);
+        ASSERT(str_find_first_occurence(a, str_literal("c")) == 3);
+        ASSERT(str_find_first_occurence(a, str_literal("d")) == -1);
+
+        ASSERT(str_find_first_occurence(a, str_literal("ab")) == 0);
+        ASSERT(str_find_first_occurence(a, str_literal("ba")) == 1);
+        ASSERT(str_find_first_occurence(a, str_literal("bac")) == 1);
+        ASSERT(str_find_first_occurence(a, str_literal("ac")) == 2);
     }
 
     {

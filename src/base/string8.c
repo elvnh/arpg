@@ -102,10 +102,12 @@ bool str_ends_with(String str, String substr)
     return str_equal(span, substr);
 }
 
-ssize str_find_first_occurence(String str, char ch)
+ssize str_find_first_occurence(String str, String pattern)
 {
-    for (s64 i = 0; i < str.length; ++i) {
-        if (str.data[i] == ch) {
+    for (s64 i = 0; i <= str.length - pattern.length; ++i) {
+        String substr = str_create_span(str, i, pattern.length);
+
+        if (str_equal(substr, pattern)) {
             return i;
         }
     }
@@ -113,10 +115,12 @@ ssize str_find_first_occurence(String str, char ch)
     return -1;
 }
 
-ssize str_find_last_occurence(String str, char ch)
+ssize str_find_last_occurence(String str, String pattern)
 {
-    for (s64 i = str.length - 1; i >= 0; --i) {
-        if (str.data[i] == ch) {
+    for (s64 i = str.length - pattern.length; i >= 0; --i) {
+        String substr = str_create_span(str, i, pattern.length);
+
+        if (str_equal(substr, pattern)) {
             return i;
         }
     }
@@ -138,7 +142,7 @@ String str_allocate(ssize length, Allocator allocator)
 
 ssize str_get_null_terminated_length(String str)
 {
-    return str_find_first_occurence(str, '\0');
+    return str_find_first_occurence(str, str_literal("\0"));
 }
 
 String str_create_span(String str, ssize start_index, ssize length)

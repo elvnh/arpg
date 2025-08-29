@@ -1,0 +1,217 @@
+#include <GL/glew.h>
+
+#include "base/allocator.h"
+#include "base/string8.h"
+#include "base/utils.h"
+#include "render/backend/renderer_backend.h"
+#include "render/vertex.h"
+#include "os/thread_context.h"
+
+#define MAX_RENDERER_VERTICES 512
+
+#define POSITION_ATTRIBUTE 0
+#define UV_ATTRIBUTE 1
+#define COLOR_ATTRIBUTE 2
+
+#define VERTEX_SHADER_DIRECTIVE   str_literal("#vertex")
+#define FRAGMENT_SHADER_DIRECTIVE str_literal("#fragment")
+
+struct RendererBackend {
+    GLuint vao;
+    GLuint vbo;
+    GLuint ebo;
+
+    struct {
+        Vertex  vertices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
+        s32     vertex_count;
+    } vertex_array;
+
+    struct {
+        GLuint  indices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
+        s32     index_count;
+    } index_array;
+};
+
+struct ShaderHandle {
+    GLuint native_handle;
+};
+
+static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
+    GLsizei length, const GLchar* message, const void* user_param)
+{
+    (void)source;
+    (void)id;
+    (void)length;
+    (void)user_param;
+
+    fprintf(stderr, "%s\nSeverity: 0x%x\nMessage: %s\n",
+      (type == GL_DEBUG_TYPE_ERROR ? "** OpenGL ERROR **" : "** OpenGL INFO **"),
+      severity, message);
+
+    if (type == GL_DEBUG_TYPE_ERROR)
+        abort();
+}
+
+RendererBackend *renderer_backend_initialize(Allocator allocator)
+{
+    RendererBackend *state = allocate_item(allocator, RendererBackend);
+    ASSERT(state->vertex_array.vertex_count == 0);
+    ASSERT(state->index_array.index_count == 0);
+
+    glewInit();
+
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(gl_error_callback, 0);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glGenVertexArrays(1, &state->vao);
+    glBindVertexArray(state->vao);
+
+    glGenBuffers(1, &state->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, state->vbo);
+    glBufferData(GL_ARRAY_BUFFER, ARRAY_COUNT(state->vertex_array.vertices) * sizeof(*state->vertex_array.vertices),
+        0, GL_DYNAMIC_DRAW);
+
+    glGenBuffers(1, &state->ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ARRAY_COUNT(state->index_array.indices) * sizeof(*state->index_array.indices),
+        0, GL_DYNAMIC_DRAW);
+
+    s32 stride = (s32)sizeof(*state->vertex_array.vertices);
+
+    glVertexAttribPointer(POSITION_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, position));
+    glEnableVertexAttribArray(POSITION_ATTRIBUTE);
+
+    glVertexAttribPointer(UV_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, color));
+    glEnableVertexAttribArray(UV_ATTRIBUTE);
+
+    glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, color));
+    glEnableVertexAttribArray(COLOR_ATTRIBUTE);
+
+    glBindVertexArray(0);
+
+    return state;
+}
+
+void renderer_backend_begin_frame(RendererBackend *state)
+{
+    (void)state;
+}
+
+void renderer_backend_end_frame(RendererBackend *state)
+{
+    (void)state;
+}
+
+typedef struct {
+    String vertex_shader;
+    String fragment_shader;
+    bool   ok;
+} SplitShaderSource;
+
+static bool assert_shader_compilation_successful(GLuint shader)
+{
+    GLint is_compiled = 0;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &is_compiled);
+
+    if (is_compiled == GL_FALSE) {
+        GLint max_length = 0;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &max_length);
+        ASSERT(!add_overflows_s32(max_length, 1));
+
+        Allocator scratch = thread_ctx_get_allocator();
+        char *data = allocate_array(scratch, char, max_length + 1);
+
+        glGetShaderInfoLog(shader, max_length, &max_length, data);
+        glDeleteShader(shader);
+
+        fprintf(stderr, "\n*** SHADER COMPILATION ERROR ***\n\n%s", data);
+
+        return false;
+    }
+
+    return true;
+}
+
+static SplitShaderSource split_shader_source(String source)
+{
+    SplitShaderSource result = {0};
+
+    ssize vertex_index = str_find_first_occurence(source, VERTEX_SHADER_DIRECTIVE);
+    ssize fragment_index = str_find_first_occurence(source, FRAGMENT_SHADER_DIRECTIVE);
+
+    if ((vertex_index == -1) || (fragment_index == -1)) {
+        return result;
+    }
+
+    ssize vertex_end = 0;
+    ssize fragment_end = 0;
+
+    if (vertex_index < fragment_index) {
+        vertex_end = fragment_index;
+        fragment_end = source.length;
+    } else {
+        vertex_end = source.length;
+        fragment_end = vertex_index;
+    }
+
+    // Skip the directives since they're invalid GLSL code
+    vertex_index += VERTEX_SHADER_DIRECTIVE.length;
+    fragment_index += FRAGMENT_SHADER_DIRECTIVE.length;
+
+    String vertex_src = str_create_span(source, vertex_index, vertex_end - vertex_index);
+    String fragment_src = str_create_span(source, fragment_index, fragment_end - fragment_index);
+
+    result.vertex_shader = vertex_src;
+    result.fragment_shader = fragment_src;
+    result.ok = true;
+
+    return result;
+}
+
+ShaderHandle *renderer_backend_compile_shader(String shader_source, Allocator allocator)
+{
+    SplitShaderSource split_result = split_shader_source(shader_source);
+
+    if (!split_result.ok) {
+        return 0;
+    }
+
+    GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
+    GLuint frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
+
+    const char *const vertex_src_ptr = split_result.vertex_shader.data;
+    s32 vertex_src_length = safe_cast_ssize_s32(split_result.vertex_shader.length);
+
+    const char *const frag_src_ptr = split_result.fragment_shader.data;
+    s32 frag_src_length = safe_cast_ssize_s32(split_result.fragment_shader.length);
+
+    glShaderSource(vertex_shader_id, 1, &vertex_src_ptr, &vertex_src_length);
+    glCompileShader(vertex_shader_id);
+
+    glShaderSource(frag_shader_id, 1, &frag_src_ptr, &frag_src_length);
+    glCompileShader(frag_shader_id);
+
+    if (!assert_shader_compilation_successful(vertex_shader_id)
+     || !assert_shader_compilation_successful(frag_shader_id)) {
+        // TODO: does anything need to be deleted here?
+        return 0;
+    }
+
+    GLuint program_id = glCreateProgram();
+
+    glAttachShader(program_id, vertex_shader_id);
+    glAttachShader(program_id, frag_shader_id);
+    glLinkProgram(program_id);
+
+    glDetachShader(program_id, vertex_shader_id);
+    glDetachShader(program_id, frag_shader_id);
+
+    ShaderHandle *handle = allocate_item(allocator, ShaderHandle);
+    handle->native_handle = program_id;
+
+    return handle;
+}

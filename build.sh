@@ -1,15 +1,22 @@
 #!/usr/bin/env sh
 
 CC="gcc"
-SOURCES="src/main.c
+SOURCES="
+src/main.c
+
 src/base/linear_arena.c
 src/base/string8.c
+src/base/allocator.c
+src/base/linked_list.c
+
 src/os/linux/file.c
 src/os/linux/path.c
 src/os/linux/thread_context.c
 src/os/linux/window.c
-src/base/allocator.c
-src/base/linked_list.c
+
+src/render/backend/open_gl/renderer_backend.c
+
+
 
 ";
 FLAGS="

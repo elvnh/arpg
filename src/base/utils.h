@@ -60,9 +60,19 @@ static inline bool multiply_overflows_ssize(ssize a, ssize b)
     return false;
 }
 
+// TODO: create macro for these functions
 static inline bool add_overflows_ssize(ssize a, ssize b)
 {
     if (a > (S_SIZE_MAX - b)) {
+        return true;
+    }
+
+    return false;
+}
+
+static inline bool add_overflows_s32(s32 a, s32 b)
+{
+    if (a > (S32_MAX - b)) {
         return true;
     }
 
@@ -89,4 +99,10 @@ static inline usize cast_s64_to_usize(s64 value)
     return (usize)value;
 }
 
+static inline s32 safe_cast_ssize_s32(ssize value)
+{
+    ASSERT((value >= S32_MIN) && (value <= S32_MAX));
+
+    return (s32)value;
+}
 #endif //UTILS_H

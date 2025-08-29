@@ -12,6 +12,10 @@
 #define MB(n) (KB(n) * 1024)
 #define mem_zero(ptr, size) memset((ptr), 0, (size))
 
+#define UNIMPLEMENTED                                                                     \
+    fprintf(stderr, "\n*** UNIMPLEMENTED ***\n%s:\n%s:%d:\n", __func__, FILE_NAME, LINE); \
+    abort()
+
 #if defined(__GNUC__)
     #define ALIGNOF(t)   __alignof__(t)
     #define FILE_NAME    __FILE__

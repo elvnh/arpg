@@ -42,3 +42,9 @@ bool os_window_should_close(WindowHandle *handle)
 {
     return glfwWindowShouldClose(handle->window);
 }
+
+void os_poll_events(WindowHandle *window)
+{
+    glfwSwapBuffers(window->window);
+    glfwPollEvents();
+}

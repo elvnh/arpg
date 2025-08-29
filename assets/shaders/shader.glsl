@@ -4,9 +4,9 @@
 // NOTE: these should be shared between all shaders, put in common file
 layout (location = 0) in vec2 a_world_pos;
 layout (location = 1) in vec2 a_uv;
-layout (location = 2) in vec2 a_color;
+layout (location = 2) in vec4 a_color;
 
-out vec2 frag_color;
+out vec4 frag_color;
 
 void main()
 {

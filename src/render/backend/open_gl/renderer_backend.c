@@ -21,15 +21,11 @@ struct RendererBackend {
     GLuint vbo;
     GLuint ebo;
 
-    struct {
-        Vertex  vertices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
-        s32     vertex_count;
-    } vertex_array;
+    Vertex  vertices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
+    s32     vertex_count;
 
-    struct {
-        GLuint  indices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
-        s32     index_count;
-    } index_array;
+    GLuint  indices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
+    s32     index_count;
 };
 
 struct ShaderHandle {
@@ -55,8 +51,8 @@ static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, 
 RendererBackend *renderer_backend_initialize(Allocator allocator)
 {
     RendererBackend *state = allocate_item(allocator, RendererBackend);
-    ASSERT(state->vertex_array.vertex_count == 0);
-    ASSERT(state->index_array.index_count == 0);
+    ASSERT(state->vertex_count == 0);
+    ASSERT(state->index_count == 0);
 
     glewInit();
 
@@ -72,15 +68,13 @@ RendererBackend *renderer_backend_initialize(Allocator allocator)
 
     glGenBuffers(1, &state->vbo);
     glBindBuffer(GL_ARRAY_BUFFER, state->vbo);
-    glBufferData(GL_ARRAY_BUFFER, ARRAY_COUNT(state->vertex_array.vertices) * sizeof(*state->vertex_array.vertices),
-        0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, ARRAY_COUNT(state->vertices) * sizeof(*state->vertices), 0, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &state->ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ARRAY_COUNT(state->index_array.indices) * sizeof(*state->index_array.indices),
-        0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ARRAY_COUNT(state->indices) * sizeof(*state->indices), 0, GL_DYNAMIC_DRAW);
 
-    s32 stride = (s32)sizeof(*state->vertex_array.vertices);
+    s32 stride = (s32)sizeof(*state->vertices);
 
     glVertexAttribPointer(POSITION_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, position));
     glEnableVertexAttribArray(POSITION_ATTRIBUTE);
@@ -94,16 +88,6 @@ RendererBackend *renderer_backend_initialize(Allocator allocator)
     glBindVertexArray(0);
 
     return state;
-}
-
-void renderer_backend_begin_frame(RendererBackend *state)
-{
-    (void)state;
-}
-
-void renderer_backend_end_frame(RendererBackend *state)
-{
-    (void)state;
 }
 
 typedef struct {
@@ -214,4 +198,55 @@ ShaderHandle *renderer_backend_compile_shader(String shader_source, Allocator al
     handle->native_handle = program_id;
 
     return handle;
+}
+
+void renderer_backend_use_shader(ShaderHandle *handle)
+{
+    glUseProgram(handle->native_handle);
+}
+
+static void flush_if_needed(RendererBackend *backend, s32 vertices_to_draw, ssize indices_to_draw)
+{
+    if (((backend->vertex_count + vertices_to_draw) > MAX_RENDERER_VERTICES)
+     || ((backend->index_count + indices_to_draw) > MAX_RENDERER_VERTICES)) {
+        renderer_backend_end_frame(backend);
+    }
+}
+
+void renderer_backend_begin_frame(RendererBackend *backend)
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    backend->vertex_count = 0;
+    backend->index_count = 0;
+}
+
+void renderer_backend_end_frame(RendererBackend *backend)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, backend->vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, (usize)backend->vertex_count * sizeof(*backend->vertices),
+        backend->vertices);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, backend->ebo);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, (usize)backend->index_count * sizeof(*backend->indices),
+        backend->indices);
+
+    glBindVertexArray(backend->vao);
+    glDrawElements(GL_TRIANGLES, backend->index_count, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
+void renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b, Vertex c)
+{
+    flush_if_needed(backend, 3, 3);
+
+    u32 start_count = (u32)backend->vertex_count;
+
+    backend->vertices[backend->vertex_count++] = a;
+    backend->vertices[backend->vertex_count++] = b;
+    backend->vertices[backend->vertex_count++] = c;
+
+    backend->indices[backend->index_count++] = start_count + 0;
+    backend->indices[backend->index_count++] = start_count + 1;
+    backend->indices[backend->index_count++] = start_count + 2;
 }

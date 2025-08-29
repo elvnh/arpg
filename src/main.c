@@ -1,3 +1,4 @@
+#include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
@@ -40,6 +41,40 @@ int main()
 
     ShaderHandle *shader_handle = renderer_backend_compile_shader(source, default_allocator);
     ASSERT(shader_handle);
+
+    renderer_backend_use_shader(shader_handle);
+
+    while (!os_window_should_close(handle)) {
+        renderer_backend_begin_frame(backend);
+
+        Vertex a = {
+            .position = {-1, -1},
+            .uv = {0},
+            .color = {1, 0, 0, 1}
+        };
+
+        Vertex b = {
+            .position = {0, 1},
+            .uv = {0},
+            .color = {0, 1, 0, 1}
+        };
+
+        Vertex c = {
+            .position = {1, -1},
+            .uv = {0},
+            .color = {0, 0, 1, 1}
+        };
+
+        renderer_backend_draw_triangle(
+            backend,
+            a,
+            b, c
+
+        );
+
+        renderer_backend_end_frame(backend);
+        os_poll_events(handle);
+    }
 
     os_destroy_window(handle);
 

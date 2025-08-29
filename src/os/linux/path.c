@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include "os/path.h"
-#include "base/linear_arena.h"
+#include "os/thread_context.h"
 
 String os_get_executable_directory(Allocator allocator)
 {
@@ -55,22 +55,17 @@ String os_get_absolute_path(String path, Allocator allocator)
         return path;
     }
 
-    // TODO: get thread scratch arena
-    LinearArena scratch_arena = arena_create(allocator, PATH_MAX * 2);
-    Allocator scratch_alloc = arena_create_allocator(&scratch_arena);
+    Allocator scratch = thread_ctx_get_allocator();
 
-    String working_dir = str_concat(os_get_working_directory(scratch_alloc), str_literal("/"), scratch_alloc);
+    String working_dir = str_concat(os_get_working_directory(scratch), str_literal("/"), scratch);
     String result = str_concat(working_dir, path, allocator);
-
-    arena_destroy(&scratch_arena);
 
     return result;
 }
 
 String os_get_canonical_path(String path, Allocator allocator)
 {
-    LinearArena scratch_arena = arena_create(allocator, PATH_MAX * 2);
-    Allocator scratch = arena_create_allocator(&scratch_arena);
+    Allocator scratch = thread_ctx_get_allocator();
 
     String absolute = str_null_terminate(os_get_absolute_path(path, scratch), scratch);
 
@@ -88,8 +83,6 @@ String os_get_canonical_path(String path, Allocator allocator)
 
         canonical.length = path_length;
     }
-
-    arena_destroy(&scratch_arena);
 
     return canonical;
 }

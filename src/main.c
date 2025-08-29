@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <pthread.h>
 
 #include "base/typedefs.h"
 #include "base/string8.h"
@@ -10,6 +11,7 @@
 #include "base/linked_list.h"
 #include "os/file.h"
 #include "os/path.h"
+#include "os/thread_context.h"
 
 static void tests_arena()
 {
@@ -510,8 +512,22 @@ void tests_path()
     arena_destroy(&arena);
 }
 
+void *test(void *arg)
+{
+    thread_ctx_create_for_thread(default_allocator);
+
+    thread_context *ctx = thread_ctx_get();
+    ASSERT(ctx);
+
+    return 0;
+}
+
 int main()
 {
+    bool result = thread_ctx_initialize_system();
+    ASSERT(result);
+    thread_ctx_create_for_thread(default_allocator);
+
     LinearArena arena = arena_create(default_allocator, MB(4));
     Allocator alloc = arena_create_allocator(&arena);
 

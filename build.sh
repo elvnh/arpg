@@ -7,6 +7,7 @@ src/base/string8.c
 src/os/linux/file.c
 src/os/linux/path.c
 src/os/linux/thread_context.c
+src/os/linux/window.c
 src/base/allocator.c
 src/base/linked_list.c
 
@@ -42,6 +43,8 @@ FLAGS="
       -Werror=overflow
       -Isrc
       -pthread
+
+      `pkg-config --libs --cflags --static glfw3 glew`
 "
 
 ${CC} ${SOURCES} ${FLAGS};

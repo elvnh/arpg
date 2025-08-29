@@ -176,3 +176,19 @@ Allocator arena_create_allocator(LinearArena* arena)
 
     return allocator;
 }
+
+ssize arena_get_memory_usage(LinearArena *arena)
+{
+    ssize sum = 0;
+    ArenaBlock *block = arena->first_block;
+
+    while (block != arena->top_block) {
+        sum += block->capacity;
+
+        block = block->next_block;
+    }
+
+    sum += arena->offset_into_top_block;
+
+    return sum;
+}

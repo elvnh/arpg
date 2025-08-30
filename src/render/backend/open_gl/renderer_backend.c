@@ -250,3 +250,22 @@ void renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b
     backend->indices[backend->index_count++] = start_count + 1;
     backend->indices[backend->index_count++] = start_count + 2;
 }
+
+void renderer_backend_draw_quad(RendererBackend *backend, Vertex a, Vertex b, Vertex c, Vertex d)
+{
+    flush_if_needed(backend, 4, 4);
+
+    u32 start_count = (u32)backend->vertex_count;
+
+    backend->vertices[backend->vertex_count++] = a;
+    backend->vertices[backend->vertex_count++] = b;
+    backend->vertices[backend->vertex_count++] = c;
+    backend->vertices[backend->vertex_count++] = d;
+
+    backend->indices[backend->index_count++] = start_count + 0;
+    backend->indices[backend->index_count++] = start_count + 2;
+    backend->indices[backend->index_count++] = start_count + 3;
+    backend->indices[backend->index_count++] = start_count + 0;
+    backend->indices[backend->index_count++] = start_count + 1;
+    backend->indices[backend->index_count++] = start_count + 2;
+}

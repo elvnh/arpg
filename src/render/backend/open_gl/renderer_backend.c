@@ -32,6 +32,10 @@ struct ShaderHandle {
     GLuint native_handle;
 };
 
+struct TextureHandle {
+    GLuint native_handle;
+};
+
 static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
     GLsizei length, const GLchar* message, const void* user_param)
 {
@@ -79,7 +83,7 @@ RendererBackend *renderer_backend_initialize(Allocator allocator)
     glVertexAttribPointer(POSITION_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, position));
     glEnableVertexAttribArray(POSITION_ATTRIBUTE);
 
-    glVertexAttribPointer(UV_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, color));
+    glVertexAttribPointer(UV_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, uv));
     glEnableVertexAttribArray(UV_ATTRIBUTE);
 
     glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, color));
@@ -200,9 +204,55 @@ ShaderHandle *renderer_backend_compile_shader(String shader_source, Allocator al
     return handle;
 }
 
+TextureHandle *renderer_backend_create_texture(Image image, Allocator allocator)
+{
+    GLuint texture_id;
+
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    GLenum channel = (image.channels == 4) ? GL_RGBA : GL_RGB;
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        image.channels,
+        image.width,
+        image.height,
+        0,
+        channel,
+        GL_UNSIGNED_BYTE,
+        image.data
+    );
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    TextureHandle *handle = allocate_item(allocator, TextureHandle);
+    handle->native_handle = texture_id;
+
+    return handle;
+}
+
+void renderer_backend_destroy_texture(TextureHandle *texture)
+{
+    glDeleteTextures(1, &texture->native_handle);
+}
+
 void renderer_backend_use_shader(ShaderHandle *handle)
 {
     glUseProgram(handle->native_handle);
+}
+
+void renderer_backend_bind_texture(TextureHandle *texture)
+{
+    glBindTexture(GL_TEXTURE_2D, texture->native_handle);
 }
 
 void renderer_backend_set_mat4_uniform(ShaderHandle *shader, String uniform_name, Matrix4 matrix)

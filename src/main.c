@@ -14,6 +14,7 @@
 #include "os/file.h"
 #include "os/path.h"
 #include "os/thread_context.h"
+#include "image.h"
 
 #include "render/backend/renderer_backend.h"
 
@@ -29,10 +30,12 @@ int main()
     ASSERT(result);
     thread_ctx_create_for_thread(default_allocator);
 
-    run_tests();
-
     LinearArena arena = arena_create(default_allocator, MB(4));
     Allocator alloc = arena_create_allocator(&arena);
+
+    Image img = img_load_png_from_file(str_literal("assets/sprites/test.png"), alloc);
+
+    run_tests();
 
     struct WindowHandle *handle = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
@@ -48,38 +51,47 @@ int main()
     renderer_backend_use_shader(shader_handle);
 
     Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
-    proj = mat4_translate(proj, (Vector2){0, 0});
-    proj = mat4_scale(proj, 0.25f);
+    proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
+    proj = mat4_scale(proj, 3.0f);
 
     renderer_backend_set_mat4_uniform(shader_handle, str_literal("u_proj"), proj);
 
+    TextureHandle *texture = renderer_backend_create_texture(img, alloc);
+    ASSERT(texture);
 
+    renderer_backend_bind_texture(texture);
 
     while (!os_window_should_close(handle)) {
         renderer_backend_begin_frame(backend);
 
         Vertex a = {
             .position = {0, 0},
-            .uv = {0},
+            .uv = {0, 0},
             .color = {1, 0, 0, 1}
         };
 
         Vertex b = {
-            .position = {WINDOW_WIDTH / 2, WINDOW_HEIGHT},
-            .uv = {0},
+            .position = {64, 0},
+            .uv = {1, 0},
             .color = {0, 1, 0, 1}
         };
 
         Vertex c = {
-            .position = {WINDOW_WIDTH, 0},
-            .uv = {0},
+            .position = {64, -64},
+            .uv = {1, 1},
             .color = {0, 0, 1, 1}
         };
 
-        renderer_backend_draw_triangle(
+        Vertex d = {
+            .position = {0, -64},
+            .uv = {0, 1},
+            .color = {1, 0, 1, 1}
+        };
+
+        renderer_backend_draw_quad(
             backend,
             a,
-            b, c
+            b, c, d
 
         );
 

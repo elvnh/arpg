@@ -6,10 +6,11 @@
 
 typedef struct ArenaBlock {
     struct ArenaBlock *next_block;
+    struct ArenaBlock *prev_block;
     ssize  capacity;
 } ArenaBlock;
 
-static ArenaBlock *allocate_block(Allocator parent, ssize size)
+static ArenaBlock *allocate_block(Allocator parent, ArenaBlock *previous, ssize size)
 {
     if (add_overflows_ssize(size, sizeof(ArenaBlock))) {
         return 0;
@@ -19,6 +20,7 @@ static ArenaBlock *allocate_block(Allocator parent, ssize size)
 
     ArenaBlock *block = allocate_aligned(parent, size_required, ALIGNOF(ArenaBlock));
     block->next_block = 0;
+    block->prev_block = previous;
     block->capacity = size;
 
     mem_zero(block + 1, cast_s64_to_usize(size));
@@ -34,7 +36,7 @@ static void switch_to_block(LinearArena *arena, ArenaBlock *block)
 
 LinearArena arena_create(Allocator parent, ssize capacity)
 {
-    ArenaBlock *block = allocate_block(parent, capacity);
+    ArenaBlock *block = allocate_block(parent, 0, capacity);
     ASSERT(block);
 
     LinearArena result = {
@@ -102,7 +104,7 @@ void *alloc_bytes(LinearArena *arena, ssize byte_count, ssize alignment)
         ssize min_size_required = padding_required + byte_count;
         ssize new_block_size = MAX(min_size_required, arena->top_block->capacity); // TODO: growth strategy?
 
-        ArenaBlock *new_block = allocate_block(arena->parent, new_block_size);
+        ArenaBlock *new_block = allocate_block(arena->parent, arena->top_block, new_block_size);
         arena->top_block->next_block = new_block;
         switch_to_block(arena, new_block);
 
@@ -191,4 +193,26 @@ ssize arena_get_memory_usage(LinearArena *arena)
     sum += arena->offset_into_top_block;
 
     return sum;
+}
+
+void arena_pop_to(LinearArena *arena, void *ptr)
+{
+    ArenaBlock *curr_block = arena->top_block;
+
+    ssize int_ptr = (ssize)ptr;
+
+    while (curr_block) {
+        ssize offset = int_ptr - (ssize)(curr_block + 1);
+
+        if ((offset >= 0) && (offset < curr_block->capacity)) {
+            arena->offset_into_top_block = offset;
+            arena->top_block = curr_block;
+
+            break;
+        }
+
+        curr_block = curr_block->prev_block;
+    }
+
+    ASSERT(curr_block);
 }

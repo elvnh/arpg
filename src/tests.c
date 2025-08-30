@@ -1,3 +1,4 @@
+#include "base/linear_arena.h"
 static void tests_arena()
 {
     {
@@ -156,6 +157,34 @@ static void tests_arena()
 
         byte *next = arena_allocate_item(&arena, byte);
         ASSERT(next == first + 1);
+
+        arena_destroy(&arena);
+    }
+
+    {
+        LinearArena arena = arena_create(default_allocator, 1024);
+        byte *first = arena_allocate_array(&arena, byte, 256);
+
+        arena_pop_to(&arena, first);
+        byte *next = arena_allocate_array(&arena, byte, 256);
+        ASSERT(next == first);
+
+        arena_destroy(&arena);
+    }
+
+    {
+        LinearArena arena = arena_create(default_allocator, 1024);
+        byte *first = arena_allocate_array(&arena, byte, 256);
+        byte *second = arena_allocate_array(&arena, byte, 1000);
+
+        arena_pop_to(&arena, second);
+
+        byte *third = arena_allocate_array(&arena, byte, 10);
+        ASSERT(third == second);
+
+        arena_pop_to(&arena, first);
+        byte *fourth = arena_allocate_array(&arena, byte, 10);
+        ASSERT(fourth == first);
 
         arena_destroy(&arena);
     }

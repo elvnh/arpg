@@ -21,5 +21,6 @@ void         arena_reset(LinearArena *arena);
 bool         arena_try_resize(void *context, void *ptr, ssize old_size, ssize new_size);
 Allocator    arena_create_allocator(LinearArena *arena);
 ssize        arena_get_memory_usage(LinearArena *arena);
+void         arena_pop_to(LinearArena *arena, void *ptr);
 
 #endif //LINEAR_ARENA_H

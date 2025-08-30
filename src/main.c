@@ -49,6 +49,8 @@ int main()
 
     Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
     proj = mat4_translate(proj, (Vector2){0, 0});
+    proj = mat4_scale(proj, 0.25f);
+
     renderer_backend_set_mat4_uniform(shader_handle, str_literal("u_proj"), proj);
 
 

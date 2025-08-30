@@ -38,15 +38,21 @@ inline static Matrix4 mat4_orthographic(f32 left, f32 right, f32 bottom, f32 top
 
 inline static Matrix4 mat4_translate(Matrix4 m, Vector2 v)
 {
-    m.data[3][0] += m.data[0][0] * v.x;
-    m.data[3][1] += m.data[0][1] * v.x;
-    m.data[3][2] += m.data[0][2] * v.x;
-    m.data[3][3] += m.data[0][3] * v.x;
+    m.data[3][0] += (m.data[0][0] * v.x) + (m.data[1][0] * v.y);
+    m.data[3][1] += (m.data[0][1] * v.x) + (m.data[1][1] * v.y);
+    m.data[3][2] += (m.data[0][2] * v.x) + (m.data[1][2] * v.y);
+    m.data[3][3] += (m.data[0][3] * v.x) + (m.data[1][3] * v.y);
 
-    m.data[3][0] += m.data[1][0] * v.y;
-    m.data[3][1] += m.data[1][1] * v.y;
-    m.data[3][2] += m.data[1][2] * v.y;
-    m.data[3][3] += m.data[1][3] * v.y;
+    return m;
+}
+
+inline static Matrix4 mat4_scale(Matrix4 m, f32 scalar)
+{
+    for (s32 col = 0; col < 4; ++col) {
+        for (s32 row = 0; row < 4; ++row) {
+            m.data[col][row] *= scalar;
+        }
+    }
 
     return m;
 }

@@ -205,6 +205,15 @@ void renderer_backend_use_shader(ShaderHandle *handle)
     glUseProgram(handle->native_handle);
 }
 
+void renderer_backend_set_mat4_uniform(ShaderHandle *shader, String uniform_name, Matrix4 matrix)
+{
+    String terminated = str_null_terminate(uniform_name, thread_ctx_get_allocator());
+    GLint location = glGetUniformLocation(shader->native_handle, terminated.data);
+    ASSERT(location != -1);
+
+    glUniformMatrix4fv(location, 1, GL_FALSE, mat4_ptr(&matrix));
+}
+
 static void flush_if_needed(RendererBackend *backend, s32 vertices_to_draw, ssize indices_to_draw)
 {
     if (((backend->vertex_count + vertices_to_draw) > MAX_RENDERER_VERTICES)

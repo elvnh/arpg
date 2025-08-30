@@ -4,7 +4,7 @@
 #include "base/allocator.h"
 
 enum {
-    WINDOW_FLAG_NON_RESIZABLE,
+    WINDOW_FLAG_NON_RESIZABLE = (1 << 0),
     //WINDOW_FLAG_FULL_SCREEN,
 };
 

@@ -10,6 +10,7 @@
 #include "base/allocator.h"
 #include "base/utils.h"
 #include "base/linked_list.h"
+#include "base/matrix.h"
 #include "os/file.h"
 #include "os/path.h"
 #include "os/thread_context.h"
@@ -18,6 +19,9 @@
 
 #include "os/window.h"
 #include "tests.c"
+
+#define WINDOW_WIDTH 768
+#define WINDOW_HEIGHT 468
 
 int main()
 {
@@ -30,8 +34,7 @@ int main()
     LinearArena arena = arena_create(default_allocator, MB(4));
     Allocator alloc = arena_create_allocator(&arena);
 
-    struct WindowHandle *handle = os_create_window(256, 256, "foo", 0, alloc);
-
+    struct WindowHandle *handle = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
 
     ReadFileResult read_result = os_read_entire_file(str_literal("assets/shaders/shader.glsl"), default_allocator);
@@ -44,23 +47,26 @@ int main()
 
     renderer_backend_use_shader(shader_handle);
 
+    Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
+    renderer_backend_set_mat4_uniform(shader_handle, str_literal("u_proj"), proj);
+
     while (!os_window_should_close(handle)) {
         renderer_backend_begin_frame(backend);
 
         Vertex a = {
-            .position = {-1, -1},
+            .position = {0, 0},
             .uv = {0},
             .color = {1, 0, 0, 1}
         };
 
         Vertex b = {
-            .position = {0, 1},
+            .position = {50, 100},
             .uv = {0},
             .color = {0, 1, 0, 1}
         };
 
         Vertex c = {
-            .position = {1, -1},
+            .position = {100, 0},
             .uv = {0},
             .color = {0, 0, 1, 1}
         };

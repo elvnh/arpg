@@ -17,6 +17,7 @@ typedef struct {
 LinearArena  arena_create(Allocator parent, ssize capacity);
 void         arena_destroy(LinearArena *arena);
 void        *arena_allocate(void *context, ssize item_count, ssize item_size, ssize alignment);
+
 void         arena_reset(LinearArena *arena);
 bool         arena_try_resize(void *context, void *ptr, ssize old_size, ssize new_size);
 Allocator    arena_create_allocator(LinearArena *arena);

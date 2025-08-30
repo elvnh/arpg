@@ -16,7 +16,9 @@ src/os/linux/window.c
 
 src/render/backend/open_gl/renderer_backend.c
 
+src/image.c
 
+deps/stb_image.c
 
 ";
 FLAGS="
@@ -49,6 +51,7 @@ FLAGS="
       -Werror=implicit-function-declaration
       -Werror=overflow
       -Isrc
+      -Ideps
       -pthread
 
       `pkg-config --libs --cflags --static glfw3 glew`

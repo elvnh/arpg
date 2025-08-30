@@ -2,6 +2,7 @@
 #define MATRIX_H
 
 #include "base/typedefs.h"
+#include "base/vector2.h"
 
 typedef struct {
     f32 data[4][4];
@@ -31,6 +32,21 @@ inline static Matrix4 mat4_orthographic(f32 left, f32 right, f32 bottom, f32 top
     m.data[3][0] = -((right + left) / (right - left));
     m.data[3][1] = -((top + bottom) / (top - bottom));
     m.data[3][2] = -((z_far + z_near) / (z_far - z_near));
+
+    return m;
+}
+
+inline static Matrix4 mat4_translate(Matrix4 m, Vector2 v)
+{
+    m.data[3][0] += m.data[0][0] * v.x;
+    m.data[3][1] += m.data[0][1] * v.x;
+    m.data[3][2] += m.data[0][2] * v.x;
+    m.data[3][3] += m.data[0][3] * v.x;
+
+    m.data[3][0] += m.data[1][0] * v.y;
+    m.data[3][1] += m.data[1][1] * v.y;
+    m.data[3][2] += m.data[1][2] * v.y;
+    m.data[3][3] += m.data[1][3] * v.y;
 
     return m;
 }

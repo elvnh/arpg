@@ -48,7 +48,10 @@ int main()
     renderer_backend_use_shader(shader_handle);
 
     Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
+    proj = mat4_translate(proj, (Vector2){0, 0});
     renderer_backend_set_mat4_uniform(shader_handle, str_literal("u_proj"), proj);
+
+
 
     while (!os_window_should_close(handle)) {
         renderer_backend_begin_frame(backend);
@@ -60,13 +63,13 @@ int main()
         };
 
         Vertex b = {
-            .position = {50, 100},
+            .position = {WINDOW_WIDTH / 2, WINDOW_HEIGHT},
             .uv = {0},
             .color = {0, 1, 0, 1}
         };
 
         Vertex c = {
-            .position = {100, 0},
+            .position = {WINDOW_WIDTH, 0},
             .uv = {0},
             .color = {0, 0, 1, 1}
         };

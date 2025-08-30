@@ -48,6 +48,11 @@ LinearArena *thread_ctx_get_arena()
     return &ctx->scratch_arena;
 }
 
+LinearArena thread_ctx_get_temp_arena()
+{
+    return *thread_ctx_get_arena();
+}
+
 Allocator thread_ctx_get_allocator()
 {
     LinearArena *arena = thread_ctx_get_arena();

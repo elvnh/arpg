@@ -13,6 +13,6 @@ bool             thread_ctx_initialize_system();
 bool             thread_ctx_create_for_thread(Allocator allocator);
 thread_context  *thread_ctx_get();
 LinearArena     *thread_ctx_get_arena();
+LinearArena      thread_ctx_get_temp_arena();
 Allocator        thread_ctx_get_allocator();
-
 #endif //THREAD_CONTEXT_H

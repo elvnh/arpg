@@ -1,6 +1,7 @@
 #include "shader.h"
 
 #include "base/allocator.h"
+#include "base/list.h"
 #include "base/string8.h"
 
 #include "os/file.h"
@@ -69,25 +70,26 @@ static void mark_file_as_visited(StringList *list, String str, Allocator allocat
 static ShaderIncludeList get_shader_dependencies_recursive(String path, StringList *handled_files, Allocator allocator)
 {
     Allocator scratch = thread_ctx_get_allocator();
+
     mark_file_as_visited(handled_files, path, scratch);
 
     ShaderIncludeList includes = get_include_directives_in_file(path, allocator);
+    ShaderIncludeList result = {0};
 
     for (ShaderIncludeDirective *dir = list_head(&includes); dir; dir = list_next(dir)) {
         if (!file_was_visited(handled_files, dir->absolute_include_path)) {
+            mark_file_as_visited(handled_files, dir->absolute_include_path, scratch);
+
+            list_push_back(&result, dir);
+
             ShaderIncludeList transitive_includes = get_shader_dependencies_recursive(dir->absolute_include_path,
                 handled_files, allocator);
 
-            if (transitive_includes.head) {
-                // Insert the entire list after this node
-                transitive_includes.head->prev = dir;
-                dir->next = transitive_includes.head;
-                includes.tail = transitive_includes.tail;
-            }
+            list_concat(&result, &transitive_includes);
         }
     }
 
-    return includes;
+    return result;
 }
 
 ShaderIncludeList shader_get_dependencies(String path, Allocator allocator)
@@ -95,8 +97,9 @@ ShaderIncludeList shader_get_dependencies(String path, Allocator allocator)
     // Helper functions change working directory, so we'll restore it afterwards
     String cwd = os_get_working_directory(thread_ctx_get_allocator());
 
+    String canonical_path = os_get_canonical_path(path, thread_ctx_get_allocator());
     StringList handled_files = {0};
-    ShaderIncludeList result = get_shader_dependencies_recursive(path, &handled_files, allocator);
+    ShaderIncludeList result = get_shader_dependencies_recursive(canonical_path, &handled_files, allocator);
 
     os_change_working_directory(cwd);
 

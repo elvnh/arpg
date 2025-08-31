@@ -1,6 +1,27 @@
 #ifndef LIST_H
 #define LIST_H
 
+#define list_concat(list_a, list_b)                     \
+    do {                                                \
+        ASSERT(!list_is_empty((list_a)));               \
+        if (!list_is_empty((list_b))) {                 \
+            (list_a)->tail->next = (list_b)->head;      \
+            (list_b)->head->prev = (list_a)->tail;      \
+            (list_a)->tail = (list_b)->tail;            \
+        }                                               \
+    } while (0)
+
+#define list_insert_after(list, node, after)                    \
+    do {                                                        \
+        if (list_is_empty((list)) || (after) == (list)->tail) { \
+            list_push_back((list), (node));                     \
+        } else {                                                \
+            if ((node)->prev) (node)->prev = (after);           \
+            if ((node)->next) (node)->next = (after)->next;     \
+            (after)->next = (node);                             \
+        }                                                       \
+    } while (0)
+
 #define list_push_back(list, node)              \
     do {                                        \
         if (!list_is_empty(list)) {             \
@@ -25,7 +46,6 @@
         (list)->head = (node);                  \
     } while (0)
 
-
 #define list_remove(list, node)                                         \
     do {                                                                \
         if ((node)->prev) (node)->prev->next = (node)->next;            \
@@ -40,21 +60,6 @@
             }                                                           \
         }                                                               \
     } while (0)
-
-#define list_splice_after(list_a, list_b, after)                        \
-    do {                                                                \
-        ASSERT((list_a)->head);                                         \
-        ASSERT((list_a)->tail);                                         \
-        ASSERT((list_b)->head);                                         \
-        ASSERT((list_b)->tail);                                         \
-        if ((after)->next) (after)->next->prev = (list_b)->tail;        \
-        (list_b)->tail->next = (after)->next;                           \
-        (after)->next = (list_b)->head;                                 \
-        (list_b)->head->prev = after;                                   \
-        if ((after) == (list_a)->tail) (list_a)->tail = (list_b)->tail; \
-    } while (0)
-
-#define list_append_other(list_a, list_b) list_splice_after((list_a), (list_b), (list_a)->tail)
 
 #define list_pop_head(list) list_remove((list), (list)->head)
 #define list_pop_tail(list) list_remove((list), (list)->tail)

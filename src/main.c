@@ -45,7 +45,7 @@ int main()
 
     String source = { .data = (char *)read_result.file_data, .length = read_result.file_size };
 
-    ShaderHandle *shader_handle = renderer_backend_compile_shader(source, default_allocator);
+    ShaderHandle *shader_handle = renderer_backend_create_shader(source, default_allocator);
     ASSERT(shader_handle);
 
     renderer_backend_use_shader(shader_handle);

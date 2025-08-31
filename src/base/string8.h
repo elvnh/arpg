@@ -5,7 +5,7 @@
 
 #define str_literal(str) (String){ .data = (str), .length = ARRAY_COUNT((str)) - 1 }
 #define null_string      (String){ .data = 0, .length = 0 }
-
+#define empty_string     str_literal("")
 typedef struct String {
     char  *data;
     ssize  length;
@@ -22,5 +22,7 @@ ssize   str_find_last_occurence(String str, String pattern);
 String  str_allocate(ssize length, Allocator allocator);
 ssize   str_get_null_terminated_length(String str);
 String  str_create_span(String str, ssize start_index, ssize length);
+ssize   str_get_common_prefix_length(String a, String b);
+
 
 #endif //STRING8_H

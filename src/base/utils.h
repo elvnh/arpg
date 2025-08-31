@@ -8,6 +8,7 @@
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
 #define ASSERT(expr) do { if (!(expr)) { assert_impl(#expr, __func__, FILE_NAME, LINE); } } while (0)
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define KB(n) (n * 1024)
 #define MB(n) (KB(n) * 1024)
 #define mem_zero(ptr, size) memset((ptr), 0, (size))

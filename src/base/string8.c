@@ -150,7 +150,6 @@ String str_create_span(String str, ssize start_index, ssize length)
     ASSERT(str.data);
     ASSERT(str.length);
     ASSERT(start_index + length <= str.length);
-    ASSERT(length > 0);
 
     String result = {
         .data = str.data + start_index,
@@ -158,4 +157,18 @@ String str_create_span(String str, ssize start_index, ssize length)
     };
 
     return result;
+}
+
+ssize str_get_common_prefix_length(String a, String b)
+{
+    ssize min_length = MIN(a.length, b.length);
+
+    ssize i;
+    for (i = 0; i < min_length; ++i) {
+        if (a.data[i] != b.data[i]) {
+            break;
+        }
+    }
+
+    return i;
 }

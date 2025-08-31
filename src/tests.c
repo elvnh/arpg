@@ -1,4 +1,3 @@
-#include "base/linear_arena.h"
 static void tests_arena()
 {
     {
@@ -344,6 +343,19 @@ static void tests_string()
         ASSERT(!str_ends_with(str, str_literal("aabcdef")));
     }
 
+    {
+        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("a")) == 1);
+        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("ab")) == 2);
+        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("abc")) == 3);
+        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("abd")) == 2);
+        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("abcdef")) == 6);
+
+        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("b")) == 0);
+
+    }
+
+
+
     arena_destroy(&arena);
 }
 
@@ -540,6 +552,8 @@ void tests_path()
         ASSERT(str_equal(os_get_parent_path(str_literal("/home/foo/"), alloc), str_literal("/home/foo")));
         ASSERT(str_equal(os_get_parent_path(str_literal("/"), alloc), str_literal("/")));
     }
+
+
 
     arena_destroy(&arena);
 }

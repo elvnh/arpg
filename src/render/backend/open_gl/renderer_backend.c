@@ -160,7 +160,7 @@ static SplitShaderSource split_shader_source(String source)
     return result;
 }
 
-ShaderHandle *renderer_backend_compile_shader(String shader_source, Allocator allocator)
+ShaderHandle *renderer_backend_create_shader(String shader_source, Allocator allocator)
 {
     SplitShaderSource split_result = split_shader_source(shader_source);
 
@@ -202,6 +202,11 @@ ShaderHandle *renderer_backend_compile_shader(String shader_source, Allocator al
     handle->native_handle = program_id;
 
     return handle;
+}
+
+void renderer_backend_destroy_shader(ShaderHandle *shader)
+{
+    glDeleteProgram(shader->native_handle);
 }
 
 TextureHandle *renderer_backend_create_texture(Image image, Allocator allocator)

@@ -17,6 +17,7 @@ src/os/linux/window.c
 src/render/backend/open_gl/renderer_backend.c
 
 src/image.c
+src/shader.c
 
 deps/stb_image.c
 

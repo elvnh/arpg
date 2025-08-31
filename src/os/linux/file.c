@@ -58,6 +58,14 @@ ReadFileResult os_read_entire_file(String path, Allocator allocator)
     return result;
 }
 
+String os_read_entire_file_as_string(String path, Allocator allocator)
+{
+    ReadFileResult file = os_read_entire_file(path, allocator);
+    String result = { (char *)file.file_data, file.file_size };
+
+    return result;
+}
+
 ssize os_get_file_size(String path, LinearArena scratch)
 {
     String null_terminated = str_null_terminate(path, arena_create_allocator(&scratch));

@@ -10,6 +10,7 @@ bool    os_path_is_absolute(String path);
 String  os_get_absolute_path(String path, Allocator allocator);
 String  os_get_canonical_path(String path, Allocator allocator);
 String  os_get_working_directory(Allocator allocator);
+void    os_change_working_directory(String path);
 String  os_get_parent_path(String path, Allocator allocator);
 
 #endif //PATH_H

@@ -115,6 +115,18 @@ ssize str_find_first_occurence(String str, String pattern)
     return -1;
 }
 
+ssize str_find_first_occurence_from_index(String str, String pattern, ssize index)
+{
+    String substr = str_create_span(str, index, str.length - index);
+    ssize result = str_find_first_occurence(substr, pattern);
+
+    if (result == -1) {
+        return -1;
+    }
+
+    return result + index;
+}
+
 ssize str_find_last_occurence(String str, String pattern)
 {
     for (s64 i = str.length - pattern.length; i >= 0; --i) {

@@ -6,10 +6,23 @@
 #define str_literal(str) (String){ .data = (str), .length = ARRAY_COUNT((str)) - 1 }
 #define null_string      (String){ .data = 0, .length = 0 }
 #define empty_string     str_literal("")
+
 typedef struct String {
     char  *data;
     ssize  length;
 } String;
+
+typedef struct StringNode {
+    struct StringNode *next;
+    struct StringNode *prev;
+
+    String      data;
+} StringNode;
+
+typedef struct {
+    StringNode *head;
+    StringNode *tail;
+} StringList;
 
 String  str_concat(String a, String b, Allocator alloc);
 bool    str_equal(String a, String b);
@@ -18,6 +31,7 @@ String  str_copy(String str, Allocator alloc);
 bool    str_starts_with(String str, String substr);
 bool    str_ends_with(String str, String substr);
 ssize   str_find_first_occurence(String str, String pattern);
+ssize   str_find_first_occurence_from_index(String str, String pattern, ssize index);
 ssize   str_find_last_occurence(String str, String pattern);
 String  str_allocate(ssize length, Allocator allocator);
 ssize   str_get_null_terminated_length(String str);

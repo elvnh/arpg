@@ -106,6 +106,13 @@ String os_get_working_directory(Allocator allocator)
     return result;
 }
 
+void os_change_working_directory(String path)
+{
+    String terminated = str_null_terminate(path, thread_ctx_get_allocator());
+    s32 result = chdir(terminated.data);
+    ASSERT(result == 0);
+}
+
 String os_get_parent_path(String path, Allocator allocator)
 {
     String absolute = os_get_absolute_path(path, allocator);

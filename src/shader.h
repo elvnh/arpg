@@ -8,7 +8,7 @@ typedef struct ShaderIncludeDirective {
     struct ShaderIncludeDirective *next;
     struct ShaderIncludeDirective *prev;
 
-    String relative_include_path;
+    String absolute_include_path;
     ssize  directive_source_index;
 } ShaderIncludeDirective;
 

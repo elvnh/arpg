@@ -41,17 +41,20 @@
         }                                                               \
     } while (0)
 
-#define list_splice_after(list_a, list_b, after)        \
-    do {                                                \
-        if ((after)->next) {                            \
-            (after)->next->previous = (list_b)->tail;   \
-        }                                               \
-        (list_b)->tail->next = (after)->next;           \
-        (after)->next = (list_b)->head;                 \
-        (list_b)->head->prev = after;                   \
+#define list_splice_after(list_a, list_b, after)                        \
+    do {                                                                \
+        ASSERT((list_a)->head);                                         \
+        ASSERT((list_a)->tail);                                         \
+        ASSERT((list_b)->head);                                         \
+        ASSERT((list_b)->tail);                                         \
+        if ((after)->next) (after)->next->prev = (list_b)->tail;        \
+        (list_b)->tail->next = (after)->next;                           \
+        (after)->next = (list_b)->head;                                 \
+        (list_b)->head->prev = after;                                   \
+        if ((after) == (list_a)->tail) (list_a)->tail = (list_b)->tail; \
     } while (0)
 
-#define list_append_other(list_a, list_b)
+#define list_append_other(list_a, list_b) list_splice_after((list_a), (list_b), (list_a)->tail)
 
 #define list_pop_head(list) list_remove((list), (list)->head)
 #define list_pop_tail(list) list_remove((list), (list)->tail)

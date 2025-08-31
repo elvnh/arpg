@@ -564,6 +564,81 @@ static void tests_list()
         ASSERT(list_is_empty(&list));
     }
 
+    {
+        List_s32 list_a = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_a, node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_a, node2);
+
+        List_s32 list_b = {0};
+        s32_node *node_b1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_b, node_b1);
+
+        s32_node *node_b2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_b, node_b2);
+
+        list_splice_after(&list_a, &list_b, node1);
+
+        ASSERT(list_head(&list_a) == node1);
+        list_pop_head(&list_a);
+        ASSERT(list_head(&list_a) == node_b1);
+        list_pop_head(&list_a);
+        ASSERT(list_head(&list_a) == node_b2);
+        list_pop_head(&list_a);
+        ASSERT(list_head(&list_a) == node2);
+    }
+
+    {
+        List_s32 list_a = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_a, node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_a, node2);
+
+        List_s32 list_b = {0};
+        s32_node *node_b1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_b, node_b1);
+
+        s32_node *node_b2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_b, node_b2);
+        list_splice_after(&list_a, &list_b, node2);
+
+        ASSERT(list_head(&list_a) == node1);
+        list_pop_head(&list_a);
+        ASSERT(list_head(&list_a) == node2);
+        list_pop_head(&list_a);
+        ASSERT(list_head(&list_a) == node_b1);
+    }
+
+    {
+        List_s32 list_a = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_a, node1);
+
+        List_s32 list_b = {0};
+        s32_node *node_b1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_b, node_b1);
+
+        s32_node *node_b2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list_b, node_b2);
+
+        list_splice_after(&list_a, &list_b, node1);
+
+        ASSERT(list_head(&list_a) == node1);
+
+        list_pop_head(&list_a);
+        ASSERT(list_head(&list_a) == node_b1);
+
+        list_pop_head(&list_a);
+        ASSERT(list_head(&list_a) == node_b2);
+
+        list_pop_head(&list_a);
+        ASSERT(list_is_empty(&list_a));
+    }
+
     arena_destroy(&arena);
 }
 

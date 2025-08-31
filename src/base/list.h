@@ -26,21 +26,35 @@
     } while (0)
 
 
-#define list_remove(list, node)                 \
-    do {                                        \
-        if ((node)->prev) {                     \
-            (node)->prev->next = (node)->next;  \
-        } else {                                \
-            ASSERT((node) == (list)->head);     \
-            (list)->head = (node)->next;        \
-        }                                       \
-        if ((node)->next) {                     \
-            (node)->next->prev = (node)->prev;  \
-        } else {                                \
-            ASSERT((node) == (list)->tail);     \
-            (list)->tail = (node)->prev;        \
-        }                                       \
+#define list_remove(list, node)                                         \
+    do {                                                                \
+        if ((node)->prev) (node)->prev->next = (node)->next;            \
+        if ((node)->next) (node)->next->prev = (node)->prev;            \
+        if (((node) == (list)->head) && ((node) == (list)->tail)) {     \
+            (list)->head = (list)->tail = 0;                            \
+        } else {                                                        \
+            if ((node) == (list)->head) {                               \
+                (list)->head = (node)->next;                            \
+            } else if ((node) == (list)->tail) {                        \
+                (list)->tail = (node)->prev;                            \
+            }                                                           \
+        }                                                               \
     } while (0)
+
+#define list_splice_after(list_a, list_b, after)        \
+    do {                                                \
+        if ((after)->next) {                            \
+            (after)->next->previous = (list_b)->tail;   \
+        }                                               \
+        (list_b)->tail->next = (after)->next;           \
+        (after)->next = (list_b)->head;                 \
+        (list_b)->head->prev = after;                   \
+    } while (0)
+
+#define list_append_other(list_a, list_b)
+
+#define list_pop_head(list) list_remove((list), (list)->head)
+#define list_pop_tail(list) list_remove((list), (list)->tail)
 
 #define list_head(list) ((list)->head)
 #define list_tail(list) ((list)->tail)
@@ -49,6 +63,7 @@
 #define list_is_empty(list) (!((list)->head))
 
 #define LIST_LINKS(type) struct type *next; struct type *prev
+#define LIST_HEAD_TAIL(type) struct type *head; struct type *tail
 #define DEFINE_LIST(type, name) typedef struct name { type *head; type *tail; } name
 
 #endif //LIST_H

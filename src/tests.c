@@ -555,95 +555,16 @@ static void tests_list()
 
         ASSERT(node3->prev == node1);
         ASSERT(node3->next == 0);
+
+        list_pop_head(&list);
+        ASSERT(list_head(&list) == node3);
+
+        //list_pop_tail(&list);
+        list_pop_head(&list);
+        ASSERT(list_is_empty(&list));
     }
 
     arena_destroy(&arena);
-
-#if 0
-    typedef struct {
-        ListNode node;
-        s32 data;
-    } Elem;
-
-    {
-        Elem elem = {
-            .node = {0},
-            .data = 123
-        };
-
-        Elem *elem_ptr = list_get_item(&elem.node, Elem, node);
-        ASSERT(elem_ptr->data == 123);
-    }
-
-    {
-        List list;
-        list_init(&list);
-
-        ASSERT(list_is_empty(&list));
-
-        Elem elem;
-        elem.data = 123;
-
-        list_push_back(&list, &elem.node);
-        ASSERT(!list_is_empty(&list));
-
-        ListNode *node = list_front(&list);
-        ASSERT(list_back(&list) == node);
-
-        list_pop_back(&list);
-        ASSERT(list_is_empty(&list));
-    }
-
-    {
-        List list;
-        list_init(&list);
-
-        Elem elem;
-        elem.data = 123;
-
-        list_push_front(&list, &elem.node);
-        ListNode *back = list_back(&list);
-        ASSERT(list_get_item(back, Elem, node)->data == 123);
-    }
-
-    {
-        List list;
-        list_init(&list);
-
-        Elem first;
-        first.data = 0;
-
-        Elem second;
-        second.data = 1;
-
-        Elem third;
-        third.data = 2;
-
-        list_push_back(&list, &first.node);
-        list_push_back(&list, &second.node);
-        list_push_back(&list, &third.node);
-
-        ASSERT(list_get_item(list_front(&list), Elem, node)->data == 0);
-        ASSERT(list_get_item(list_back(&list), Elem, node)->data == 2);
-
-        ListNode *curr = list_begin(&list);
-        for (s32 i = 0;; ++i) {
-            Elem *item = list_get_item(curr, Elem, node);
-            ASSERT(item->data == i);
-
-            curr = list_next(curr);
-
-            if (curr == list_end(&list)) {
-                break;
-            }
-        }
-
-        list_remove(&second.node);
-
-        ASSERT(list_get_item(list_front(&list), Elem, node)->data == 0);
-        ASSERT(list_get_item(list_back(&list), Elem, node)->data == 2);
-    }
-#endif
 }
 
 void tests_path()

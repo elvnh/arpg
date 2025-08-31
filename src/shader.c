@@ -8,7 +8,23 @@
 
 #define INCLUDE_DIRECTIVE_STRING str_literal("#include ")
 
-static ShaderIncludeList shader_get_include_directives_in_file(String path, Allocator allocator)
+// TODO: move list macros/functions to separate file
+#define LIST_PUSH_BACK(l, n)                    \
+    do {                                        \
+        if ((l)->head) {                        \
+            ASSERT((l)->tail);                  \
+            (n)->prev = (l)->tail;              \
+            (l)->tail->next = (n);              \
+        } else {                                \
+            ASSERT(!(l)->tail);                 \
+            (l)->head = (n);                    \
+        }                                       \
+                                                \
+        (n)->next = 0;                          \
+        (l)->tail = (n);                        \
+    } while (0)
+
+static ShaderIncludeList get_include_directives_in_file(String path, Allocator allocator)
 {
     Allocator scratch = thread_ctx_get_allocator();
 
@@ -36,16 +52,7 @@ static ShaderIncludeList shader_get_include_directives_in_file(String path, Allo
             node->absolute_include_path = canonical_include_path;
             node->directive_source_index = next_include_index;
 
-            if (!list.tail) {
-                ASSERT(!list.head);
-
-                list.head = node;
-                list.tail = node;
-            } else {
-                node->prev = list.tail;
-                list.tail->next = node;
-                list.tail = node;
-            }
+            LIST_PUSH_BACK(&list, node);
 
             i = path_end_index + 1;
         } else {
@@ -67,54 +74,19 @@ static bool list_contains(StringList *list, String str)
     return false;
 }
 
-
 static void list_push(StringList *list, String str, Allocator allocator)
 {
     StringNode *node = allocate_item(allocator, StringNode);
     node->data = str;
-
-    if (list->head) {
-        ASSERT(list->tail);
-
-        node->prev = list->tail;
-        list->tail->next = node;
-    } else {
-        list->head = node;
-    }
-
-    list->tail = node;
+    LIST_PUSH_BACK(list, node);
 }
-
-
-
-static void filter_out_handled_files(ShaderIncludeList *list, StringList *handled_files)
-{
-   for (ShaderIncludeDirective *dir = list->head; dir; dir = dir->next) {
-        if (list_contains(handled_files, dir->absolute_include_path)) {
-            if (dir->prev) {
-                dir->prev->next = dir->next;
-            } else {
-                list->head = dir->next;
-            }
-
-            if (dir->next) {
-                dir->next->prev = dir->prev;
-            } else {
-                list->tail = dir->prev;
-            }
-        }
-    }
-}
-
-// TODO: linked list macros/functions
 
 static ShaderIncludeList get_shader_dependencies_recursive(String path, StringList *handled_files, Allocator allocator)
 {
     Allocator scratch = thread_ctx_get_allocator();
     list_push(handled_files, path, scratch);
 
-    ShaderIncludeList includes = shader_get_include_directives_in_file(path, allocator);
-    filter_out_handled_files(&includes, handled_files);
+    ShaderIncludeList includes = get_include_directives_in_file(path, allocator);
 
     for (ShaderIncludeDirective *dir = includes.head; dir; dir = dir->next) {
         if (!list_contains(handled_files, dir->absolute_include_path)) {

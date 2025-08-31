@@ -3,19 +3,16 @@
 
 #include "base/allocator.h"
 #include "base/string8.h"
+#include "base/list.h"
 
 typedef struct ShaderIncludeDirective {
-    struct ShaderIncludeDirective *next;
-    struct ShaderIncludeDirective *prev;
+    LIST_LINKS(ShaderIncludeDirective);
 
     String absolute_include_path;
     ssize  directive_source_index;
 } ShaderIncludeDirective;
 
-typedef struct {
-    ShaderIncludeDirective *head;
-    ShaderIncludeDirective *tail;
-} ShaderIncludeList;
+DEFINE_LIST(ShaderIncludeDirective, ShaderIncludeList);
 
 ShaderIncludeList shader_get_dependencies(String path, Allocator allocator);
 

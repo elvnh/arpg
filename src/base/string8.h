@@ -2,6 +2,7 @@
 #define STRING8_H
 
 #include "allocator.h"
+#include "base/list.h"
 
 #define str_literal(str) (String){ .data = (str), .length = ARRAY_COUNT((str)) - 1 }
 #define null_string      (String){ .data = 0, .length = 0 }
@@ -13,16 +14,12 @@ typedef struct String {
 } String;
 
 typedef struct StringNode {
-    struct StringNode *next;
-    struct StringNode *prev;
+    LIST_LINKS(StringNode);
 
-    String      data;
+    String data;
 } StringNode;
 
-typedef struct {
-    StringNode *head;
-    StringNode *tail;
-} StringList;
+DEFINE_LIST(StringNode, StringList);
 
 String  str_concat(String a, String b, Allocator alloc);
 bool    str_equal(String a, String b);

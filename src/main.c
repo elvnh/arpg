@@ -9,7 +9,6 @@
 #include "base/linear_arena.h"
 #include "base/allocator.h"
 #include "base/utils.h"
-#include "base/linked_list.h"
 #include "base/matrix.h"
 #include "os/file.h"
 #include "os/path.h"
@@ -34,19 +33,29 @@ int main()
     LinearArena arena = arena_create(default_allocator, MB(4));
     Allocator alloc = arena_create_allocator(&arena);
 
+    run_tests();
+
+    return 0;
+
     /* ReadFileResult file = os_read_entire_file(str_literal("test.glsl"), alloc); */
     /* String src = { (char *)file.file_data, file.file_size }; */
     ShaderIncludeList list = shader_get_dependencies(str_literal("test.glsl"), alloc);
 
     for (ShaderIncludeDirective *dir = list.head; dir; dir = dir->next) {
-        printf("%.*s\n", (s32)dir->relative_include_path.length, dir->relative_include_path.data);
+        printf("%.*s\n", (s32)dir->absolute_include_path.length, dir->absolute_include_path.data);
     }
 
-    return 0;
+    printf("\n");
+
+    for (ShaderIncludeDirective *dir = list.tail; dir; dir = dir->prev) {
+        printf("%.*s\n", (s32)dir->absolute_include_path.length, dir->absolute_include_path.data);
+    }
+
+
+
 
     Image img = img_load_png_from_file(str_literal("assets/sprites/test.png"), alloc);
 
-    run_tests();
 
     struct WindowHandle *handle = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);

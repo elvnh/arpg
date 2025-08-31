@@ -1,3 +1,4 @@
+#include "base/list.h"
 static void tests_arena()
 {
     {
@@ -448,6 +449,117 @@ static void tests_file()
 
 static void tests_list()
 {
+    typedef struct s32_node {
+        LIST_LINKS(s32_node);
+        s32 data;
+    } s32_node;
+
+    DEFINE_LIST(s32_node, List_s32);
+
+    LinearArena arena = arena_create(default_allocator, MB(4));
+
+    {
+        List_s32 list = {0};
+        ASSERT(list_is_empty(&list));
+
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node1);
+        ASSERT(list_head(&list) == node1);
+        ASSERT(list_tail(&list) == node1);
+        ASSERT(!list_is_empty(&list));
+        ASSERT(node1->next == 0);
+        ASSERT(node1->prev == 0);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node2);
+        ASSERT(list_head(&list) == node1);
+        ASSERT(list_tail(&list) == node2);
+        ASSERT(!list_is_empty(&list));
+
+        ASSERT(node1->next == node2);
+        ASSERT(node1->prev == 0);
+        ASSERT(node2->next == 0);
+        ASSERT(node2->prev == node1);
+
+        list_remove(&list, node1);
+        ASSERT(list_head(&list) == node2);
+        ASSERT(list_tail(&list) == node2);
+
+        ASSERT(node2->next == 0);
+        ASSERT(node2->prev == 0);
+
+        list_remove(&list, node2);
+        ASSERT(list_is_empty(&list));
+    }
+
+    {
+        List_s32 list = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node1);
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node2);
+
+        list_remove(&list, node2);
+        ASSERT(list_head(&list) == node1);
+        ASSERT(list_tail(&list) == node1);
+    }
+
+    {
+        List_s32 list = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        node1->data = 0;
+        list_push_front(&list, node1);
+        ASSERT(list_head(&list) == node1);
+        ASSERT(list_tail(&list) == node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        node2->data = 1;
+        list_push_front(&list, node2);
+        ASSERT(list_head(&list) == node2);
+        ASSERT(list_tail(&list) == node1);
+
+        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        node3->data = 2;
+        list_push_front(&list, node3);
+        ASSERT(list_head(&list) == node3);
+        ASSERT(list_tail(&list) == node1);
+
+        s32 counter = 2;
+        for (s32_node *node = list_head(&list); node; node = list_next(node)) {
+            ASSERT(node->data == counter);
+            counter--;
+        }
+
+        counter = 0;
+        for (s32_node *node = list_tail(&list); node; node = list_prev(node)) {
+            ASSERT(node->data == counter);
+            counter++;
+        }
+    }
+
+
+    {
+        List_s32 list = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node2);
+
+        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node3);
+
+        list_remove(&list, node2);
+        ASSERT(node1->prev == 0);
+        ASSERT(node1->next == node3);
+
+        ASSERT(node3->prev == node1);
+        ASSERT(node3->next == 0);
+    }
+
+    arena_destroy(&arena);
+
+#if 0
     typedef struct {
         ListNode node;
         s32 data;
@@ -531,6 +643,7 @@ static void tests_list()
         ASSERT(list_get_item(list_front(&list), Elem, node)->data == 0);
         ASSERT(list_get_item(list_back(&list), Elem, node)->data == 2);
     }
+#endif
 }
 
 void tests_path()

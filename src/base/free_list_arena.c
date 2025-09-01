@@ -119,6 +119,8 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
 
         if (block_remainder > MIN_FREE_LIST_ALLOC_SIZE) {
             split_free_block(arena, search_result.block, bytes_in_block_used);
+        } else {
+            ASSERT(false);
         }
 
         remove_free_block(arena, search_result.block);
@@ -161,6 +163,32 @@ static FreeBlock *write_free_block_header(void *address, ssize total_block_size)
     return result;
 }
 
+static void merge_free_blocks(FreeListArena *arena, FreeBlock *left, FreeBlock *right)
+{
+    ASSERT((ssize)left + left->total_size == (ssize)right);
+
+    left->total_size += right->total_size;
+    remove_free_block(arena, right);
+}
+
+static void try_coalesce_blocks(FreeListArena *arena, FreeBlock *middle)
+{
+    ASSERT(middle);
+
+    FreeBlock *left = middle->prev;
+    FreeBlock *right = middle->next;
+
+    if (left && (((ssize)left + left->total_size) == (ssize)middle)) {
+        merge_free_blocks(arena, left, middle);
+
+        middle = left;
+    }
+
+    if (right && (((ssize)middle + middle->total_size) == (ssize)right)) {
+        merge_free_blocks(arena, middle, right);
+    }
+}
+
 void fl_deallocate(void *context, void *ptr)
 {
     FreeListArena *arena = context;
@@ -180,4 +208,6 @@ void fl_deallocate(void *context, void *ptr)
     } else {
         list_push_front(arena, new_block);
     }
+
+    try_coalesce_blocks(arena, new_block);
 }

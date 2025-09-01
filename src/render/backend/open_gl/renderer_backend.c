@@ -13,8 +13,8 @@
 #define UV_ATTRIBUTE 1
 #define COLOR_ATTRIBUTE 2
 
-#define VERTEX_SHADER_DIRECTIVE   str_literal("#vertex")
-#define FRAGMENT_SHADER_DIRECTIVE str_literal("#fragment")
+#define VERTEX_SHADER_DIRECTIVE   str_lit("#vertex")
+#define FRAGMENT_SHADER_DIRECTIVE str_lit("#fragment")
 
 struct RendererBackend {
     GLuint vao;
@@ -28,11 +28,11 @@ struct RendererBackend {
     s32     index_count;
 };
 
-struct ShaderHandle {
+struct ShaderAsset {
     GLuint native_handle;
 };
 
-struct TextureHandle {
+struct TextureAsset {
     GLuint native_handle;
 };
 
@@ -160,7 +160,7 @@ static SplitShaderSource split_shader_source(String source)
     return result;
 }
 
-ShaderHandle *renderer_backend_create_shader(String shader_source, Allocator allocator)
+ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allocator)
 {
     SplitShaderSource split_result = split_shader_source(shader_source);
 
@@ -198,18 +198,18 @@ ShaderHandle *renderer_backend_create_shader(String shader_source, Allocator all
     glDetachShader(program_id, vertex_shader_id);
     glDetachShader(program_id, frag_shader_id);
 
-    ShaderHandle *handle = allocate_item(allocator, ShaderHandle);
+    ShaderAsset *handle = allocate_item(allocator, ShaderAsset);
     handle->native_handle = program_id;
 
     return handle;
 }
 
-void renderer_backend_destroy_shader(ShaderHandle *shader)
+void renderer_backend_destroy_shader(ShaderAsset *shader)
 {
     glDeleteProgram(shader->native_handle);
 }
 
-TextureHandle *renderer_backend_create_texture(Image image, Allocator allocator)
+TextureAsset *renderer_backend_create_texture(Image image, Allocator allocator)
 {
     GLuint texture_id;
 
@@ -239,28 +239,28 @@ TextureHandle *renderer_backend_create_texture(Image image, Allocator allocator)
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    TextureHandle *handle = allocate_item(allocator, TextureHandle);
+    TextureAsset *handle = allocate_item(allocator, TextureAsset);
     handle->native_handle = texture_id;
 
     return handle;
 }
 
-void renderer_backend_destroy_texture(TextureHandle *texture)
+void renderer_backend_destroy_texture(TextureAsset *texture)
 {
     glDeleteTextures(1, &texture->native_handle);
 }
 
-void renderer_backend_use_shader(ShaderHandle *handle)
+void renderer_backend_use_shader(ShaderAsset *handle)
 {
     glUseProgram(handle->native_handle);
 }
 
-void renderer_backend_bind_texture(TextureHandle *texture)
+void renderer_backend_bind_texture(TextureAsset *texture)
 {
     glBindTexture(GL_TEXTURE_2D, texture->native_handle);
 }
 
-void renderer_backend_set_mat4_uniform(ShaderHandle *shader, String uniform_name, Matrix4 matrix)
+void renderer_backend_set_mat4_uniform(ShaderAsset *shader, String uniform_name, Matrix4 matrix)
 {
     String terminated = str_null_terminate(uniform_name, thread_ctx_get_allocator());
     GLint location = glGetUniformLocation(shader->native_handle, terminated.data);

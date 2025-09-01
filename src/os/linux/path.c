@@ -46,7 +46,7 @@ String os_get_executable_directory(Allocator allocator)
 
 bool os_path_is_absolute(String path)
 {
-    return str_starts_with(path, str_literal("/"));
+    return str_starts_with(path, str_lit("/"));
 }
 
 String os_get_absolute_path(String path, Allocator allocator)
@@ -57,7 +57,7 @@ String os_get_absolute_path(String path, Allocator allocator)
 
     Allocator scratch = thread_ctx_get_allocator();
 
-    String working_dir = str_concat(os_get_working_directory(scratch), str_literal("/"), scratch);
+    String working_dir = str_concat(os_get_working_directory(scratch), str_lit("/"), scratch);
     String result = str_concat(working_dir, path, allocator);
 
     return result;
@@ -116,7 +116,7 @@ void os_change_working_directory(String path)
 String os_get_parent_path(String path, Allocator allocator)
 {
     String absolute = os_get_absolute_path(path, allocator);
-    ssize last_slash_pos = str_find_last_occurence(absolute, str_literal("/"));
+    ssize last_slash_pos = str_find_last_occurence(absolute, str_lit("/"));
     ASSERT(last_slash_pos != -1);
 
     String result = {

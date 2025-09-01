@@ -197,20 +197,20 @@ static void tests_string()
 
     {
 
-        String a = str_literal("hello ");
-        String b = str_literal("world");
+        String a = str_lit("hello ");
+        String b = str_lit("world");
 
         ASSERT(!str_equal(a, b));
 
         String c = str_concat(a, b, allocator);
-        ASSERT(str_equal(c, str_literal("hello world")));
+        ASSERT(str_equal(c, str_lit("hello world")));
         ASSERT(c.data != a.data);
         ASSERT(c.data != b.data);
 
     }
 
     {
-        String lit = str_literal("abcdef");
+        String lit = str_lit("abcdef");
         String copy = str_copy(lit, allocator);
 
         ASSERT(str_equal(lit, copy));
@@ -225,7 +225,7 @@ static void tests_string()
     }
 
     {
-        String lit = str_literal("abcdef");
+        String lit = str_lit("abcdef");
         String copy = str_copy(lit, allocator);
 
         String terminated = str_null_terminate(copy, allocator);
@@ -239,8 +239,8 @@ static void tests_string()
         // Extend in place
         LinearArena ar = arena_create(default_allocator, 100);
         Allocator alloc = arena_create_allocator(&ar);
-        String a = str_copy(str_literal("abc"), alloc);
-        String b = str_literal("def");
+        String a = str_copy(str_lit("abc"), alloc);
+        String b = str_lit("def");
 
         String c = str_concat(a, b, alloc);
         ASSERT(c.data == a.data);
@@ -252,14 +252,14 @@ static void tests_string()
         // Fail to extend in place
         LinearArena ar = arena_create(default_allocator, 100);
         Allocator alloc = arena_create_allocator(&ar);
-        String a = str_copy(str_literal("abc"), alloc);
+        String a = str_copy(str_lit("abc"), alloc);
 
         allocate_item(alloc, byte);
 
-        String b = str_literal("def");
+        String b = str_lit("def");
 
         String c = str_concat(a, b, alloc);
-        ASSERT(str_equal(c, str_literal("abcdef")));
+        ASSERT(str_equal(c, str_lit("abcdef")));
 
         ASSERT(c.data != a.data);
 
@@ -267,91 +267,91 @@ static void tests_string()
     }
 
     {
-        ASSERT(str_starts_with(str_literal("abc"), str_literal("a")));
-        ASSERT(str_starts_with(str_literal("abc"), str_literal("ab")));
-        ASSERT(str_starts_with(str_literal("abc"), str_literal("abc")));
-        ASSERT(!str_starts_with(str_literal("abc"), str_literal("abcd")));
-        ASSERT(!str_starts_with(str_literal("abc"), str_literal("b")));
+        ASSERT(str_starts_with(str_lit("abc"), str_lit("a")));
+        ASSERT(str_starts_with(str_lit("abc"), str_lit("ab")));
+        ASSERT(str_starts_with(str_lit("abc"), str_lit("abc")));
+        ASSERT(!str_starts_with(str_lit("abc"), str_lit("abcd")));
+        ASSERT(!str_starts_with(str_lit("abc"), str_lit("b")));
 
     }
 
     {
-        String a = str_literal("abac");
-        ASSERT(str_find_last_occurence(a, str_literal("a")) == 2);
-        ASSERT(str_find_last_occurence(a, str_literal("c")) == 3);
-        ASSERT(str_find_last_occurence(a, str_literal("b")) == 1);
-        ASSERT(str_find_last_occurence(a, str_literal("d")) == -1);
+        String a = str_lit("abac");
+        ASSERT(str_find_last_occurence(a, str_lit("a")) == 2);
+        ASSERT(str_find_last_occurence(a, str_lit("c")) == 3);
+        ASSERT(str_find_last_occurence(a, str_lit("b")) == 1);
+        ASSERT(str_find_last_occurence(a, str_lit("d")) == -1);
 
-        ASSERT(str_find_last_occurence(a, str_literal("ab")) == 0);
-        ASSERT(str_find_last_occurence(a, str_literal("ba")) == 1);
-        ASSERT(str_find_last_occurence(a, str_literal("bac")) == 1);
-        ASSERT(str_find_last_occurence(a, str_literal("ac")) == 2);
-        ASSERT(str_find_last_occurence(a, str_literal("acb")) == -1);
+        ASSERT(str_find_last_occurence(a, str_lit("ab")) == 0);
+        ASSERT(str_find_last_occurence(a, str_lit("ba")) == 1);
+        ASSERT(str_find_last_occurence(a, str_lit("bac")) == 1);
+        ASSERT(str_find_last_occurence(a, str_lit("ac")) == 2);
+        ASSERT(str_find_last_occurence(a, str_lit("acb")) == -1);
     }
 
     {
-        String a = str_literal("abac");
-        ASSERT(str_find_first_occurence(a, str_literal("a")) == 0);
-        ASSERT(str_find_first_occurence(a, str_literal("b")) == 1);
-        ASSERT(str_find_first_occurence(a, str_literal("c")) == 3);
-        ASSERT(str_find_first_occurence(a, str_literal("d")) == -1);
+        String a = str_lit("abac");
+        ASSERT(str_find_first_occurence(a, str_lit("a")) == 0);
+        ASSERT(str_find_first_occurence(a, str_lit("b")) == 1);
+        ASSERT(str_find_first_occurence(a, str_lit("c")) == 3);
+        ASSERT(str_find_first_occurence(a, str_lit("d")) == -1);
 
-        ASSERT(str_find_first_occurence(a, str_literal("ab")) == 0);
-        ASSERT(str_find_first_occurence(a, str_literal("ba")) == 1);
-        ASSERT(str_find_first_occurence(a, str_literal("bac")) == 1);
-        ASSERT(str_find_first_occurence(a, str_literal("ac")) == 2);
+        ASSERT(str_find_first_occurence(a, str_lit("ab")) == 0);
+        ASSERT(str_find_first_occurence(a, str_lit("ba")) == 1);
+        ASSERT(str_find_first_occurence(a, str_lit("bac")) == 1);
+        ASSERT(str_find_first_occurence(a, str_lit("ac")) == 2);
     }
 
     {
-        String a = str_literal("abcdef");
+        String a = str_lit("abcdef");
         String span = str_create_span(a, 1, 3);
 
-        ASSERT(str_equal(span, str_literal("bcd")));
+        ASSERT(str_equal(span, str_lit("bcd")));
     }
 
     {
-        String a = str_literal("abcdef");
+        String a = str_lit("abcdef");
         String span = str_create_span(a, 2, 4);
 
-        ASSERT(str_equal(span, str_literal("cdef")));
+        ASSERT(str_equal(span, str_lit("cdef")));
     }
 
     {
-        String a = str_literal("a");
+        String a = str_lit("a");
         String span = str_create_span(a, 0, 1);
 
-        ASSERT(str_equal(span, str_literal("a")));
+        ASSERT(str_equal(span, str_lit("a")));
     }
 
     {
-        String a = str_literal("ab");
+        String a = str_lit("ab");
         String span = str_create_span(a, 1, 1);
 
-        ASSERT(str_equal(span, str_literal("b")));
+        ASSERT(str_equal(span, str_lit("b")));
     }
 
     {
-        String str = str_literal("abcdef");
-        ASSERT(str_ends_with(str, str_literal("f")));
-        ASSERT(str_ends_with(str, str_literal("ef")));
-        ASSERT(str_ends_with(str, str_literal("def")));
-        ASSERT(str_ends_with(str, str_literal("cdef")));
-        ASSERT(str_ends_with(str, str_literal("bcdef")));
-        ASSERT(str_ends_with(str, str_literal("abcdef")));
+        String str = str_lit("abcdef");
+        ASSERT(str_ends_with(str, str_lit("f")));
+        ASSERT(str_ends_with(str, str_lit("ef")));
+        ASSERT(str_ends_with(str, str_lit("def")));
+        ASSERT(str_ends_with(str, str_lit("cdef")));
+        ASSERT(str_ends_with(str, str_lit("bcdef")));
+        ASSERT(str_ends_with(str, str_lit("abcdef")));
 
-        ASSERT(!str_ends_with(str, str_literal("a")));
-        ASSERT(!str_ends_with(str, str_literal("e")));
-        ASSERT(!str_ends_with(str, str_literal("aabcdef")));
+        ASSERT(!str_ends_with(str, str_lit("a")));
+        ASSERT(!str_ends_with(str, str_lit("e")));
+        ASSERT(!str_ends_with(str, str_lit("aabcdef")));
     }
 
     {
-        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("a")) == 1);
-        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("ab")) == 2);
-        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("abc")) == 3);
-        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("abd")) == 2);
-        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("abcdef")) == 6);
+        ASSERT(str_get_common_prefix_length(str_lit("abcdef"), str_lit("a")) == 1);
+        ASSERT(str_get_common_prefix_length(str_lit("abcdef"), str_lit("ab")) == 2);
+        ASSERT(str_get_common_prefix_length(str_lit("abcdef"), str_lit("abc")) == 3);
+        ASSERT(str_get_common_prefix_length(str_lit("abcdef"), str_lit("abd")) == 2);
+        ASSERT(str_get_common_prefix_length(str_lit("abcdef"), str_lit("abcdef")) == 6);
 
-        ASSERT(str_get_common_prefix_length(str_literal("abcdef"), str_literal("b")) == 0);
+        ASSERT(str_get_common_prefix_length(str_lit("abcdef"), str_lit("b")) == 0);
 
     }
 
@@ -414,7 +414,7 @@ static void tests_file()
 {
     {
         LinearArena arena = arena_create(default_allocator, MB(1));
-        ssize file_size = os_get_file_size(str_literal(__FILE__), arena);
+        ssize file_size = os_get_file_size(str_lit(__FILE__), arena);
 
         ASSERT(file_size != -1);
 
@@ -428,7 +428,7 @@ static void tests_file()
         byte *last = arena_allocate_array(&arena, byte, 1);
 
 
-        ssize file_size = os_get_file_size(str_literal(__FILE__), arena);
+        ssize file_size = os_get_file_size(str_lit(__FILE__), arena);
         ASSERT(file_size != -1);
 
         byte *next = arena_allocate_item(&arena, byte);
@@ -439,7 +439,7 @@ static void tests_file()
 
     {
         LinearArena arena = arena_create(default_allocator, MB(1));
-        ReadFileResult contents = os_read_entire_file(str_literal(__FILE__), arena_create_allocator(&arena));
+        ReadFileResult contents = os_read_entire_file(str_lit(__FILE__), arena_create_allocator(&arena));
         ASSERT(contents.file_data);
         ASSERT(contents.file_size != -1);
 
@@ -591,18 +591,18 @@ void tests_path()
     Allocator alloc = arena_create_allocator(&arena);
 
     {
-        ASSERT(os_path_is_absolute(str_literal("/foo")));
-        ASSERT(os_path_is_absolute(str_literal("/")));
-        ASSERT(!os_path_is_absolute(str_literal("~/code")));
-        ASSERT(!os_path_is_absolute(str_literal("./")));
-        ASSERT(!os_path_is_absolute(str_literal("../foo")));
+        ASSERT(os_path_is_absolute(str_lit("/foo")));
+        ASSERT(os_path_is_absolute(str_lit("/")));
+        ASSERT(!os_path_is_absolute(str_lit("~/code")));
+        ASSERT(!os_path_is_absolute(str_lit("./")));
+        ASSERT(!os_path_is_absolute(str_lit("../foo")));
     }
 
     {
-        ASSERT(str_equal(os_get_parent_path(str_literal("/home/foo"), alloc), str_literal("/home")));
-        ASSERT(str_equal(os_get_parent_path(str_literal("/home/foo/a.out"), alloc), str_literal("/home/foo")));
-        ASSERT(str_equal(os_get_parent_path(str_literal("/home/foo/"), alloc), str_literal("/home/foo")));
-        ASSERT(str_equal(os_get_parent_path(str_literal("/"), alloc), str_literal("/")));
+        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo"), alloc), str_lit("/home")));
+        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo/a.out"), alloc), str_lit("/home/foo")));
+        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo/"), alloc), str_lit("/home/foo")));
+        ASSERT(str_equal(os_get_parent_path(str_lit("/"), alloc), str_lit("/")));
     }
 
 

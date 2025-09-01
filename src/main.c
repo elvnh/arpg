@@ -35,37 +35,18 @@ int main()
 
     run_tests();
 
-    return 0;
-
-    /* ReadFileResult file = os_read_entire_file(str_literal("test.glsl"), alloc); */
-    /* String src = { (char *)file.file_data, file.file_size }; */
-    ShaderIncludeList list = shader_get_dependencies(str_literal("test.glsl"), alloc);
-
-    for (ShaderIncludeDirective *dir = list.head; dir; dir = dir->next) {
-        printf("%.*s\n", (s32)dir->absolute_include_path.length, dir->absolute_include_path.data);
-    }
-
-    printf("\n");
-
-    for (ShaderIncludeDirective *dir = list.tail; dir; dir = dir->prev) {
-        printf("%.*s\n", (s32)dir->absolute_include_path.length, dir->absolute_include_path.data);
-    }
-
-
-
-
-    Image img = img_load_png_from_file(str_literal("assets/sprites/test.png"), alloc);
+    Image img = img_load_png_from_file(str_lit("assets/sprites/test.png"), alloc);
 
 
     struct WindowHandle *handle = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
 
-    ReadFileResult read_result = os_read_entire_file(str_literal("assets/shaders/shader.glsl"), default_allocator);
+    ReadFileResult read_result = os_read_entire_file(str_lit("assets/shaders/shader.glsl"), default_allocator);
     ASSERT(read_result.file_data);
 
     String source = { .data = (char *)read_result.file_data, .length = read_result.file_size };
 
-    ShaderHandle *shader_handle = renderer_backend_create_shader(source, default_allocator);
+    ShaderAsset *shader_handle = renderer_backend_create_shader(source, default_allocator);
     ASSERT(shader_handle);
 
     renderer_backend_use_shader(shader_handle);
@@ -74,9 +55,9 @@ int main()
     proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
     proj = mat4_scale(proj, 3.0f);
 
-    renderer_backend_set_mat4_uniform(shader_handle, str_literal("u_proj"), proj);
+    renderer_backend_set_mat4_uniform(shader_handle, str_lit("u_proj"), proj);
 
-    TextureHandle *texture = renderer_backend_create_texture(img, alloc);
+    TextureAsset *texture = renderer_backend_create_texture(img, alloc);
     ASSERT(texture);
 
     renderer_backend_bind_texture(texture);

@@ -39,6 +39,9 @@ bool str_equal(String a, String b)
 
 String str_null_terminate(String str, Allocator alloc)
 {
+    ASSERT(str.data);
+    ASSERT(str.length);
+
     if (add_overflows_ssize(str.length, 1)) {
         ASSERT(false);
         return null_string;
@@ -154,7 +157,7 @@ String str_allocate(ssize length, Allocator allocator)
 
 ssize str_get_null_terminated_length(String str)
 {
-    return str_find_first_occurence(str, str_literal("\0"));
+    return str_find_first_occurence(str, str_lit("\0"));
 }
 
 String str_create_span(String str, ssize start_index, ssize length)

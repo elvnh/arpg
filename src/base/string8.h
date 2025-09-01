@@ -4,9 +4,9 @@
 #include "allocator.h"
 #include "base/list.h"
 
-#define str_literal(str) (String){ .data = (str), .length = ARRAY_COUNT((str)) - 1 }
-#define null_string      (String){ .data = 0, .length = 0 }
-#define empty_string     str_literal("")
+#define str_lit(str)   (String){ .data = (str), .length = ARRAY_COUNT((str)) - 1 }
+#define null_string    (String){ .data = 0, .length = 0 }
+#define empty_string   str_literal("")
 
 typedef struct String {
     char  *data;

@@ -8,7 +8,7 @@
 #include "os/path.h"
 #include "os/thread_context.h"
 
-#define INCLUDE_DIRECTIVE_STRING str_literal("#include ")
+#define INCLUDE_DIRECTIVE_STRING str_lit("#include ")
 
 static ShaderIncludeList get_include_directives_in_file(String path, Allocator allocator)
 {
@@ -28,7 +28,7 @@ static ShaderIncludeList get_include_directives_in_file(String path, Allocator a
         if (next_include_index != -1) {
             ssize path_begin_index = next_include_index + INCLUDE_DIRECTIVE_STRING.length + 1;
             ASSERT(source.data[path_begin_index - 1] == '"');
-            ssize path_end_index = str_find_first_occurence_from_index(source, str_literal("\""), path_begin_index);
+            ssize path_end_index = str_find_first_occurence_from_index(source, str_lit("\""), path_begin_index);
 
             String include_string = str_create_span(source, path_begin_index, path_end_index - path_begin_index);
             String canonical_include_path = os_get_canonical_path(include_string, allocator);

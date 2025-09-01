@@ -17,6 +17,7 @@ src/render/backend/open_gl/renderer_backend.c
 
 src/image.c
 src/shader.c
+src/assets.c
 
 deps/stb_image.c
 

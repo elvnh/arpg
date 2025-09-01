@@ -16,6 +16,7 @@
 #include "image.h"
 
 #include "render/backend/renderer_backend.h"
+#include "assets.h"
 
 #include "os/window.h"
 #include "shader.h"
@@ -35,32 +36,26 @@ int main()
 
     run_tests();
 
-    Image img = img_load_png_from_file(str_lit("assets/sprites/test.png"), alloc);
-
-
     struct WindowHandle *handle = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
-
-    ReadFileResult read_result = os_read_entire_file(str_lit("assets/shaders/shader.glsl"), default_allocator);
-    ASSERT(read_result.file_data);
-
-    String source = { .data = (char *)read_result.file_data, .length = read_result.file_size };
-
-    ShaderAsset *shader_handle = renderer_backend_create_shader(source, default_allocator);
-    ASSERT(shader_handle);
-
-    renderer_backend_use_shader(shader_handle);
 
     Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
     proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
     proj = mat4_scale(proj, 3.0f);
 
-    renderer_backend_set_mat4_uniform(shader_handle, str_lit("u_proj"), proj);
 
-    TextureAsset *texture = renderer_backend_create_texture(img, alloc);
-    ASSERT(texture);
+    AssetSystem assets = {0};
+
+    TextureHandle texture_handle = assets_register_texture(&assets, str_lit("assets/sprites/test.png"));
+    TextureAsset *texture = assets_get_texture(&assets, texture_handle);
 
     renderer_backend_bind_texture(texture);
+
+    ShaderHandle shader_handle = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"));
+    ShaderAsset *shader_asset = assets_get_shader(&assets, shader_handle);
+    renderer_backend_use_shader(shader_asset);
+
+    renderer_backend_set_mat4_uniform(shader_asset, str_lit("u_proj"), proj);
 
     while (!os_window_should_close(handle)) {
         renderer_backend_begin_frame(backend);
@@ -98,8 +93,8 @@ int main()
 
         renderer_backend_end_frame(backend);
         os_poll_events(handle);
-    }
 
+    }
     os_destroy_window(handle);
 
     arena_destroy(&arena);

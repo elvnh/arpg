@@ -6,6 +6,7 @@
 #include "base/matrix.h"
 #include "render/vertex.h"
 #include "image.h"
+#include "assets.h"
 
 // TODO: deinit backend?
 // TODO: only end_frame/flush needed

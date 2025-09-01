@@ -36,10 +36,10 @@
 
 #define list_push_front(list, node)             \
     do {                                        \
+        (node)->next = (list)->head;            \
+        (node)->prev = 0;                       \
         if (!list_is_empty((list))) {           \
             (list)->head->prev = (node);        \
-            (node)->next = (list)->head;        \
-            (node)->prev = 0;                   \
         } else {                                \
             (list)->tail = (node);              \
         }                                       \

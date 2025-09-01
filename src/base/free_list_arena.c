@@ -85,9 +85,9 @@ static void remove_free_block(FreeListArena *arena, FreeBlock *block)
     list_remove(arena, block);
 }
 
-static void write_allocation_header(void *address, FreeBlock *free_block_address, ssize alloc_size)
+static void write_allocation_header(void *at_address, FreeBlock *free_block_address, ssize alloc_size)
 {
-    AllocationHeader *header = address;
+    AllocationHeader *header = at_address;
     header->free_block_address = (ssize)free_block_address;
     header->allocation_size = alloc_size;
 }
@@ -103,37 +103,38 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
         return 0;
     }
 
-    ssize bytes_required = MAX(MIN_FREE_LIST_ALLOC_SIZE, item_count * item_size);
+    ssize allocation_size = MAX(MIN_FREE_LIST_ALLOC_SIZE, item_count * item_size);
 
-    BlockSearchResult search_result = find_suitable_block(arena, bytes_required, alignment);
-    ASSERT(is_aligned((ssize)search_result.user_ptr, alignment));
+    BlockSearchResult search_result = find_suitable_block(arena, allocation_size, alignment);
 
     void *user_ptr = 0;
 
     if (search_result.block) {
-        ssize bytes_in_block_used = ptr_diff(search_result.user_ptr, search_result.block) + bytes_required;
+        user_ptr = search_result.user_ptr;
+
+        ssize bytes_in_block_used = ptr_diff(user_ptr, search_result.block) + allocation_size;
         ssize block_remainder = search_result.block->total_size - bytes_in_block_used;
 
-        ASSERT(byte_offset(search_result.user_ptr, bytes_required) != search_result.block->next);
+        ASSERT(byte_offset(user_ptr, allocation_size) != search_result.block->next);
         ASSERT(bytes_in_block_used <= search_result.block->total_size);
 
         if (block_remainder > MIN_FREE_LIST_ALLOC_SIZE) {
             split_free_block(arena, search_result.block, bytes_in_block_used);
         } else {
-            ASSERT(false);
+            allocation_size += block_remainder; // Absorb remainder of block
         }
 
         remove_free_block(arena, search_result.block);
 
-        void *alloc_header_address = byte_offset(search_result.user_ptr, -(SIZEOF(AllocationHeader)));
-        write_allocation_header(alloc_header_address, search_result.block, bytes_required);
+        void *alloc_header_address = byte_offset(user_ptr, -SIZEOF(AllocationHeader));
+        write_allocation_header(alloc_header_address, search_result.block, allocation_size);
 
-        user_ptr = search_result.user_ptr;
     } else {
+        // TODO: dynamic growth
         ASSERT(false);
     }
 
-    mem_zero(user_ptr, bytes_required);
+    mem_zero(user_ptr, allocation_size);
 
     return user_ptr;
 }

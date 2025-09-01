@@ -11,14 +11,15 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define KB(n) (n * 1024)
 #define MB(n) (KB(n) * 1024)
-#define mem_zero(ptr, size) memset((ptr), 0, (size))
+#define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
+#define SIZEOF(t) (ssize)(sizeof(t))
 
 #define UNIMPLEMENTED                                                                     \
     fprintf(stderr, "\n*** UNIMPLEMENTED ***\n%s:\n%s:%d:\n", __func__, FILE_NAME, LINE); \
     abort()
 
 #if defined(__GNUC__)
-    #define ALIGNOF(t)   __alignof__(t)
+    #define ALIGNOF(t)   (ssize)__alignof__(t)
     #define FILE_NAME    __FILE__
     #define LINE         __LINE__
 #else
@@ -52,6 +53,11 @@ static inline void *byte_offset(void *ptr, ssize offset)
     return (void *)((byte *)ptr + offset);
 }
 
+static inline ssize ptr_diff(void *a, void *b)
+{
+    return (ssize)a - (ssize)b;
+}
+
 static inline bool multiply_overflows_ssize(ssize a, ssize b)
 {
     if ((a > 0) && (b > 0) && (a > (S_SIZE_MAX / b))) {
@@ -82,6 +88,7 @@ static inline bool add_overflows_s32(s32 a, s32 b)
 
 static inline s64 align_s64(s64 value, s64 alignment)
 {
+    ASSERT(is_pow2(alignment));
     return (value - 1 + alignment) & -alignment;
 }
 
@@ -106,4 +113,5 @@ static inline s32 safe_cast_ssize_s32(ssize value)
 
     return (s32)value;
 }
+
 #endif //UTILS_H

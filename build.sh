@@ -7,6 +7,7 @@ src/main.c
 src/base/linear_arena.c
 src/base/string8.c
 src/base/allocator.c
+src/base/free_list_arena.c
 
 src/os/linux/file.c
 src/os/linux/path.c

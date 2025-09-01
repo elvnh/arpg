@@ -4,9 +4,12 @@
 #include "base/allocator.h"
 #include "typedefs.h"
 
-// typedef struct ArenaBuffer {
-
-// } ArenaBuffer;
+/*
+  TODO:
+  - Choose between first and best fit
+  - Dynamic growth
+  - Deallocate entire arena
+*/
 
 typedef struct {
     byte *memory;
@@ -17,8 +20,8 @@ typedef struct {
     Allocator parent;
 } FreeListArena;
 
-FreeListArena fl_create(Allocator parent, ssize capacity);
-void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignment);
-void  fl_deallocate(void *context, void *ptr);
+FreeListArena   fl_create(Allocator parent, ssize capacity);
+void           *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignment);
+void            fl_deallocate(void *context, void *ptr);
 
 #endif //FREE_LIST_ARENA_H

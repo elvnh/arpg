@@ -16,18 +16,18 @@
         if (list_is_empty((list)) || (after) == (list)->tail) { \
             list_push_back((list), (node));                     \
         } else {                                                \
-            if ((node)->prev) (node)->prev = (after);           \
-            if ((node)->next) (node)->next = (after)->next;     \
+            (node)->prev = (after);                             \
+            (node)->next = (after)->next;                       \
             (after)->next = (node);                             \
         }                                                       \
     } while (0)
 
 #define list_push_back(list, node)              \
     do {                                        \
+        (node)->next = 0;                       \
+        (node)->prev = (list)->tail;            \
         if (!list_is_empty(list)) {             \
             (list)->tail->next = (node);        \
-            (node)->prev = (list)->tail;        \
-            (node)->next = 0;                   \
         } else {                                \
             (list)->head = node;                \
         }                                       \

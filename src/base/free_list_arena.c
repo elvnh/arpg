@@ -4,7 +4,7 @@
 #include "base/list.h"
 #include "base/utils.h"
 
-#define MIN_FREE_LIST_ALLOC_SIZE (ssize)sizeof(FreeBlock)
+#define MIN_FREE_LIST_BLOCK_SIZE (ssize)sizeof(FreeBlock)
 
 typedef struct {
     ssize free_block_address; // header may have been offset from free block base
@@ -32,16 +32,20 @@ static FreeBlock *write_free_block_header(void *address, ssize total_block_size)
 
 FreeListArena fl_create(Allocator parent, ssize capacity)
 {
-    byte *memory = allocate_array(parent, byte, capacity);
-    ASSERT(memory);
+    // Capacity must be rounded up since allocation sizes are rounded up to alignment boundary
+    // of FreeBlock.
+    ssize aligned_capacity = align_s64(capacity, ALIGNOF(FreeBlock));
+    byte *memory = allocate_array(parent, byte, aligned_capacity);
 
-    FreeBlock *first_block = write_free_block_header(memory, capacity);
+    FreeBlock *first_block = write_free_block_header(memory, aligned_capacity);
+
+    ASSERT(memory);
 
     FreeListArena result = {
         .memory = memory,
         .head = first_block,
         .tail = first_block,
-        .capacity = capacity,
+        .capacity = aligned_capacity,
         .parent = parent
     };
 
@@ -78,13 +82,16 @@ static BlockSearchResult find_suitable_block(FreeListArena *arena, ssize bytes_r
 
 static void split_free_block(FreeListArena *arena, FreeBlock *block, ssize split_offset)
 {
-    ASSERT(split_offset >= MIN_FREE_LIST_ALLOC_SIZE);
-    ASSERT(block->total_size - split_offset >= MIN_FREE_LIST_ALLOC_SIZE);
-    ASSERT(split_offset < block->total_size);
+    ASSERT(is_aligned((ssize)block, ALIGNOF(FreeBlock)));
 
     FreeBlock *new_block = byte_offset(block, split_offset);
-    new_block->total_size = block->total_size - split_offset;
+    ssize new_block_size = block->total_size - split_offset;
 
+    ASSERT(new_block_size >= MIN_FREE_LIST_BLOCK_SIZE);
+    ASSERT(split_offset < block->total_size);
+    ASSERT(is_aligned((ssize)new_block, ALIGNOF(FreeBlock)));
+
+    new_block->total_size = new_block_size;
     block->total_size = split_offset;
 
     list_insert_after(arena, new_block, block);
@@ -92,11 +99,17 @@ static void split_free_block(FreeListArena *arena, FreeBlock *block, ssize split
 
 static void remove_free_block(FreeListArena *arena, FreeBlock *block)
 {
+    ASSERT(is_aligned((ssize)block, ALIGNOF(FreeBlock)));
+
     list_remove(arena, block);
 }
 
 static void write_allocation_header(void *at_address, FreeBlock *free_block_address, ssize alloc_size)
 {
+    ASSERT(is_aligned((ssize)at_address, ALIGNOF(AllocationHeader)));
+    ASSERT(is_aligned((ssize)free_block_address, ALIGNOF(FreeBlock)));
+    ASSERT(is_aligned(alloc_size, ALIGNOF(FreeBlock)));
+
     AllocationHeader *header = at_address;
     header->free_block_address = (ssize)free_block_address;
     header->allocation_size = alloc_size;
@@ -115,7 +128,9 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
 
     void *result = 0;
 
-    ssize allocation_size = MAX(MIN_FREE_LIST_ALLOC_SIZE, item_count * item_size);
+    // Allocation size must be rounded up to ensure that next free block lands on alignment boundary
+    ssize allocation_size = align_s64(item_count * item_size, ALIGNOF(FreeBlock));
+
     BlockSearchResult search_result = find_suitable_block(arena, allocation_size, alignment);
 
     if (search_result.block) {
@@ -124,14 +139,19 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
         ssize bytes_in_block_used = ptr_diff(result, search_result.block) + allocation_size;
         ssize block_remainder = search_result.block->total_size - bytes_in_block_used;
 
+	ASSERT(is_aligned(block_remainder, ALIGNOF(FreeBlock)));
+	ASSERT(is_aligned(bytes_in_block_used, ALIGNOF(FreeBlock)));
         ASSERT(byte_offset(result, allocation_size) != search_result.block->next);
         ASSERT(bytes_in_block_used <= search_result.block->total_size);
 
-        if (block_remainder > MIN_FREE_LIST_ALLOC_SIZE) {
+        if (block_remainder > MIN_FREE_LIST_BLOCK_SIZE) {
             split_free_block(arena, search_result.block, bytes_in_block_used);
         } else {
             allocation_size += block_remainder; // Absorb remainder of block
         }
+
+	ASSERT(is_aligned(allocation_size, ALIGNOF(FreeBlock)));
+	ASSERT(allocation_size <= search_result.block->total_size);
 
         remove_free_block(arena, search_result.block);
 
@@ -139,7 +159,7 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
         write_allocation_header(alloc_header_address, search_result.block, allocation_size);
     } else {
         // TODO: dynamic growth
-        ASSERT(false);
+        ASSERT(false && "OOM");
     }
 
     mem_zero(result, allocation_size);

@@ -11,8 +11,8 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define KB(n) (n * 1024)
 #define MB(n) (KB(n) * 1024)
-#define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
 #define SIZEOF(t) ((ssize)(sizeof(t)))
+#define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
 
 #define UNIMPLEMENTED                                                                     \
     fprintf(stderr, "\n*** UNIMPLEMENTED ***\n%s:\n%s:%d:\n", __func__, FILE_NAME, LINE); \

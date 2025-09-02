@@ -617,6 +617,7 @@ static void tests_free_list()
 	FreeListArena fl = fl_create(default_allocator, 1024);
 
 	ASSERT(fl_get_available_memory(&fl) == 1024);
+        ASSERT(fl_get_memory_usage(&fl) == 0);
 
 	byte *p = fl_allocate(&fl, 1, 100, 4);
 

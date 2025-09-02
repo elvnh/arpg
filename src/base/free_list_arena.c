@@ -12,18 +12,31 @@ typedef struct {
 } AllocationHeader;
 
 typedef struct FreeBlock {
-    struct FreeBlock *next;
+    struct FreeBlock *next; // NOTE: these may only point to blocks in same buffer
     struct FreeBlock *prev;
     ssize total_size;
 } FreeBlock;
 
+typedef struct FreeListBuffer {
+    FreeBlock *head;
+    FreeBlock *tail;
+
+    struct FreeListBuffer *next;
+    struct FreeListBuffer *prev;
+
+    ssize usable_size;
+} FreeListBuffer;
+
 typedef struct {
-    FreeBlock *block;
-    void      *user_ptr;
+    FreeListBuffer *buffer;
+    FreeBlock      *block;
+    void           *user_ptr;
 } BlockSearchResult;
 
 static FreeBlock *write_free_block_header(void *address, ssize total_block_size)
 {
+    ASSERT(is_aligned((ssize)address, ALIGNOF(FreeBlock)));
+
     FreeBlock *result = address;
     result->total_size = total_block_size;
 
@@ -34,18 +47,25 @@ FreeListArena fl_create(Allocator parent, ssize capacity)
 {
     // Capacity must be rounded up since allocation sizes are rounded up to alignment boundary
     // of FreeBlock.
-    ssize aligned_capacity = align_s64(capacity, ALIGNOF(FreeBlock));
-    byte *memory = allocate_array(parent, byte, aligned_capacity);
+    ssize aligned_buffer_capacity = align_s64(capacity, ALIGNOF(FreeBlock));
+    ssize block_offset_from_buffer_header = align_s64(SIZEOF(FreeListBuffer), ALIGNOF(FreeBlock));
+    ssize total_alloc_size = aligned_buffer_capacity + block_offset_from_buffer_header;
 
-    FreeBlock *first_block = write_free_block_header(memory, aligned_capacity);
+    FreeListBuffer *first_buffer = allocate_aligned(parent, total_alloc_size, ALIGNOF(FreeListBuffer));
+    void *first_free_block_address = byte_offset(first_buffer, block_offset_from_buffer_header);
+    FreeBlock *first_free_block = write_free_block_header(first_free_block_address, aligned_buffer_capacity);
 
-    ASSERT(memory);
+    ASSERT(block_offset_from_buffer_header >= SIZEOF(FreeListBuffer));
+    ASSERT((ssize)first_free_block_address >= ((ssize)(first_buffer + 1)));
+    ASSERT(is_aligned((ssize)first_free_block, ALIGNOF(FreeBlock)));
+
+    first_buffer->usable_size = aligned_buffer_capacity;
+    first_buffer->head = first_free_block;
+    first_buffer->tail = first_free_block;
 
     FreeListArena result = {
-        .memory = memory,
-        .head = first_block,
-        .tail = first_block,
-        .capacity = aligned_capacity,
+        .head = first_buffer,
+        .tail = first_buffer,
         .parent = parent
     };
 
@@ -54,7 +74,12 @@ FreeListArena fl_create(Allocator parent, ssize capacity)
 
 void fl_destroy(FreeListArena *arena)
 {
-    deallocate(arena->parent, arena->memory);
+    for (FreeListBuffer *buf = list_head(arena); buf;) {
+        FreeListBuffer *next = buf->next;
+        deallocate(arena->parent, buf);
+
+        buf = next;
+    }
 }
 
 static BlockSearchResult find_suitable_block(FreeListArena *arena, ssize bytes_requested,
@@ -66,28 +91,32 @@ static BlockSearchResult find_suitable_block(FreeListArena *arena, ssize bytes_r
     // properly aligned. Needed since a header will be written right before user pointer.
     ssize alignment = MAX(requested_alignment, ALIGNOF(AllocationHeader));
 
-    for (FreeBlock *block = list_head(arena); block; block = list_next(block)) {
-        ssize first_usable_address = (ssize)byte_offset(block, sizeof(AllocationHeader));
-        ssize aligned_alloc_address = align_s64(first_usable_address, alignment);
+    for (FreeListBuffer *buffer = list_head(arena); buffer; buffer = list_next(buffer)) {
+        for (FreeBlock *block = list_head(buffer); block; block = list_next(block)) {
+            ssize first_usable_address = (ssize)byte_offset(block, sizeof(AllocationHeader));
+            ssize aligned_alloc_address = align_s64(first_usable_address, alignment);
 
-        ASSERT(is_aligned(aligned_alloc_address, alignment));
+            ASSERT(is_aligned(aligned_alloc_address, alignment));
 
-        ssize offset_from_base = aligned_alloc_address + bytes_requested - (ssize)block;
+            ssize offset_from_base = aligned_alloc_address + bytes_requested - (ssize)block;
 
-        if (offset_from_base <= block->total_size) {
-            result.block = block;
-            result.user_ptr = (void *)aligned_alloc_address;
+            if (offset_from_base <= block->total_size) {
+                result.buffer = buffer;
+                result.block = block;
+                result.user_ptr = (void *)aligned_alloc_address;
 
-            return result;
+                return result;
+            }
         }
     }
 
     return result;
 }
 
-static void split_free_block(FreeListArena *arena, FreeBlock *block, ssize split_offset)
+static void split_free_block(FreeListBuffer *buffer, FreeBlock *block, ssize split_offset)
 {
     ASSERT(is_aligned((ssize)block, ALIGNOF(FreeBlock)));
+    ASSERT(is_aligned(split_offset, ALIGNOF(FreeBlock)));
 
     FreeBlock *new_block = byte_offset(block, split_offset);
     ssize new_block_size = block->total_size - split_offset;
@@ -95,18 +124,19 @@ static void split_free_block(FreeListArena *arena, FreeBlock *block, ssize split
     ASSERT(new_block_size >= MIN_FREE_LIST_BLOCK_SIZE);
     ASSERT(split_offset < block->total_size);
     ASSERT(is_aligned((ssize)new_block, ALIGNOF(FreeBlock)));
+    ASSERT(is_aligned(new_block_size, ALIGNOF(FreeBlock)));
 
     new_block->total_size = new_block_size;
     block->total_size = split_offset;
 
-    list_insert_after(arena, new_block, block);
+    list_insert_after(buffer, new_block, block);
 }
 
-static void remove_free_block(FreeListArena *arena, FreeBlock *block)
+static void remove_free_block(FreeListBuffer *buffer, FreeBlock *block)
 {
     ASSERT(is_aligned((ssize)block, ALIGNOF(FreeBlock)));
 
-    list_remove(arena, block);
+    list_remove(buffer, block);
 }
 
 static void write_allocation_header(void *at_address, FreeBlock *free_block_address, ssize alloc_size)
@@ -125,13 +155,12 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
     ASSERT(is_pow2(alignment));
 
     FreeListArena *arena = context;
+    void *result = 0;
 
     if (multiply_overflows_ssize(item_count, item_size)) {
         ASSERT(false);
         return 0;
     }
-
-    void *result = 0;
 
     // Allocation size must be rounded up to ensure that next free block lands on alignment boundary
     ssize allocation_size = align_s64(item_count * item_size, ALIGNOF(FreeBlock));
@@ -150,7 +179,7 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
         ASSERT(bytes_in_block_used <= search_result.block->total_size);
 
         if (block_remainder > MIN_FREE_LIST_BLOCK_SIZE) {
-            split_free_block(arena, search_result.block, bytes_in_block_used);
+            split_free_block(search_result.buffer, search_result.block, bytes_in_block_used);
         } else {
             allocation_size += block_remainder; // Absorb remainder of block
         }
@@ -158,7 +187,7 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
 	ASSERT(is_aligned(allocation_size, ALIGNOF(FreeBlock)));
 	ASSERT(allocation_size <= search_result.block->total_size);
 
-        remove_free_block(arena, search_result.block);
+        remove_free_block(search_result.buffer, search_result.block);
 
         void *alloc_header_address = byte_offset(result, -SIZEOF(AllocationHeader));
         write_allocation_header(alloc_header_address, search_result.block, allocation_size);
@@ -172,47 +201,74 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignm
     return result;
 }
 
-static FreeBlock *find_free_block_preceding_address(FreeListArena *arena, void *address)
+typedef struct {
+    FreeListBuffer *buffer;
+    FreeBlock      *block;
+} BlockPredecessor;
+
+static FreeListBuffer *find_buffer_containing_address(FreeListArena *arena, void *address)
 {
     ssize int_addr = (ssize)address;
 
-    for (FreeBlock *block = list_head(arena); block; block = list_next(block)) {
-        ssize curr_address = (ssize)block;
-        ssize next_address = (ssize)block->next;
-        b32 is_preceding = (curr_address < int_addr) && ((int_addr < next_address) || (next_address == 0));
+    for (FreeListBuffer *buffer = list_head(arena); buffer; buffer = list_next(buffer)) {
+        ssize buffer_address = (ssize)(buffer + 1);
 
-        if (is_preceding) {
-            return block;
+        if ((buffer_address <= int_addr) && (int_addr < (buffer_address + buffer->usable_size))) {
+            return buffer;
         }
     }
 
     return 0;
 }
 
+static BlockPredecessor find_free_block_preceding_address(FreeListArena *arena, void *address)
+{
+    ssize int_addr = (ssize)address;
 
-static void merge_free_blocks(FreeListArena *arena, FreeBlock *left, FreeBlock *right)
+    for (FreeListBuffer *buffer = list_head(arena); buffer; buffer = list_next(buffer)) {
+        for (FreeBlock *block = list_head(buffer); block; block = list_next(block)) {
+            ssize curr_address = (ssize)block;
+            ssize next_address = (ssize)block->next;
+            b32 is_preceding = (curr_address < int_addr) && ((int_addr < next_address) || (next_address == 0));
+
+            if (is_preceding) {
+                BlockPredecessor result = {
+                    .buffer = buffer,
+                    .block = block
+                };
+
+                return result;
+            }
+        }
+    }
+
+    return (BlockPredecessor){0};
+}
+
+static void merge_free_blocks(FreeListBuffer *buffer, FreeBlock *left, FreeBlock *right)
 {
     ASSERT((ssize)left + left->total_size == (ssize)right);
 
     left->total_size += right->total_size;
-    remove_free_block(arena, right);
+    remove_free_block(buffer, right);
 }
 
-static void try_coalesce_blocks(FreeListArena *arena, FreeBlock *middle)
+static void try_coalesce_blocks(FreeListBuffer *buffer, FreeBlock *middle)
 {
+    ASSERT(buffer);
     ASSERT(middle);
 
     FreeBlock *left = middle->prev;
     FreeBlock *right = middle->next;
 
     if (left && (((ssize)left + left->total_size) == (ssize)middle)) {
-        merge_free_blocks(arena, left, middle);
+        merge_free_blocks(buffer, left, middle);
 
         middle = left;
     }
 
     if (right && (((ssize)middle + middle->total_size) == (ssize)right)) {
-        merge_free_blocks(arena, middle, right);
+        merge_free_blocks(buffer, middle, right);
     }
 }
 
@@ -227,29 +283,51 @@ void fl_deallocate(void *context, void *ptr)
 
     ASSERT(free_block_size != 0);
 
-    FreeBlock *predecessor = find_free_block_preceding_address(arena, free_block_address);
     FreeBlock *new_block = write_free_block_header(free_block_address, free_block_size);
 
-    if (predecessor) {
-        list_insert_after(arena, new_block, predecessor);
+    BlockPredecessor predecessor = find_free_block_preceding_address(arena, free_block_address);
+    FreeListBuffer *containing_buffer = 0;
+
+    if (predecessor.block) {
+        ASSERT(predecessor.buffer);
+
+        containing_buffer = predecessor.buffer;
+
+        list_insert_after(containing_buffer, new_block, predecessor.block);
     } else {
-        list_push_front(arena, new_block);
+        ASSERT(!predecessor.buffer);
+
+        containing_buffer = find_buffer_containing_address(arena, free_block_address);
+        ASSERT(containing_buffer);
+        list_push_front(containing_buffer, new_block);
     }
 
-    try_coalesce_blocks(arena, new_block);
+    try_coalesce_blocks(containing_buffer, new_block);
 }
 
 ssize fl_get_memory_usage(FreeListArena *arena)
 {
-    return arena->capacity - fl_get_available_memory(arena);
+    ssize total_capacity = 0;
+
+    for (FreeListBuffer *buffer = list_head(arena); buffer; buffer = list_next(buffer)) {
+        total_capacity += buffer->usable_size;
+    }
+
+    ssize available_memory = fl_get_available_memory(arena);
+    ssize result = total_capacity - available_memory;
+
+    return result;
 }
 
 ssize fl_get_available_memory(FreeListArena *arena)
 {
     ssize sum = 0;
 
-    for (FreeBlock *block = list_head(arena); block; block = list_next(block)) {
-	sum += block->total_size;
+    for (FreeListBuffer *buffer = list_head(arena); buffer; buffer = list_next(buffer)) {
+        for (FreeBlock *block = list_head(buffer); block; block = list_next(block)) {
+            // TODO: should alloc header size be subtracted? since this size can never actually be allocated
+            sum += block->total_size;
+        }
     }
 
     return sum;

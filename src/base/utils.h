@@ -86,16 +86,23 @@ static inline bool add_overflows_s32(s32 a, s32 b)
     return false;
 }
 
-static inline s64 align_s64(s64 value, s64 alignment)
-{
-    ASSERT(is_pow2(alignment));
-    return (value - 1 + alignment) & -alignment;
-}
-
 static inline bool is_aligned(s64 value, s64 alignment)
 {
     ASSERT(is_pow2(alignment));
     return (value % alignment) == 0;
+}
+
+// TODO: align_ssize
+static inline s64 align_s64(s64 value, s64 alignment)
+{
+    ASSERT(is_pow2(alignment));
+    ASSERT(!add_overflows_ssize(value - 1, alignment));
+
+    ssize result = (value - 1 + alignment) & -alignment;
+    ASSERT(result >= value);
+    ASSERT(is_aligned(result, alignment));
+
+    return result;
 }
 
 // TODO: get rid of this

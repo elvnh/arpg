@@ -2,21 +2,19 @@
 #define FREE_LIST_ARENA_H
 
 #include "base/allocator.h"
+#include "base/list.h"
 #include "typedefs.h"
 
 /*
   TODO:
   - Choose between first and best fit
   - Dynamic growth
-  - Deallocate entire arena
 */
 
 typedef struct {
-    byte *memory;
-    struct FreeBlock *head;
-    struct FreeBlock *tail;
+    struct FreeListBuffer *head;
+    struct FreeListBuffer *tail;
 
-    ssize capacity;
     Allocator parent;
 } FreeListArena;
 

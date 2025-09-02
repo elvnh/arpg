@@ -1,4 +1,7 @@
+#include "base/free_list_arena.h"
 #include "base/list.h"
+#include "base/utils.h"
+#include <math.h>
 static void tests_arena()
 {
     {
@@ -605,9 +608,194 @@ void tests_path()
         ASSERT(str_equal(os_get_parent_path(str_lit("/"), alloc), str_lit("/")));
     }
 
-
-
     arena_destroy(&arena);
+}
+
+static void tests_free_list()
+{
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	byte *p = fl_allocate(&fl, 1, 100, 4);
+
+	ASSERT((fl_get_memory_usage(&fl) >= 100) && (fl_get_memory_usage(&fl) < 200));
+
+	for (ssize i = 0; i < 100; ++i) {
+	    ASSERT(p[i] == 0);
+	}
+
+	byte *p2 = fl_allocate(&fl, 1, 880, 4);
+
+	ASSERT((fl_get_memory_usage(&fl) >= 980) && (fl_get_memory_usage(&fl) <= 1024));
+
+	for (ssize i = 0; i < 880; ++i) {
+	    ASSERT(p2[i] == 0);
+	}
+
+	fl_deallocate(&fl, p);
+
+	ASSERT((fl_get_memory_usage(&fl) >= 880) && (fl_get_memory_usage(&fl) < 980));
+
+	fl_deallocate(&fl, p2);
+
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+	ASSERT(fl_get_memory_usage(&fl) == 0);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+	byte *p1 = fl_allocate(&fl, 1, 100, 4);
+
+	fl_deallocate(&fl, p1);
+
+	byte *p2 = fl_allocate(&fl, 1, 200, 4);
+
+	ASSERT(p1 == p2);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, MB(32));
+	for (s32 i = 1; i <= 16; ++i) {
+	    s32 alignment = (s32)pow(2, i);
+
+	    byte *p = fl_allocate(&fl, 1, 100, alignment);
+
+	    ASSERT(is_aligned((ssize)p, alignment));
+	}
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+	byte *p1 = fl_allocate(&fl, 1, 100, 4);
+	byte *p2 = fl_allocate(&fl, 1, 100, 4);
+	byte *p3 = fl_allocate(&fl, 1, 100, 4);
+
+	ASSERT(fl_get_available_memory(&fl) <= 724);
+	ASSERT(fl_get_memory_usage(&fl) >= 300);
+
+	fl_deallocate(&fl, p1);
+	fl_deallocate(&fl, p2);
+	fl_deallocate(&fl, p3);
+
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+	byte *p1 = fl_allocate(&fl, 1, 100, 4);
+	byte *p2 = fl_allocate(&fl, 1, 100, 4);
+	byte *p3 = fl_allocate(&fl, 1, 100, 4);
+
+	fl_deallocate(&fl, p2);
+	fl_deallocate(&fl, p1);
+	fl_deallocate(&fl, p3);
+
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+	byte *p1 = fl_allocate(&fl, 1, 100, 4);
+	byte *p2 = fl_allocate(&fl, 1, 100, 4);
+	byte *p3 = fl_allocate(&fl, 1, 100, 4);
+
+	fl_deallocate(&fl, p3);
+	fl_deallocate(&fl, p2);
+	fl_deallocate(&fl, p1);
+
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+	byte *p1 = fl_allocate(&fl, 1, 100, 4);
+	byte *p2 = fl_allocate(&fl, 1, 100, 4);
+	byte *p3 = fl_allocate(&fl, 1, 100, 4);
+
+	fl_deallocate(&fl, p3);
+	fl_deallocate(&fl, p1);
+	fl_deallocate(&fl, p2);
+
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+	byte *p1 = fl_allocate(&fl, 1, 100, 4);
+	byte *p2 = fl_allocate(&fl, 1, 100, 4);
+	byte *p3 = fl_allocate(&fl, 1, 100, 4);
+
+	fl_deallocate(&fl, p2);
+	fl_deallocate(&fl, p3);
+	fl_deallocate(&fl, p1);
+
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1023);
+	byte *p = fl_allocate(&fl, 1, 100, 4);
+	byte *p2 = fl_allocate(&fl, 1, 880, 4);
+
+	fl_deallocate(&fl, p);
+	fl_deallocate(&fl, p2);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1023);
+
+	ssize size = 100;
+
+	byte *p1 = fl_allocate(&fl, 1, size, 4);
+	byte *p2 = fl_allocate(&fl, 1, size, 4);
+	ASSERT(p1 < p2);
+
+	memset(p1, 0xFF, (usize)size);
+	memset(p2, 0xDE, (usize)size);
+
+	ASSERT(p1[0] == 0xFF);
+	ASSERT(p1[size - 1] == 0xFF);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1023);
+
+	ssize size = 100;
+
+	byte *p1 = fl_allocate(&fl, 1, size, 4);
+	byte *p2 = fl_allocate(&fl, 1, size, 4);
+	ASSERT(p1 < p2);
+
+	memset(p2, 0xDE, (usize)size);
+	memset(p1, 0xFF, (usize)size);
+
+	ASSERT(p2[0] == 0xDE);
+	ASSERT(p2[size - 1] == 0xDE);
+
+	fl_destroy(&fl);
+    }
 }
 
 static void run_tests()
@@ -618,4 +806,5 @@ static void run_tests()
     tests_file();
     tests_list();
     tests_path();
+    tests_free_list();
 }

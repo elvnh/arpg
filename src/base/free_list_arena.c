@@ -52,6 +52,11 @@ FreeListArena fl_create(Allocator parent, ssize capacity)
     return result;
 }
 
+void fl_destroy(FreeListArena *arena)
+{
+    deallocate(arena->parent, arena->memory);
+}
+
 static BlockSearchResult find_suitable_block(FreeListArena *arena, ssize bytes_requested,
     ssize requested_alignment)
 {
@@ -232,4 +237,20 @@ void fl_deallocate(void *context, void *ptr)
     }
 
     try_coalesce_blocks(arena, new_block);
+}
+
+ssize fl_get_memory_usage(FreeListArena *arena)
+{
+    return arena->capacity - fl_get_available_memory(arena);
+}
+
+ssize fl_get_available_memory(FreeListArena *arena)
+{
+    ssize sum = 0;
+
+    for (FreeBlock *block = list_head(arena); block; block = list_next(block)) {
+	sum += block->total_size;
+    }
+
+    return sum;
 }

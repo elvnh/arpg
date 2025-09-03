@@ -18,6 +18,7 @@
         } else {                                                \
             (node)->prev = (after);                             \
             (node)->next = (after)->next;                       \
+            if ((after)->next) (after)->next->prev = (node);    \
             (after)->next = (node);                             \
         }                                                       \
     } while (0)

@@ -20,7 +20,6 @@ typedef void *(*AllocateFunction)(void*, ssize, ssize, ssize);
 typedef void  (*DeallocateFunction)(void*, void*);
 typedef bool  (*TryResizeFunction)(void*, void*, ssize, ssize);
 
-// TODO: should these be allowed to be null?
 typedef struct {
     AllocateFunction    alloc;
     DeallocateFunction  dealloc;

@@ -9,12 +9,12 @@
 
 #define MAX_RENDERER_VERTICES 512
 
-#define POSITION_ATTRIBUTE 0
-#define UV_ATTRIBUTE 1
-#define COLOR_ATTRIBUTE 2
+#define POSITION_ATTRIBUTE    0
+#define UV_ATTRIBUTE          1
+#define COLOR_ATTRIBUTE       2
 
-#define VERTEX_SHADER_DIRECTIVE   str_lit("#vertex")
-#define FRAGMENT_SHADER_DIRECTIVE str_lit("#fragment")
+#define VERTEX_SHADER_DIRECTIVE    str_lit("#vertex")
+#define FRAGMENT_SHADER_DIRECTIVE  str_lit("#fragment")
 
 struct RendererBackend {
     GLuint vao;

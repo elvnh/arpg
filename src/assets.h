@@ -32,7 +32,7 @@ typedef struct {
     } as;
 } Asset;
 
-// TODO: arena
+// TODO: free list arena
 typedef struct {
     AssetID  next_asset_id;
     Asset    registered_assets[MAX_REGISTERED_ASSETS];

@@ -35,6 +35,8 @@ typedef struct {
 static FreeBlock *write_free_block_header(void *address, ssize total_block_size)
 {
     ASSERT(is_aligned((ssize)address, ALIGNOF(FreeBlock)));
+    ASSERT(address);
+    ASSERT(total_block_size > 0);
 
     FreeBlock *result = address;
     result->total_size = total_block_size;

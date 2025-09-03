@@ -872,13 +872,14 @@ static void tests_free_list()
 
         ASSERT(fl_get_available_memory(&fl) >= 1024 && fl_get_available_memory(&fl) < 2048);
 
-
         fl_deallocate(&fl, p4);
         fl_deallocate(&fl, p6);
         fl_deallocate(&fl, p5);
 
         ASSERT(fl_get_available_memory(&fl) == 2048);
         ASSERT(fl_get_memory_usage(&fl) == 0);
+
+        fl_destroy(&fl);
     }
 }
 

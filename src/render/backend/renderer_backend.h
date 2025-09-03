@@ -10,6 +10,7 @@
 
 // TODO: deinit backend?
 // TODO: only end_frame/flush needed
+// TODO: free memory allocated when destroying assets
 
 typedef struct RendererBackend RendererBackend;
 

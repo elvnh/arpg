@@ -1,14 +1,14 @@
 #ifndef FREE_LIST_ARENA_H
 #define FREE_LIST_ARENA_H
 
-#include "base/allocator.h"
-#include "base/list.h"
-#include "typedefs.h"
+#include "allocator.h"
 
 /*
   TODO:
   - Choose between first and best fit
-  - Dynamic growth
+  - Realloc
+  - Try resize
+  - Helper macros
 */
 
 typedef struct {

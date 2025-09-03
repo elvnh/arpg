@@ -585,6 +585,27 @@ static void tests_list()
         ASSERT(list_tail(&list) == node2);
     }
 
+    {
+        List_s32 list = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node2);
+
+        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        list_insert_after(&list, node3, node1);
+
+        ASSERT(node1->next == node3);
+        ASSERT(node1->prev == 0);
+
+        ASSERT(node3->prev == node1);
+        ASSERT(node3->next == node2);
+
+        ASSERT(node2->prev == node3);
+        ASSERT(node2->next == 0);
+    }
+
     arena_destroy(&arena);
 }
 
@@ -630,6 +651,7 @@ static void tests_free_list()
 	byte *p2 = fl_allocate(&fl, 1, 880, 4);
 
 	ASSERT((fl_get_memory_usage(&fl) >= 980) && (fl_get_memory_usage(&fl) <= 1024));
+        ASSERT((fl_get_available_memory(&fl) == 0));
 
 	for (ssize i = 0; i < 880; ++i) {
 	    ASSERT(p2[i] == 0);
@@ -717,6 +739,7 @@ static void tests_free_list()
 	fl_deallocate(&fl, p1);
 
 	ASSERT(fl_get_available_memory(&fl) == 1024);
+        ASSERT(fl_get_memory_usage(&fl) == 0);
 
 	fl_destroy(&fl);
     }
@@ -745,6 +768,21 @@ static void tests_free_list()
 	fl_deallocate(&fl, p2);
 	fl_deallocate(&fl, p3);
 	fl_deallocate(&fl, p1);
+
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+	byte *p1 = fl_allocate(&fl, 1, 100, 4);
+	byte *p2 = fl_allocate(&fl, 1, 100, 4);
+	byte *p3 = fl_allocate(&fl, 1, 100, 4);
+
+	fl_deallocate(&fl, p1);
+	fl_deallocate(&fl, p3);
+	fl_deallocate(&fl, p2);
 
 	ASSERT(fl_get_available_memory(&fl) == 1024);
 
@@ -796,6 +834,51 @@ static void tests_free_list()
 	ASSERT(p2[size - 1] == 0xDE);
 
 	fl_destroy(&fl);
+    }
+
+    {
+        FreeListArena fl = fl_create(default_allocator, 1024);
+        void *p1 = fl_allocate(&fl, 900, 1, 4);
+        ASSERT(fl_get_memory_usage(&fl) >= 900 && fl_get_memory_usage(&fl) <= 1024);
+        ASSERT(fl_get_available_memory(&fl) <= 124);
+
+        void *p2 = fl_allocate(&fl, 900, 1, 4);
+        ASSERT(fl_get_memory_usage(&fl) >= 1800 && fl_get_memory_usage(&fl) <= 2048);
+        ASSERT(fl_get_available_memory(&fl) <= 248);
+
+        fl_deallocate(&fl, p1);
+        fl_deallocate(&fl, p2);
+
+        ASSERT(fl_get_memory_usage(&fl) == 0);
+        ASSERT(fl_get_available_memory(&fl) == 2048);
+
+	fl_destroy(&fl);
+    }
+
+    {
+        FreeListArena fl = fl_create(default_allocator, 1024);
+
+        byte *p1 = fl_allocate(&fl, 1, 250, 4);
+        byte *p2 = fl_allocate(&fl, 1, 250, 4);
+        byte *p3 = fl_allocate(&fl, 1, 250, 4);
+
+        byte *p4 = fl_allocate(&fl, 1, 250, 4);
+        byte *p5 = fl_allocate(&fl, 1, 250, 4);
+        byte *p6 = fl_allocate(&fl, 1, 250, 4);
+
+        fl_deallocate(&fl, p1);
+        fl_deallocate(&fl, p3);
+        fl_deallocate(&fl, p2);
+
+        ASSERT(fl_get_available_memory(&fl) >= 1024 && fl_get_available_memory(&fl) < 2048);
+
+
+        fl_deallocate(&fl, p4);
+        fl_deallocate(&fl, p6);
+        fl_deallocate(&fl, p5);
+
+        ASSERT(fl_get_available_memory(&fl) == 2048);
+        ASSERT(fl_get_memory_usage(&fl) == 0);
     }
 }
 

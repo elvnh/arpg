@@ -573,6 +573,8 @@ static void tests_list()
         list_insert_after(&list_a, node1, list_a.tail);
         ASSERT(list_a.head == node1);
         ASSERT(list_a.tail == node1);
+	ASSERT(!node1->next);
+	ASSERT(!node1->prev);
     }
 
     {
@@ -584,6 +586,12 @@ static void tests_list()
         list_insert_after(&list, node2, node1);
         ASSERT(list_head(&list) == node1);
         ASSERT(list_tail(&list) == node2);
+
+	ASSERT(node1->next == node2);
+	ASSERT(node1->prev == 0);
+
+	ASSERT(node2->prev == node1);
+	ASSERT(node2->next == 0);
     }
 
     {
@@ -626,6 +634,77 @@ static void tests_list()
 	    ASSERT(curr->data == counter);
 	    --counter;
 	}
+    }
+
+    {
+        List_s32 list = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node2);
+
+        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        list_insert_after(&list, node3, node2);
+
+	ASSERT(node1->next == node2);
+	ASSERT(node1->prev == 0);
+
+	ASSERT(node2->next == node3);
+	ASSERT(node2->prev == node1);
+
+	ASSERT(node3->next == 0);
+	ASSERT(node3->prev == node2);
+
+	ASSERT(list_head(&list) == node1);
+	ASSERT(list_tail(&list) == node3);
+    }
+
+
+    {
+        List_s32 list = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node2);
+
+        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        list_insert_before(&list, node3, node1);
+
+	ASSERT(list_head(&list) == node3);
+
+	ASSERT(list_next(node1) == node2);
+	ASSERT(list_prev(node1) == node3);
+
+	ASSERT(list_prev(node3) == 0);
+	ASSERT(list_next(node3) == node1);
+
+	ASSERT(list_prev(node2) == node1);
+	ASSERT(list_next(node2) == 0);
+    }
+
+    {
+        List_s32 list = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        list_push_back(&list, node2);
+
+        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        list_insert_before(&list, node3, node2);
+
+	ASSERT(list_head(&list) == node1);
+
+	ASSERT(list_prev(node1) == 0);
+	ASSERT(list_next(node1) == node3);
+
+	ASSERT(list_prev(node3) == node1);
+	ASSERT(list_next(node3) == node2);
+
+	ASSERT(list_prev(node2) == node3);
+	ASSERT(list_next(node2) == 0);
     }
 
     arena_destroy(&arena);

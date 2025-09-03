@@ -13,14 +13,28 @@
 
 #define list_insert_after(list, node, after)                    \
     do {                                                        \
+	ASSERT(node);						\
         if (list_is_empty((list)) || (after) == (list)->tail) { \
             list_push_back((list), (node));                     \
-        } else {                                                \
+        } else {						\
             (node)->prev = (after);                             \
             (node)->next = (after)->next;                       \
             if ((after)->next) (after)->next->prev = (node);    \
             (after)->next = (node);                             \
         }                                                       \
+    } while (0)
+
+#define list_insert_before(list, node, before)			\
+    do {							\
+	ASSERT(node);						\
+	if ((before) == (list)->head) {				\
+	    list_push_front((list), node);			\
+	} else {						\
+	    (node)->prev = (before)->prev;			\
+	    (node)->next = (before);				\
+	    if ((before)->prev) (before)->prev->next = (node);	\
+	    (before)->prev = (node);				\
+	}							\
     } while (0)
 
 #define list_push_back(list, node)              \

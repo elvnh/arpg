@@ -2,6 +2,7 @@
 #include "base/list.h"
 #include "base/utils.h"
 #include <math.h>
+
 static void tests_arena()
 {
     {
@@ -604,6 +605,27 @@ static void tests_list()
 
         ASSERT(node2->prev == node3);
         ASSERT(node2->next == 0);
+    }
+
+    {
+        List_s32 list = {0};
+        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+	node1->data = 0;
+        list_push_back(&list, node1);
+
+        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+	node2->data = 2;
+        list_push_back(&list, node2);
+
+        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        list_insert_after(&list, node3, node1);
+	node3->data = 1;
+
+	s32 counter = 2;
+	for (s32_node *curr = list_tail(&list); curr; curr = list_next(curr)) {
+	    ASSERT(curr->data == counter);
+	    --counter;
+	}
     }
 
     arena_destroy(&arena);

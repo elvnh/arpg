@@ -9,6 +9,7 @@
   - Realloc
   - Try resize
   - Helper macros
+  - Make consistent whether dealing with void * or ssize
 */
 
 typedef struct {

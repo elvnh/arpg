@@ -162,13 +162,13 @@ static void remove_free_block(FreeListBuffer *buffer, FreeBlock *block)
     list_remove(buffer, block);
 }
 
-static void write_allocation_header(void *at_address, FreeBlock *free_block_address, ssize alloc_size)
+static void write_allocation_header(ssize at_address, FreeBlock *free_block_address, ssize alloc_size)
 {
     ASSERT(is_aligned((ssize)at_address, ALIGNOF(AllocationHeader)));
     ASSERT(is_aligned((ssize)free_block_address, ALIGNOF(FreeBlock)));
     ASSERT(is_aligned(alloc_size, ALIGNOF(FreeBlock)));
 
-    AllocationHeader *header = at_address;
+    AllocationHeader *header = (AllocationHeader *)at_address;
     header->free_block_address = (ssize)free_block_address;
     header->allocation_size = alloc_size;
 }
@@ -202,7 +202,7 @@ static void allocate_from_free_block(void *alloc_address, ssize alloc_size,
     // TODO: switch order of params
     remove_free_block(buffer, block);
 
-    void *alloc_header_address = byte_offset(alloc_address, -SIZEOF(AllocationHeader));
+    ssize alloc_header_address = (ssize)alloc_address - SIZEOF(AllocationHeader);
     write_allocation_header(alloc_header_address, block, alloc_size);
 }
 
@@ -224,14 +224,14 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize reques
     // properly aligned. Needed since a header will be written right before user pointer.
     ssize alignment = MAX(requested_alignment, ALIGNOF(AllocationHeader));
 
-    void *user_ptr = 0; // TODO: rename
+    void *alloc_address = 0; // TODO: rename
     FreeBlock *block_of_allocation = 0;
     FreeListBuffer *buffer_of_allocation = 0;
 
     BlockSearchResult search_result = find_suitable_block(arena, allocation_size, alignment);
 
     if (search_result.block) {
-        user_ptr = search_result.user_ptr;
+        alloc_address = search_result.user_ptr;
         block_of_allocation = search_result.block;
         buffer_of_allocation = search_result.buffer;
     } else {
@@ -240,25 +240,24 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize reques
 
         list_push_back(arena, new_buffer);
 
-        user_ptr = try_get_aligned_alloc_address_in_block(list_head(new_buffer), allocation_size, alignment);
+        alloc_address = try_get_aligned_alloc_address_in_block(list_head(new_buffer),
+	    allocation_size, alignment);
         block_of_allocation = list_head(new_buffer);
         buffer_of_allocation = new_buffer;
     }
 
-    allocate_from_free_block(user_ptr, allocation_size, block_of_allocation, buffer_of_allocation);
-    mem_zero(user_ptr, allocation_size);
+    allocate_from_free_block(alloc_address, allocation_size, block_of_allocation, buffer_of_allocation);
+    mem_zero(alloc_address, allocation_size);
 
-    return user_ptr;
+    return alloc_address;
 }
 
-static FreeListBuffer *find_buffer_containing_address(FreeListArena *arena, void *address)
+static FreeListBuffer *find_buffer_containing_address(FreeListArena *arena, ssize address)
 {
-    ssize int_addr = (ssize)address;
-
     for (FreeListBuffer *buffer = list_head(arena); buffer; buffer = list_next(buffer)) {
         ssize buffer_address = (ssize)(buffer + 1);
 
-        if ((buffer_address <= int_addr) && (int_addr < (buffer_address + buffer->usable_size))) {
+        if ((buffer_address <= address) && (address < (buffer_address + buffer->usable_size))) {
             return buffer;
         }
     }
@@ -267,14 +266,12 @@ static FreeListBuffer *find_buffer_containing_address(FreeListArena *arena, void
     return 0;
 }
 
-static FreeBlock *find_free_block_preceding_address(void *address, FreeListBuffer *buffer)
+static FreeBlock *find_free_block_preceding_address(ssize address, FreeListBuffer *buffer)
 {
-    ssize int_addr = (ssize)address;
-
     for (FreeBlock *block = list_head(buffer); block; block = list_next(block)) {
         ssize curr_address = (ssize)block;
         ssize next_address = (ssize)block->next;
-        b32 is_preceding = (curr_address < int_addr) && ((int_addr < next_address) || (next_address == 0));
+        b32 is_preceding = (curr_address < address) && ((address < next_address) || (next_address == 0));
 
         if (is_preceding) {
             return block;
@@ -292,7 +289,7 @@ static void merge_free_blocks(FreeListBuffer *buffer, FreeBlock *left, FreeBlock
     remove_free_block(buffer, right);
 }
 
-static void try_coalesce_blocks(FreeListBuffer *buffer, FreeBlock *middle)
+static void try_coalesce_free_blocks(FreeListBuffer *buffer, FreeBlock *middle)
 {
     ASSERT(buffer);
     ASSERT(middle);
@@ -324,8 +321,8 @@ void fl_deallocate(void *context, void *ptr)
 
     FreeBlock *new_block = write_free_block_header(free_block_address, free_block_size);
 
-    FreeListBuffer *containing_buffer = find_buffer_containing_address(arena, free_block_address);
-    FreeBlock *predecessor = find_free_block_preceding_address(free_block_address, containing_buffer);
+    FreeListBuffer *containing_buffer = find_buffer_containing_address(arena, (ssize)free_block_address);
+    FreeBlock *predecessor = find_free_block_preceding_address((ssize)free_block_address, containing_buffer);
 
     ASSERT(containing_buffer);
 
@@ -335,7 +332,7 @@ void fl_deallocate(void *context, void *ptr)
         list_push_front(containing_buffer, new_block);
     }
 
-    try_coalesce_blocks(containing_buffer, new_block);
+    try_coalesce_free_blocks(containing_buffer, new_block);
 }
 
 ssize fl_get_memory_usage(FreeListArena *arena)

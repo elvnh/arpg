@@ -18,12 +18,12 @@ static ArenaBlock *allocate_block(Allocator parent, ArenaBlock *previous, ssize 
 
     ssize size_required = size + (ssize)sizeof(ArenaBlock);
 
-    ArenaBlock *block = allocate_aligned(parent, size_required, ALIGNOF(ArenaBlock));
+    ArenaBlock *block = allocate_aligned(parent, size_required, 1, ALIGNOF(ArenaBlock));
     block->next_block = 0;
     block->prev_block = previous;
     block->capacity = size;
 
-    mem_zero(block + 1, cast_s64_to_usize(size));
+    mem_zero(block + 1, cast_ssize_to_usize(size));
 
     return block;
 }
@@ -69,7 +69,7 @@ static void *try_allocate_in_top_block(LinearArena *arena, ssize byte_count, ssi
 {
     ssize block_address = (ssize)(arena->top_block + 1);
     ssize top_address = block_address + arena->offset_into_top_block;
-    ssize aligned_address = align_s64(top_address, alignment);
+    ssize aligned_address = align(top_address, alignment);
     ssize aligned_top_offset = aligned_address - block_address;
 
     if (add_overflows_ssize(aligned_top_offset, byte_count)
@@ -80,7 +80,7 @@ static void *try_allocate_in_top_block(LinearArena *arena, ssize byte_count, ssi
     byte *result = (byte *)(block_address + aligned_top_offset);
     ASSERT(is_aligned((ssize)result, alignment));
 
-    mem_zero(result, cast_s64_to_usize(byte_count));
+    mem_zero(result, cast_ssize_to_usize(byte_count));
 
     arena->offset_into_top_block = aligned_top_offset + byte_count;
 
@@ -99,7 +99,7 @@ void *alloc_bytes(LinearArena *arena, ssize byte_count, ssize alignment)
 
     if (!result) {
         // No space found, allocate a new block
-        ssize aligned_header_size = align_s64(sizeof(ArenaBlock), alignment);
+        ssize aligned_header_size = align(sizeof(ArenaBlock), alignment);
         ssize padding_required = (aligned_header_size - (ssize)sizeof(ArenaBlock));
         ssize min_size_required = padding_required + byte_count;
         ssize new_block_size = MAX(min_size_required, arena->top_block->capacity); // TODO: growth strategy?

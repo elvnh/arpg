@@ -49,11 +49,11 @@ static FreeListBuffer *allocate_new_buffer(FreeListArena *arena, ssize capacity)
 {
     // Capacity must be rounded up since allocation sizes are rounded up to alignment boundary
     // of FreeBlock.
-    ssize aligned_buffer_capacity = align_s64(capacity, ALIGNOF(FreeBlock));
-    ssize block_offset_from_buffer_header = align_s64(SIZEOF(FreeListBuffer), ALIGNOF(FreeBlock));
+    ssize aligned_buffer_capacity = align(capacity, ALIGNOF(FreeBlock));
+    ssize block_offset_from_buffer_header = align(SIZEOF(FreeListBuffer), ALIGNOF(FreeBlock));
     ssize total_alloc_size = aligned_buffer_capacity + block_offset_from_buffer_header;
 
-    FreeListBuffer *new_buffer = allocate_aligned(arena->parent, total_alloc_size, ALIGNOF(FreeListBuffer));
+    FreeListBuffer *new_buffer = allocate_aligned(arena->parent, total_alloc_size, 1, ALIGNOF(FreeListBuffer));
 
     void *first_free_block_address = byte_offset(new_buffer, block_offset_from_buffer_header);
     FreeBlock *first_free_block = write_free_block_header(first_free_block_address, aligned_buffer_capacity);
@@ -98,7 +98,7 @@ void fl_destroy(FreeListArena *arena)
 static void *try_get_aligned_alloc_address_in_block(FreeBlock *block, ssize size, ssize alignment)
 {
     ssize first_usable_address = (ssize)byte_offset(block, sizeof(AllocationHeader));
-    ssize aligned_alloc_address = align_s64(first_usable_address, alignment);
+    ssize aligned_alloc_address = align(first_usable_address, alignment);
     ssize alloc_end_address = aligned_alloc_address + size - (ssize)block;
 
     if (alloc_end_address <= block->total_size) {
@@ -221,7 +221,7 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize reques
     }
 
     // Allocation size must be rounded up to ensure that next free block lands on alignment boundary
-    ssize allocation_size = align_s64(item_count * item_size, ALIGNOF(FreeBlock));
+    ssize allocation_size = align(item_count * item_size, ALIGNOF(FreeBlock));
 
     // Ensure that result of subtracting sizeof(AllocationHeader) from user pointer is
     // properly aligned. Needed since a header will be written right before user pointer.
@@ -384,7 +384,7 @@ static b32 fl_try_resize_allocation(FreeListArena *arena, void *ptr, ssize new_s
     FreeBlock *successor_block = find_free_block_succeeding_address((ssize)ptr, buffer);
 
     ssize old_alloc_size = alloc_header->allocation_size;
-    ssize aligned_new_alloc_size = align_s64(new_size, ALIGNOF(FreeBlock)); // TODO: create function for this
+    ssize aligned_new_alloc_size = align(new_size, ALIGNOF(FreeBlock)); // TODO: create function for this
 
     ASSERT(is_aligned(old_alloc_size, ALIGNOF(FreeBlock)));
     ASSERT(old_alloc_size > 0);
@@ -455,6 +455,7 @@ void *fl_reallocate(void *context, void *ptr, ssize new_count, ssize item_size, 
     AllocationHeader *alloc_header = get_allocation_header(ptr);
     ASSERT(alloc_header->allocation_size > 0);
 
+    ssize old_size = alloc_header->allocation_size;
     ssize new_size = new_count * item_size;
 
     void *result = ptr;
@@ -464,7 +465,7 @@ void *fl_reallocate(void *context, void *ptr, ssize new_count, ssize item_size, 
 	ASSERT(new_size > alloc_header->allocation_size);
 
 	result = fl_allocate(arena, new_count, item_size, alignment);
-	memcpy(result, ptr, (usize)alloc_header->allocation_size);
+	memcpy(result, ptr, (usize)old_size);
 	fl_deallocate(arena, ptr);
     }
 
@@ -497,4 +498,15 @@ ssize fl_get_available_memory(FreeListArena *arena)
     }
 
     return sum;
+}
+
+Allocator fl_allocator(FreeListArena *arena)
+{
+    Allocator result = {
+        .context = arena,
+        .alloc = fl_allocate,
+        .dealloc = fl_deallocate
+    };
+
+    return result;
 }

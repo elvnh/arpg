@@ -172,10 +172,10 @@ ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allo
     GLuint frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
 
     const char *const vertex_src_ptr = split_result.vertex_shader.data;
-    s32 vertex_src_length = safe_cast_ssize_s32(split_result.vertex_shader.length);
+    s32 vertex_src_length = cast_ssize_to_s32(split_result.vertex_shader.length);
 
     const char *const frag_src_ptr = split_result.fragment_shader.data;
-    s32 frag_src_length = safe_cast_ssize_s32(split_result.fragment_shader.length);
+    s32 frag_src_length = cast_ssize_to_s32(split_result.fragment_shader.length);
 
     glShaderSource(vertex_shader_id, 1, &vertex_src_ptr, &vertex_src_length);
     glCompileShader(vertex_shader_id);

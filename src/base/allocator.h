@@ -7,10 +7,9 @@
 
 // Helper macros to make it easier to call Allocator function pointers
 // TODO: allocate should take item count and item size
-#define allocate(a, bytes) (void *)allocate_array((a), byte, (bytes))
 #define allocate_item(a, type) allocate_array((a), type, 1)
 #define allocate_array(a, type, count) (type *)((a).alloc(a.context, (count), sizeof(type), ALIGNOF(type)))
-#define allocate_aligned(a, size, alignment) (void *)(a).alloc((a).context, (size), 1, (alignment))
+#define allocate_aligned(a, count, item_size, alignment) (void *)(a).alloc((a).context, (count), (item_size), (alignment))
 #define deallocate(a, ptr) (a).dealloc((a).context, (ptr))
 
 #define default_allocator (Allocator){ .context = 0, .alloc = default_allocate, \

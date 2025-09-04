@@ -92,8 +92,7 @@ static inline bool is_aligned(s64 value, s64 alignment)
     return (value % alignment) == 0;
 }
 
-// TODO: align_ssize
-static inline s64 align_s64(s64 value, s64 alignment)
+static inline s64 align(s64 value, s64 alignment)
 {
     ASSERT(is_pow2(alignment));
     ASSERT(!add_overflows_ssize(value - 1, alignment));
@@ -106,15 +105,15 @@ static inline s64 align_s64(s64 value, s64 alignment)
 }
 
 // TODO: get rid of this
-static inline usize cast_s64_to_usize(s64 value)
+static inline usize cast_ssize_to_usize(ssize value)
 {
     ASSERT(value >= 0);
-    ASSERT((u64)value <= USIZE_MAX);
+    ASSERT((usize)value <= USIZE_MAX);
 
     return (usize)value;
 }
 
-static inline s32 safe_cast_ssize_s32(ssize value)
+static inline s32 cast_ssize_to_s32(ssize value)
 {
     ASSERT((value >= S32_MIN) && (value <= S32_MAX));
 

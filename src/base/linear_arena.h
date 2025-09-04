@@ -4,7 +4,7 @@
 #include "typedefs.h"
 #include "allocator.h"
 
-#define arena_allocate_array(arena, type, count) (type *)(arena_allocate(arena, count, sizeof(type), ALIGNOF(type)))
+#define arena_allocate_array(arena, type, count) (type *)((arena_allocate(arena, count, sizeof(type), ALIGNOF(type))))
 #define arena_allocate_item(arena, type) arena_allocate_array(arena, type, 1)
 
 typedef struct {

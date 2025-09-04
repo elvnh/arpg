@@ -6,8 +6,8 @@
 String str_concat(String a, String b, Allocator alloc)
 {
     const ssize total_size = a.length + b.length;
-    const usize a_length = cast_s64_to_usize(a.length);
-    const usize b_length = cast_s64_to_usize(b.length);
+    const usize a_length = cast_ssize_to_usize(a.length);
+    const usize b_length = cast_ssize_to_usize(b.length);
 
     ASSERT(total_size > 0);
 
@@ -24,7 +24,7 @@ bool str_equal(String a, String b)
         return false;
     }
 
-    return (memcmp(a.data, b.data, cast_s64_to_usize(a.length)) == 0);
+    return (memcmp(a.data, b.data, cast_ssize_to_usize(a.length)) == 0);
 }
 
 String str_null_terminate(String str, Allocator alloc)
@@ -46,7 +46,7 @@ String str_null_terminate(String str, Allocator alloc)
 String str_copy(String str, Allocator alloc)
 {
     char *new_string = allocate_array(alloc, char, str.length);
-    memcpy(new_string, str.data, cast_s64_to_usize(str.length));
+    memcpy(new_string, str.data, cast_ssize_to_usize(str.length));
 
     String result = {
         .data = new_string,
@@ -68,7 +68,7 @@ bool str_starts_with(String str, String substr)
         return false;
     }
 
-    return (memcmp(str.data, substr.data, cast_s64_to_usize(substr.length)) == 0);
+    return (memcmp(str.data, substr.data, cast_ssize_to_usize(substr.length)) == 0);
 }
 
 bool str_ends_with(String str, String substr)

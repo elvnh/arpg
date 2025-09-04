@@ -43,7 +43,7 @@ ReadFileResult os_read_entire_file(String path, Allocator allocator)
         goto done;
     }
 
-    ssize bytes_read = read(fd, file_data, cast_s64_to_usize(file_size));
+    ssize bytes_read = read(fd, file_data, cast_ssize_to_usize(file_size));
     ASSERT(bytes_read == file_size);
 
     // TODO: is null terminating really necessary?

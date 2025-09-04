@@ -358,12 +358,12 @@ static void tests_utils()
 
     ASSERT(S_SIZE_MAX == S64_MAX);
 
-    ASSERT(align_s64(5, 8) == 8);
-    ASSERT(align_s64(8, 8) == 8);
-    ASSERT(align_s64(16, 8) == 16);
-    ASSERT(align_s64(17, 8) == 24);
-    ASSERT(align_s64(0, 8) == 0);
-    ASSERT(align_s64(4, 2) == 4);
+    ASSERT(align(5, 8) == 8);
+    ASSERT(align(8, 8) == 8);
+    ASSERT(align(16, 8) == 16);
+    ASSERT(align(17, 8) == 24);
+    ASSERT(align(0, 8) == 0);
+    ASSERT(align(4, 2) == 4);
 
     ASSERT(is_aligned(8, 8));
     ASSERT(is_aligned(8, 4));
@@ -1026,6 +1026,24 @@ static void tests_free_list()
 
 	    ASSERT(fl_get_memory_usage(&fl) == 0);
 	}
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+        byte *ptr1 = fl_alloc_array(&fl, byte, 100);
+        memset(ptr1, 0xCD, 100); // To ensure filled with junk data
+
+        byte *ptr2 = fl_alloc_array(&fl, byte, 50);
+        fl_alloc_item(&fl, byte);
+        byte *ptr3 = fl_realloc_array(&fl, byte, ptr2, 100);
+        ASSERT(ptr2 != ptr3);
+
+        for (s32 i = 50; i < 100; ++i) {
+            ASSERT(ptr3[i] == 0);
+        }
 
 	fl_destroy(&fl);
     }

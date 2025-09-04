@@ -42,5 +42,5 @@ Image img_load_png_from_file(String path, Allocator allocator)
     String terminated = str_null_terminate(path, scratch);
     ReadFileResult file = os_read_entire_file(terminated, scratch);
 
-    return img_load_png_from_memory(file.file_data, safe_cast_ssize_s32(file.file_size), allocator);
+    return img_load_png_from_memory(file.file_data, cast_ssize_to_s32(file.file_size), allocator);
 }

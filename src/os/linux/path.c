@@ -22,7 +22,7 @@ String os_get_executable_directory(Allocator allocator)
 
     ssize buffer_size = PATH_MAX;
     String result = str_allocate(buffer_size, allocator);
-    ssize bytes_written = readlink("/proc/self/exe", result.data, cast_s64_to_usize(result.length));
+    ssize bytes_written = readlink("/proc/self/exe", result.data, cast_ssize_to_usize(result.length));
 
     if (bytes_written == -1) {
         deallocate(allocator, result.data);
@@ -85,7 +85,7 @@ String os_get_working_directory(Allocator allocator)
 {
     String result = str_allocate(PATH_MAX + 1, allocator);
 
-    char *getcwd_result = getcwd(result.data, cast_s64_to_usize(result.length));
+    char *getcwd_result = getcwd(result.data, cast_ssize_to_usize(result.length));
     ASSERT(getcwd_result == result.data);
 
     if (!getcwd_result) {

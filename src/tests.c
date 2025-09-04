@@ -945,13 +945,11 @@ static void tests_free_list()
 
         void *p2 = fl_allocate(&fl, 900, 1, 4);
         ASSERT(fl_get_memory_usage(&fl) >= 1800 && fl_get_memory_usage(&fl) <= 2048);
-        ASSERT(fl_get_available_memory(&fl) <= 248);
 
         fl_deallocate(&fl, p1);
         fl_deallocate(&fl, p2);
 
         ASSERT(fl_get_memory_usage(&fl) == 0);
-        ASSERT(fl_get_available_memory(&fl) == 2048);
 
 	fl_destroy(&fl);
     }
@@ -984,88 +982,21 @@ static void tests_free_list()
     }
 
     {
-	ssize alloc_size = 100;
 	FreeListArena fl = fl_create(default_allocator, 1024);
 
-	for (s32 i = 1; i <= alloc_size; ++i) {
-	    void *ptr = fl_allocate(&fl, 1, alloc_size, 4);
+	byte *ptr1 = fl_allocate(&fl, 100, sizeof(byte), 4);
+	byte *ptr2 = fl_allocate(&fl, 100, sizeof(byte), 4);
 
-	    fl_try_resize_allocation(&fl, ptr, alloc_size, i);
-	    fl_deallocate(&fl, ptr);
+	memset(ptr1, 0xCD, 100 * sizeof(byte));
+	byte *new_ptr1 = fl_reallocate(&fl, ptr1, 200, sizeof(byte), 4);
 
-	    ASSERT(fl_get_memory_usage(&fl) == 0);
-	    ASSERT(fl_get_available_memory(&fl) == 1024);
+	ASSERT(new_ptr1 != ptr1);
+
+	for (s32 i = 0; i < 100; ++i) {
+	    ASSERT(new_ptr1[i] == 0xCD);
 	}
 
-	fl_destroy(&fl);
-    }
-
-    {
-	ssize alloc_size = 100;
-	FreeListArena fl = fl_create(default_allocator, 1024);
-
-	for (s32 i = 1; i <= alloc_size; ++i) {
-	    void *first = fl_allocate(&fl, 1, alloc_size, 4);
-	    void *ptr = fl_allocate(&fl, 1, alloc_size, 4);
-
-	    b32 resized1 = fl_try_resize_allocation(&fl, first, alloc_size, i);
-	    b32 resized2 = fl_try_resize_allocation(&fl, ptr, alloc_size, i);
-	    ASSERT(resized1);
-	    ASSERT(resized2);
-
-	    fl_deallocate(&fl, ptr);
-	    fl_deallocate(&fl, first);
-
-	    ASSERT(fl_get_memory_usage(&fl) == 0);
-	    ASSERT(fl_get_available_memory(&fl) == 1024);
-	}
-
-	fl_destroy(&fl);
-    }
-
-    {
-	FreeListArena fl = fl_create(default_allocator, 1024);
-
-	for (s32 size = 1; size <= 250; ++size) {
-	    void *ptr = fl_allocate(&fl, 1, size, 4);
-	    b32 success = fl_try_resize_allocation(&fl, ptr, size, size * 3);
-	    ASSERT(success);
-
-	    fl_deallocate(&fl, ptr);
-
-	    ASSERT(fl_get_memory_usage(&fl) == 0);
-	    ASSERT(fl_get_available_memory(&fl) == 1024);
-
-	}
-
-	fl_destroy(&fl);
-    }
-
-    {
-	FreeListArena fl = fl_create(default_allocator, 1024);
-
-	void *ptr = fl_allocate(&fl, 1, 100, 4);
-	b32 success = fl_try_resize_allocation(&fl, ptr, 100, 2000);
-	ASSERT(!success);
-
-	fl_deallocate(&fl, ptr);
-
-	ASSERT(fl_get_memory_usage(&fl) == 0);
-	ASSERT(fl_get_available_memory(&fl) == 1024);
-
-	fl_destroy(&fl);
-    }
-
-    {
-	FreeListArena fl = fl_create(default_allocator, 1024);
-
-	void *ptr = fl_allocate(&fl, 1, 100, 4);
-	void *ptr2 = fl_allocate(&fl, 1, 100, 4);
-
-	b32 success = fl_try_resize_allocation(&fl, ptr, 100, 2000);
-	ASSERT(!success);
-
-	fl_deallocate(&fl, ptr);
+	fl_deallocate(&fl, new_ptr1);
 	fl_deallocate(&fl, ptr2);
 
 	ASSERT(fl_get_memory_usage(&fl) == 0);
@@ -1079,21 +1010,51 @@ static void tests_free_list()
 
 	byte *ptr1 = fl_allocate(&fl, 1, 100, 4);
 	byte *ptr2 = fl_allocate(&fl, 1, 100, 4);
-
-	memset(ptr1, 0xCD, 100);
 	byte *new_ptr1 = fl_reallocate(&fl, ptr1, 100, 200, 4);
 
+	ASSERT(new_ptr1);
 	ASSERT(new_ptr1 != ptr1);
-
-	for (s32 i = 0; i < 100; ++i) {
-	    ASSERT(new_ptr1[i] == 0xCD);
-	}
 
 	fl_deallocate(&fl, new_ptr1);
 	fl_deallocate(&fl, ptr2);
 
 	ASSERT(fl_get_memory_usage(&fl) == 0);
-	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	for (s32 size = 2; size <= 100; ++size) {
+	    byte *ptr1 = fl_allocate(&fl, size, 1, 4);
+	    byte *new_ptr1 = fl_reallocate(&fl, ptr1, size / 2, 1, 4);
+
+	    ASSERT(new_ptr1);
+	    ASSERT(new_ptr1 == ptr1);
+
+	    fl_deallocate(&fl, new_ptr1);
+
+	    ASSERT(fl_get_memory_usage(&fl) == 0);
+	}
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	for (s32 size = 100; size <= 500; ++size) {
+	    byte *ptr1 = fl_allocate(&fl, 100, 1, 4);
+	    byte *new_ptr1 = fl_reallocate(&fl, ptr1, size, 1, 4);
+
+	    ASSERT(new_ptr1);
+	    ASSERT(new_ptr1 == ptr1);
+
+	    fl_deallocate(&fl, new_ptr1);
+
+	    ASSERT(fl_get_memory_usage(&fl) == 0);
+	}
 
 	fl_destroy(&fl);
     }

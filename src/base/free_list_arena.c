@@ -108,9 +108,9 @@ static void *try_get_aligned_alloc_address_in_block(FreeBlock *block, ssize size
     return 0;
 }
 
-static ssize calculate_next_buffer_size(FreeListArena *arena, ssize min_size)
+static ssize calculate_next_buffer_size(FreeListArena *arena, ssize allocation_size)
 {
-    ssize result = MAX(list_tail(arena)->usable_size, min_size);
+    ssize result = MAX(list_tail(arena)->usable_size, allocation_size * 2 + SIZEOF(AllocationHeader));
 
     return result;
 }
@@ -139,6 +139,7 @@ static BlockSearchResult find_suitable_block(FreeListArena *arena, ssize bytes_r
 
 static void split_free_block(FreeListBuffer *buffer, FreeBlock *block, ssize split_offset)
 {
+    ASSERT(split_offset > 0);
     ASSERT(is_aligned((ssize)block, ALIGNOF(FreeBlock)));
     ASSERT(is_aligned(split_offset, ALIGNOF(FreeBlock)));
 
@@ -177,6 +178,7 @@ static void write_allocation_header(ssize at_address, FreeBlock *free_block_addr
 static void allocate_from_free_block(void *alloc_address, ssize alloc_size,
     FreeBlock *block, FreeListBuffer *buffer)
 {
+    ASSERT(alloc_address);
     ASSERT(block);
     ASSERT(buffer);
     ASSERT(alloc_size);
@@ -373,34 +375,8 @@ void fl_deallocate(void *context, void *ptr)
 #endif
 }
 
-void *fl_reallocate(void *context, void *ptr, ssize old_size, ssize new_size, ssize alignment)
+static b32 fl_try_resize_allocation(FreeListArena *arena, void *ptr, ssize new_size)
 {
-    (void)old_size;
-
-    ASSERT(ptr);
-    ASSERT(context);
-
-    FreeListArena *arena = context;
-    AllocationHeader *alloc_header = get_allocation_header(ptr);
-    ASSERT(alloc_header->allocation_size > 0);
-
-    void *result = ptr;
-    b32 resized_in_place = fl_try_resize_allocation(arena, ptr, old_size, new_size);
-
-    if (!resized_in_place) {
-	ASSERT(new_size > alloc_header->allocation_size);
-
-	result = fl_allocate(arena, 1, new_size, alignment);
-	memcpy(result, ptr, (usize)alloc_header->allocation_size);
-	fl_deallocate(arena, ptr);
-    }
-
-    return result;
-}
-
-bool fl_try_resize_allocation(FreeListArena *arena, void *ptr, ssize old_size, ssize new_size)
-{
-    (void)old_size; // Unused
     ASSERT(new_size >= 0);
 
     AllocationHeader *alloc_header = get_allocation_header(ptr);
@@ -464,6 +440,37 @@ bool fl_try_resize_allocation(FreeListArena *arena, void *ptr, ssize old_size, s
 
     return success;
 }
+
+void *fl_reallocate(void *context, void *ptr, ssize new_count, ssize item_size, ssize alignment)
+{
+    ASSERT(ptr);
+    ASSERT(context);
+
+    if (multiply_overflows_ssize(new_count, item_size)) {
+	ASSERT(0);
+	return 0;
+    }
+
+    FreeListArena *arena = context;
+    AllocationHeader *alloc_header = get_allocation_header(ptr);
+    ASSERT(alloc_header->allocation_size > 0);
+
+    ssize new_size = new_count * item_size;
+
+    void *result = ptr;
+    b32 resized_in_place = fl_try_resize_allocation(arena, ptr, new_size);
+
+    if (!resized_in_place) {
+	ASSERT(new_size > alloc_header->allocation_size);
+
+	result = fl_allocate(arena, new_count, item_size, alignment);
+	memcpy(result, ptr, (usize)alloc_header->allocation_size);
+	fl_deallocate(arena, ptr);
+    }
+
+    return result;
+}
+
 
 ssize fl_get_memory_usage(FreeListArena *arena)
 {

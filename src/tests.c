@@ -982,6 +982,43 @@ static void tests_free_list()
 
         fl_destroy(&fl);
     }
+
+    {
+	ssize alloc_size = 100;
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	for (s32 i = 1; i <= alloc_size; ++i) {
+	    void *ptr = fl_allocate(&fl, 1, alloc_size, 4);
+
+	    fl_try_resize_allocation(&fl, ptr, alloc_size, i);
+	    fl_deallocate(&fl, ptr);
+
+	    ASSERT(fl_get_memory_usage(&fl) == 0);
+	    ASSERT(fl_get_available_memory(&fl) == 1024);
+	}
+
+	fl_destroy(&fl);
+    }
+
+    {
+	ssize alloc_size = 100;
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	for (s32 i = 1; i <= alloc_size; ++i) {
+	    void *first = fl_allocate(&fl, 1, alloc_size, 4);
+	    void *ptr = fl_allocate(&fl, 1, alloc_size, 4);
+
+	    fl_try_resize_allocation(&fl, first, alloc_size, i);
+	    fl_try_resize_allocation(&fl, ptr, alloc_size, i);
+	    fl_deallocate(&fl, ptr);
+	    fl_deallocate(&fl, first);
+
+	    ASSERT(fl_get_memory_usage(&fl) == 0);
+	    ASSERT(fl_get_available_memory(&fl) == 1024);
+	}
+
+	fl_destroy(&fl);
+    }
 }
 
 static void run_tests()

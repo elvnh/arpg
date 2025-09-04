@@ -471,7 +471,6 @@ void *fl_reallocate(void *context, void *ptr, ssize new_count, ssize item_size, 
     return result;
 }
 
-
 ssize fl_get_memory_usage(FreeListArena *arena)
 {
     ssize total_capacity = 0;

@@ -1,4 +1,5 @@
 #include "allocator.h"
+#include "base/utils.h"
 
 void *default_allocate(void *ctx, ssize item_count, ssize item_size, ssize alignment)
 {
@@ -16,16 +17,6 @@ void default_deallocate(void *ctx, void *ptr)
     free(ptr);
 }
 
-bool default_try_resize(void *ctx, void *ptr, ssize old_size, ssize new_size)
-{
-    (void)ctx;
-    (void)ptr;
-    (void)old_size;
-    (void)new_size;
-
-    return false;
-}
-
 void *stub_allocate(void *ctx, ssize item_count, ssize item_size, ssize alignment)
 {
     (void)ctx;
@@ -40,14 +31,4 @@ void stub_deallocate(void *ctx, void *ptr)
 {
     (void)ctx;
     (void)ptr;
-}
-
-bool stub_try_resize(void *ctx, void *ptr, ssize old_size, ssize new_size)
-{
-    (void)ctx;
-    (void)ptr;
-    (void)old_size;
-    (void)new_size;
-
-    return false;
 }

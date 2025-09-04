@@ -9,21 +9,11 @@ String str_concat(String a, String b, Allocator alloc)
     const usize a_length = cast_s64_to_usize(a.length);
     const usize b_length = cast_s64_to_usize(b.length);
 
-    char *new_string = 0;
-    if (try_resize_allocation(alloc, a.data, a.length, total_size)) {
-        new_string = a.data;
-    } else {
-        new_string = allocate_array(alloc, char, total_size);
+    ASSERT(total_size > 0);
 
-        memcpy(new_string, a.data, a_length);
-    }
-
-    memcpy(new_string + a_length, b.data,  b_length);
-
-    String result = {
-        .data = new_string,
-        .length = total_size
-    };
+    String result = str_allocate(total_size, alloc);
+    memcpy(result.data, a.data, a_length);
+    memcpy(result.data + a.length, b.data, b_length);
 
     return result;
 }
@@ -47,21 +37,8 @@ String str_null_terminate(String str, Allocator alloc)
         return null_string;
     }
 
-    char *new_string = 0;
-
-    if (try_resize_allocation(alloc, str.data, str.length, str.length + 1)) {
-        new_string = str.data;
-    } else {
-        new_string = allocate_array(alloc, char, str.length + 1);
-        memcpy(new_string, str.data, cast_s64_to_usize(str.length));
-    }
-
-    new_string[str.length] = '\0';
-
-    String result = {
-        .data = new_string,
-        .length = str.length
-    };
+    String result = str_concat(str, str_lit("\0"), alloc);
+    --result.length;
 
     return result;
 }

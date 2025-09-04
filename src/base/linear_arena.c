@@ -139,7 +139,7 @@ void arena_reset(LinearArena* arena)
     switch_to_block(arena, arena->first_block);
 }
 
-bool arena_try_resize(void *context, void *ptr, ssize old_size, ssize new_size)
+static bool arena_try_resize_allocation(void *context, void *ptr, ssize old_size, ssize new_size)
 {
     ASSERT(new_size >= 0);
 
@@ -172,7 +172,6 @@ Allocator arena_create_allocator(LinearArena* arena)
     Allocator allocator = {
         .alloc = arena_allocate,
         .dealloc = stub_deallocate,
-        .try_resize = arena_try_resize,
         .context = arena
     };
 

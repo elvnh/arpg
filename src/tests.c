@@ -114,6 +114,7 @@ static void tests_arena()
         arena_destroy(&arena);
     }
 
+#if 0
     {
         LinearArena arena = arena_create(default_allocator, 1024);
 
@@ -164,7 +165,7 @@ static void tests_arena()
 
         arena_destroy(&arena);
     }
-
+#endif
     {
         LinearArena arena = arena_create(default_allocator, 1024);
         byte *first = arena_allocate_array(&arena, byte, 256);
@@ -234,40 +235,8 @@ static void tests_string()
 
         String terminated = str_null_terminate(copy, allocator);
 
-        ASSERT(terminated.data == copy.data);
         ASSERT(terminated.data[terminated.length] == '\0');
         ASSERT(str_equal(copy, terminated));
-    }
-
-    {
-        // Extend in place
-        LinearArena ar = arena_create(default_allocator, 100);
-        Allocator alloc = arena_create_allocator(&ar);
-        String a = str_copy(str_lit("abc"), alloc);
-        String b = str_lit("def");
-
-        String c = str_concat(a, b, alloc);
-        ASSERT(c.data == a.data);
-
-        arena_destroy(&ar);
-    }
-
-    {
-        // Fail to extend in place
-        LinearArena ar = arena_create(default_allocator, 100);
-        Allocator alloc = arena_create_allocator(&ar);
-        String a = str_copy(str_lit("abc"), alloc);
-
-        allocate_item(alloc, byte);
-
-        String b = str_lit("def");
-
-        String c = str_concat(a, b, alloc);
-        ASSERT(str_equal(c, str_lit("abcdef")));
-
-        ASSERT(c.data != a.data);
-
-        arena_destroy(&ar);
     }
 
     {
@@ -1006,10 +975,12 @@ static void tests_free_list()
     }
 
     {
+        // Allocating larger than entire buffer
 	FreeListArena fl = fl_create(default_allocator, 1024);
 
 	byte *ptr1 = fl_allocate(&fl, 1, 100, 4);
 	byte *ptr2 = fl_allocate(&fl, 1, 100, 4);
+
 	byte *new_ptr1 = fl_reallocate(&fl, ptr1, 100, 200, 4);
 
 	ASSERT(new_ptr1);

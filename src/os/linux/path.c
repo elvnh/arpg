@@ -27,16 +27,12 @@ String os_get_executable_directory(Allocator allocator)
     if (bytes_written == -1) {
         deallocate(allocator, result.data);
     } else {
-        // NOTE: os_get_absolute_parent_path doesn't reallocate so we can just update
+        // NOTE: os_get_parent_path doesn't reallocate so we can just update
         // the size of the string
         result.length = bytes_written;
 
         String parent_dir = os_get_parent_path(result, allocator);
         ASSERT(parent_dir.data == result.data);
-
-        bool resized = try_resize_allocation(allocator, result.data, buffer_size, parent_dir.length);
-        (void)resized;
-        ASSERT(resized);
 
         result.length = parent_dir.length;
     }
@@ -79,8 +75,6 @@ String os_get_canonical_path(String path, Allocator allocator)
         ASSERT(realpath_result == canonical.data);
 
         ssize path_length = str_get_null_terminated_length(canonical);
-        try_resize_allocation(allocator, canonical.data, canonical.length, path_length);
-
         canonical.length = path_length;
     }
 
@@ -98,8 +92,6 @@ String os_get_working_directory(Allocator allocator)
         deallocate(allocator, result.data);
     } else {
         ssize str_length = str_get_null_terminated_length(result);
-        try_resize_allocation(allocator, result.data, result.length, str_length);
-
         result.length = str_length;
     }
 

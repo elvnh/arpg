@@ -421,7 +421,26 @@ bool fl_try_resize_allocation(FreeListArena *arena, void *ptr, ssize old_size, s
 
 	return true;
     } else {
-	ASSERT(false);
+	ssize allocation_end = (ssize)ptr + old_alloc_size;
+	b32 is_adjacent = allocation_end == (ssize)successor_block;
+
+	if (is_adjacent) {
+	    ssize bytes_needed_from_next_block = aligned_new_alloc_size - old_alloc_size;
+
+	    if (bytes_needed_from_next_block <= successor_block->total_size) {
+		split_free_block(buffer, successor_block, bytes_needed_from_next_block);
+		remove_free_block(buffer, successor_block);
+
+		alloc_header->allocation_size = aligned_new_alloc_size;
+
+		return true;
+	    } else {
+		return false;
+	    }
+	} else {
+	    ASSERT(0);
+	    return false;
+	}
     }
 
     return false;

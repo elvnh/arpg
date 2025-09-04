@@ -1008,8 +1008,11 @@ static void tests_free_list()
 	    void *first = fl_allocate(&fl, 1, alloc_size, 4);
 	    void *ptr = fl_allocate(&fl, 1, alloc_size, 4);
 
-	    fl_try_resize_allocation(&fl, first, alloc_size, i);
-	    fl_try_resize_allocation(&fl, ptr, alloc_size, i);
+	    b32 resized1 = fl_try_resize_allocation(&fl, first, alloc_size, i);
+	    b32 resized2 = fl_try_resize_allocation(&fl, ptr, alloc_size, i);
+	    ASSERT(resized1);
+	    ASSERT(resized2);
+
 	    fl_deallocate(&fl, ptr);
 	    fl_deallocate(&fl, first);
 
@@ -1019,6 +1022,40 @@ static void tests_free_list()
 
 	fl_destroy(&fl);
     }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	for (s32 size = 1; size <= 250; ++size) {
+	    void *ptr = fl_allocate(&fl, 1, size, 4);
+	    b32 success = fl_try_resize_allocation(&fl, ptr, size, size * 3);
+	    ASSERT(success);
+
+	    fl_deallocate(&fl, ptr);
+
+	    ASSERT(fl_get_memory_usage(&fl) == 0);
+	    ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	}
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	void *ptr = fl_allocate(&fl, 1, 100, 4);
+	b32 success = fl_try_resize_allocation(&fl, ptr, 100, 2000);
+	ASSERT(!success);
+
+	fl_deallocate(&fl, ptr);
+
+	ASSERT(fl_get_memory_usage(&fl) == 0);
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
 }
 
 static void run_tests()

@@ -6,10 +6,9 @@
 /*
   TODO:
   - Choose between first and best fit
-  - Realloc
-  - Try resize
   - Helper macros
   - Make consistent whether dealing with void * or ssize
+  - Should realloc take item count and item size?
 */
 
 typedef struct {
@@ -23,6 +22,7 @@ FreeListArena   fl_create(Allocator parent, ssize capacity);
 void		fl_destroy(FreeListArena *arena);
 void           *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignment);
 void            fl_deallocate(void *context, void *ptr);
+void	       *fl_reallocate(void *context, void *ptr, ssize old_size, ssize new_size, ssize alignment);
 bool		fl_try_resize_allocation(FreeListArena *arena, void *ptr, ssize old_size, ssize new_size);
 ssize	        fl_get_memory_usage(FreeListArena *arena);
 ssize		fl_get_available_memory(FreeListArena *arena);

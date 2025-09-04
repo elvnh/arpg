@@ -1056,6 +1056,47 @@ static void tests_free_list()
 	fl_destroy(&fl);
     }
 
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	void *ptr = fl_allocate(&fl, 1, 100, 4);
+	void *ptr2 = fl_allocate(&fl, 1, 100, 4);
+
+	b32 success = fl_try_resize_allocation(&fl, ptr, 100, 2000);
+	ASSERT(!success);
+
+	fl_deallocate(&fl, ptr);
+	fl_deallocate(&fl, ptr2);
+
+	ASSERT(fl_get_memory_usage(&fl) == 0);
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+	byte *ptr1 = fl_allocate(&fl, 1, 100, 4);
+	byte *ptr2 = fl_allocate(&fl, 1, 100, 4);
+
+	memset(ptr1, 0xCD, 100);
+	byte *new_ptr1 = fl_reallocate(&fl, ptr1, 100, 200, 4);
+
+	ASSERT(new_ptr1 != ptr1);
+
+	for (s32 i = 0; i < 100; ++i) {
+	    ASSERT(new_ptr1[i] == 0xCD);
+	}
+
+	fl_deallocate(&fl, new_ptr1);
+	fl_deallocate(&fl, ptr2);
+
+	ASSERT(fl_get_memory_usage(&fl) == 0);
+	ASSERT(fl_get_available_memory(&fl) == 1024);
+
+	fl_destroy(&fl);
+    }
 }
 
 static void run_tests()

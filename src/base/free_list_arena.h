@@ -12,6 +12,7 @@
   TODO:
   - Choose between first and best fit
   - Make consistent whether dealing with void * or ssize
+  - Total capacity
 */
 
 typedef struct {

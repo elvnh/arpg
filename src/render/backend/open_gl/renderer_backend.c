@@ -204,9 +204,10 @@ ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allo
     return handle;
 }
 
-void renderer_backend_destroy_shader(ShaderAsset *shader)
+void renderer_backend_destroy_shader(ShaderAsset *shader, Allocator allocator)
 {
     glDeleteProgram(shader->native_handle);
+    deallocate(allocator, shader);
 }
 
 TextureAsset *renderer_backend_create_texture(Image image, Allocator allocator)
@@ -245,9 +246,10 @@ TextureAsset *renderer_backend_create_texture(Image image, Allocator allocator)
     return handle;
 }
 
-void renderer_backend_destroy_texture(TextureAsset *texture)
+void renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator)
 {
     glDeleteTextures(1, &texture->native_handle);
+    deallocate(allocator, texture);
 }
 
 void renderer_backend_use_shader(ShaderAsset *handle)

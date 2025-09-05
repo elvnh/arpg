@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <pthread.h>
 
+#include "base/free_list_arena.h"
 #include "base/typedefs.h"
 #include "base/string8.h"
 #include "base/linear_arena.h"
@@ -36,19 +37,17 @@ int main()
 
     run_tests();
 
-    struct WindowHandle *handle = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
+    WindowHandle *handle = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
 
     Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
     proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
     proj = mat4_scale(proj, 3.0f);
 
-
-    AssetSystem assets = {0};
+    AssetSystem assets = assets_initialize(alloc);
 
     TextureHandle texture_handle = assets_register_texture(&assets, str_lit("assets/sprites/test.png"));
     TextureAsset *texture = assets_get_texture(&assets, texture_handle);
-
     renderer_backend_bind_texture(texture);
 
     ShaderHandle shader_handle = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"));

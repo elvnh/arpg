@@ -16,9 +16,9 @@ typedef struct RendererBackend RendererBackend;
 
 RendererBackend *renderer_backend_initialize(Allocator allocator);
 ShaderAsset     *renderer_backend_create_shader(String shader_source, Allocator allocator);
-void             renderer_backend_destroy_shader(ShaderAsset *shader);
+void             renderer_backend_destroy_shader(ShaderAsset *shader, Allocator allocator);
 TextureAsset    *renderer_backend_create_texture(Image image, Allocator allocator);
-void             renderer_backend_destroy_texture(TextureAsset *texture);
+void             renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator);
 void             renderer_backend_use_shader(ShaderAsset *shader);
 void             renderer_backend_bind_texture(TextureAsset *texture);
 void             renderer_backend_set_mat4_uniform(ShaderAsset *shader, String uniform_name, Matrix4 matrix);

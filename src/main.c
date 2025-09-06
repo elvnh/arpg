@@ -5,32 +5,19 @@
 #include <pthread.h>
 
 #include "base/free_list_arena.h"
-#include "base/rectangle.h"
-#include "base/rgba.h"
-#include "base/typedefs.h"
-#include "base/string8.h"
-#include "base/linear_arena.h"
-#include "base/allocator.h"
-#include "base/utils.h"
-#include "base/matrix.h"
-#include "os/file.h"
-#include "os/path.h"
-#include "os/thread_context.h"
-#include "image.h"
+#include "renderer/renderer_backend.h"
+#include "game/assets.h"
 
-#include "render/backend/renderer_backend.h"
-#include "assets.h"
-
-#include "os/window.h"
-#include "render/render_command.h"
-#include "render/vertex.h"
-#include "shader.h"
+#include "platform/window.h"
+#include "base/thread_context.h"
+#include "game/renderer/render_command.h"
+#include "base/vertex.h"
 #include "tests.c"
 
 #define WINDOW_WIDTH 768
 #define WINDOW_HEIGHT 468
 
-#include "render/render_batch.h"
+#include "game/renderer/render_batch.h"
 
 typedef struct {
     ShaderHandle shader;
@@ -116,14 +103,16 @@ static void sort_render_commands(RenderBatch *rb)
     (void)rb;
 }
 
+#include "game/game.h"
+
 int main()
 {
-    bool result = thread_ctx_initialize_system();
-    ASSERT(result);
-    thread_ctx_create_for_thread(default_allocator);
+    /* bool result = thread_ctx_initialize_system(); */
+    /* ASSERT(result); */
+    /* thread_ctx_create_for_thread(default_allocator); */
 
-    LinearArena arena = arena_create(default_allocator, MB(4));
-    Allocator alloc = arena_create_allocator(&arena);
+    LinearArena arena = la_create(default_allocator, MB(4));
+    Allocator alloc = la_allocator(&arena);
 
     run_tests();
 
@@ -136,8 +125,10 @@ int main()
 
     AssetSystem assets = assets_initialize(alloc);
 
-    ShaderHandle shader_handle = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"));
-    TextureHandle texture_handle = assets_register_texture(&assets, str_lit("assets/sprites/test.png"));
+    LinearArena scratch = la_create(default_allocator, MB(4));
+
+    ShaderHandle shader_handle = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"), scratch);
+    TextureHandle texture_handle = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), scratch);
 
     {
         ShaderAsset *shader_asset = assets_get_shader(&assets, shader_handle);
@@ -152,21 +143,15 @@ int main()
 
         rb.entry_count = 0;
 
-        Rectangle rect = {
-            .position = {0},
-            .size = {64, -64}
-        };
-
-        rb_push_sprite(&rb, &arena, texture_handle, rect, shader_handle, 0);
+        game_update_and_render(&rb);
 
         execute_render_commands(&rb, &assets, backend);
 
         os_poll_events(handle);
-
     }
-    os_destroy_window(handle);
 
-    arena_destroy(&arena);
+    os_destroy_window(handle);
+    la_destroy(&arena);
 
     return 0;
 }

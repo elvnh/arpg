@@ -3,9 +3,9 @@
 #include "base/allocator.h"
 #include "base/string8.h"
 #include "base/utils.h"
-#include "render/backend/renderer_backend.h"
-#include "render/vertex.h"
-#include "os/thread_context.h"
+#include "renderer/renderer_backend.h"
+#include "base/vertex.h"
+#include "base/thread_context.h"
 
 #define MAX_RENDERER_VERTICES 512
 
@@ -110,7 +110,8 @@ static bool assert_shader_compilation_successful(GLuint shader)
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &max_length);
         ASSERT(!add_overflows_s32(max_length, 1));
 
-        Allocator scratch = thread_ctx_get_allocator();
+        // TODO: scratch
+        Allocator scratch = default_allocator;
         char *data = allocate_array(scratch, char, max_length + 1);
 
         glGetShaderInfoLog(shader, max_length, &max_length, data);
@@ -264,7 +265,10 @@ void renderer_backend_bind_texture(TextureAsset *texture)
 
 static GLint get_uniform_location(ShaderAsset *shader, String uniform_name)
 {
-    String terminated = str_null_terminate(uniform_name, thread_ctx_get_allocator());
+    // TODO: scratch
+    Allocator scratch = default_allocator;
+    String terminated = str_null_terminate(uniform_name, scratch);
+
     GLint location = glGetUniformLocation(shader->native_handle, terminated.data);
     ASSERT(location != -1);
 

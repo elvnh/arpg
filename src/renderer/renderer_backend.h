@@ -4,9 +4,9 @@
 #include "base/allocator.h"
 #include "base/string8.h"
 #include "base/matrix.h"
-#include "render/vertex.h"
+#include "base/vertex.h"
 #include "image.h"
-#include "assets.h"
+#include "game/assets.h"
 
 // TODO: deinit backend?
 // TODO: only end_frame/flush needed

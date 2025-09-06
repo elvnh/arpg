@@ -1,7 +1,7 @@
 #include <pthread.h>
 
 #include "base/linear_arena.h"
-#include "os/thread_context.h"
+#include "base/thread_context.h"
 
 #define THREAD_SCRATCH_ARENA_SIZE MB(4)
 
@@ -22,7 +22,7 @@ bool thread_ctx_create_for_thread(Allocator allocator)
 {
     thread_context *ctx = allocate_item(allocator, thread_context);
     ctx->thread_id = pthread_self();
-    ctx->scratch_arena = arena_create(allocator, THREAD_SCRATCH_ARENA_SIZE);
+    ctx->scratch_arena = la_create(allocator, THREAD_SCRATCH_ARENA_SIZE);
 
     s32 set_result = pthread_setspecific(global_tld_key, ctx);
 
@@ -56,7 +56,7 @@ LinearArena thread_ctx_get_temp_arena()
 Allocator thread_ctx_get_allocator()
 {
     LinearArena *arena = thread_ctx_get_arena();
-    Allocator allocator = arena_create_allocator(arena);
+    Allocator allocator = la_allocator(arena);
 
     return allocator;
 }

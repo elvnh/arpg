@@ -1,11 +1,11 @@
 #include "render_batch.h"
 #include "base/linear_arena.h"
-#include "render/render_command.h"
+#include "render_command.h"
 
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, ShaderHandle shader, s32 layer)
 {
-    SpriteCmd *sprite = arena_allocate_item(arena, SpriteCmd);
+    SpriteCmd *sprite = la_allocate_item(arena, SpriteCmd);
     sprite->header.kind = RENDER_CMD_SPRITE;
     sprite->rect = rectangle;
 
@@ -19,7 +19,7 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
 
 void render_entry_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
 {
-    SetupCmdUniformVec4 *cmd = arena_allocate_item(arena, SetupCmdUniformVec4);
+    SetupCmdUniformVec4 *cmd = la_allocate_item(arena, SetupCmdUniformVec4);
     cmd->header.kind = SETUP_CMD_SET_UNIFORM_VEC4;
     cmd->uniform_name = uniform_name;
     cmd->vector = vec;

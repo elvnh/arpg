@@ -1,6 +1,6 @@
 #include <GLFW/glfw3.h>
 
-#include "os/window.h"
+#include "platform/window.h"
 
 struct WindowHandle {
     GLFWwindow *window;

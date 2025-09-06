@@ -4,9 +4,9 @@
 #include "base/list.h"
 #include "base/string8.h"
 
-#include "os/file.h"
-#include "os/path.h"
-#include "os/thread_context.h"
+#include "platform/file.h"
+#include "platform/path.h"
+#include "platform/thread_context.h"
 
 #define INCLUDE_DIRECTIVE_STRING str_lit("#include ")
 

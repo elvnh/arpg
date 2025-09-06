@@ -2,7 +2,7 @@
 #define RECTANGLE_H
 
 #include "base/vector.h"
-#include "render/vertex.h"
+#include "base/vertex.h"
 
 typedef struct {
     Vector2 position;

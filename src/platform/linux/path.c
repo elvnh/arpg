@@ -6,10 +6,10 @@
 #include <linux/limits.h>
 #include <stdlib.h>
 
-#include "os/path.h"
-#include "os/thread_context.h"
+#include "platform/path.h"
+#include "base/thread_context.h"
 
-String os_get_executable_directory(Allocator allocator)
+String os_get_executable_directory(Allocator allocator, LinearArena *scratch_arena)
 {
     /*
       NOTE: This entire PATH_MAX business seems kind of bad. It's apparently
@@ -31,7 +31,7 @@ String os_get_executable_directory(Allocator allocator)
         // the size of the string
         result.length = bytes_written;
 
-        String parent_dir = os_get_parent_path(result, allocator);
+        String parent_dir = os_get_parent_path(result, allocator, scratch_arena);
         ASSERT(parent_dir.data == result.data);
 
         result.length = parent_dir.length;
@@ -45,13 +45,13 @@ bool os_path_is_absolute(String path)
     return str_starts_with(path, str_lit("/"));
 }
 
-String os_get_absolute_path(String path, Allocator allocator)
+String os_get_absolute_path(String path, Allocator allocator, LinearArena *scratch_arena)
 {
     if (os_path_is_absolute(path)) {
         return path;
     }
 
-    Allocator scratch = thread_ctx_get_allocator();
+    Allocator scratch = la_allocator(scratch_arena);
 
     String working_dir = str_concat(os_get_working_directory(scratch), str_lit("/"), scratch);
     String result = str_concat(working_dir, path, allocator);
@@ -59,11 +59,12 @@ String os_get_absolute_path(String path, Allocator allocator)
     return result;
 }
 
-String os_get_canonical_path(String path, Allocator allocator)
+String os_get_canonical_path(String path, Allocator allocator, LinearArena *scratch_arena)
 {
-    Allocator scratch = thread_ctx_get_allocator();
+    Allocator scratch = la_allocator(scratch_arena);
 
-    String absolute = str_null_terminate(os_get_absolute_path(path, scratch), scratch);
+    String absolute = os_get_absolute_path(path, scratch, scratch_arena);
+    absolute = str_null_terminate(absolute, scratch);
 
     String canonical = str_allocate(PATH_MAX, allocator);
     char *realpath_result = realpath(absolute.data, canonical.data);
@@ -100,14 +101,15 @@ String os_get_working_directory(Allocator allocator)
 
 void os_change_working_directory(String path)
 {
-    String terminated = str_null_terminate(path, thread_ctx_get_allocator());
+    Allocator scratch = default_allocator;
+    String terminated = str_null_terminate(path, scratch);
     s32 result = chdir(terminated.data);
     ASSERT(result == 0);
 }
 
-String os_get_parent_path(String path, Allocator allocator)
+String os_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena)
 {
-    String absolute = os_get_absolute_path(path, allocator);
+    String absolute = os_get_absolute_path(path, allocator, scratch_arena);
     ssize last_slash_pos = str_find_last_occurence(absolute, str_lit("/"));
     ASSERT(last_slash_pos != -1);
 

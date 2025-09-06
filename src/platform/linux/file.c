@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include "os/file.h"
+#include "platform/file.h"
 #include "base/utils.h"
 
 // NOTE: path must be null terminated
@@ -66,9 +66,9 @@ String os_read_entire_file_as_string(String path, Allocator allocator)
     return result;
 }
 
-ssize os_get_file_size(String path, LinearArena scratch)
+ssize os_get_file_size(String path, LinearArena *scratch)
 {
-    String null_terminated = str_null_terminate(path, arena_create_allocator(&scratch));
+    String null_terminated = str_null_terminate(path, la_allocator(scratch));
 
     return os_get_file_size_impl(null_terminated.data);
 }

@@ -2,6 +2,7 @@
 #define ASSETS_H
 
 #include "base/free_list_arena.h"
+#include "base/linear_arena.h"
 #include "base/string8.h"
 
 #define MAX_REGISTERED_ASSETS 256
@@ -41,9 +42,9 @@ typedef struct {
 } AssetSystem;
 
 AssetSystem    assets_initialize(Allocator parent_allocator);
-ShaderHandle   assets_register_shader(AssetSystem *assets, String path);
+ShaderHandle   assets_register_shader(AssetSystem *assets, String path, LinearArena scratch);
 ShaderAsset   *assets_get_shader(AssetSystem *assets, ShaderHandle handle);
-TextureHandle  assets_register_texture(AssetSystem *assets, String path);
+TextureHandle  assets_register_texture(AssetSystem *assets, String path, LinearArena scratch);
 TextureAsset  *assets_get_texture(AssetSystem *assets, TextureHandle handle);
 
 

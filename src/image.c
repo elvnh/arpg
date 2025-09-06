@@ -3,8 +3,8 @@
 #include "image.h"
 #include "base/linear_arena.h"
 #include "base/utils.h"
-#include "os/thread_context.h"
-#include "os/file.h"
+#include "base/thread_context.h"
+#include "platform/file.h"
 
 #include "stb_image.h"
 
@@ -34,10 +34,9 @@ Image img_load_png_from_memory(void *data, s32 size, Allocator allocator)
     return result;
 }
 
-Image img_load_png_from_file(String path, Allocator allocator)
+Image img_load_png_from_file(String path, Allocator allocator, LinearArena scratch_arena)
 {
-    LinearArena scratch_arena = thread_ctx_get_temp_arena();
-    Allocator scratch = arena_create_allocator(&scratch_arena);
+    Allocator scratch = la_allocator(&scratch_arena);
 
     String terminated = str_null_terminate(path, scratch);
     ReadFileResult file = os_read_entire_file(terminated, scratch);

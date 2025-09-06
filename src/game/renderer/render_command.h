@@ -38,5 +38,4 @@ typedef struct {
     Vector4 vector;
 } SetupCmdUniformVec4;
 
-
 #endif //RENDER_COMMAND_H

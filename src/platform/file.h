@@ -11,6 +11,6 @@ typedef struct {
 
 ReadFileResult os_read_entire_file(String path, Allocator allocator);
 String         os_read_entire_file_as_string(String path, Allocator allocator);
-ssize          os_get_file_size(String path, LinearArena scratch);
+ssize          os_get_file_size(String path, LinearArena *scratch);
 
 #endif //FILE_H

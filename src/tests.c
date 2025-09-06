@@ -1,17 +1,31 @@
+#include <math.h>
+
+#include "base/free_list_arena.h"
+#include "base/rectangle.h"
+#include "base/rgba.h"
+#include "base/typedefs.h"
+#include "base/string8.h"
+#include "base/linear_arena.h"
+#include "base/allocator.h"
+#include "base/utils.h"
+#include "base/matrix.h"
+#include "platform/file.h"
+#include "platform/path.h"
+#include "base/thread_context.h"
+#include "image.h"
 #include "base/free_list_arena.h"
 #include "base/list.h"
 #include "base/utils.h"
-#include <math.h>
 
 static void tests_arena()
 {
     {
-        LinearArena arena = arena_create(default_allocator, 1024);
+        LinearArena arena = la_create(default_allocator, 1024);
 
-        s32 *ptr1 = arena_allocate_item(&arena, s32);
-        s32 *ptr2 = arena_allocate_item(&arena, s32);
+        s32 *ptr1 = la_allocate_item(&arena, s32);
+        s32 *ptr2 = la_allocate_item(&arena, s32);
 
-        ASSERT(arena_get_memory_usage(&arena) == 8);
+        ASSERT(la_get_memory_usage(&arena) == 8);
 
         *ptr1 = 123;
         *ptr2 = 456;
@@ -24,108 +38,108 @@ static void tests_arena()
 
         ASSERT(*ptr2 == 456);
 
-        arena_reset(&arena);
-        s32 *p = arena_allocate_item(&arena, s32);
+        la_reset(&arena);
+        s32 *p = la_allocate_item(&arena, s32);
         ASSERT(p == ptr1);
 
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
     {
         const s32 size = 1024;
-        LinearArena arena = arena_create(default_allocator, size);
+        LinearArena arena = la_create(default_allocator, size);
 
-        byte *arr1 = arena_allocate_array(&arena, byte, size / 2);
-        byte *arr2 = arena_allocate_array(&arena, byte, size / 2);
+        byte *arr1 = la_allocate_array(&arena, byte, size / 2);
+        byte *arr2 = la_allocate_array(&arena, byte, size / 2);
 
         ASSERT(arr1);
         ASSERT(arr2);
-        ASSERT(arena_get_memory_usage(&arena) == size);
+        ASSERT(la_get_memory_usage(&arena) == size);
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
     {
         const s32 size = 1024;
-        LinearArena arena = arena_create(default_allocator, size);
+        LinearArena arena = la_create(default_allocator, size);
 
-        byte *arr1 = arena_allocate_array(&arena, byte, size / 2);
-        byte *arr2 = arena_allocate_array(&arena, byte, size / 2 + 1);
+        byte *arr1 = la_allocate_array(&arena, byte, size / 2);
+        byte *arr2 = la_allocate_array(&arena, byte, size / 2 + 1);
 
         ASSERT(arr1);
         ASSERT(arr2);
-        ASSERT(arena_get_memory_usage(&arena) == size + size / 2 + 1);
+        ASSERT(la_get_memory_usage(&arena) == size + size / 2 + 1);
 
-        byte *arr3 = arena_allocate_array(&arena, byte, 14);
+        byte *arr3 = la_allocate_array(&arena, byte, 14);
         ASSERT(arr3);
 
-        arena_reset(&arena);
-        byte *ptr1 = arena_allocate_item(&arena, byte);
+        la_reset(&arena);
+        byte *ptr1 = la_allocate_item(&arena, byte);
         ASSERT(ptr1 == arr1);
 
-        byte *ptr2 = arena_allocate_array(&arena, byte, size);
+        byte *ptr2 = la_allocate_array(&arena, byte, size);
         ASSERT(ptr2 == arr2);
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
     {
         const s32 size = 1024;
-        LinearArena arena = arena_create(default_allocator, size);
+        LinearArena arena = la_create(default_allocator, size);
 
-        byte *first = arena_allocate_item(&arena, byte);
-        byte *arr1 = arena_allocate(&arena, 1, 4, 32);
+        byte *first = la_allocate_item(&arena, byte);
+        byte *arr1 = la_allocate(&arena, 1, 4, 32);
 
         ASSERT(first != (arr1 + 1));
         ASSERT(is_aligned((ssize)arr1, 32));
 
-        byte *arr2 = arena_allocate(&arena, 1, 4, 256);
+        byte *arr2 = la_allocate(&arena, 1, 4, 256);
         ASSERT(is_aligned((ssize)arr2, 256));
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
     {
         const s32 size = 1024;
-        LinearArena arena = arena_create(default_allocator, size);
+        LinearArena arena = la_create(default_allocator, size);
 
-        byte *arr1 = arena_allocate(&arena, 1, size, 256);
+        byte *arr1 = la_allocate(&arena, 1, size, 256);
         ASSERT(is_aligned((ssize)arr1, 256));
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
     {
         // Zero out new allocations
-        LinearArena arena = arena_create(default_allocator, 1024);
+        LinearArena arena = la_create(default_allocator, 1024);
 
-        byte *arr1 = arena_allocate_array(&arena, byte, 16);
+        byte *arr1 = la_allocate_array(&arena, byte, 16);
         memset(arr1, 0xFF, 16);
 
-        arena_reset(&arena);
-        byte *arr2 = arena_allocate_array(&arena, byte, 16);
+        la_reset(&arena);
+        byte *arr2 = la_allocate_array(&arena, byte, 16);
         ASSERT(arr2 == arr1);
 
         for (s32 i = 0; i < 16; ++i) {
             ASSERT(arr2[i] == 0);
         }
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
 #if 0
     {
         LinearArena arena = arena_create(default_allocator, 1024);
 
-        byte *ptr = arena_allocate_array(&arena, byte, 16);
+        byte *ptr = la_allocate_array(&arena, byte, 16);
         ASSERT(arena_get_memory_usage(&arena) == 16);
 
         const bool extended = arena_try_resize(&arena, ptr, 16, 32);
         ASSERT(extended);
         ASSERT(arena_get_memory_usage(&arena) == 32);
 
-        byte *ptr2 = arena_allocate_array(&arena, byte, 16);
+        byte *ptr2 = la_allocate_array(&arena, byte, 16);
         ASSERT(ptr2 == (ptr + 32));
         ASSERT(arena_get_memory_usage(&arena) == 48);
         arena_destroy(&arena);
@@ -134,8 +148,8 @@ static void tests_arena()
     {
         LinearArena arena = arena_create(default_allocator, 1024);
 
-        byte *ptr = arena_allocate_array(&arena, byte, 16);
-        arena_allocate_array(&arena, byte, 16);
+        byte *ptr = la_allocate_array(&arena, byte, 16);
+        la_allocate_array(&arena, byte, 16);
 
         bool extended = arena_try_resize(&arena, ptr, 16, 32);
         ASSERT(!extended);
@@ -146,7 +160,7 @@ static void tests_arena()
     {
         LinearArena arena = arena_create(default_allocator, 1024);
 
-        byte *ptr = arena_allocate_array(&arena, byte, 16);
+        byte *ptr = la_allocate_array(&arena, byte, 16);
         bool extended = arena_try_resize(&arena, ptr, 16, 2000);
         ASSERT(!extended);
 
@@ -156,49 +170,49 @@ static void tests_arena()
     {
         LinearArena arena = arena_create(default_allocator, 1024);
 
-        byte *first = arena_allocate_array(&arena, byte, 16);
+        byte *first = la_allocate_array(&arena, byte, 16);
         bool resized = arena_try_resize(&arena, first, 16, 1);
         ASSERT(resized);
 
-        byte *next = arena_allocate_item(&arena, byte);
+        byte *next = la_allocate_item(&arena, byte);
         ASSERT(next == first + 1);
 
         arena_destroy(&arena);
     }
 #endif
     {
-        LinearArena arena = arena_create(default_allocator, 1024);
-        byte *first = arena_allocate_array(&arena, byte, 256);
+        LinearArena arena = la_create(default_allocator, 1024);
+        byte *first = la_allocate_array(&arena, byte, 256);
 
-        arena_pop_to(&arena, first);
-        byte *next = arena_allocate_array(&arena, byte, 256);
+        la_pop_to(&arena, first);
+        byte *next = la_allocate_array(&arena, byte, 256);
         ASSERT(next == first);
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
     {
-        LinearArena arena = arena_create(default_allocator, 1024);
-        byte *first = arena_allocate_array(&arena, byte, 256);
-        byte *second = arena_allocate_array(&arena, byte, 1000);
+        LinearArena arena = la_create(default_allocator, 1024);
+        byte *first = la_allocate_array(&arena, byte, 256);
+        byte *second = la_allocate_array(&arena, byte, 1000);
 
-        arena_pop_to(&arena, second);
+        la_pop_to(&arena, second);
 
-        byte *third = arena_allocate_array(&arena, byte, 10);
+        byte *third = la_allocate_array(&arena, byte, 10);
         ASSERT(third == second);
 
-        arena_pop_to(&arena, first);
-        byte *fourth = arena_allocate_array(&arena, byte, 10);
+        la_pop_to(&arena, first);
+        byte *fourth = la_allocate_array(&arena, byte, 10);
         ASSERT(fourth == first);
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 }
 
 static void tests_string()
 {
-    LinearArena arena = arena_create(default_allocator, MB(1));
-    Allocator allocator = arena_create_allocator(&arena);
+    LinearArena arena = la_create(default_allocator, MB(1));
+    Allocator allocator = la_allocator(&arena);
 
     {
 
@@ -221,7 +235,7 @@ static void tests_string()
         ASSERT(str_equal(lit, copy));
         ASSERT(lit.data != copy.data);
 
-        arena_allocate_item(&arena, byte); // To prevent from extending in place
+        la_allocate_item(&arena, byte); // To prevent from extending in place
 
         String terminated = str_null_terminate(copy, allocator);
         ASSERT(terminated.data != copy.data);
@@ -330,7 +344,7 @@ static void tests_string()
 
 
 
-    arena_destroy(&arena);
+    la_destroy(&arena);
 }
 
 static void tests_utils()
@@ -394,37 +408,32 @@ static void tests_utils()
 static void tests_file()
 {
     {
-        LinearArena arena = arena_create(default_allocator, MB(1));
-        ssize file_size = os_get_file_size(str_lit(__FILE__), arena);
+        LinearArena arena = la_create(default_allocator, MB(1));
+        ssize file_size = os_get_file_size(str_lit(__FILE__), &arena);
 
         ASSERT(file_size != -1);
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
     {
         // Check that scratch arena works
-        LinearArena arena = arena_create(default_allocator, 1024);
-        arena_allocate_array(&arena, byte, 1022);
-        byte *last = arena_allocate_array(&arena, byte, 1);
+        LinearArena arena = la_create(default_allocator, 1024);
+        la_allocate_array(&arena, byte, 1022);
 
-
-        ssize file_size = os_get_file_size(str_lit(__FILE__), arena);
+        ssize file_size = os_get_file_size(str_lit(__FILE__), &arena);
         ASSERT(file_size != -1);
 
-        byte *next = arena_allocate_item(&arena, byte);
-        ASSERT(next == last + 1);
-
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 
     {
-        LinearArena arena = arena_create(default_allocator, MB(1));
-        ReadFileResult contents = os_read_entire_file(str_lit(__FILE__), arena_create_allocator(&arena));
+        LinearArena arena = la_create(default_allocator, MB(1));
+        ReadFileResult contents = os_read_entire_file(str_lit(__FILE__), la_allocator(&arena));
         ASSERT(contents.file_data);
         ASSERT(contents.file_size != -1);
 
-        arena_destroy(&arena);
+        la_destroy(&arena);
     }
 }
 
@@ -437,13 +446,13 @@ static void tests_list()
 
     DEFINE_LIST(s32_node, List_s32);
 
-    LinearArena arena = arena_create(default_allocator, MB(4));
+    LinearArena arena = la_create(default_allocator, MB(4));
 
     {
         List_s32 list = {0};
         ASSERT(list_is_empty(&list));
 
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node1);
         ASSERT(list_head(&list) == node1);
         ASSERT(list_tail(&list) == node1);
@@ -451,7 +460,7 @@ static void tests_list()
         ASSERT(node1->next == 0);
         ASSERT(node1->prev == 0);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node2);
         ASSERT(list_head(&list) == node1);
         ASSERT(list_tail(&list) == node2);
@@ -475,9 +484,9 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node1);
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node2);
 
         list_remove(&list, node2);
@@ -487,19 +496,19 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         node1->data = 0;
         list_push_front(&list, node1);
         ASSERT(list_head(&list) == node1);
         ASSERT(list_tail(&list) == node1);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         node2->data = 1;
         list_push_front(&list, node2);
         ASSERT(list_head(&list) == node2);
         ASSERT(list_tail(&list) == node1);
 
-        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
         node3->data = 2;
         list_push_front(&list, node3);
         ASSERT(list_head(&list) == node3);
@@ -521,13 +530,13 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node1);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node2);
 
-        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node3);
 
         list_remove(&list, node2);
@@ -546,7 +555,7 @@ static void tests_list()
 
     {
         List_s32 list_a = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_insert_after(&list_a, node1, list_a.tail);
         ASSERT(list_a.head == node1);
         ASSERT(list_a.tail == node1);
@@ -556,10 +565,10 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node1);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         list_insert_after(&list, node2, node1);
         ASSERT(list_head(&list) == node1);
         ASSERT(list_tail(&list) == node2);
@@ -573,13 +582,13 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node1);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node2);
 
-        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
         list_insert_after(&list, node3, node1);
 
         ASSERT(node1->next == node3);
@@ -594,15 +603,15 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
 	node1->data = 0;
         list_push_back(&list, node1);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
 	node2->data = 2;
         list_push_back(&list, node2);
 
-        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
         list_insert_after(&list, node3, node1);
 	node3->data = 1;
 
@@ -615,13 +624,13 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node1);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node2);
 
-        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
         list_insert_after(&list, node3, node2);
 
 	ASSERT(node1->next == node2);
@@ -640,13 +649,13 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node1);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node2);
 
-        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
         list_insert_before(&list, node3, node1);
 
 	ASSERT(list_head(&list) == node3);
@@ -663,13 +672,13 @@ static void tests_list()
 
     {
         List_s32 list = {0};
-        s32_node *node1 = arena_allocate_item(&arena, s32_node);
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node1);
 
-        s32_node *node2 = arena_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
         list_push_back(&list, node2);
 
-        s32_node *node3 = arena_allocate_item(&arena, s32_node);
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
         list_insert_before(&list, node3, node2);
 
 	ASSERT(list_head(&list) == node1);
@@ -684,13 +693,13 @@ static void tests_list()
 	ASSERT(list_next(node2) == 0);
     }
 
-    arena_destroy(&arena);
+    la_destroy(&arena);
 }
 
 void tests_path()
 {
-    LinearArena arena = arena_create(default_allocator, MB(2));
-    Allocator alloc = arena_create_allocator(&arena);
+    LinearArena arena = la_create(default_allocator, MB(2));
+    Allocator alloc = la_allocator(&arena);
 
     {
         ASSERT(os_path_is_absolute(str_lit("/foo")));
@@ -701,13 +710,13 @@ void tests_path()
     }
 
     {
-        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo"), alloc), str_lit("/home")));
-        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo/a.out"), alloc), str_lit("/home/foo")));
-        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo/"), alloc), str_lit("/home/foo")));
-        ASSERT(str_equal(os_get_parent_path(str_lit("/"), alloc), str_lit("/")));
+        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo"), alloc, &arena), str_lit("/home")));
+        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo/a.out"), alloc, &arena), str_lit("/home/foo")));
+        ASSERT(str_equal(os_get_parent_path(str_lit("/home/foo/"), alloc, &arena), str_lit("/home/foo")));
+        ASSERT(str_equal(os_get_parent_path(str_lit("/"), alloc, &arena), str_lit("/")));
     }
 
-    arena_destroy(&arena);
+    la_destroy(&arena);
 }
 
 static void tests_free_list()

@@ -34,7 +34,7 @@ static void switch_to_block(LinearArena *arena, ArenaBlock *block)
     arena->top_block = block;
 }
 
-LinearArena arena_create(Allocator parent, ssize capacity)
+LinearArena la_create(Allocator parent, ssize capacity)
 {
     ArenaBlock *block = allocate_block(parent, 0, capacity);
     ASSERT(block);
@@ -48,7 +48,7 @@ LinearArena arena_create(Allocator parent, ssize capacity)
     return result;
 }
 
-void arena_destroy(LinearArena *arena)
+void la_destroy(LinearArena *arena)
 {
     ArenaBlock *current_block = arena->first_block;
 
@@ -117,7 +117,7 @@ void *alloc_bytes(LinearArena *arena, ssize byte_count, ssize alignment)
     return result;
 }
 
-void *arena_allocate(void *context, ssize count, ssize item_size, ssize alignment)
+void *la_allocate(void *context, ssize count, ssize item_size, ssize alignment)
 {
     ASSERT(is_pow2(alignment));
 
@@ -134,7 +134,7 @@ void *arena_allocate(void *context, ssize count, ssize item_size, ssize alignmen
     return alloc_bytes(arena, byte_count, alignment);
 }
 
-void arena_reset(LinearArena* arena)
+void la_reset(LinearArena* arena)
 {
     switch_to_block(arena, arena->first_block);
 }
@@ -167,10 +167,10 @@ static bool arena_try_resize_allocation(void *context, void *ptr, ssize old_size
     return false;
 }
 
-Allocator arena_create_allocator(LinearArena* arena)
+Allocator la_allocator(LinearArena* arena)
 {
     Allocator allocator = {
-        .alloc = arena_allocate,
+        .alloc = la_allocate,
         .dealloc = stub_deallocate,
         .context = arena
     };
@@ -178,7 +178,7 @@ Allocator arena_create_allocator(LinearArena* arena)
     return allocator;
 }
 
-ssize arena_get_memory_usage(LinearArena *arena)
+ssize la_get_memory_usage(LinearArena *arena)
 {
     ssize sum = 0;
     ArenaBlock *block = arena->first_block;
@@ -194,7 +194,7 @@ ssize arena_get_memory_usage(LinearArena *arena)
     return sum;
 }
 
-void arena_pop_to(LinearArena *arena, void *ptr)
+void la_pop_to(LinearArena *arena, void *ptr)
 {
     ArenaBlock *curr_block = arena->top_block;
 

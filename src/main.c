@@ -1,3 +1,5 @@
+#include <dlfcn.h>
+
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,6 +7,8 @@
 #include <pthread.h>
 
 #include "base/free_list_arena.h"
+#include "base/string8.h"
+#include "platform/path.h"
 #include "renderer/renderer_backend.h"
 #include "game/assets.h"
 
@@ -24,6 +28,7 @@ typedef struct {
     TextureHandle texture;
 } RendererState;
 
+#if 0
 static RendererState get_state_needed_for_entry(RenderKey key)
 {
     RenderKey shader_id = render_key_extract_shader(key);
@@ -102,8 +107,45 @@ static void sort_render_commands(RenderBatch *rb)
 {
     (void)rb;
 }
+#endif
 
 #include "game/game.h"
+
+typedef void (*GameUpdateAndRender)(GameState *, RenderBatch *);
+
+typedef struct {
+    void *handle;
+    GameUpdateAndRender update_and_render;
+} GameFunctions;
+
+static void load_game_functions(GameFunctions *functions)
+{
+    LinearArena scratch = la_create(default_allocator, 1024);
+    String path = os_get_executable_directory(la_allocator(&scratch), &scratch);
+    path = str_concat(path, str_lit("/libgame.so"), la_allocator(&scratch));
+    path = str_null_terminate(path, la_allocator(&scratch));
+
+    if (functions->handle) {
+        functions->update_and_render = 0;
+        dlclose(functions->handle);
+    }
+
+    functions->update_and_render = 0;
+    functions->handle = 0;
+
+    void *handle = dlopen(path.data, RTLD_NOW);
+
+    if (handle) {
+        void *func = dlsym(handle, "game_update_and_render");
+        ASSERT(handle);
+        ASSERT(func);
+
+        functions->handle = handle;
+        functions->update_and_render = (GameUpdateAndRender)func;
+
+    }
+    la_destroy(&scratch);
+}
 
 int main()
 {
@@ -123,10 +165,11 @@ int main()
     proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
     proj = mat4_scale(proj, 3.0f);
 
-    AssetSystem assets = assets_initialize(alloc);
+    //AssetSystem assets = assets_initialize(alloc);
 
     LinearArena scratch = la_create(default_allocator, MB(4));
 
+#if 0
     ShaderHandle shader_handle = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"), scratch);
     TextureHandle texture_handle = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), scratch);
 
@@ -135,17 +178,32 @@ int main()
         renderer_backend_use_shader(shader_asset);
         renderer_backend_set_uniform_mat4(shader_asset, str_lit("u_proj"), proj);
     }
+#endif
 
     RenderBatch rb = {0};
 
+    GameState game_state = {
+        .frame_arena = la_create(default_allocator, MB(4)),
+        .shader = (ShaderHandle){0},
+        .texture = (TextureHandle){0},
+        /* .shader = shader_handle, */
+        /* .texture = texture_handle */
+    };
+
+    GameFunctions game_code = {0};
+    load_game_functions(&game_code);
+
     while (!os_window_should_close(handle)) {
+        load_game_functions(&game_code);
+
         renderer_backend_begin_frame(backend);
 
         rb.entry_count = 0;
 
-        game_update_and_render(&rb);
-
-        execute_render_commands(&rb, &assets, backend);
+        if (game_code.handle) {
+            game_code.update_and_render(&game_state, &rb);
+        }
+        //execute_render_commands(&rb, &assets, backend);
 
         os_poll_events(handle);
     }

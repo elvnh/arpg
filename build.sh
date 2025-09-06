@@ -71,19 +71,17 @@ rm -r build &&
 mkdir -p build/base build/platform build/game build/renderer &&
 
 # Base
-${CC} ${BASE_SOURCES} ${FLAGS} -c &&
+${CC} ${BASE_SOURCES} ${FLAGS} -fPIC -c &&
 mv *.o build/base &&
 ar rcs build/libbase.a build/base/*.o &&
 
 # Game
-${CC} ${GAME_SOURCES} ${FLAGS} -c -Lbuild -lbase &&
-mv *.o build/game &&
-ar rcs build/libgame.a build/game/*.o &&
+${CC} ${GAME_SOURCES} ${FLAGS} -fPIC -shared -Lbuild -lbase -o build/libgame.so;
 
 # Renderer
-${CC} ${RENDERER_SOURCES} ${FLAGS} -c -Lbuild -lbase &&
+${CC} ${RENDERER_SOURCES} ${FLAGS} -fPIC -c -Lbuild -lbase &&
 mv *.o build/renderer &&
 ar rcs build/librenderer.a build/renderer/*.o &&
 
 ## Main
-${CC} ${PLATFORM_SOURCES} ${FLAGS} -Lbuild -lgame -lbase -lrenderer -o build/a.out;
+${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -Lbuild -lbase -lrenderer -o build/a.out;

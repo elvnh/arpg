@@ -1,6 +1,7 @@
 #include "assets.h"
 #include "base/linear_arena.h"
 #include "base/thread_context.h"
+#include "base/utils.h"
 #include "platform/file.h"
 #include "renderer/renderer_backend.h"
 #include "image.h"
@@ -47,10 +48,15 @@ static void *get_asset_data(AssetSystem *assets, AssetID id, AssetKind kind)
 
 static ShaderAsset *load_asset_data_shader(AssetSystem *assets, String path, LinearArena scratch)
 {
+#if 0
     String shader_source = os_read_entire_file_as_string(path, la_allocator(&scratch));
     ShaderAsset *shader = renderer_backend_create_shader(shader_source, fl_allocator(&assets->asset_arena));
 
     return shader;
+#else
+    UNIMPLEMENTED;
+    return 0;
+#endif
 }
 
 AssetSystem assets_initialize(Allocator parent_allocator)
@@ -80,6 +86,7 @@ ShaderAsset *assets_get_shader(AssetSystem *assets, ShaderHandle handle)
 
 static TextureAsset *load_asset_data_texture(AssetSystem *assets, String path, LinearArena scratch)
 {
+#if 0
     Image image = img_load_png_from_file(path, la_allocator(&scratch), scratch);
 
     if (!image.data) {
@@ -90,6 +97,10 @@ static TextureAsset *load_asset_data_texture(AssetSystem *assets, String path, L
     TextureAsset *texture = renderer_backend_create_texture(image, fl_allocator(&assets->asset_arena));
 
     return texture;
+#else
+    UNIMPLEMENTED;
+    return 0;
+#endif
 }
 
 TextureHandle  assets_register_texture(AssetSystem *assets, String path, LinearArena scratch)

@@ -8,6 +8,13 @@ typedef struct {
     f32 y;
 } Vector2;
 
+typedef struct {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+} Vector4;
+
 static inline Vector2 v2_add(Vector2 lhs, Vector2 rhs)
 {
     Vector2 result = {

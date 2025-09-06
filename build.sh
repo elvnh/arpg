@@ -15,6 +15,7 @@ src/os/linux/thread_context.c
 src/os/linux/window.c
 
 src/render/backend/open_gl/renderer_backend.c
+src/render/render_batch.c
 
 src/image.c
 src/shader.c

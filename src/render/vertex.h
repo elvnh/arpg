@@ -1,7 +1,7 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
-#include "base/vector2.h"
+#include "base/vector.h"
 #include "base/rgba.h"
 
 typedef struct {

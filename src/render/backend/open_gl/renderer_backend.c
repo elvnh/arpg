@@ -262,13 +262,26 @@ void renderer_backend_bind_texture(TextureAsset *texture)
     glBindTexture(GL_TEXTURE_2D, texture->native_handle);
 }
 
-void renderer_backend_set_mat4_uniform(ShaderAsset *shader, String uniform_name, Matrix4 matrix)
+static GLint get_uniform_location(ShaderAsset *shader, String uniform_name)
 {
     String terminated = str_null_terminate(uniform_name, thread_ctx_get_allocator());
     GLint location = glGetUniformLocation(shader->native_handle, terminated.data);
     ASSERT(location != -1);
 
+    return location;
+}
+void renderer_backend_set_uniform_mat4(ShaderAsset *shader, String uniform_name, Matrix4 matrix)
+{
+    GLint location = get_uniform_location(shader, uniform_name);
+
     glUniformMatrix4fv(location, 1, GL_FALSE, mat4_ptr(&matrix));
+}
+
+void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec)
+{
+    GLint location = get_uniform_location(shader, uniform_name);
+
+    glUniform4fv(location, 1, &vec.x);
 }
 
 static void flush_if_needed(RendererBackend *backend, s32 vertices_to_draw, ssize indices_to_draw)

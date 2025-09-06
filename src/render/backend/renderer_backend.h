@@ -21,7 +21,8 @@ TextureAsset    *renderer_backend_create_texture(Image image, Allocator allocato
 void             renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator);
 void             renderer_backend_use_shader(ShaderAsset *shader);
 void             renderer_backend_bind_texture(TextureAsset *texture);
-void             renderer_backend_set_mat4_uniform(ShaderAsset *shader, String uniform_name, Matrix4 matrix);
+void             renderer_backend_set_uniform_mat4(ShaderAsset *shader, String uniform_name, Matrix4 matrix);
+void             renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec);
 void             renderer_backend_begin_frame(RendererBackend *backend);
 void             renderer_backend_end_frame(RendererBackend *backend);
 void             renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b, Vertex c);

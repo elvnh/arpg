@@ -2,7 +2,7 @@
 #define MATRIX_H
 
 #include "base/typedefs.h"
-#include "base/vector2.h"
+#include "base/vector.h"
 
 typedef struct {
     f32 data[4][4];

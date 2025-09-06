@@ -5,6 +5,8 @@
 #include <pthread.h>
 
 #include "base/free_list_arena.h"
+#include "base/rectangle.h"
+#include "base/rgba.h"
 #include "base/typedefs.h"
 #include "base/string8.h"
 #include "base/linear_arena.h"
@@ -20,11 +22,99 @@
 #include "assets.h"
 
 #include "os/window.h"
+#include "render/render_command.h"
+#include "render/vertex.h"
 #include "shader.h"
 #include "tests.c"
 
 #define WINDOW_WIDTH 768
 #define WINDOW_HEIGHT 468
+
+#include "render/render_batch.h"
+
+typedef struct {
+    ShaderHandle shader;
+    TextureHandle texture;
+} RendererState;
+
+static RendererState get_state_needed_for_entry(RenderKey key)
+{
+    RenderKey shader_id = render_key_extract_shader(key);
+    RenderKey texture_id = render_key_extract_texture(key);
+
+    RendererState result = {
+        .shader = (ShaderHandle){(u32)shader_id},
+        .texture = (TextureHandle){(u32)texture_id}
+    };
+
+    return result;
+}
+
+static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
+{
+    return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
+}
+
+static RendererState switch_renderer_state(RendererState state, AssetSystem *assets, RendererBackend *backend)
+{
+    {
+        TextureAsset *texture = assets_get_texture(assets, state.texture);
+        renderer_backend_bind_texture(texture);
+    }
+
+    {
+        ShaderAsset *shader = assets_get_shader(assets, state.shader);
+        renderer_backend_use_shader(shader);
+    }
+
+    return state;
+}
+
+static void execute_render_commands(RenderBatch *rb, AssetSystem *assets, RendererBackend *backend)
+{
+    RendererState state = {0};
+
+    for (ssize i = 0; i < rb->entry_count; ++i) {
+        RenderEntry *entry = &rb->entries[i];
+
+        RendererState needed_state = get_state_needed_for_entry(entry->key);
+
+        if (renderer_state_change_needed(state, needed_state) || (i == 0)) {
+            state = switch_renderer_state(needed_state, assets, backend);
+            renderer_backend_end_frame(backend);
+        }
+
+        for (SetupCmdHeader *setup_cmd = entry->data->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
+            switch (setup_cmd->kind) {
+                case SETUP_CMD_SET_UNIFORM_VEC4: {
+                    SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
+                    ShaderAsset *shader = assets_get_shader(assets, state.shader);
+
+                    renderer_backend_set_uniform_vec4(shader, cmd->uniform_name, cmd->vector);
+                } break;
+                INVALID_DEFAULT_CASE;
+            }
+        }
+
+        switch (entry->data->kind) {
+            case RENDER_CMD_SPRITE: {
+                SpriteCmd *cmd = (SpriteCmd *)entry->data;
+                RectangleVertices verts = rect_get_vertices(cmd->rect, RGBA32_WHITE);
+
+                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right, verts.bottom_right, verts.bottom_left);
+            } break;
+
+           INVALID_DEFAULT_CASE;
+        }
+    }
+
+    renderer_backend_end_frame(backend);
+}
+
+static void sort_render_commands(RenderBatch *rb)
+{
+    (void)rb;
+}
 
 int main()
 {
@@ -46,51 +136,31 @@ int main()
 
     AssetSystem assets = assets_initialize(alloc);
 
-    TextureHandle texture_handle = assets_register_texture(&assets, str_lit("assets/sprites/test.png"));
-    TextureAsset *texture = assets_get_texture(&assets, texture_handle);
-    renderer_backend_bind_texture(texture);
-
     ShaderHandle shader_handle = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"));
-    ShaderAsset *shader_asset = assets_get_shader(&assets, shader_handle);
-    renderer_backend_use_shader(shader_asset);
+    TextureHandle texture_handle = assets_register_texture(&assets, str_lit("assets/sprites/test.png"));
 
-    renderer_backend_set_mat4_uniform(shader_asset, str_lit("u_proj"), proj);
+    {
+        ShaderAsset *shader_asset = assets_get_shader(&assets, shader_handle);
+        renderer_backend_use_shader(shader_asset);
+        renderer_backend_set_uniform_mat4(shader_asset, str_lit("u_proj"), proj);
+    }
+
+    RenderBatch rb = {0};
 
     while (!os_window_should_close(handle)) {
         renderer_backend_begin_frame(backend);
 
-        Vertex a = {
-            .position = {0, 0},
-            .uv = {0, 0},
-            .color = {1, 0, 0, 1}
+        rb.entry_count = 0;
+
+        Rectangle rect = {
+            .position = {0},
+            .size = {64, -64}
         };
 
-        Vertex b = {
-            .position = {64, 0},
-            .uv = {1, 0},
-            .color = {0, 1, 0, 1}
-        };
+        rb_push_sprite(&rb, &arena, texture_handle, rect, shader_handle, 0);
 
-        Vertex c = {
-            .position = {64, -64},
-            .uv = {1, 1},
-            .color = {0, 0, 1, 1}
-        };
+        execute_render_commands(&rb, &assets, backend);
 
-        Vertex d = {
-            .position = {0, -64},
-            .uv = {0, 1},
-            .color = {1, 0, 1, 1}
-        };
-
-        renderer_backend_draw_quad(
-            backend,
-            a,
-            b, c, d
-
-        );
-
-        renderer_backend_end_frame(backend);
         os_poll_events(handle);
 
     }

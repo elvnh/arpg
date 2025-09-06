@@ -52,6 +52,7 @@ FLAGS="
       -Werror=int-conversion
       -Werror=implicit-function-declaration
       -Werror=overflow
+      -Werror=implicit-int
       -Isrc
       -Ideps
       -pthread

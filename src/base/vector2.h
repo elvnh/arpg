@@ -8,4 +8,14 @@ typedef struct {
     f32 y;
 } Vector2;
 
+static inline Vector2 v2_add(Vector2 lhs, Vector2 rhs)
+{
+    Vector2 result = {
+        .x = lhs.x + rhs.x,
+        .y = lhs.y + rhs.y
+    };
+
+    return result;
+}
+
 #endif //VECTOR2_H

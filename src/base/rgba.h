@@ -10,4 +10,6 @@ typedef struct {
     f32 a;
 } RGBA32;
 
+#define RGBA32_WHITE (RGBA32) {1.0f, 1.0f, 1.0f, 1.0f}
+
 #endif //RGBA_H

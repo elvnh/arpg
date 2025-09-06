@@ -7,6 +7,7 @@
 
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
 #define ASSERT(expr) do { if (!(expr)) { assert_impl(#expr, __func__, FILE_NAME, LINE); } } while (0)
+#define INVALID_DEFAULT_CASE default: ASSERT(0); break;
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define KB(n) (n * 1024)
@@ -28,11 +29,6 @@
 
 void abort();
 
-static inline bool is_pow2(s64 n)
-{
-    return (n != 0) && ((n & (n - 1)) == 0);
-}
-
 static inline void assert_impl(const char *expr, const char *function_name, const char *file_name, s32 line_nr)
 {
     fprintf(
@@ -46,6 +42,30 @@ static inline void assert_impl(const char *expr, const char *function_name, cons
         file_name, line_nr);
 
     abort();
+}
+
+static inline bool is_pow2(s64 n)
+{
+    return (n != 0) && ((n & (n - 1)) == 0);
+}
+
+inline static u64 bit_span(u64 n, u32 index, u32 length)
+{
+    ASSERT(length <= 64);
+    ASSERT(index < 64);
+
+    if (length == 64) {
+        return n;
+    }
+
+    ASSERT((index + length) < 64);
+
+    u64 mask = ((u64)1 << (index + length)) - (u64)1;
+    mask |= ((u64)1 << index) - (u64)1;
+
+    u64 result = (n & mask) >> index;
+
+    return result;
 }
 
 static inline void *byte_offset(void *ptr, ssize offset)
@@ -119,5 +139,6 @@ static inline s32 cast_ssize_to_s32(ssize value)
 
     return (s32)value;
 }
+
 
 #endif //UTILS_H

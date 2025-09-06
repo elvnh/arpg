@@ -381,6 +381,14 @@ static void tests_utils()
         ASSERT((s64)byte_offset(ptr, 5) == 128);
         ASSERT((s64)byte_offset(ptr, -3) == 120);
     }
+
+    {
+        ASSERT(bit_span(0xF, 0, 2) == 0x3);
+        ASSERT(bit_span(0xFF0FF, 4, 12) == 0xF0F);
+        ASSERT(bit_span(0x0, 0, 64) == 0);
+        ASSERT(bit_span(USIZE_MAX, 0, 64) == USIZE_MAX);
+        ASSERT(bit_span(USIZE_MAX, 0, 63) == (USIZE_MAX >> 1));
+    }
 }
 
 static void tests_file()

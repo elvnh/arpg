@@ -2,6 +2,7 @@
 #define WINDOW_H
 
 #include "base/allocator.h"
+#include "input.h"
 
 enum {
     WINDOW_FLAG_NON_RESIZABLE = (1 << 0),
@@ -14,5 +15,9 @@ WindowHandle  *os_create_window(s32 width, s32 height, const char *title, u32 wi
 void           os_destroy_window(WindowHandle *handle);
 bool           os_window_should_close(WindowHandle *handle);
 void           os_poll_events(WindowHandle *window);
+
+// TODO: move all platform functions into same file
+
+void input_update(Input *input, WindowHandle *window);
 
 #endif //WINDOW_H

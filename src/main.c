@@ -8,6 +8,7 @@
 
 #include "base/free_list_arena.h"
 #include "base/string8.h"
+#include "platform/input.h"
 #include "platform/path.h"
 #include "renderer/renderer_backend.h"
 #include "game/assets.h"
@@ -158,7 +159,7 @@ int main()
 
     run_tests();
 
-    WindowHandle *handle = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
+    WindowHandle *window = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
 
     Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
@@ -193,7 +194,11 @@ int main()
     GameFunctions game_code = {0};
     load_game_functions(&game_code);
 
-    while (!os_window_should_close(handle)) {
+    Input input = {0};
+
+    while (!os_window_should_close(window)) {
+        input_update(&input, window);
+
         load_game_functions(&game_code);
 
         renderer_backend_begin_frame(backend);
@@ -205,10 +210,10 @@ int main()
         }
         //execute_render_commands(&rb, &assets, backend);
 
-        os_poll_events(handle);
+        os_poll_events(window);
     }
 
-    os_destroy_window(handle);
+    os_destroy_window(window);
     la_destroy(&arena);
 
     return 0;

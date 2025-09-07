@@ -4,12 +4,9 @@
 #include "base/linear_arena.h"
 #include "game/renderer/render_batch.h"
 
-#include <stdio.h>
-
 static void game_update(GameState *game_state)
 {
     (void)game_state;
-    printf("hej\n");
 }
 
 static void game_render(GameState *game_state, RenderBatch *render_cmds)

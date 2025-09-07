@@ -15,12 +15,11 @@ typedef enum {
     KEY_COUNT
 } Key;
 
-typedef struct {
+typedef struct Input {
     Keystate keystates[KEY_COUNT];
     Keystate previous_keystates[KEY_COUNT];
 } Input;
 
-// TODO: move all platform functions to same file
 static inline Keystate input_get_key(const Input *input, Key key)
 {
     ASSERT(key >= 0);
@@ -61,5 +60,6 @@ static inline b32 input_is_key_down(const Input *input, Key key)
 
     return result;
 }
+
 
 #endif //INPUT_H

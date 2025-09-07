@@ -139,6 +139,7 @@ void la_reset(LinearArena* arena)
     switch_to_block(arena, arena->first_block);
 }
 
+#if 0
 static bool arena_try_resize_allocation(void *context, void *ptr, ssize old_size, ssize new_size)
 {
     ASSERT(new_size >= 0);
@@ -166,6 +167,7 @@ static bool arena_try_resize_allocation(void *context, void *ptr, ssize old_size
 
     return false;
 }
+#endif
 
 Allocator la_allocator(LinearArena* arena)
 {

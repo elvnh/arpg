@@ -9,12 +9,11 @@
 #include "base/allocator.h"
 #include "base/utils.h"
 #include "base/matrix.h"
-#include "platform/file.h"
-#include "platform/path.h"
 #include "base/image.h"
 #include "base/free_list_arena.h"
 #include "base/list.h"
 #include "base/utils.h"
+#include "platform.h"
 
 static void tests_arena()
 {
@@ -434,6 +433,14 @@ static void tests_file()
 
         la_destroy(&arena);
     }
+
+    LinearArena scratch = la_create(default_allocator, MB(1));
+    {
+        ASSERT(platform_file_exists(str_lit(__FILE__), &scratch));
+        ASSERT(!platform_file_exists(str_lit("/fjldksfjsdlköfj"), &scratch));
+    }
+
+    la_destroy(&scratch);
 }
 
 static void tests_list()

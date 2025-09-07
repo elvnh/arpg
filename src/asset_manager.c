@@ -1,10 +1,9 @@
 #include "asset_manager.h"
 #include "base/linear_arena.h"
 #include "base/utils.h"
-#include "platform/file.h"
 #include "renderer/renderer_backend.h"
 #include "base/image.h"
-#include "platform/image.h"
+#include "platform.h"
 
 #define ASSET_ARENA_SIZE MB(8)
 
@@ -13,7 +12,7 @@ static AssetID create_asset(AssetManager *assets, AssetKind kind, void *data)
     AssetID id = assets->next_asset_id++;
     ASSERT(id < MAX_REGISTERED_ASSETS);
 
-    Asset *asset = &assets->registered_assets[id];
+    AssetSlot *asset = &assets->registered_assets[id];
     asset->kind = kind;
 
     switch (kind) {
@@ -33,7 +32,7 @@ static void *get_asset_data(AssetManager *assets, AssetID id, AssetKind kind)
 {
     ASSERT(id < assets->next_asset_id);
 
-    Asset *asset = &assets->registered_assets[id];
+    AssetSlot *asset = &assets->registered_assets[id];
     ASSERT(asset->kind == kind);
 
     switch (kind) {
@@ -82,7 +81,7 @@ ShaderAsset *assets_get_shader(AssetManager *assets, ShaderHandle handle)
 static TextureAsset *load_asset_data_texture(AssetManager *assets, String path, LinearArena *scratch)
 {
     Span file_contents = os_read_entire_file(path, la_allocator(scratch), scratch);
-    Image image = platform_decode_png(file_contents, la_allocator(scratch));
+    Image image = image_decode_png(file_contents, la_allocator(scratch));
 
     TextureAsset *texture = renderer_backend_create_texture(image, fl_allocator(&assets->asset_arena));
 

@@ -1,13 +1,9 @@
 #include <string.h>
 
 #include "image.h"
-#include "base/linear_arena.h"
-#include "base/utils.h"
-#include "platform/file.h"
-
 #include "stb_image.h"
 
-Image platform_decode_png(Span span, Allocator allocator)
+Image image_decode_png(Span span, Allocator allocator)
 {
     ASSERT(span.data);
     ASSERT(span.size > 0);

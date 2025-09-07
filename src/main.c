@@ -9,13 +9,11 @@
 #include "base/free_list_arena.h"
 #include "base/string8.h"
 #include "base/image.h"
-#include "platform/file.h"
-#include "platform/input.h"
-#include "platform/path.h"
+#include "input.h"
+#include "platform.h"
 #include "renderer/renderer_backend.h"
 #include "asset_manager.h"
 
-#include "platform/window.h"
 #include "game/renderer/render_command.h"
 #include "base/vertex.h"
 #include "tests.c"
@@ -118,38 +116,40 @@ typedef void (*GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList 
 typedef struct {
     void *handle;
     GameUpdateAndRender update_and_render;
-} GameFunctions;
+} GameCode;
 
-static void load_game_functions(GameFunctions *functions)
+static void load_game_code(GameCode *game_code, LinearArena *scratch)
 {
-    LinearArena scratch = la_create(default_allocator, 1024);
-    String path = os_get_executable_directory(la_allocator(&scratch), &scratch);
-    path = str_concat(path, str_lit("/libgame.so"), la_allocator(&scratch));
-    path = str_null_terminate(path, la_allocator(&scratch));
+    String bin_dir = os_get_executable_directory(la_allocator(scratch), scratch);
 
-    if (functions->handle) {
-        functions->update_and_render = 0;
-        dlclose(functions->handle);
+    {
+        String lock_file_path = str_concat(bin_dir, str_lit("/lock"), la_allocator(scratch));
+        while (platform_file_exists(lock_file_path, scratch));
     }
 
-    functions->update_and_render = 0;
-    functions->handle = 0;
+    String so_path = str_concat(bin_dir, str_lit("/libgame.so"), la_allocator(scratch));
+    so_path = str_null_terminate(so_path, la_allocator(scratch));
 
-    void *handle = dlopen(path.data, RTLD_NOW);
+    void *handle = dlopen(so_path.data, RTLD_NOW);
+    ASSERT(handle);
 
-    if (handle) {
-        void *func = dlsym(handle, "game_update_and_render");
-        ASSERT(handle);
-        ASSERT(func);
+    void *func = dlsym(handle, "game_update_and_render");
+    ASSERT(func);
 
-        functions->handle = handle;
-        functions->update_and_render = (GameUpdateAndRender)func;
-
-    }
-    la_destroy(&scratch);
+    game_code->handle = handle;
+    game_code->update_and_render = (GameUpdateAndRender)func;
 }
 
-#include "platform/image.h"
+static void unload_game_code(GameCode *game_code, LinearArena *scratch)
+{
+    String path = os_get_executable_directory(la_allocator(scratch), scratch);
+    path = str_concat(path, str_lit("/libgame.so"), la_allocator(scratch));
+    path = str_null_terminate(path, la_allocator(scratch));
+
+    game_code->update_and_render = 0;
+    dlclose(game_code->handle);
+    game_code->handle = 0;
+}
 
 int main()
 {
@@ -158,7 +158,7 @@ int main()
 
     run_tests();
 
-    WindowHandle *window = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
+    WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
 
     AssetManager assets = assets_initialize(alloc);
@@ -185,16 +185,17 @@ int main()
         .frame_arena = la_create(default_allocator, MB(4))
     };
 
-    GameFunctions game_code = {0};
-    load_game_functions(&game_code);
+    GameCode game_code = {0};
+    load_game_code(&game_code, &scratch);
 
     Input input = {0};
 
-    while (!os_window_should_close(window)) {
-        input_update(&input, window);
+    while (!platform_window_should_close(window)) {
+        platform_update_input(&input, window);
 
         if (input_is_key_pressed(&input, KEY_A)) {
-            load_game_functions(&game_code);
+            unload_game_code(&game_code, &scratch);
+            load_game_code(&game_code, &scratch);
         }
 
         renderer_backend_begin_frame(backend);
@@ -207,10 +208,10 @@ int main()
 
         execute_render_commands(&rb, &assets, backend, &scratch);
 
-        os_poll_events(window);
+        platform_poll_events(window);
     }
 
-    os_destroy_window(window);
+    platform_destroy_window(window);
     la_destroy(&arena);
 
     return 0;

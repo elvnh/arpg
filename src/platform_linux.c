@@ -1,0 +1,299 @@
+#define _DEFAULT_SOURCE
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <GLFW/glfw3.h>
+
+#include <string.h>
+
+#include "platform.h"
+#include "input.h"
+
+/* Window */
+struct WindowHandle {
+    GLFWwindow *window;
+};
+
+WindowHandle *platform_create_window(s32 width, s32 height, const char *title, u32 window_flags, Allocator allocator)
+{
+    if (!glfwInit()) {
+        return 0;
+    }
+
+    if (window_flags & WINDOW_FLAG_NON_RESIZABLE) {
+        glfwWindowHint(GLFW_RESIZABLE, false);
+    }
+
+    GLFWwindow *window = glfwCreateWindow(width, height, title, 0, 0);
+
+    if (!window) {
+        glfwTerminate();
+        return 0;
+    }
+
+    glfwMakeContextCurrent(window);
+
+    WindowHandle *handle = allocate_item(allocator, WindowHandle);
+    handle->window = window;
+
+    return handle;
+}
+
+void platform_destroy_window(WindowHandle *handle)
+{
+    glfwDestroyWindow(handle->window);
+    glfwTerminate();
+}
+
+bool platform_window_should_close(WindowHandle *handle)
+{
+    return glfwWindowShouldClose(handle->window);
+}
+
+void platform_poll_events(WindowHandle *window)
+{
+    glfwSwapBuffers(window->window);
+    glfwPollEvents();
+}
+
+/* Input */
+static s32 get_glfw_key_equivalent(Key key)
+{
+    switch (key) {
+        case KEY_A: return GLFW_KEY_A;
+        INVALID_DEFAULT_CASE;
+    }
+
+    ASSERT(false);
+
+    return 0;
+}
+
+static Keystate get_current_keystate(Key key, WindowHandle *window)
+{
+    s32 glfw_key = get_glfw_key_equivalent(key);
+    s32 state = glfwGetKey(window->window, glfw_key);
+
+    if (state == GLFW_PRESS) {
+        return KEYSTATE_PRESSED;
+    }
+
+    return KEYSTATE_UP;
+}
+
+void platform_update_input(Input *input, WindowHandle *window)
+{
+    memcpy(input->previous_keystates, input->keystates, KEY_COUNT * sizeof(*input->keystates));
+
+    for (Key key = 0; key < KEY_COUNT; ++key) {
+        Keystate current = get_current_keystate(key, window);
+        Keystate previous = input->previous_keystates[key];
+        Keystate result = current;
+
+        if ((current == KEYSTATE_PRESSED) && ((previous == KEYSTATE_PRESSED) || (previous == KEYSTATE_HELD))) {
+            result = KEYSTATE_HELD;
+        } else if ((current == KEYSTATE_UP) && ((previous == KEYSTATE_PRESSED) || (previous == KEYSTATE_HELD))) {
+            result = KEYSTATE_RELEASED;
+        }
+
+        input->keystates[key] = result;
+    }
+}
+
+/* Paths */
+String os_get_executable_path(Allocator allocator)
+{
+    /*
+      NOTE: This entire PATH_MAX business seems kind of bad. It's apparently
+      not required to be defined and apparently isn't always correct which
+      means the path might be truncated, which I believe isn't detectable since
+      readlink() doesn't append a null byte.
+      Also, if this is an allocator that doesn't support resizing, the allocation will
+      stay at PATH_MAX bytes which is probably equal to 4096.
+    */
+
+    ssize buffer_size = PATH_MAX;
+    String result = str_allocate(buffer_size, allocator);
+    ssize bytes_written = readlink("/proc/self/exe", result.data, cast_ssize_to_usize(result.length));
+
+    if (bytes_written == -1) {
+        deallocate(allocator, result.data);
+
+        return (String){0};
+    }
+
+    result.length = bytes_written;
+
+    return result;
+}
+
+String os_get_executable_directory(Allocator allocator, LinearArena *scratch_arena)
+{
+    String executable_path = os_get_executable_path(allocator);
+    String directory_path = os_get_parent_path(executable_path, allocator, scratch_arena);
+
+    return directory_path;
+}
+
+bool os_path_is_absolute(String path)
+{
+    return str_starts_with(path, str_lit("/"));
+}
+
+String os_get_absolute_path(String path, Allocator allocator, LinearArena *scratch_arena)
+{
+    if (os_path_is_absolute(path)) {
+        return path;
+    }
+
+    Allocator scratch = la_allocator(scratch_arena);
+
+    String working_dir = str_concat(os_get_working_directory(scratch), str_lit("/"), scratch);
+    String result = str_concat(working_dir, path, allocator);
+
+    return result;
+}
+
+String os_get_canonical_path(String path, Allocator allocator, LinearArena *scratch_arena)
+{
+    Allocator scratch = la_allocator(scratch_arena);
+
+    String absolute = os_get_absolute_path(path, scratch, scratch_arena);
+    absolute = str_null_terminate(absolute, scratch);
+
+    String canonical = str_allocate(PATH_MAX, allocator);
+    char *realpath_result = realpath(absolute.data, canonical.data);
+
+    if (!realpath_result) {
+        deallocate(allocator, canonical.data);
+        canonical = (String){0};
+    } else {
+        ASSERT(realpath_result == canonical.data);
+
+        ssize path_length = str_get_null_terminated_length(canonical);
+        canonical.length = path_length;
+    }
+
+    return canonical;
+}
+
+String os_get_working_directory(Allocator allocator)
+{
+    String result = str_allocate(PATH_MAX + 1, allocator);
+
+    char *getcwd_result = getcwd(result.data, cast_ssize_to_usize(result.length));
+    ASSERT(getcwd_result == result.data);
+
+    if (!getcwd_result) {
+        deallocate(allocator, result.data);
+    } else {
+        ssize str_length = str_get_null_terminated_length(result);
+        result.length = str_length;
+    }
+
+    return result;
+}
+
+void os_change_working_directory(String path)
+{
+    Allocator scratch = default_allocator;
+    String terminated = str_null_terminate(path, scratch);
+    s32 result = chdir(terminated.data);
+    ASSERT(result == 0);
+}
+
+String os_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena)
+{
+    String absolute = os_get_absolute_path(path, allocator, scratch_arena);
+    ssize last_slash_pos = str_find_last_occurence(absolute, str_lit("/"));
+    ASSERT(last_slash_pos != -1);
+
+    String result = {
+        .data = absolute.data,
+        .length = MAX(1, last_slash_pos) // In case path is only a /
+    };
+
+    return result;
+}
+
+/* File */
+Span os_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
+{
+    String null_terminated = str_null_terminate(path, la_allocator(scratch));
+    ssize file_size = os_get_file_size(null_terminated, scratch);
+
+    Span result = {0};
+
+    if ((file_size == -1) || add_overflows_ssize(file_size, 1)) {
+        return result;
+    }
+
+    ssize alloc_size = file_size + 1;
+
+    byte *file_data = allocate_array(allocator, byte, alloc_size);
+    ASSERT(file_data);
+
+    s32 fd = open(null_terminated.data, O_RDONLY);
+
+    if (fd == -1) {
+        deallocate(allocator, file_data);
+        return result;
+    }
+
+    ssize bytes_read = read(fd, file_data, cast_ssize_to_usize(file_size));
+    ASSERT(bytes_read == file_size);
+
+    // TODO: is null terminating really necessary?
+    file_data[file_size] = '\0';
+
+    result.data = file_data;
+    result.size = file_size;
+
+    return result;
+}
+
+String os_read_entire_file_as_string(String path, Allocator allocator, LinearArena *scratch)
+{
+    Span file_contents = os_read_entire_file(path, allocator, scratch);
+    String result = { (char *)file_contents.data, file_contents.size };
+
+    return result;
+}
+
+ssize os_get_file_size(String path, LinearArena *scratch)
+{
+    FileInfo info = platform_get_file_info(path, scratch);
+
+    return info.file_size;
+}
+
+b32 platform_file_exists(String path, LinearArena *scratch)
+{
+    String null_terminated = str_null_terminate(path, la_allocator(scratch));
+
+    s32 result = access(null_terminated.data, F_OK);
+
+    return (result == 0);
+}
+
+FileInfo platform_get_file_info(String path, LinearArena *scratch)
+{
+    String null_terminated = str_null_terminate(path, la_allocator(scratch));
+    struct stat st;
+    s32 stat_result = stat(null_terminated.data, &st);
+
+    if ((stat_result == -1) || !S_ISREG(st.st_mode)) {
+        ASSERT(false);
+
+        return (FileInfo){0};
+    }
+
+    FileInfo result = {
+        .file_size = st.st_size,
+        .last_modification_time = st.st_mtim.tv_nsec
+    };
+
+    return result;
+}

@@ -22,11 +22,11 @@ typedef struct {
 	ShaderAsset  *shader_asset;
 	TextureAsset *texture_asset;
     } as;
-} Asset;
+} AssetSlot;
 
 typedef struct {
     AssetID       next_asset_id;
-    Asset         registered_assets[MAX_REGISTERED_ASSETS];
+    AssetSlot    registered_assets[MAX_REGISTERED_ASSETS];
     FreeListArena asset_arena;
 } AssetManager;
 

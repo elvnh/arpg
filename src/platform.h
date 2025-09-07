@@ -1,0 +1,48 @@
+#ifndef PLATFORM_H
+#define PLATFORM_H
+
+#include "base/linear_arena.h"
+#include "base/string8.h"
+#include "base/span.h"
+
+/* Window */
+typedef struct WindowHandle WindowHandle;
+
+enum {
+    WINDOW_FLAG_NON_RESIZABLE = (1 << 0),
+    //WINDOW_FLAG_FULL_SCREEN,
+};
+
+WindowHandle  *platform_create_window(s32 width, s32 height, const char *title, u32 window_flags, Allocator allocator);
+void           platform_destroy_window(WindowHandle *handle);
+bool           platform_window_should_close(WindowHandle *handle);
+void           platform_poll_events(WindowHandle *window);
+
+/* Input */
+struct Input;
+void           platform_update_input(struct Input *input, struct WindowHandle *window);
+
+/* Path */
+String  os_get_executable_path(Allocator allocator);
+String  os_get_executable_directory(Allocator allocator, LinearArena *scratch_arena);
+bool    os_path_is_absolute(String path);
+String  os_get_absolute_path(String path, Allocator allocator, LinearArena *scratch_arena);
+String  os_get_canonical_path(String path, Allocator allocator, LinearArena *scratch_arena);
+String  os_get_working_directory(Allocator allocator);
+void    os_change_working_directory(String path);
+String  os_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena);
+
+/* File */
+typedef struct {
+    ssize file_size;
+    s64   last_modification_time;
+} FileInfo;
+
+Span     os_read_entire_file(String path, Allocator allocator, LinearArena *scratch);
+String   os_read_entire_file_as_string(String path, Allocator allocator, LinearArena *scratch);
+ssize    os_get_file_size(String path, LinearArena *scratch);
+b32      platform_file_exists(String path, LinearArena *scratch);
+FileInfo platform_get_file_info(String path, LinearArena *scratch);
+
+
+#endif //PLATFORM_H

@@ -103,7 +103,7 @@ void platform_update_input(Input *input, WindowHandle *window)
 }
 
 /* Paths */
-String os_get_executable_path(Allocator allocator)
+String platform_get_executable_path(Allocator allocator)
 {
     /*
       NOTE: This entire PATH_MAX business seems kind of bad. It's apparently
@@ -129,38 +129,38 @@ String os_get_executable_path(Allocator allocator)
     return result;
 }
 
-String os_get_executable_directory(Allocator allocator, LinearArena *scratch_arena)
+String platform_get_executable_directory(Allocator allocator, LinearArena *scratch_arena)
 {
-    String executable_path = os_get_executable_path(allocator);
-    String directory_path = os_get_parent_path(executable_path, allocator, scratch_arena);
+    String executable_path = platform_get_executable_path(allocator);
+    String directory_path = platform_get_parent_path(executable_path, allocator, scratch_arena);
 
     return directory_path;
 }
 
-bool os_path_is_absolute(String path)
+bool platform_path_is_absolute(String path)
 {
     return str_starts_with(path, str_lit("/"));
 }
 
-String os_get_absolute_path(String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_absolute_path(String path, Allocator allocator, LinearArena *scratch_arena)
 {
-    if (os_path_is_absolute(path)) {
+    if (platform_path_is_absolute(path)) {
         return path;
     }
 
     Allocator scratch = la_allocator(scratch_arena);
 
-    String working_dir = str_concat(os_get_working_directory(scratch), str_lit("/"), scratch);
+    String working_dir = str_concat(platform_get_working_directory(scratch), str_lit("/"), scratch);
     String result = str_concat(working_dir, path, allocator);
 
     return result;
 }
 
-String os_get_canonical_path(String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_canonical_path(String path, Allocator allocator, LinearArena *scratch_arena)
 {
     Allocator scratch = la_allocator(scratch_arena);
 
-    String absolute = os_get_absolute_path(path, scratch, scratch_arena);
+    String absolute = platform_get_absolute_path(path, scratch, scratch_arena);
     absolute = str_null_terminate(absolute, scratch);
 
     String canonical = str_allocate(PATH_MAX, allocator);
@@ -179,7 +179,7 @@ String os_get_canonical_path(String path, Allocator allocator, LinearArena *scra
     return canonical;
 }
 
-String os_get_working_directory(Allocator allocator)
+String platform_get_working_directory(Allocator allocator)
 {
     String result = str_allocate(PATH_MAX + 1, allocator);
 
@@ -196,7 +196,7 @@ String os_get_working_directory(Allocator allocator)
     return result;
 }
 
-void os_change_working_directory(String path)
+void platform_change_working_directory(String path)
 {
     Allocator scratch = default_allocator;
     String terminated = str_null_terminate(path, scratch);
@@ -204,9 +204,9 @@ void os_change_working_directory(String path)
     ASSERT(result == 0);
 }
 
-String os_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena)
 {
-    String absolute = os_get_absolute_path(path, allocator, scratch_arena);
+    String absolute = platform_get_absolute_path(path, allocator, scratch_arena);
     ssize last_slash_pos = str_find_last_occurence(absolute, str_lit("/"));
     ASSERT(last_slash_pos != -1);
 
@@ -219,10 +219,10 @@ String os_get_parent_path(String path, Allocator allocator, LinearArena *scratch
 }
 
 /* File */
-Span os_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
+Span platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
 {
     String null_terminated = str_null_terminate(path, la_allocator(scratch));
-    ssize file_size = os_get_file_size(null_terminated, scratch);
+    ssize file_size = platform_get_file_size(null_terminated, scratch);
 
     Span result = {0};
 
@@ -254,15 +254,15 @@ Span os_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
     return result;
 }
 
-String os_read_entire_file_as_string(String path, Allocator allocator, LinearArena *scratch)
+String platform_read_entire_file_as_string(String path, Allocator allocator, LinearArena *scratch)
 {
-    Span file_contents = os_read_entire_file(path, allocator, scratch);
+    Span file_contents = platform_read_entire_file(path, allocator, scratch);
     String result = { (char *)file_contents.data, file_contents.size };
 
     return result;
 }
 
-ssize os_get_file_size(String path, LinearArena *scratch)
+ssize platform_get_file_size(String path, LinearArena *scratch)
 {
     FileInfo info = platform_get_file_info(path, scratch);
 

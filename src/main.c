@@ -120,7 +120,7 @@ typedef struct {
 
 static void load_game_code(GameCode *game_code, LinearArena *scratch)
 {
-    String bin_dir = os_get_executable_directory(la_allocator(scratch), scratch);
+    String bin_dir = platform_get_executable_directory(la_allocator(scratch), scratch);
 
     {
         String lock_file_path = str_concat(bin_dir, str_lit("/lock"), la_allocator(scratch));
@@ -140,12 +140,8 @@ static void load_game_code(GameCode *game_code, LinearArena *scratch)
     game_code->update_and_render = (GameUpdateAndRender)func;
 }
 
-static void unload_game_code(GameCode *game_code, LinearArena *scratch)
+static void unload_game_code(GameCode *game_code)
 {
-    String path = os_get_executable_directory(la_allocator(scratch), scratch);
-    path = str_concat(path, str_lit("/libgame.so"), la_allocator(scratch));
-    path = str_null_terminate(path, la_allocator(scratch));
-
     game_code->update_and_render = 0;
     dlclose(game_code->handle);
     game_code->handle = 0;
@@ -194,7 +190,7 @@ int main()
         platform_update_input(&input, window);
 
         if (input_is_key_pressed(&input, KEY_A)) {
-            unload_game_code(&game_code, &scratch);
+            unload_game_code(&game_code);
             load_game_code(&game_code, &scratch);
         }
 

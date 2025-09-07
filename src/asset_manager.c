@@ -47,7 +47,7 @@ static void *get_asset_data(AssetManager *assets, AssetID id, AssetKind kind)
 
 static ShaderAsset *load_asset_data_shader(AssetManager *assets, String path, LinearArena *scratch)
 {
-    String shader_source = os_read_entire_file_as_string(path, la_allocator(scratch), scratch);
+    String shader_source = platform_read_entire_file_as_string(path, la_allocator(scratch), scratch);
     ShaderAsset *shader = renderer_backend_create_shader(shader_source, fl_allocator(&assets->asset_arena));
 
     return shader;
@@ -80,7 +80,7 @@ ShaderAsset *assets_get_shader(AssetManager *assets, ShaderHandle handle)
 
 static TextureAsset *load_asset_data_texture(AssetManager *assets, String path, LinearArena *scratch)
 {
-    Span file_contents = os_read_entire_file(path, la_allocator(scratch), scratch);
+    Span file_contents = platform_read_entire_file(path, la_allocator(scratch), scratch);
     Image image = image_decode_png(file_contents, la_allocator(scratch));
 
     TextureAsset *texture = renderer_backend_create_texture(image, fl_allocator(&assets->asset_arena));

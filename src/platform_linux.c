@@ -10,6 +10,7 @@
 #include <dirent.h>
 
 #include "base/string8.h"
+
 #include "platform.h"
 #include "input.h"
 
@@ -295,7 +296,16 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
         .nanoseconds = st.st_mtim.tv_nsec
     };
 
+    FileType type = FILE_TYPE_OTHER;
+
+    if (S_ISREG(st.st_mode)) {
+        type = FILE_TYPE_FILE;
+    } else if (S_ISDIR(st.st_mode)) {
+        type = FILE_TYPE_DIRECTORY;
+    }
+
     FileInfo result = {
+        .type = type,
         .file_size = st.st_size,
         .last_modification_time = mod_time
     };
@@ -339,13 +349,4 @@ Timestamp platform_get_time()
     };
 
     return result;
-}
-
-b32 timestamp_less_than(Timestamp lhs, Timestamp rhs)
-{
-    if (lhs.seconds > rhs.seconds) {
-        return false;
-    }
-
-    return (lhs.seconds < rhs.seconds) || (lhs.nanoseconds < rhs.nanoseconds);
 }

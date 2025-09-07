@@ -4,6 +4,7 @@
 #include "base/linear_arena.h"
 #include "base/string8.h"
 #include "base/span.h"
+#include "base/timestamp.h"
 
 /* Window */
 typedef struct WindowHandle WindowHandle;
@@ -32,16 +33,15 @@ String         platform_get_working_directory(Allocator allocator);
 void           platform_change_working_directory(String path);
 String         platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena);
 
-// TODO: move to separate file
-typedef struct {
-    s64 seconds;
-    s64 nanoseconds;
-} Timestamp;
-
-b32            timestamp_less_than(Timestamp lhs, Timestamp rhs);
-
 /* File */
+typedef enum {
+    FILE_TYPE_FILE,
+    FILE_TYPE_DIRECTORY,
+    FILE_TYPE_OTHER,
+} FileType;
+
 typedef struct {
+    FileType type;
     ssize file_size;
     Timestamp last_modification_time;
 } FileInfo;

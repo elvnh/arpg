@@ -11,8 +11,7 @@
 #include "base/matrix.h"
 #include "platform/file.h"
 #include "platform/path.h"
-#include "base/thread_context.h"
-#include "image.h"
+#include "base/image.h"
 #include "base/free_list_arena.h"
 #include "base/list.h"
 #include "base/utils.h"
@@ -429,9 +428,9 @@ static void tests_file()
 
     {
         LinearArena arena = la_create(default_allocator, MB(1));
-        ReadFileResult contents = os_read_entire_file(str_lit(__FILE__), la_allocator(&arena));
-        ASSERT(contents.file_data);
-        ASSERT(contents.file_size != -1);
+        Span contents = os_read_entire_file(str_lit(__FILE__), la_allocator(&arena), &arena);
+        ASSERT(contents.data);
+        ASSERT(contents.size != -1);
 
         la_destroy(&arena);
     }

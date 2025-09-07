@@ -5,12 +5,15 @@
 #include "base/string8.h"
 #include "base/matrix.h"
 #include "base/vertex.h"
-#include "image.h"
-#include "game/assets.h"
+#include "base/image.h"
+#include "base/linear_arena.h"
 
 // TODO: deinit backend?
 // TODO: only end_frame/flush needed
 // TODO: free memory allocated when destroying assets
+
+typedef struct ShaderAsset  ShaderAsset;
+typedef struct TextureAsset TextureAsset;
 
 typedef struct RendererBackend RendererBackend;
 
@@ -21,8 +24,10 @@ TextureAsset    *renderer_backend_create_texture(Image image, Allocator allocato
 void             renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator);
 void             renderer_backend_use_shader(ShaderAsset *shader);
 void             renderer_backend_bind_texture(TextureAsset *texture);
-void             renderer_backend_set_uniform_mat4(ShaderAsset *shader, String uniform_name, Matrix4 matrix);
-void             renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec);
+void             renderer_backend_set_uniform_mat4(ShaderAsset *shader, String uniform_name, Matrix4 matrix,
+                                                   LinearArena *scratch);
+void             renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec,
+                                                   LinearArena *scratch);
 void             renderer_backend_begin_frame(RendererBackend *backend);
 void             renderer_backend_end_frame(RendererBackend *backend);
 void             renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b, Vertex c);

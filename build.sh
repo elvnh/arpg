@@ -15,12 +15,11 @@ src/main.c
 src/platform/linux/file.c
 src/platform/linux/path.c
 src/platform/linux/window.c
-src/image.c
-deps/stb_image.c
+src/platform/image.c
+src/asset_manager.c
 "
 
 GAME_SOURCES="
-src/game/assets.c
 src/game/game.c
 src/game/renderer/render_batch.c
 "
@@ -84,4 +83,4 @@ mv *.o build/renderer &&
 ar rcs build/librenderer.a build/renderer/*.o &&
 
 ## Main
-${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -Lbuild -lbase -lrenderer -o build/a.out;
+${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -Lbuild -lbase -lrenderer -Ldeps/ -lstb_image -o build/a.out;

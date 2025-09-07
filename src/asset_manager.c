@@ -1,14 +1,14 @@
-#include "assets.h"
+#include "asset_manager.h"
 #include "base/linear_arena.h"
-#include "base/thread_context.h"
 #include "base/utils.h"
 #include "platform/file.h"
 #include "renderer/renderer_backend.h"
-#include "image.h"
+#include "base/image.h"
+#include "platform/image.h"
 
 #define ASSET_ARENA_SIZE MB(8)
 
-static AssetID create_asset(AssetSystem *assets, AssetKind kind, void *data)
+static AssetID create_asset(AssetManager *assets, AssetKind kind, void *data)
 {
     AssetID id = assets->next_asset_id++;
     ASSERT(id < MAX_REGISTERED_ASSETS);
@@ -29,7 +29,7 @@ static AssetID create_asset(AssetSystem *assets, AssetKind kind, void *data)
     return id;
 }
 
-static void *get_asset_data(AssetSystem *assets, AssetID id, AssetKind kind)
+static void *get_asset_data(AssetManager *assets, AssetID id, AssetKind kind)
 {
     ASSERT(id < assets->next_asset_id);
 
@@ -46,28 +46,23 @@ static void *get_asset_data(AssetSystem *assets, AssetID id, AssetKind kind)
     return 0;
 }
 
-static ShaderAsset *load_asset_data_shader(AssetSystem *assets, String path, LinearArena scratch)
+static ShaderAsset *load_asset_data_shader(AssetManager *assets, String path, LinearArena *scratch)
 {
-#if 0
-    String shader_source = os_read_entire_file_as_string(path, la_allocator(&scratch));
+    String shader_source = os_read_entire_file_as_string(path, la_allocator(scratch), scratch);
     ShaderAsset *shader = renderer_backend_create_shader(shader_source, fl_allocator(&assets->asset_arena));
 
     return shader;
-#else
-    UNIMPLEMENTED;
-    return 0;
-#endif
 }
 
-AssetSystem assets_initialize(Allocator parent_allocator)
+AssetManager assets_initialize(Allocator parent_allocator)
 {
-    AssetSystem result = {0};
+    AssetManager result = {0};
     result.asset_arena = fl_create(parent_allocator, ASSET_ARENA_SIZE);
 
     return result;
 }
 
-ShaderHandle assets_register_shader(AssetSystem *assets, String path, LinearArena scratch)
+ShaderHandle assets_register_shader(AssetManager *assets, String path, LinearArena *scratch)
 {
     ShaderAsset *shader = load_asset_data_shader(assets, path, scratch);
     ASSERT(shader);
@@ -77,33 +72,24 @@ ShaderHandle assets_register_shader(AssetSystem *assets, String path, LinearAren
     return (ShaderHandle){id};
 }
 
-ShaderAsset *assets_get_shader(AssetSystem *assets, ShaderHandle handle)
+ShaderAsset *assets_get_shader(AssetManager *assets, ShaderHandle handle)
 {
     ShaderAsset *result = get_asset_data(assets, handle.id, ASSET_KIND_SHADER);
 
     return result;
 }
 
-static TextureAsset *load_asset_data_texture(AssetSystem *assets, String path, LinearArena scratch)
+static TextureAsset *load_asset_data_texture(AssetManager *assets, String path, LinearArena *scratch)
 {
-#if 0
-    Image image = img_load_png_from_file(path, la_allocator(&scratch), scratch);
-
-    if (!image.data) {
-	ASSERT(false);
-	return 0;
-    }
+    Span file_contents = os_read_entire_file(path, la_allocator(scratch), scratch);
+    Image image = platform_decode_png(file_contents, la_allocator(scratch));
 
     TextureAsset *texture = renderer_backend_create_texture(image, fl_allocator(&assets->asset_arena));
 
     return texture;
-#else
-    UNIMPLEMENTED;
-    return 0;
-#endif
 }
 
-TextureHandle  assets_register_texture(AssetSystem *assets, String path, LinearArena scratch)
+TextureHandle  assets_register_texture(AssetManager *assets, String path, LinearArena *scratch)
 {
     TextureAsset *texture = load_asset_data_texture(assets, path, scratch);
     ASSERT(texture);
@@ -113,7 +99,7 @@ TextureHandle  assets_register_texture(AssetSystem *assets, String path, LinearA
     return (TextureHandle){id};
 }
 
-TextureAsset *assets_get_texture(AssetSystem *assets, TextureHandle handle)
+TextureAsset *assets_get_texture(AssetManager *assets, TextureHandle handle)
 {
     TextureAsset *result = get_asset_data(assets, handle.id, ASSET_KIND_TEXTURE);
 

@@ -21,15 +21,15 @@ ssize os_get_file_size_impl(const char *path)
     return st.st_size;
 }
 
-ReadFileResult os_read_entire_file(String path, Allocator allocator)
+Span os_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
 {
-    String null_terminated = str_null_terminate(path, allocator);
+    String null_terminated = str_null_terminate(path, la_allocator(scratch));
     ssize file_size = os_get_file_size_impl(null_terminated.data);
 
-    ReadFileResult result = {0};
+    Span result = {0};
 
     if ((file_size == -1) || add_overflows_ssize(file_size, 1)) {
-        goto done;
+        return result;
     }
 
     ssize alloc_size = file_size + 1;
@@ -40,7 +40,8 @@ ReadFileResult os_read_entire_file(String path, Allocator allocator)
     s32 fd = open(null_terminated.data, O_RDONLY);
 
     if (fd == -1) {
-        goto done;
+        deallocate(allocator, file_data);
+        return result;
     }
 
     ssize bytes_read = read(fd, file_data, cast_ssize_to_usize(file_size));
@@ -49,19 +50,16 @@ ReadFileResult os_read_entire_file(String path, Allocator allocator)
     // TODO: is null terminating really necessary?
     file_data[file_size] = '\0';
 
-    result.file_data = file_data;
-    result.file_size = file_size;
-
-  done:
-    deallocate(allocator, null_terminated.data);
+    result.data = file_data;
+    result.size = file_size;
 
     return result;
 }
 
-String os_read_entire_file_as_string(String path, Allocator allocator)
+String os_read_entire_file_as_string(String path, Allocator allocator, LinearArena *scratch)
 {
-    ReadFileResult file = os_read_entire_file(path, allocator);
-    String result = { (char *)file.file_data, file.file_size };
+    Span file_contents = os_read_entire_file(path, allocator, scratch);
+    String result = { (char *)file_contents.data, file_contents.size };
 
     return result;
 }

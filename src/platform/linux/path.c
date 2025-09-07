@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 #include "platform/path.h"
-#include "base/thread_context.h"
 
 String os_get_executable_directory(Allocator allocator, LinearArena *scratch_arena)
 {

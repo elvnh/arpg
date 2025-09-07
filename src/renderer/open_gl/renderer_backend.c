@@ -5,7 +5,6 @@
 #include "base/utils.h"
 #include "renderer/renderer_backend.h"
 #include "base/vertex.h"
-#include "base/thread_context.h"
 
 #define MAX_RENDERER_VERTICES 512
 
@@ -263,27 +262,25 @@ void renderer_backend_bind_texture(TextureAsset *texture)
     glBindTexture(GL_TEXTURE_2D, texture->native_handle);
 }
 
-static GLint get_uniform_location(ShaderAsset *shader, String uniform_name)
+static GLint get_uniform_location(ShaderAsset *shader, String uniform_name, LinearArena *scratch)
 {
-    // TODO: scratch
-    Allocator scratch = default_allocator;
-    String terminated = str_null_terminate(uniform_name, scratch);
+    String terminated = str_null_terminate(uniform_name, la_allocator(scratch));
 
     GLint location = glGetUniformLocation(shader->native_handle, terminated.data);
     ASSERT(location != -1);
 
     return location;
 }
-void renderer_backend_set_uniform_mat4(ShaderAsset *shader, String uniform_name, Matrix4 matrix)
+void renderer_backend_set_uniform_mat4(ShaderAsset *shader, String uniform_name, Matrix4 matrix, LinearArena *scratch)
 {
-    GLint location = get_uniform_location(shader, uniform_name);
+    GLint location = get_uniform_location(shader, uniform_name, scratch);
 
     glUniformMatrix4fv(location, 1, GL_FALSE, mat4_ptr(&matrix));
 }
 
-void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec)
+void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec, LinearArena *scratch)
 {
-    GLint location = get_uniform_location(shader, uniform_name);
+    GLint location = get_uniform_location(shader, uniform_name, scratch);
 
     glUniform4fv(location, 1, &vec.x);
 }

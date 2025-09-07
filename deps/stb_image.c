@@ -13,7 +13,6 @@
 
 #endif
 
-
 BEGIN_IGNORE_STB_WARNINGS
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"

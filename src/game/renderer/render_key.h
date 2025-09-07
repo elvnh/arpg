@@ -1,8 +1,8 @@
 #ifndef RENDER_KEY_H
 #define RENDER_KEY_H
 
-#include "game/assets.h"
 #include "base/utils.h"
+#include "asset.h"
 
 #define LAYER_KEY_POSITION   (64u - LAYER_KEY_BITS)
 #define LAYER_KEY_BITS       8u

@@ -8,13 +8,14 @@
 
 #include "base/free_list_arena.h"
 #include "base/string8.h"
+#include "base/image.h"
+#include "platform/file.h"
 #include "platform/input.h"
 #include "platform/path.h"
 #include "renderer/renderer_backend.h"
-#include "game/assets.h"
+#include "asset_manager.h"
 
 #include "platform/window.h"
-#include "base/thread_context.h"
 #include "game/renderer/render_command.h"
 #include "base/vertex.h"
 #include "tests.c"
@@ -29,7 +30,7 @@ typedef struct {
     TextureHandle texture;
 } RendererState;
 
-#if 0
+
 static RendererState get_state_needed_for_entry(RenderKey key)
 {
     RenderKey shader_id = render_key_extract_shader(key);
@@ -48,7 +49,7 @@ static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
     return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
 }
 
-static RendererState switch_renderer_state(RendererState state, AssetSystem *assets, RendererBackend *backend)
+static RendererState switch_renderer_state(RendererState state, AssetManager *assets, RendererBackend *backend)
 {
     {
         TextureAsset *texture = assets_get_texture(assets, state.texture);
@@ -63,7 +64,7 @@ static RendererState switch_renderer_state(RendererState state, AssetSystem *ass
     return state;
 }
 
-static void execute_render_commands(RenderBatch *rb, AssetSystem *assets, RendererBackend *backend)
+static void execute_render_commands(RenderBatch *rb, AssetManager *assets, RendererBackend *backend, LinearArena *scratch)
 {
     RendererState state = {0};
 
@@ -83,7 +84,7 @@ static void execute_render_commands(RenderBatch *rb, AssetSystem *assets, Render
                     SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
                     ShaderAsset *shader = assets_get_shader(assets, state.shader);
 
-                    renderer_backend_set_uniform_vec4(shader, cmd->uniform_name, cmd->vector);
+                    renderer_backend_set_uniform_vec4(shader, cmd->uniform_name, cmd->vector, scratch);
                 } break;
                 INVALID_DEFAULT_CASE;
             }
@@ -108,11 +109,11 @@ static void sort_render_commands(RenderBatch *rb)
 {
     (void)rb;
 }
-#endif
+
 
 #include "game/game.h"
 
-typedef void (*GameUpdateAndRender)(GameState *, RenderBatch *);
+typedef void (*GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *);
 
 typedef struct {
     void *handle;
@@ -148,12 +149,10 @@ static void load_game_functions(GameFunctions *functions)
     la_destroy(&scratch);
 }
 
+#include "platform/image.h"
+
 int main()
 {
-    /* bool result = thread_ctx_initialize_system(); */
-    /* ASSERT(result); */
-    /* thread_ctx_create_for_thread(default_allocator); */
-
     LinearArena arena = la_create(default_allocator, MB(4));
     Allocator alloc = la_allocator(&arena);
 
@@ -162,33 +161,28 @@ int main()
     WindowHandle *window = os_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
 
-    Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
-    proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
-    proj = mat4_scale(proj, 3.0f);
-
-    //AssetSystem assets = assets_initialize(alloc);
-
+    AssetManager assets = assets_initialize(alloc);
     LinearArena scratch = la_create(default_allocator, MB(4));
 
-#if 0
-    ShaderHandle shader_handle = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"), scratch);
-    TextureHandle texture_handle = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), scratch);
+    AssetList asset_list = {
+        .shader = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"), &scratch),
+        .texture = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), &scratch)
+    };
 
     {
-        ShaderAsset *shader_asset = assets_get_shader(&assets, shader_handle);
+        ShaderAsset *shader_asset = assets_get_shader(&assets, asset_list.shader);
         renderer_backend_use_shader(shader_asset);
-        renderer_backend_set_uniform_mat4(shader_asset, str_lit("u_proj"), proj);
+
+        Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
+        proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
+        proj = mat4_scale(proj, 3.0f);
+        renderer_backend_set_uniform_mat4(shader_asset, str_lit("u_proj"), proj, &scratch);
     }
-#endif
 
     RenderBatch rb = {0};
 
     GameState game_state = {
-        .frame_arena = la_create(default_allocator, MB(4)),
-        .shader = (ShaderHandle){0},
-        .texture = (TextureHandle){0},
-        /* .shader = shader_handle, */
-        /* .texture = texture_handle */
+        .frame_arena = la_create(default_allocator, MB(4))
     };
 
     GameFunctions game_code = {0};
@@ -199,16 +193,19 @@ int main()
     while (!os_window_should_close(window)) {
         input_update(&input, window);
 
-        load_game_functions(&game_code);
+        if (input_is_key_pressed(&input, KEY_A)) {
+            load_game_functions(&game_code);
+        }
 
         renderer_backend_begin_frame(backend);
 
         rb.entry_count = 0;
 
         if (game_code.handle) {
-            game_code.update_and_render(&game_state, &rb);
+            game_code.update_and_render(&game_state, &rb, &asset_list);
         }
-        //execute_render_commands(&rb, &assets, backend);
+
+        execute_render_commands(&rb, &assets, backend, &scratch);
 
         os_poll_events(window);
     }

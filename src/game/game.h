@@ -5,10 +5,9 @@
 
 typedef struct {
     LinearArena frame_arena;
-    ShaderHandle shader;
-    TextureHandle texture;
 } GameState;
 
-void game_update_and_render(GameState *game_state, RenderBatch *render_cmds);
+void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets);
+//void game_initialize(GameState *game_state);
 
 #endif //GAME_H

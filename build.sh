@@ -56,6 +56,7 @@ FLAGS="
       -Werror=implicit-function-declaration
       -Werror=overflow
       -Werror=implicit-int
+      -Werror=discarded-qualifiers
 
       -Isrc
       -Ideps

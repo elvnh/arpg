@@ -22,6 +22,8 @@ typedef struct {
 	ShaderAsset  *shader_asset;
 	TextureAsset *texture_asset;
     } as;
+
+    String asset_path;
 } AssetSlot;
 
 typedef struct {
@@ -30,10 +32,12 @@ typedef struct {
     FreeListArena asset_arena;
 } AssetManager;
 
-AssetManager   assets_initialize(Allocator parent_allocator);
-ShaderHandle   assets_register_shader(AssetManager *assets, String path, LinearArena *scratch);
-ShaderAsset   *assets_get_shader(AssetManager *assets, ShaderHandle handle);
-TextureHandle  assets_register_texture(AssetManager *assets, String path, LinearArena *scratch);
-TextureAsset  *assets_get_texture(AssetManager *assets, TextureHandle handle);
+AssetManager      assets_initialize(Allocator parent_allocator);
+AssetSlot        *assets_get_asset_by_path(AssetManager *assets, String path);
+ShaderHandle      assets_register_shader(AssetManager *assets, String path, LinearArena *scratch);
+TextureHandle     assets_register_texture(AssetManager *assets, String path, LinearArena *scratch);
+ShaderAsset      *assets_get_shader(AssetManager *assets, ShaderHandle handle);
+TextureAsset     *assets_get_texture(AssetManager *assets, TextureHandle handle);
+void              assets_reload_asset(AssetManager *assets, AssetSlot *slot, LinearArena *scratch);
 
 #endif //ASSETS_H

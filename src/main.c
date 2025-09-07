@@ -170,15 +170,7 @@ int main()
         .texture = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), &scratch)
     };
 
-    {
-        ShaderAsset *shader_asset = assets_get_shader(&assets, asset_list.shader);
-        renderer_backend_use_shader(shader_asset);
 
-        Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
-        proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
-        proj = mat4_scale(proj, 3.0f);
-        renderer_backend_set_uniform_mat4(shader_asset, str_lit("u_proj"), proj, &scratch);
-    }
 
     RenderBatch rb = {0};
 
@@ -193,11 +185,23 @@ int main()
 
     Timestamp game_so_load_time = platform_get_time();
 
-    platform_for_each_file_in_dir(str_lit("assets"), cb, &scratch);
-
     while (!platform_window_should_close(window)) {
+        {
+            AssetSlot *slot = assets_get_asset_by_path(&assets, str_lit("assets/sprites/test.png"));
+            assets_reload_asset(&assets, slot, &scratch);
+
+            ShaderAsset *shader_asset = assets_get_shader(&assets, asset_list.shader);
+            renderer_backend_use_shader(shader_asset);
+
+            Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
+            proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
+            proj = mat4_scale(proj, 3.0f);
+            renderer_backend_set_uniform_mat4(shader_asset, str_lit("u_proj"), proj, &scratch);
+        }
+
         Timestamp so_mod_time = platform_get_file_info(str_lit("build/libgame.so"), &scratch).last_modification_time;
 
+        // TODO: automatic hot reloading for assets too
         if (timestamp_less_than(game_so_load_time, so_mod_time)) {
             unload_game_code(&game_code);
             load_game_code(&game_code, &scratch);

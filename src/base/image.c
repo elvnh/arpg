@@ -10,7 +10,10 @@ Image image_decode_png(Span span, Allocator allocator)
 
     s32 width, height, channels;
     byte *img_data = stbi_load_from_memory(span.data, (s32)span.size, &width, &height, &channels, 0);
-    ASSERT(img_data);
+
+    if (!img_data) {
+        return (Image){0};
+    }
 
     ssize image_size = width * height * channels;
 

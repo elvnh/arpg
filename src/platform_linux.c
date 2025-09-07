@@ -5,9 +5,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <GLFW/glfw3.h>
-
+#include <time.h>
 #include <string.h>
+#include <dirent.h>
 
+#include "base/string8.h"
 #include "platform.h"
 #include "input.h"
 
@@ -290,10 +292,62 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
         return (FileInfo){0};
     }
 
+    Timestamp mod_time = {
+        .seconds = st.st_mtim.tv_sec,
+        .nanoseconds = st.st_mtim.tv_nsec
+    };
+
     FileInfo result = {
         .file_size = st.st_size,
-        .last_modification_time = st.st_mtim.tv_nsec
+        .last_modification_time = mod_time
     };
 
     return result;
+}
+
+void platform_for_each_file_in_dir(String directory, void (*callback)(String), LinearArena *scratch)
+{
+    String null_terminated = str_null_terminate(directory, la_allocator(scratch));
+    DIR *dir = opendir(null_terminated.data);
+    ASSERT(dir);
+
+    for (struct dirent *entry = readdir(dir); entry; entry = readdir(dir)) {
+        String name = { entry->d_name, (ssize)strlen(entry->d_name) };
+        String full_path = str_concat(str_concat(directory, str_lit("/"), la_allocator(scratch)),
+            name, la_allocator(scratch));
+
+        if (entry->d_type == DT_DIR) {
+            if (!str_equal(name, str_lit(".")) && !str_equal(name, str_lit(".."))) {
+                platform_for_each_file_in_dir(full_path, callback, scratch);
+            }
+        } else {
+            callback(full_path);
+        }
+    }
+
+    closedir(dir);
+}
+
+/* Time */
+Timestamp platform_get_time()
+{
+    struct timespec ts;
+    s32 gettime_result = clock_gettime(CLOCK_REALTIME, &ts);
+    ASSERT(gettime_result == 0);
+
+    Timestamp result = {
+        .seconds = ts.tv_sec,
+        .nanoseconds = ts.tv_nsec
+    };
+
+    return result;
+}
+
+b32 timestamp_less_than(Timestamp lhs, Timestamp rhs)
+{
+    if (lhs.seconds > rhs.seconds) {
+        return false;
+    }
+
+    return (lhs.seconds < rhs.seconds) || (lhs.nanoseconds < rhs.nanoseconds);
 }

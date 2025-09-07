@@ -32,10 +32,18 @@ String         platform_get_working_directory(Allocator allocator);
 void           platform_change_working_directory(String path);
 String         platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena);
 
+// TODO: move to separate file
+typedef struct {
+    s64 seconds;
+    s64 nanoseconds;
+} Timestamp;
+
+b32            timestamp_less_than(Timestamp lhs, Timestamp rhs);
+
 /* File */
 typedef struct {
     ssize file_size;
-    s64   last_modification_time;
+    Timestamp last_modification_time;
 } FileInfo;
 
 Span           platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch);
@@ -43,6 +51,10 @@ String         platform_read_entire_file_as_string(String path, Allocator alloca
 ssize          platform_get_file_size(String path, LinearArena *scratch);
 b32            platform_file_exists(String path, LinearArena *scratch);
 FileInfo       platform_get_file_info(String path, LinearArena *scratch);
+void           platform_for_each_file_in_dir(String directory, void (*callback)(String), LinearArena *scratch);
+
+/* Time */
+Timestamp      platform_get_time();
 
 
 #endif //PLATFORM_H

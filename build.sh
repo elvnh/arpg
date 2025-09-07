@@ -60,12 +60,12 @@ FLAGS="
       -Isrc
       -Ideps
 
-
-
 "
 
 rm -r build &&
 mkdir -p build/base build/platform build/game build/renderer &&
+
+touch build/lock &&
 
 # Base
 ${CC} ${BASE_SOURCES} ${FLAGS} -fPIC -c &&
@@ -83,3 +83,5 @@ ar rcs build/librenderer.a build/renderer/*.o &&
 ## Main
 ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -Lbuild -lbase -lrenderer  -Ldeps/ -lstb_image \
       `pkg-config --libs --cflags --static glfw3 glew` -pthread -o build/a.out;
+
+rm build/lock;

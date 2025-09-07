@@ -147,6 +147,11 @@ static void unload_game_code(GameCode *game_code)
     game_code->handle = 0;
 }
 
+void cb(String path)
+{
+    printf("%s\n", path.data);
+}
+
 int main()
 {
     LinearArena arena = la_create(default_allocator, MB(4));
@@ -186,21 +191,26 @@ int main()
 
     Input input = {0};
 
-    while (!platform_window_should_close(window)) {
-        platform_update_input(&input, window);
+    Timestamp game_so_load_time = platform_get_time();
 
-        if (input_is_key_pressed(&input, KEY_A)) {
+    platform_for_each_file_in_dir(str_lit("assets"), cb, &scratch);
+
+    while (!platform_window_should_close(window)) {
+        Timestamp so_mod_time = platform_get_file_info(str_lit("build/libgame.so"), &scratch).last_modification_time;
+
+        if (timestamp_less_than(game_so_load_time, so_mod_time)) {
             unload_game_code(&game_code);
             load_game_code(&game_code, &scratch);
+
+            game_so_load_time = platform_get_time();
         }
+
+        platform_update_input(&input, window);
 
         renderer_backend_begin_frame(backend);
-
         rb.entry_count = 0;
 
-        if (game_code.handle) {
-            game_code.update_and_render(&game_state, &rb, &asset_list);
-        }
+        game_code.update_and_render(&game_state, &rb, &asset_list);
 
         execute_render_commands(&rb, &assets, backend, &scratch);
 

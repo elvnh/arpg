@@ -287,8 +287,6 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
     s32 stat_result = stat(null_terminated.data, &st);
 
     if ((stat_result == -1) || !S_ISREG(st.st_mode)) {
-        ASSERT(false);
-
         return (FileInfo){0};
     }
 

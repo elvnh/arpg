@@ -56,5 +56,14 @@ void           platform_for_each_file_in_dir(String directory, void (*callback)(
 /* Time */
 Timestamp      platform_get_time();
 
+/* Mutex */
+typedef struct {
+    void *handle;
+} Mutex;
+
+Mutex mutex_create(Allocator allocator);
+void  mutex_destroy(Mutex mutex, Allocator allocator);
+void  mutex_lock(Mutex mutex);
+void  mutex_release(Mutex mutex);
 
 #endif //PLATFORM_H

@@ -8,6 +8,7 @@
 #include <time.h>
 #include <string.h>
 #include <dirent.h>
+#include <pthread.h>
 
 #include "base/string8.h"
 
@@ -346,4 +347,32 @@ Timestamp platform_get_time()
     };
 
     return result;
+}
+
+/* Mutex */
+Mutex mutex_create(Allocator allocator)
+{
+    void *handle = allocate_item(allocator, pthread_mutex_t);
+    pthread_mutex_init(handle, 0);
+
+    Mutex result = {handle};
+
+    return result;
+}
+
+void mutex_destroy(Mutex mutex, Allocator allocator)
+{
+    ASSERT(mutex.handle);
+    pthread_mutex_destroy(mutex.handle);
+    deallocate(allocator, mutex.handle);
+}
+
+void mutex_lock(Mutex mutex)
+{
+    pthread_mutex_lock(mutex.handle);
+}
+
+void mutex_release(Mutex mutex)
+{
+    pthread_mutex_unlock(mutex.handle);
 }

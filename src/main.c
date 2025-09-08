@@ -78,7 +78,8 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, Rende
             renderer_backend_end_frame(backend);
         }
 
-        for (SetupCmdHeader *setup_cmd = entry->data->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
+	SetupCmdHeader *setup_cmd;
+        for (setup_cmd = entry->data->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
             switch (setup_cmd->kind) {
                 case SETUP_CMD_SET_UNIFORM_VEC4: {
                     SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
@@ -95,7 +96,8 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, Rende
                 SpriteCmd *cmd = (SpriteCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, RGBA32_WHITE);
 
-                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right, verts.bottom_right, verts.bottom_left);
+                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+		    verts.bottom_right, verts.bottom_left);
             } break;
 
            INVALID_DEFAULT_CASE;
@@ -158,39 +160,6 @@ void cb(String path)
 #include <sys/poll.h>
 #include <unistd.h>
 
-// TODO: wrap mutexes and atomics
-
-
-typedef struct {
-    void *handle;
-} Mutex;
-
-Mutex mutex_create(Allocator allocator)
-{
-    void *handle = allocate_item(allocator, pthread_mutex_t);
-    pthread_mutex_init(handle, 0);
-
-    Mutex result = {handle};
-
-    return result;
-}
-
-void mutex_destroy(Mutex mutex, Allocator allocator)
-{
-    ASSERT(mutex.handle);
-    pthread_mutex_destroy(mutex.handle);
-    deallocate(allocator, mutex.handle);
-}
-
-void mutex_lock(Mutex mutex)
-{
-    pthread_mutex_lock(mutex.handle);
-}
-
-void mutex_release(Mutex mutex)
-{
-    pthread_mutex_unlock(mutex.handle);
-}
 
 typedef struct {
     Allocator allocator;

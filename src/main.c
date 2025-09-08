@@ -7,8 +7,10 @@
 #include <pthread.h>
 
 #include "base/free_list_arena.h"
+#include "base/linear_arena.h"
 #include "base/string8.h"
 #include "base/image.h"
+#include "base/list.h"
 #include "input.h"
 #include "platform.h"
 #include "renderer/renderer_backend.h"
@@ -152,6 +154,107 @@ void cb(String path)
     printf("%s\n", path.data);
 }
 
+#include <sys/inotify.h>
+#include <sys/poll.h>
+#include <unistd.h>
+
+#define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
+
+/* TODO: this should produce a queue of changed files that the main thread can reload in the beginning
+   of each frame. This thread can't do it because only the main thread can call OpenGL functions, also
+   it could cause race conditions if other threads read the asset being reloaded.
+ */
+void file_watcher_thread(AssetManager *assets)
+{
+    LinearArena scratch = la_create(default_allocator, MB(1));
+    StringList asset_reload_queue = {0};
+
+    s32 fd = inotify_init();
+    ASSERT(fd >= 0);
+
+    char event_buffer[INOTIFY_MAX_BUFFER_LENGTH];
+
+    String root_path = str_lit("assets");
+    String shader_path = str_lit("assets/shaders/");
+    String sprite_path = str_lit("assets/sprites/");
+
+    s32 root_wd = inotify_add_watch(fd, root_path.data, IN_MODIFY);
+    s32 shader_wd = inotify_add_watch(fd, shader_path.data, IN_MODIFY);
+    s32 sprite_wd = inotify_add_watch(fd, sprite_path.data, IN_MODIFY);
+
+    struct pollfd poll_desc = {
+        .fd = fd,
+        .events = POLLIN,
+        .revents = 0
+    };
+
+    s32 timeout = 100;
+
+    while (true) {
+        la_reset(&scratch);
+
+        for (StringNode *file = list_head(&asset_reload_queue); file;) {
+            StringNode *next = file->next;
+            AssetSlot *slot = assets_get_asset_by_path(assets, file->data);
+
+            if (slot) {
+                b32 reloaded = assets_reload_asset(assets, slot, &scratch);
+
+                if (reloaded) {
+                    printf("Reloaded asset '%s'.\n",
+                        str_null_terminate(file->data, la_allocator(&scratch)).data);
+
+                    list_pop_head(&asset_reload_queue);
+                    deallocate(default_allocator, file);
+                }
+            } else {
+                list_pop_head(&asset_reload_queue);
+                deallocate(default_allocator, file);
+            }
+
+            file = next;
+        }
+
+        s32 poll_result = poll(&poll_desc, 1, timeout);
+        ASSERT(poll_result >= 0);
+
+        if (poll_result == 0) {
+            continue;
+        }
+
+        ssize length = read(fd, event_buffer, INOTIFY_MAX_BUFFER_LENGTH);
+        ssize buffer_offset = 0;
+
+        while (buffer_offset < length) {
+            struct inotify_event *event = (struct inotify_event *)&event_buffer[buffer_offset];
+
+            ASSERT(event->mask & IN_MODIFY);
+
+            if (event->mask & IN_MODIFY) {
+                String parent_path = {0};
+
+                if (event->wd == shader_wd) {
+                    parent_path = shader_path;
+                } else if (event->wd == sprite_wd) {
+                    parent_path = sprite_path;
+                } else {
+                    ASSERT(0);
+                }
+
+                String name = { event->name, (ssize)strlen(event->name) };
+                StringNode *modified_file = allocate_item(default_allocator, StringNode);
+                modified_file->data = str_concat(parent_path, name, default_allocator);
+
+                list_push_back(&asset_reload_queue, modified_file);
+            }
+
+            buffer_offset += (SIZEOF(struct inotify_event) + event->len);
+        }
+    }
+
+    la_destroy(&scratch);
+}
+
 int main()
 {
     LinearArena arena = la_create(default_allocator, MB(4));
@@ -170,7 +273,7 @@ int main()
         .texture = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), &scratch)
     };
 
-
+    file_watcher_thread(&assets);
 
     RenderBatch rb = {0};
 

@@ -155,37 +155,43 @@ TextureAsset *assets_get_texture(AssetManager *assets, TextureHandle handle)
     return result;
 }
 
-static void assets_reload_shader(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
+static b32 assets_reload_shader(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
 {
     ShaderAsset *new_shader = load_asset_data_shader(assets, slot->asset_path, scratch);
 
     if (new_shader) {
         renderer_backend_destroy_shader(slot->as.shader_asset, fl_allocator(&assets->asset_arena));
         assign_asset_slot_data(slot, ASSET_KIND_SHADER, new_shader);
+
+        return true;
     }
+
+    return false;
 }
 
-static void assets_reload_texture(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
+static b32 assets_reload_texture(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
 {
     TextureAsset *new_texture = load_asset_data_texture(assets, slot->asset_path, scratch);
 
     if (new_texture) {
         renderer_backend_destroy_texture(slot->as.texture_asset, fl_allocator(&assets->asset_arena));
         assign_asset_slot_data(slot, ASSET_KIND_TEXTURE, new_texture);
+
+        return true;
     }
+
+    return false;
 }
 
-void assets_reload_asset(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
+b32 assets_reload_asset(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
 {
     switch (slot->kind) {
-        case ASSET_KIND_SHADER: {
-            assets_reload_shader(assets, slot, scratch);
-        } break;
+        case ASSET_KIND_SHADER: return assets_reload_shader(assets, slot, scratch);
 
-        case ASSET_KIND_TEXTURE: {
-            assets_reload_texture(assets, slot, scratch);
-        } break;
+        case ASSET_KIND_TEXTURE: return assets_reload_texture(assets, slot, scratch);
 
         INVALID_DEFAULT_CASE;
     }
+
+    return false;
 }

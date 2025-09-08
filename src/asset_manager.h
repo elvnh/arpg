@@ -38,6 +38,6 @@ ShaderHandle      assets_register_shader(AssetManager *assets, String path, Line
 TextureHandle     assets_register_texture(AssetManager *assets, String path, LinearArena *scratch);
 ShaderAsset      *assets_get_shader(AssetManager *assets, ShaderHandle handle);
 TextureAsset     *assets_get_texture(AssetManager *assets, TextureHandle handle);
-void              assets_reload_asset(AssetManager *assets, AssetSlot *slot, LinearArena *scratch);
+b32               assets_reload_asset(AssetManager *assets, AssetSlot *slot, LinearArena *scratch);
 
 #endif //ASSETS_H

@@ -224,26 +224,20 @@ String platform_get_parent_path(String path, Allocator allocator, LinearArena *s
 /* File */
 Span platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
 {
-    String null_terminated = str_null_terminate(path, la_allocator(scratch));
-    ssize file_size = platform_get_file_size(null_terminated, scratch);
-
     Span result = {0};
 
-    if ((file_size == -1) || add_overflows_ssize(file_size, 1)) {
-        return result;
+    String null_terminated = str_null_terminate(path, la_allocator(scratch));
+    s32 fd = open(null_terminated.data, O_RDONLY);
+
+    ssize file_size = platform_get_file_size(null_terminated, scratch);
+
+    if ((fd == -1) || (file_size == -1) || add_overflows_ssize(file_size, 1)) {
+        goto done;
     }
 
     ssize alloc_size = file_size + 1;
-
     byte *file_data = allocate_array(allocator, byte, alloc_size);
     ASSERT(file_data);
-
-    s32 fd = open(null_terminated.data, O_RDONLY);
-
-    if (fd == -1) {
-        deallocate(allocator, file_data);
-        return result;
-    }
 
     ssize bytes_read = read(fd, file_data, cast_ssize_to_usize(file_size));
     ASSERT(bytes_read == file_size);
@@ -253,6 +247,9 @@ Span platform_read_entire_file(String path, Allocator allocator, LinearArena *sc
 
     result.data = file_data;
     result.size = file_size;
+
+  done:
+    close(fd);
 
     return result;
 }
@@ -287,8 +284,10 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
     struct stat st;
     s32 stat_result = stat(null_terminated.data, &st);
 
+    FileInfo result = {-1, -1, {0}};
+
     if ((stat_result == -1) || !S_ISREG(st.st_mode)) {
-        return (FileInfo){0};
+        return result;
     }
 
     Timestamp mod_time = {
@@ -304,11 +303,9 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
         type = FILE_TYPE_DIRECTORY;
     }
 
-    FileInfo result = {
-        .type = type,
-        .file_size = st.st_size,
-        .last_modification_time = mod_time
-    };
+    result.type = type;
+    result.file_size = st.st_size;
+    result.last_modification_time = mod_time;
 
     return result;
 }

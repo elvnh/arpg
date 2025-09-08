@@ -158,16 +158,21 @@ void cb(String path)
 #include <sys/poll.h>
 #include <unistd.h>
 
+// TODO: wrap mutexes and atomics
+
+typedef struct {
+    Allocator allocator;
+    pthread_t thread;
+    pthread_mutex_t lock;
+    StringList asset_reload_queue;
+    b32 should_terminate;
+} AssetWatcherContext;
+
 #define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
 
-/* TODO: this should produce a queue of changed files that the main thread can reload in the beginning
-   of each frame. This thread can't do it because only the main thread can call OpenGL functions, also
-   it could cause race conditions if other threads read the asset being reloaded.
- */
-void file_watcher_thread(AssetManager *assets)
+void *file_watcher_thread(void *user_data)
 {
-    LinearArena scratch = la_create(default_allocator, MB(1));
-    StringList asset_reload_queue = {0};
+    AssetWatcherContext *ctx = user_data;
 
     s32 fd = inotify_init();
     ASSERT(fd >= 0);
@@ -190,31 +195,7 @@ void file_watcher_thread(AssetManager *assets)
 
     s32 timeout = 100;
 
-    while (true) {
-        la_reset(&scratch);
-
-        for (StringNode *file = list_head(&asset_reload_queue); file;) {
-            StringNode *next = file->next;
-            AssetSlot *slot = assets_get_asset_by_path(assets, file->data);
-
-            if (slot) {
-                b32 reloaded = assets_reload_asset(assets, slot, &scratch);
-
-                if (reloaded) {
-                    printf("Reloaded asset '%s'.\n",
-                        str_null_terminate(file->data, la_allocator(&scratch)).data);
-
-                    list_pop_head(&asset_reload_queue);
-                    deallocate(default_allocator, file);
-                }
-            } else {
-                list_pop_head(&asset_reload_queue);
-                deallocate(default_allocator, file);
-            }
-
-            file = next;
-        }
-
+    while (!__atomic_load_n(&ctx->should_terminate, __ATOMIC_RELAXED)) {
         s32 poll_result = poll(&poll_desc, 1, timeout);
         ASSERT(poll_result >= 0);
 
@@ -242,17 +223,33 @@ void file_watcher_thread(AssetManager *assets)
                 }
 
                 String name = { event->name, (ssize)strlen(event->name) };
-                StringNode *modified_file = allocate_item(default_allocator, StringNode);
-                modified_file->data = str_concat(parent_path, name, default_allocator);
+                StringNode *modified_file = allocate_item(ctx->allocator, StringNode);
+                modified_file->data = str_concat(parent_path, name, ctx->allocator);
 
-                list_push_back(&asset_reload_queue, modified_file);
+                pthread_mutex_lock(&ctx->lock);
+                list_push_back(&ctx->asset_reload_queue, modified_file);
+                pthread_mutex_unlock(&ctx->lock);
             }
 
             buffer_offset += (SIZEOF(struct inotify_event) + event->len);
         }
     }
 
-    la_destroy(&scratch);
+    return 0;
+}
+
+static void file_watcher_start(AssetWatcherContext *ctx)
+{
+    pthread_mutex_init(&ctx->lock, 0);
+    ctx->allocator = default_allocator;
+
+    pthread_create(&ctx->thread, 0, file_watcher_thread, ctx); // move to init
+}
+
+static void file_watcher_stop(AssetWatcherContext *ctx)
+{
+    __atomic_store_n(&ctx->should_terminate, true, __ATOMIC_RELAXED);
+    pthread_join(ctx->thread, 0);
 }
 
 int main()
@@ -273,8 +270,6 @@ int main()
         .texture = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), &scratch)
     };
 
-    file_watcher_thread(&assets);
-
     RenderBatch rb = {0};
 
     GameState game_state = {
@@ -288,7 +283,44 @@ int main()
 
     Timestamp game_so_load_time = platform_get_time();
 
+    AssetWatcherContext asset_watcher = {0};
+    file_watcher_start(&asset_watcher);
+
     while (!platform_window_should_close(window)) {
+        {
+            // TODO: hot reload game code this way too
+            pthread_mutex_lock(&asset_watcher.lock);
+
+            for (StringNode *file = list_head(&asset_watcher.asset_reload_queue); file;) {
+                StringNode *next = file->next;
+                AssetSlot *slot = assets_get_asset_by_path(&assets, file->data);
+
+                b32 should_pop = true;
+
+                if (slot) {
+                    b32 reloaded = assets_reload_asset(&assets, slot, &scratch);
+
+                    if (reloaded) {
+                        printf("Reloaded asset '%s'.\n",
+                            str_null_terminate(file->data, la_allocator(&scratch)).data);
+                    } else {
+                        // Failed to reload, try again later
+                        should_pop = false;
+                    }
+                }
+
+                if (should_pop) {
+                    list_pop_head(&asset_watcher.asset_reload_queue);
+                    deallocate(asset_watcher.allocator, file->data.data);
+                    deallocate(asset_watcher.allocator, file);
+                }
+
+                file = next;
+            }
+
+            pthread_mutex_unlock(&asset_watcher.lock);
+        }
+
         {
             AssetSlot *slot = assets_get_asset_by_path(&assets, str_lit("assets/sprites/test.png"));
             assets_reload_asset(&assets, slot, &scratch);
@@ -304,7 +336,6 @@ int main()
 
         Timestamp so_mod_time = platform_get_file_info(str_lit("build/libgame.so"), &scratch).last_modification_time;
 
-        // TODO: automatic hot reloading for assets too
         if (timestamp_less_than(game_so_load_time, so_mod_time)) {
             unload_game_code(&game_code);
             load_game_code(&game_code, &scratch);
@@ -326,6 +357,8 @@ int main()
 
     platform_destroy_window(window);
     la_destroy(&arena);
+
+    file_watcher_stop(&asset_watcher);
 
     return 0;
 }

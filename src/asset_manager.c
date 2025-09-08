@@ -117,7 +117,7 @@ static TextureAsset *load_asset_data_texture(AssetManager *assets, String path, 
     TextureAsset *result = 0;
     Span file_contents = platform_read_entire_file(path, la_allocator(scratch), scratch);
 
-    if (file_contents.data) {
+    if (file_contents.data && file_contents.size) {
         Image image = image_decode_png(file_contents, la_allocator(scratch));
 
         if (image.data) {

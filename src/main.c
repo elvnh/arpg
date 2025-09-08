@@ -160,16 +160,60 @@ void cb(String path)
 
 // TODO: wrap mutexes and atomics
 
+
+typedef struct {
+    void *handle;
+} Mutex;
+
+Mutex mutex_create(Allocator allocator)
+{
+    void *handle = allocate_item(allocator, pthread_mutex_t);
+    pthread_mutex_init(handle, 0);
+
+    Mutex result = {handle};
+
+    return result;
+}
+
+void mutex_destroy(Mutex mutex, Allocator allocator)
+{
+    ASSERT(mutex.handle);
+    pthread_mutex_destroy(mutex.handle);
+    deallocate(allocator, mutex.handle);
+}
+
+void mutex_lock(Mutex mutex)
+{
+    pthread_mutex_lock(mutex.handle);
+}
+
+void mutex_release(Mutex mutex)
+{
+    pthread_mutex_unlock(mutex.handle);
+}
+
 typedef struct {
     Allocator allocator;
     pthread_t thread;
-    pthread_mutex_t lock;
+    Mutex lock;
     StringList asset_reload_queue;
     b32 should_terminate;
 } AssetWatcherContext;
 
 #define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
 
+static inline s32 atomic_load_s32(s32 *ptr)
+{
+    ASSERT(ptr);
+    s32 result = __atomic_load_n(ptr, __ATOMIC_RELAXED);
+    return result;
+}
+
+static inline void atomic_store_s32(s32 *ptr, s32 new_value)
+{
+    ASSERT(ptr);
+    __atomic_store_n(ptr, new_value, __ATOMIC_RELAXED);
+}
 void *file_watcher_thread(void *user_data)
 {
     AssetWatcherContext *ctx = user_data;
@@ -195,7 +239,7 @@ void *file_watcher_thread(void *user_data)
 
     s32 timeout = 100;
 
-    while (!__atomic_load_n(&ctx->should_terminate, __ATOMIC_RELAXED)) {
+    while (!atomic_load_s32(&ctx->should_terminate)) {
         s32 poll_result = poll(&poll_desc, 1, timeout);
         ASSERT(poll_result >= 0);
 
@@ -226,9 +270,9 @@ void *file_watcher_thread(void *user_data)
                 StringNode *modified_file = allocate_item(ctx->allocator, StringNode);
                 modified_file->data = str_concat(parent_path, name, ctx->allocator);
 
-                pthread_mutex_lock(&ctx->lock);
+		mutex_lock(ctx->lock);
                 list_push_back(&ctx->asset_reload_queue, modified_file);
-                pthread_mutex_unlock(&ctx->lock);
+		mutex_release(ctx->lock);
             }
 
             buffer_offset += (SIZEOF(struct inotify_event) + event->len);
@@ -240,16 +284,17 @@ void *file_watcher_thread(void *user_data)
 
 static void file_watcher_start(AssetWatcherContext *ctx)
 {
-    pthread_mutex_init(&ctx->lock, 0);
     ctx->allocator = default_allocator;
 
+    ctx->lock = mutex_create(ctx->allocator);
     pthread_create(&ctx->thread, 0, file_watcher_thread, ctx); // move to init
 }
 
 static void file_watcher_stop(AssetWatcherContext *ctx)
 {
-    __atomic_store_n(&ctx->should_terminate, true, __ATOMIC_RELAXED);
+    atomic_store_s32(&ctx->should_terminate, true);
     pthread_join(ctx->thread, 0);
+    mutex_destroy(ctx->lock, ctx->allocator);
 }
 
 int main()
@@ -259,7 +304,8 @@ int main()
 
     run_tests();
 
-    WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo", WINDOW_FLAG_NON_RESIZABLE, alloc);
+    WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
+	WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
 
     AssetManager assets = assets_initialize(alloc);
@@ -289,7 +335,7 @@ int main()
     while (!platform_window_should_close(window)) {
         {
             // TODO: hot reload game code this way too
-            pthread_mutex_lock(&asset_watcher.lock);
+            mutex_lock(asset_watcher.lock);
 
             for (StringNode *file = list_head(&asset_watcher.asset_reload_queue); file;) {
                 StringNode *next = file->next;
@@ -318,7 +364,7 @@ int main()
                 file = next;
             }
 
-            pthread_mutex_unlock(&asset_watcher.lock);
+            mutex_release(asset_watcher.lock);
         }
 
         {

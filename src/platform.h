@@ -66,4 +66,26 @@ void  mutex_destroy(Mutex mutex, Allocator allocator);
 void  mutex_lock(Mutex mutex);
 void  mutex_release(Mutex mutex);
 
+/* Atomic */
+static inline s32 atomic_load_s32(s32 *ptr)
+{
+    ASSERT(ptr);
+#if __GNUC__
+    s32 result = __atomic_load_n(ptr, __ATOMIC_RELAXED);
+    return result;
+#else
+#  error
+#endif
+}
+
+static inline void atomic_store_s32(s32 *ptr, s32 new_value)
+{
+    ASSERT(ptr);
+#if __GNUC__
+    __atomic_store_n(ptr, new_value, __ATOMIC_RELAXED);
+#else
+#  error
+#endif
+}
+
 #endif //PLATFORM_H

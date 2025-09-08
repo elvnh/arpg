@@ -46,9 +46,6 @@ static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, 
     fprintf(stderr, "%s\nSeverity: 0x%x\nMessage: %s\n",
       (type == GL_DEBUG_TYPE_ERROR ? "** OpenGL ERROR **" : "** OpenGL INFO **"),
       severity, message);
-
-    if (type == GL_DEBUG_TYPE_ERROR)
-        abort();
 }
 
 RendererBackend *renderer_backend_initialize(Allocator allocator)

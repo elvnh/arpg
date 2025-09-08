@@ -171,18 +171,6 @@ typedef struct {
 
 #define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
 
-static inline s32 atomic_load_s32(s32 *ptr)
-{
-    ASSERT(ptr);
-    s32 result = __atomic_load_n(ptr, __ATOMIC_RELAXED);
-    return result;
-}
-
-static inline void atomic_store_s32(s32 *ptr, s32 new_value)
-{
-    ASSERT(ptr);
-    __atomic_store_n(ptr, new_value, __ATOMIC_RELAXED);
-}
 void *file_watcher_thread(void *user_data)
 {
     AssetWatcherContext *ctx = user_data;

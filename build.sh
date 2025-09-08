@@ -63,8 +63,13 @@ FLAGS="
 
 "
 
-rm -r build &&
-mkdir -p build/base build/platform build/game build/renderer &&
+if [ ! -f deps/libstb_image.a ]; then
+    echo "Compiling stb_image...";
+    ${CC} deps/stb_image.c -O3 -lm -c -o deps/stb_image.o && ar rcs deps/libstb_image.a deps/stb_image.o;
+fi
+
+rm -r build/** &&
+mkdir -p build/base build/platform build/game build/renderer;
 
 touch build/lock &&
 

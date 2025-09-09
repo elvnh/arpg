@@ -6,7 +6,6 @@
 #include "base/string8.h"
 
 typedef enum {
-    RENDER_CMD_SPRITE,
     RENDER_CMD_RECTANGLE,
     RENDER_CMD_CIRCLE,
 } RenderCmdKind;
@@ -27,11 +26,6 @@ typedef struct {
 } RenderCmdHeader;
 
 /* Render command types */
-typedef struct {
-    RenderCmdHeader header;
-    Rectangle rect;
-} SpriteCmd;
-
 typedef struct {
     RenderCmdHeader header;
     Rectangle rect;

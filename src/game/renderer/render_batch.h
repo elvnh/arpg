@@ -17,7 +17,7 @@ typedef struct {
 } RenderBatch;
 
 RenderEntry *render_batch_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, ShaderHandle shader, s32 layer);
+    Rectangle rectangle, RGBA32 color, ShaderHandle shader, s32 layer);
 RenderEntry *render_batch_push_quad(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     RGBA32 color, ShaderHandle shader, s32 layer);
 RenderEntry *render_batch_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,

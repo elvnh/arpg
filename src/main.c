@@ -113,16 +113,6 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const
         }
 
         switch (entry->data->kind) {
-            // TODO: make sprites and rectangles into same command type but let user use
-            // different functions for creating them
-            case RENDER_CMD_SPRITE: {
-                SpriteCmd *cmd = (SpriteCmd *)entry->data;
-                RectangleVertices verts = rect_get_vertices(cmd->rect, RGBA32_WHITE);
-
-                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
-		    verts.bottom_right, verts.bottom_left);
-            } break;
-
             case RENDER_CMD_RECTANGLE: {
                 RectangleCmd *cmd = (RectangleCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color);

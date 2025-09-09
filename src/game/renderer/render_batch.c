@@ -1,6 +1,8 @@
 #include "render_batch.h"
 #include "base/linear_arena.h"
+#include "base/rgba.h"
 #include "base/utils.h"
+#include "game/renderer/render_key.h"
 #include "render_command.h"
 
 #define allocate_render_cmd(arena, kind) init_render_cmd(arena, kind)
@@ -10,10 +12,6 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
     void *result = 0;
 
     switch (kind) {
-        case RENDER_CMD_SPRITE: {
-            result = la_allocate_item(arena, SpriteCmd);
-        } break;
-
         case RENDER_CMD_RECTANGLE: {
             result = la_allocate_item(arena, RectangleCmd);
         } break;
@@ -41,13 +39,14 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
 }
 
 RenderEntry *render_batch_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, ShaderHandle shader, s32 layer)
+    Rectangle rectangle, RGBA32 color, ShaderHandle shader, s32 layer)
 {
-    SpriteCmd *sprite = allocate_render_cmd(arena, RENDER_CMD_SPRITE);
-    sprite->rect = rectangle;
+    RectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_RECTANGLE);
+    cmd->rect = rectangle;
+    cmd->color = color;
 
     RenderKey key = render_key_create(layer, shader, texture, (s32)rectangle.position.y);
-    RenderEntry *result = push_render_entry(rb, key, sprite);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
 }
@@ -55,14 +54,7 @@ RenderEntry *render_batch_push_sprite(RenderBatch *rb, LinearArena *arena, Textu
 RenderEntry *render_batch_push_quad(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     RGBA32 color, ShaderHandle shader, s32 layer)
 {
-    RectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_RECTANGLE);
-    cmd->rect = rect;
-    cmd->color = color;
-
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, (s32)rect.position.y);
-    RenderEntry *result = push_render_entry(rb, key, cmd);
-
-    return result;
+    return render_batch_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);
 }
 
 RenderEntry *render_batch_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,

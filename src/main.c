@@ -8,9 +8,11 @@
 
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
+#include "base/rectangle.h"
 #include "base/string8.h"
 #include "base/image.h"
 #include "base/list.h"
+#include "game/renderer/render_key.h"
 #include "input.h"
 #include "platform.h"
 #include "renderer/renderer_backend.h"
@@ -30,7 +32,6 @@ typedef struct {
     TextureHandle texture;
 } RendererState;
 
-
 static RendererState get_state_needed_for_entry(RenderKey key)
 {
     RenderKey shader_id = render_key_extract_shader(key);
@@ -49,49 +50,64 @@ static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
     return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
 }
 
-static RendererState switch_renderer_state(RendererState state, AssetManager *assets, RendererBackend *backend)
+static RendererState switch_renderer_state(RendererState new_state, AssetManager *assets, const AssetList *asset_list,
+    RendererState old_state, RendererBackend *backend)
 {
-    {
-        TextureAsset *texture = assets_get_texture(assets, state.texture);
+    (void)backend;
+
+    if (new_state.texture.id != old_state.texture.id) {
+        TextureAsset *texture = 0;
+
+        if (new_state.texture.id != NULL_TEXTURE.id) {
+            texture = assets_get_texture(assets, new_state.texture);
+        } else {
+            texture = assets_get_texture(assets, asset_list->white_texture);
+        }
+
         renderer_backend_bind_texture(texture);
     }
 
-    {
-        ShaderAsset *shader = assets_get_shader(assets, state.shader);
+    if (new_state.shader.id != old_state.shader.id) {
+        ShaderAsset *shader = assets_get_shader(assets, new_state.shader);
+
         renderer_backend_use_shader(shader);
     }
 
-    return state;
+    return new_state;
 }
 
-static void execute_render_commands(RenderBatch *rb, AssetManager *assets, RendererBackend *backend, LinearArena *scratch)
+#define INVALID_RENDERER_STATE (RendererState){{(AssetID)-1}, {(AssetID)-1}}
+
+static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const AssetList *asset_list,
+    RendererBackend *backend, LinearArena *scratch)
 {
     if (rb->entry_count == 0) {
         return;
     }
 
-    RendererState state = get_state_needed_for_entry(rb->entries[0].key);
-    switch_renderer_state(state, assets, backend);
+    RendererState current_state = get_state_needed_for_entry(rb->entries[0].key);
+    switch_renderer_state(current_state, assets, asset_list, INVALID_RENDERER_STATE, backend);
 
     for (ssize i = 0; i < rb->entry_count; ++i) {
         RenderEntry *entry = &rb->entries[i];
+        RenderCmdHeader *header = entry->data;
 
         RendererState needed_state = get_state_needed_for_entry(entry->key);
 
-        if (renderer_state_change_needed(state, needed_state)) {
+        if (renderer_state_change_needed(current_state, needed_state)) {
             renderer_backend_flush(backend);
-            state = switch_renderer_state(needed_state, assets, backend);
+            current_state = switch_renderer_state(needed_state, assets, asset_list, current_state, backend);
         }
 
-	SetupCmdHeader *setup_cmd;
-        for (setup_cmd = entry->data->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
+        for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
             switch (setup_cmd->kind) {
                 case SETUP_CMD_SET_UNIFORM_VEC4: {
                     SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
-                    ShaderAsset *shader = assets_get_shader(assets, state.shader);
+                    ShaderAsset *shader = assets_get_shader(assets, current_state.shader);
 
                     renderer_backend_set_uniform_vec4(shader, cmd->uniform_name, cmd->vector, scratch);
                 } break;
+
                 INVALID_DEFAULT_CASE;
             }
         }
@@ -100,6 +116,14 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, Rende
             case RENDER_CMD_SPRITE: {
                 SpriteCmd *cmd = (SpriteCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, RGBA32_WHITE);
+
+                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+		    verts.bottom_right, verts.bottom_left);
+            } break;
+
+            case RENDER_CMD_RECTANGLE: {
+                RectangleCmd *cmd = (RectangleCmd *)entry->data;
+                RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color);
 
                 renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
 		    verts.bottom_right, verts.bottom_left);
@@ -116,7 +140,6 @@ static void sort_render_commands(RenderBatch *rb)
 {
     (void)rb;
 }
-
 
 #include "game/game.h"
 
@@ -156,15 +179,9 @@ static void unload_game_code(GameCode *game_code)
     game_code->handle = 0;
 }
 
-void cb(String path)
-{
-    printf("%s\n", path.data);
-}
-
 #include <sys/inotify.h>
 #include <sys/poll.h>
 #include <unistd.h>
-
 
 typedef struct {
     Allocator allocator;
@@ -192,6 +209,10 @@ void *file_watcher_thread(void *user_data)
     s32 root_wd = inotify_add_watch(fd, root_path.data, IN_MODIFY);
     s32 shader_wd = inotify_add_watch(fd, shader_path.data, IN_MODIFY);
     s32 sprite_wd = inotify_add_watch(fd, sprite_path.data, IN_MODIFY);
+    ASSERT(root_wd != -1);
+    ASSERT(shader_wd != -1);
+    ASSERT(sprite_wd != -1);
+
 
     struct pollfd poll_desc = {
         .fd = fd,
@@ -359,7 +380,7 @@ int main()
 
         game_code.update_and_render(&game_state, &rb, &asset_list);
 
-        execute_render_commands(&rb, &assets, backend, &scratch);
+        execute_render_commands(&rb, &assets, &asset_list, backend, &scratch);
 
         platform_poll_events(window);
     }

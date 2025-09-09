@@ -113,6 +113,8 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const
         }
 
         switch (entry->data->kind) {
+            // TODO: make sprites and rectangles into same command type but let user use
+            // different functions for creating them
             case RENDER_CMD_SPRITE: {
                 SpriteCmd *cmd = (SpriteCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, RGBA32_WHITE);
@@ -127,6 +129,36 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const
 
                 renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
 		    verts.bottom_right, verts.bottom_left);
+            } break;
+
+            case RENDER_CMD_CIRCLE: {
+                CircleCmd *cmd = (CircleCmd *)entry->data;
+
+                s32 segments = 64;
+                f32 radius = cmd->radius;
+                f32 posx = cmd->position.x;
+                f32 posy = cmd->position.y;
+                RGBA32 color = cmd->color;
+
+                Vertex a = { {posx, posy}, {0, 0}, color };
+
+                f32 step_angle = (2.0f * PI) / (f32)segments;
+
+                for (s32 k = 0; k < segments; ++k) {
+                    f32 segment = (f32)k;
+
+                    f32 x1 = posx + radius * cosf(step_angle * segment);
+                    f32 y1 = posy + radius * sinf(step_angle * segment);
+                    f32 x2 = posx + radius * cosf(step_angle * (segment + 1));
+                    f32 y2 = posy + radius * sinf(step_angle * (segment + 1));
+
+                    Vertex b = { {x1, y1}, {0, 0}, color};
+                    Vertex c = { {x2, y2}, {0, 0}, color};
+
+                    renderer_backend_draw_triangle(backend, a, b, c);
+                }
+
+
             } break;
 
            INVALID_DEFAULT_CASE;

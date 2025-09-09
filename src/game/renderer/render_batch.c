@@ -18,6 +18,10 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
             result = la_allocate_item(arena, RectangleCmd);
         } break;
 
+        case RENDER_CMD_CIRCLE: {
+            result = la_allocate_item(arena, CircleCmd);
+        } break;
+
         INVALID_DEFAULT_CASE;
     }
 
@@ -56,6 +60,20 @@ RenderEntry *render_batch_push_quad(RenderBatch *rb, LinearArena *arena, Rectang
     cmd->color = color;
 
     RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, (s32)rect.position.y);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
+RenderEntry *render_batch_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
+    RGBA32 color, f32 radius, ShaderHandle shader, s32 layer)
+{
+    CircleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_CIRCLE);
+    cmd->position = position;
+    cmd->color = color;
+    cmd->radius = radius;
+
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, (s32)position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;

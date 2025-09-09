@@ -13,6 +13,7 @@
 #define KB(n) (n * 1024)
 #define MB(n) (KB(n) * 1024)
 #define SIZEOF(t) ((ssize)(sizeof(t)))
+#define PI 3.1415926535f
 #define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
 
 #define UNIMPLEMENTED                                                                     \

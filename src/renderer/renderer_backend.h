@@ -24,8 +24,7 @@ TextureAsset    *renderer_backend_create_texture(Image image, Allocator allocato
 void             renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator);
 void             renderer_backend_use_shader(ShaderAsset *shader);
 void             renderer_backend_bind_texture(TextureAsset *texture);
-void             renderer_backend_set_uniform_mat4(ShaderAsset *shader, String uniform_name, Matrix4 matrix,
-                                                   LinearArena *scratch);
+void             renderer_backend_set_global_projection(RendererBackend *backend, Matrix4 matrix);
 void             renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec,
                                                    LinearArena *scratch);
 void             renderer_backend_clear(RendererBackend *backend); // TODO: provide clear color

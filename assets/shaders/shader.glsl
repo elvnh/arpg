@@ -9,7 +9,10 @@ layout (location = 2) in vec4 a_color;
 out vec2 tex_coord;
 out vec4 frag_color;
 
-uniform mat4 u_proj;
+// TODO: #global for things that are shared between vertex and fragment shaders
+layout (std140) uniform GlobalUniforms {
+    uniform mat4 u_proj;
+};
 
 void main()
 {

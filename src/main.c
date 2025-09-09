@@ -389,7 +389,7 @@ int main()
             Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
             proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
             proj = mat4_scale(proj, 3.0f);
-            renderer_backend_set_uniform_mat4(shader_asset, str_lit("u_proj"), proj, &scratch);
+            renderer_backend_set_global_projection(backend, proj);
         }
 
         Timestamp so_mod_time = platform_get_file_info(str_lit("build/libgame.so"), &scratch).last_modification_time;

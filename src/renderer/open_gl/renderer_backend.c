@@ -15,10 +15,18 @@
 #define VERTEX_SHADER_DIRECTIVE    str_lit("#vertex")
 #define FRAGMENT_SHADER_DIRECTIVE  str_lit("#fragment")
 
+#define GLOBAL_UNIFORMS_BINDING_POINT 0
+#define GLOBAL_UNIFORMS_NAME "GlobalUniforms"
+
+typedef struct {
+    Matrix4 projection;
+} GlobalShaderUniforms;
+
 struct RendererBackend {
     GLuint vao;
     GLuint vbo;
     GLuint ebo;
+    GLuint ubo;
 
     Vertex  vertices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
     s32     vertex_count;
@@ -84,6 +92,12 @@ RendererBackend *renderer_backend_initialize(Allocator allocator)
 
     glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, color));
     glEnableVertexAttribArray(COLOR_ATTRIBUTE);
+
+    /* UBO */
+    glGenBuffers(1, &state->ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, state->ubo);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(GlobalShaderUniforms), 0, GL_DYNAMIC_DRAW);
+    glBindBufferRange(GL_UNIFORM_BUFFER, GLOBAL_UNIFORMS_BINDING_POINT, state->ubo, 0, sizeof(GlobalShaderUniforms));
 
     glBindVertexArray(0);
 
@@ -195,6 +209,9 @@ ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allo
     glDetachShader(program_id, vertex_shader_id);
     glDetachShader(program_id, frag_shader_id);
 
+    u32 global_uniforms_index = glGetUniformBlockIndex(program_id, GLOBAL_UNIFORMS_NAME);
+    glUniformBlockBinding(program_id, global_uniforms_index, GLOBAL_UNIFORMS_BINDING_POINT);
+
     ShaderAsset *handle = allocate_item(allocator, ShaderAsset);
     handle->native_handle = program_id;
 
@@ -268,11 +285,11 @@ static GLint get_uniform_location(ShaderAsset *shader, String uniform_name, Line
 
     return location;
 }
-void renderer_backend_set_uniform_mat4(ShaderAsset *shader, String uniform_name, Matrix4 matrix, LinearArena *scratch)
+void renderer_backend_set_global_projection(RendererBackend *backend, Matrix4 matrix)
 {
-    GLint location = get_uniform_location(shader, uniform_name, scratch);
-
-    glUniformMatrix4fv(location, 1, GL_FALSE, mat4_ptr(&matrix));
+    glBindBuffer(GL_UNIFORM_BUFFER, backend->ubo);
+    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(GlobalShaderUniforms, projection), sizeof(Matrix4), matrix.data);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec, LinearArena *scratch)

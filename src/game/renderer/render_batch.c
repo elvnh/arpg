@@ -57,18 +57,24 @@ RenderEntry *render_batch_push_quad(RenderBatch *rb, LinearArena *arena, Rectang
     return render_batch_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);
 }
 
-RenderEntry *render_batch_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
-    RGBA32 color, f32 radius, ShaderHandle shader, s32 layer)
+RenderEntry *render_batch_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Vector2 position, RGBA32 color, f32 radius, ShaderHandle shader, s32 layer)
 {
     CircleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_CIRCLE);
     cmd->position = position;
     cmd->color = color;
     cmd->radius = radius;
 
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, (s32)position.y);
+    RenderKey key = render_key_create(layer, shader, texture, (s32)position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
+}
+
+RenderEntry *render_batch_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
+    RGBA32 color, f32 radius, ShaderHandle shader, s32 layer)
+{
+    return render_batch_push_sprite_circle(rb, arena, NULL_TEXTURE, position, color, radius, shader, layer);
 }
 
 void render_entry_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)

@@ -130,7 +130,7 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const
                 f32 posy = cmd->position.y;
                 RGBA32 color = cmd->color;
 
-                Vertex a = { {posx, posy}, {0, 0}, color };
+                Vertex a = { {posx, posy}, {0.5f, 0.5f}, color };
 
                 f32 step_angle = (2.0f * PI) / (f32)segments;
 
@@ -139,11 +139,17 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const
 
                     f32 x1 = posx + radius * cosf(step_angle * segment);
                     f32 y1 = posy + radius * sinf(step_angle * segment);
+                    f32 tx1 = (x1 / radius + 1.0f) * 0.5f;
+                    f32 ty1 = 1.0f - ((y1 / radius + 1.0f) * 0.5f);
+
                     f32 x2 = posx + radius * cosf(step_angle * (segment + 1));
                     f32 y2 = posy + radius * sinf(step_angle * (segment + 1));
+                    f32 tx2 = (x2 / radius + 1.0f) * 0.5f;
+                    f32 ty2 = 1.0f - ((y2 / radius + 1.0f) * 0.5f);
 
-                    Vertex b = { {x1, y1}, {0, 0}, color};
-                    Vertex c = { {x2, y2}, {0, 0}, color};
+
+                    Vertex b = { {x1, y1}, {tx1, ty1}, color};
+                    Vertex c = { {x2, y2}, {tx2, ty2}, color};
 
                     renderer_backend_draw_triangle(backend, a, b, c);
                 }

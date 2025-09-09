@@ -1,8 +1,12 @@
 #ifndef RENDER_KEY_H
 #define RENDER_KEY_H
 
+#include <math.h>
+
 #include "base/utils.h"
 #include "asset.h"
+
+#define NULL_TEXTURE         ((TextureHandle){(1 << TEXTURE_KEY_BITS) - 1})
 
 #define LAYER_KEY_POSITION   (64u - LAYER_KEY_BITS)
 #define LAYER_KEY_BITS       8u
@@ -32,7 +36,10 @@ inline static RenderKey render_key_extract_texture(RenderKey key)
 inline static RenderKey render_key_create(s32 layer, ShaderHandle shader, TextureHandle texture, s32 y_pos)
 {
     (void)y_pos;
-    // TODO: bounds checks
+    ASSERT(layer < pow(2, LAYER_KEY_BITS));
+    ASSERT(shader.id < pow(2, SHADER_KEY_BITS));
+    ASSERT(shader.id < pow(2, TEXTURE_KEY_BITS));
+
     RenderKey result = 0;
 
     result |= (u64)layer      << (LAYER_KEY_POSITION);

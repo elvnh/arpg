@@ -292,6 +292,7 @@ static void flush_if_needed(RendererBackend *backend, s32 vertices_to_draw, ssiz
 
 void renderer_backend_clear(RendererBackend *backend)
 {
+    (void)backend;
     glClear(GL_COLOR_BUFFER_BIT);
 }
 

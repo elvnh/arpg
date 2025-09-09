@@ -2,7 +2,7 @@
 #include "base/linear_arena.h"
 #include "render_command.h"
 
-RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+RenderEntry *render_batch_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, ShaderHandle shader, s32 layer)
 {
     SpriteCmd *sprite = la_allocate_item(arena, SpriteCmd);
@@ -13,6 +13,23 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
     RenderEntry *entry = &rb->entries[rb->entry_count++];
     entry->key = key;
     entry->data = (RenderCmdHeader *)sprite;
+
+    return entry;
+}
+
+RenderEntry *render_batch_push_quad(RenderBatch *rb, LinearArena *arena, Rectangle rect,
+    RGBA32 color, ShaderHandle shader, s32 layer)
+{
+    // TODO: reduce code duplication
+    RectangleCmd *cmd = la_allocate_item(arena, RectangleCmd);
+    cmd->header.kind = RENDER_CMD_RECTANGLE;
+    cmd->rect = rect;
+    cmd->color = color;
+
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, (s32)rect.position.y);
+    RenderEntry *entry = &rb->entries[rb->entry_count++];
+    entry->key = key;
+    entry->data = (RenderCmdHeader *)cmd;
 
     return entry;
 }

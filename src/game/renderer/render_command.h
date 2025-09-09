@@ -31,6 +31,12 @@ typedef struct {
     Rectangle rect;
 } SpriteCmd;
 
+typedef struct {
+    RenderCmdHeader header;
+    Rectangle rect;
+    RGBA32 color;
+} RectangleCmd;
+
 /* Setup command types */
 typedef struct {
     SetupCmdHeader header;

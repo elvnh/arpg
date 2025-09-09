@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
     ShaderHandle shader;
     TextureHandle texture;
+    TextureHandle white_texture;
 } AssetList;
 
 #endif //SHARED_H

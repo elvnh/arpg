@@ -66,16 +66,21 @@ static RendererState switch_renderer_state(RendererState state, AssetManager *as
 
 static void execute_render_commands(RenderBatch *rb, AssetManager *assets, RendererBackend *backend, LinearArena *scratch)
 {
-    RendererState state = {0};
+    if (rb->entry_count == 0) {
+        return;
+    }
+
+    RendererState state = get_state_needed_for_entry(rb->entries[0].key);
+    switch_renderer_state(state, assets, backend);
 
     for (ssize i = 0; i < rb->entry_count; ++i) {
         RenderEntry *entry = &rb->entries[i];
 
         RendererState needed_state = get_state_needed_for_entry(entry->key);
 
-        if (renderer_state_change_needed(state, needed_state) || (i == 0)) {
+        if (renderer_state_change_needed(state, needed_state)) {
+            renderer_backend_flush(backend);
             state = switch_renderer_state(needed_state, assets, backend);
-            renderer_backend_end_frame(backend);
         }
 
 	SetupCmdHeader *setup_cmd;
@@ -104,7 +109,7 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, Rende
         }
     }
 
-    renderer_backend_end_frame(backend);
+    renderer_backend_flush(backend);
 }
 
 static void sort_render_commands(RenderBatch *rb)
@@ -270,7 +275,8 @@ int main()
 
     AssetList asset_list = {
         .shader = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"), &scratch),
-        .texture = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), &scratch)
+        .texture = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), &scratch),
+        .white_texture = assets_register_texture(&assets, str_lit("assets/sprites/white.png"), &scratch),
     };
 
     RenderBatch rb = {0};
@@ -348,7 +354,7 @@ int main()
 
         platform_update_input(&input, window);
 
-        renderer_backend_begin_frame(backend);
+        renderer_backend_clear(backend);
         rb.entry_count = 0;
 
         game_code.update_and_render(&game_state, &rb, &asset_list);

@@ -286,19 +286,16 @@ static void flush_if_needed(RendererBackend *backend, s32 vertices_to_draw, ssiz
 {
     if (((backend->vertex_count + vertices_to_draw) > MAX_RENDERER_VERTICES)
      || ((backend->index_count + indices_to_draw) > MAX_RENDERER_VERTICES)) {
-        renderer_backend_end_frame(backend);
+        renderer_backend_flush(backend);
     }
 }
 
-void renderer_backend_begin_frame(RendererBackend *backend)
+void renderer_backend_clear(RendererBackend *backend)
 {
     glClear(GL_COLOR_BUFFER_BIT);
-
-    backend->vertex_count = 0;
-    backend->index_count = 0;
 }
 
-void renderer_backend_end_frame(RendererBackend *backend)
+void renderer_backend_flush(RendererBackend *backend)
 {
     glBindBuffer(GL_ARRAY_BUFFER, backend->vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, (usize)backend->vertex_count * sizeof(*backend->vertices),
@@ -311,6 +308,9 @@ void renderer_backend_end_frame(RendererBackend *backend)
     glBindVertexArray(backend->vao);
     glDrawElements(GL_TRIANGLES, backend->index_count, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+
+    backend->vertex_count = 0;
+    backend->index_count = 0;
 }
 
 void renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b, Vertex c)

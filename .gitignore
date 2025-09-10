@@ -4,3 +4,4 @@ compile_commands.json
 .cache/
 *.a
 *.o
+*.so

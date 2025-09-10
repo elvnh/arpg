@@ -15,6 +15,7 @@ typedef struct {
 
 typedef struct {
     ShaderHandle shader;
+    ShaderHandle shader2;
     TextureHandle texture;
     TextureHandle white_texture;
 } AssetList;

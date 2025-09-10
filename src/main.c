@@ -303,6 +303,10 @@ static void file_watcher_stop(AssetWatcherContext *ctx)
     mutex_destroy(ctx->lock, ctx->allocator);
 }
 
+#define ASSET_PATH "assets"
+#define SHADER_PATH ASSET_PATH "/shaders"
+#define SPRITE_PATH ASSET_PATH "/sprites"
+
 int main()
 {
     LinearArena arena = la_create(default_allocator, MB(4));
@@ -317,10 +321,13 @@ int main()
     AssetManager assets = assets_initialize(alloc);
     LinearArena scratch = la_create(default_allocator, MB(4));
 
+    // TODO: look in executable file directory
+
     AssetList asset_list = {
-        .shader = assets_register_shader(&assets, str_lit("assets/shaders/shader.glsl"), &scratch),
-        .texture = assets_register_texture(&assets, str_lit("assets/sprites/test.png"), &scratch),
-        .white_texture = assets_register_texture(&assets, str_lit("assets/sprites/white.png"), &scratch),
+        .shader = assets_register_shader(&assets, str_lit(SHADER_PATH"/shader.glsl"), &scratch),
+        .shader2 = assets_register_shader(&assets, str_lit(SHADER_PATH"/shader2.glsl"), &scratch),
+        .texture = assets_register_texture(&assets, str_lit(SPRITE_PATH"/test.png"), &scratch),
+        .white_texture = assets_register_texture(&assets, str_lit(SPRITE_PATH"/white.png"), &scratch),
     };
 
     RenderBatch rb = {0};
@@ -395,6 +402,8 @@ int main()
 
             game_so_load_time = platform_get_time();
         }
+
+        //printf("%.2f\n", glfwGetTime());
 
         platform_update_input(&input, window);
 

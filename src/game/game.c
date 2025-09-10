@@ -23,8 +23,7 @@ static void game_render(GameState *game_state, RenderBatch *render_cmds, const A
     /* render_batch_push_quad(render_cmds, &game_state->frame_arena, (Rectangle){{0, 16}, {32, 32}}, */
     /*     (RGBA32){0, 1, 1, 0.5f}, assets->shader, 0); */
 
-    render_batch_push_sprite(render_cmds, &game_state->frame_arena, assets->texture,
-        rect, RGBA32_WHITE, assets->shader, 0);
+    render_batch_push_circle(render_cmds, &game_state->frame_arena, rect.position, RGBA32_WHITE, 64.0f, assets->shader2, 0);
 
     render_batch_push_sprite_circle(render_cmds, &game_state->frame_arena, assets->texture, (Vector2){0, 0}, RGBA32_WHITE,
         32.0f, assets->shader, 0);

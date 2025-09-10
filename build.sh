@@ -60,34 +60,34 @@ FLAGS="
 
       -Isrc
       -Ideps
-
 "
 
-if [ ! -f deps/libstb_image.a ]; then
+if [ ! -f libstb_image.a ]; then
     echo "Compiling stb_image...";
-    ${CC} deps/stb_image.c -O3 -lm -c -o deps/stb_image.o && ar rcs deps/libstb_image.a deps/stb_image.o;
+    ${CC} deps/stb_image.c -O3 -lm -c -o stb_image.o && ar rcs libstb_image.a stb_image.o &&
+        rm stb_image.o;
 fi
 
-rm -r build/** &&
-mkdir -p build/base build/platform build/game build/renderer;
+rm -r build/** a.out libbase.a libgame.so librenderer.a;
+mkdir -p build/base build/platform build/game build/renderer &&
 
 touch build/lock &&
 
 # Base
 ${CC} ${BASE_SOURCES} ${FLAGS} -fPIC -c &&
 mv *.o build/base &&
-ar rcs build/libbase.a build/base/*.o &&
+ar rcs libbase.a build/base/*.o &&
 
 # Game
-${CC} ${GAME_SOURCES} ${FLAGS} -Lbuild -lbase -fPIC -shared -o build/libgame.so;
+${CC} ${GAME_SOURCES} ${FLAGS} -L. -lbase -fPIC -shared -o libgame.so &&
 
 # Renderer
 ${CC} ${RENDERER_SOURCES} ${FLAGS} -fPIC -c &&
 mv *.o build/renderer &&
-ar rcs build/librenderer.a build/renderer/*.o &&
+ar rcs librenderer.a build/renderer/*.o &&
 
 ## Main
-${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -Lbuild -lbase -lrenderer  -Ldeps/ -lstb_image \
-      `pkg-config --libs --cflags --static glfw3 glew` -pthread -o build/a.out;
+${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image \
+      `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
 
 rm build/lock;

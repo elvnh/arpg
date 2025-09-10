@@ -27,6 +27,16 @@ static inline Vector2 v2_add(Vector2 lhs, Vector2 rhs)
     return result;
 }
 
+static inline Vector2 v2_sub(Vector2 lhs, Vector2 rhs)
+{
+    Vector2 result = {
+        .x = lhs.x - rhs.x,
+        .y = lhs.y - rhs.y
+    };
+
+    return result;
+}
+
 static inline f32 v2_mag(Vector2 v)
 {
     f32 result = (f32)sqrt(v.x * v.x + v.y * v.y);

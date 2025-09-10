@@ -11,7 +11,9 @@ typedef struct {
 
 typedef struct {
     Vector2 position;
-    CircleCollider collider;
+    Vector2 velocity;
+    Vector2 size;
+    RGBA32 color;
 } Entity;
 
 typedef struct {

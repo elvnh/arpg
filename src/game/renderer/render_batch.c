@@ -51,7 +51,7 @@ RenderEntry *render_batch_push_sprite(RenderBatch *rb, LinearArena *arena, Textu
     return result;
 }
 
-RenderEntry *render_batch_push_quad(RenderBatch *rb, LinearArena *arena, Rectangle rect,
+RenderEntry *render_batch_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     RGBA32 color, ShaderHandle shader, s32 layer)
 {
     return render_batch_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);

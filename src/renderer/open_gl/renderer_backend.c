@@ -16,7 +16,28 @@
 #define FRAGMENT_SHADER_DIRECTIVE  str_lit("#fragment")
 
 #define GLOBAL_UNIFORMS_BINDING_POINT 0
-#define GLOBAL_UNIFORMS_NAME "GlobalUniforms"
+#define GLOBAL_UNIFORMS_NAME          "GlobalUniforms"
+
+#define GLSL_VERSION_STRING "#version 330\n"
+#define GLOBAL_UNIFORMS_SOURCE "layout (std140) uniform "GLOBAL_UNIFORMS_NAME" { " \
+    "    uniform mat4 u_proj; "                                                    \
+    "}; "
+
+static const char base_vertex_shader_source[] =
+    GLSL_VERSION_STRING
+    "layout (location = 0) in vec2 a_world_pos; "
+    "layout (location = 1) in vec2 a_uv; "
+    "layout (location = 2) in vec4 a_color; "
+    GLOBAL_UNIFORMS_SOURCE
+    "void set_position() "
+    "{ "
+    "    gl_Position.xy = (u_proj * vec4(a_world_pos.xy, 0.0f, 1.0f)).xy;"
+    "    gl_Position.zw = vec2(0.0f, 1.0f); "
+    "} ";
+
+static const char base_fragment_shader_source[] =
+    GLSL_VERSION_STRING
+    GLOBAL_UNIFORMS_SOURCE;
 
 typedef struct {
     Matrix4 projection;
@@ -51,9 +72,10 @@ static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, 
     (void)length;
     (void)user_param;
 
-    fprintf(stderr, "%s\nSeverity: 0x%x\nMessage: %s\n",
-      (type == GL_DEBUG_TYPE_ERROR ? "** OpenGL ERROR **" : "** OpenGL INFO **"),
-      severity, message);
+    if (type == GL_DEBUG_TYPE_ERROR) {
+        fprintf(stderr, "%s\nSeverity: 0x%x\nMessage: %s\n",
+            "** OpenGL ERROR **", severity, message);
+    }
 }
 
 RendererBackend *renderer_backend_initialize(Allocator allocator)
@@ -171,6 +193,7 @@ static SplitShaderSource split_shader_source(String source)
     return result;
 }
 
+
 ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allocator)
 {
     SplitShaderSource split_result = split_shader_source(shader_source);
@@ -182,16 +205,22 @@ ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allo
     GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
     GLuint frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
 
-    const char *const vertex_src_ptr = split_result.vertex_shader.data;
-    s32 vertex_src_length = cast_ssize_to_s32(split_result.vertex_shader.length);
+    const char *vertex_srcs[] = { base_vertex_shader_source, split_result.vertex_shader.data };
+    const s32 vertex_srcs_lengths[] = {
+        ARRAY_COUNT(base_vertex_shader_source) - 1,
+        cast_ssize_to_s32(split_result.vertex_shader.length)
+    };
 
-    const char *const frag_src_ptr = split_result.fragment_shader.data;
-    s32 frag_src_length = cast_ssize_to_s32(split_result.fragment_shader.length);
+    const char *frag_srcs[] = { base_fragment_shader_source, split_result.fragment_shader.data };
+    const s32 frag_srcs_lengths[] = {
+        ARRAY_COUNT(base_fragment_shader_source) - 1,
+        cast_ssize_to_s32(split_result.fragment_shader.length)
+    };
 
-    glShaderSource(vertex_shader_id, 1, &vertex_src_ptr, &vertex_src_length);
+    glShaderSource(vertex_shader_id, 2, vertex_srcs, vertex_srcs_lengths);
     glCompileShader(vertex_shader_id);
 
-    glShaderSource(frag_shader_id, 1, &frag_src_ptr, &frag_src_length);
+    glShaderSource(frag_shader_id, 2, frag_srcs, frag_srcs_lengths);
     glCompileShader(frag_shader_id);
 
     if (!assert_shader_compilation_successful(vertex_shader_id)

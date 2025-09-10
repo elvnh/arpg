@@ -19,7 +19,7 @@ static AssetSlotWithID acquire_asset_slot(AssetManager *assets, String asset_pat
     ASSERT(id < MAX_REGISTERED_ASSETS);
 
     AssetSlot *slot = &assets->registered_assets[id];
-    slot->asset_path = str_copy(asset_path, fl_allocator(&assets->asset_arena));
+    slot->absolute_asset_path = str_copy(asset_path, fl_allocator(&assets->asset_arena));
 
     AssetSlotWithID result = {
         .id = id,
@@ -72,13 +72,15 @@ AssetManager assets_initialize(Allocator parent_allocator)
     return result;
 }
 
-AssetSlot *assets_get_asset_by_path(AssetManager *assets, String path)
+AssetSlot *assets_get_asset_by_path(AssetManager *assets, String path, LinearArena *scratch)
 {
     // TODO: if number of assets grow large, linear search could become slow, but should be fine for now
+    String abs_path = platform_get_canonical_path(path, la_allocator(scratch), scratch);
+
     for (ssize i = 0; i < assets->next_asset_id; ++i) {
         AssetSlot *slot = &assets->registered_assets[i];
 
-        if (str_equal(slot->asset_path, path)) {
+        if (str_equal(slot->absolute_asset_path, abs_path)) {
             return slot;
         }
     }
@@ -86,6 +88,28 @@ AssetSlot *assets_get_asset_by_path(AssetManager *assets, String path)
     return 0;
 }
 
+static String get_absolute_asset_path(String name, AssetKind kind, LinearArena *scratch_arena)
+{
+    Allocator scratch = la_allocator(scratch_arena);
+
+    String result = str_concat(platform_get_executable_directory(scratch, scratch_arena), str_lit("/"), scratch);
+
+    switch (kind) {
+        case ASSET_KIND_SHADER: {
+            result = str_concat(result, str_lit(SHADER_DIRECTORY), scratch);
+        } break;
+
+        case ASSET_KIND_TEXTURE: {
+            result = str_concat(result, str_lit(SPRITE_DIRECTORY), scratch);
+        } break;
+
+        INVALID_DEFAULT_CASE;
+    }
+
+    result = str_concat(result, name, scratch);
+
+    return result;
+}
 
 static ShaderAsset *load_asset_data_shader(AssetManager *assets, String path, LinearArena *scratch)
 {
@@ -101,8 +125,10 @@ static ShaderAsset *load_asset_data_shader(AssetManager *assets, String path, Li
     return result;
 }
 
-ShaderHandle assets_register_shader(AssetManager *assets, String path, LinearArena *scratch)
+ShaderHandle assets_register_shader(AssetManager *assets, String name, LinearArena *scratch)
 {
+    String path = get_absolute_asset_path(name, ASSET_KIND_SHADER, scratch);
+
     AssetSlotWithID slot_and_id = acquire_asset_slot(assets, path);
     ShaderAsset *shader = load_asset_data_shader(assets, path, scratch);
     ASSERT(shader);
@@ -130,8 +156,10 @@ static TextureAsset *load_asset_data_texture(AssetManager *assets, String path, 
     return result;
 }
 
-TextureHandle assets_register_texture(AssetManager *assets, String path, LinearArena *scratch)
+TextureHandle assets_register_texture(AssetManager *assets, String name, LinearArena *scratch)
 {
+    String path = get_absolute_asset_path(name, ASSET_KIND_TEXTURE, scratch);
+
     AssetSlotWithID slot_and_id = acquire_asset_slot(assets, path);
     TextureAsset *texture = load_asset_data_texture(assets, path, scratch);
     ASSERT(texture);
@@ -157,7 +185,7 @@ TextureAsset *assets_get_texture(AssetManager *assets, TextureHandle handle)
 
 static b32 assets_reload_shader(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
 {
-    ShaderAsset *new_shader = load_asset_data_shader(assets, slot->asset_path, scratch);
+    ShaderAsset *new_shader = load_asset_data_shader(assets, slot->absolute_asset_path, scratch);
 
     if (new_shader) {
         renderer_backend_destroy_shader(slot->as.shader_asset, fl_allocator(&assets->asset_arena));
@@ -171,7 +199,7 @@ static b32 assets_reload_shader(AssetManager *assets, AssetSlot *slot, LinearAre
 
 static b32 assets_reload_texture(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
 {
-    TextureAsset *new_texture = load_asset_data_texture(assets, slot->asset_path, scratch);
+    TextureAsset *new_texture = load_asset_data_texture(assets, slot->absolute_asset_path, scratch);
 
     if (new_texture) {
         renderer_backend_destroy_texture(slot->as.texture_asset, fl_allocator(&assets->asset_arena));

@@ -222,6 +222,19 @@ String platform_get_parent_path(String path, Allocator allocator, LinearArena *s
     return result;
 }
 
+String platform_get_filename(String path)
+{
+    ssize slash_index = str_find_last_occurence(path, str_lit("/"));
+
+    if (slash_index == -1) {
+        return path;
+    }
+
+    String result = str_create_span(path, slash_index + 1, path.length - slash_index - 1);
+
+    return result;
+}
+
 /* File */
 Span platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
 {

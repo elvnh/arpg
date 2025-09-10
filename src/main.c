@@ -216,18 +216,46 @@ typedef struct {
 
 #define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
 
+static String get_assets_directory(LinearArena *arena)
+{
+    String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
+    String result = str_concat(executable_dir, str_lit("/"ASSET_DIRECTORY), la_allocator(arena));
+    result = str_null_terminate(result, la_allocator(arena));
+
+    return result;
+}
+
+static String get_shader_directory(LinearArena *arena)
+{
+    String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
+    String result = str_concat(executable_dir, str_lit("/"SHADER_DIRECTORY), la_allocator(arena));
+    result = str_null_terminate(result, la_allocator(arena));
+
+    return result;
+}
+
+static String get_sprite_directory(LinearArena *arena)
+{
+    String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
+    String result = str_concat(executable_dir, str_lit("/"SPRITE_DIRECTORY), la_allocator(arena));
+    result = str_null_terminate(result, la_allocator(arena));
+
+    return result;
+}
+
 void *file_watcher_thread(void *user_data)
 {
     AssetWatcherContext *ctx = user_data;
+    LinearArena scratch = la_create(ctx->allocator, MB(1)) ;
 
     s32 fd = inotify_init();
     ASSERT(fd >= 0);
 
     char event_buffer[INOTIFY_MAX_BUFFER_LENGTH];
 
-    String root_path = str_lit("assets");
-    String shader_path = str_lit("assets/shaders/");
-    String sprite_path = str_lit("assets/sprites/");
+    String root_path = get_assets_directory(&scratch);
+    String shader_path = get_shader_directory(&scratch);
+    String sprite_path = get_sprite_directory(&scratch);
 
     s32 root_wd = inotify_add_watch(fd, root_path.data, IN_MODIFY);
     s32 shader_wd = inotify_add_watch(fd, shader_path.data, IN_MODIFY);
@@ -235,7 +263,6 @@ void *file_watcher_thread(void *user_data)
     ASSERT(root_wd != -1);
     ASSERT(shader_wd != -1);
     ASSERT(sprite_wd != -1);
-
 
     struct pollfd poll_desc = {
         .fd = fd,
@@ -274,6 +301,7 @@ void *file_watcher_thread(void *user_data)
 
                 String name = { event->name, (ssize)strlen(event->name) };
                 StringNode *modified_file = allocate_item(ctx->allocator, StringNode);
+
                 modified_file->data = str_concat(parent_path, name, ctx->allocator);
 
 		mutex_lock(ctx->lock);
@@ -284,6 +312,8 @@ void *file_watcher_thread(void *user_data)
             buffer_offset += (SIZEOF(struct inotify_event) + event->len);
         }
     }
+
+    la_destroy(&scratch);
 
     return 0;
 }
@@ -303,10 +333,6 @@ static void file_watcher_stop(AssetWatcherContext *ctx)
     mutex_destroy(ctx->lock, ctx->allocator);
 }
 
-#define ASSET_PATH "assets"
-#define SHADER_PATH ASSET_PATH "/shaders"
-#define SPRITE_PATH ASSET_PATH "/sprites"
-
 int main()
 {
     LinearArena arena = la_create(default_allocator, MB(4));
@@ -321,13 +347,11 @@ int main()
     AssetManager assets = assets_initialize(alloc);
     LinearArena scratch = la_create(default_allocator, MB(4));
 
-    // TODO: look in executable file directory
-
     AssetList asset_list = {
-        .shader = assets_register_shader(&assets, str_lit(SHADER_PATH"/shader.glsl"), &scratch),
-        .shader2 = assets_register_shader(&assets, str_lit(SHADER_PATH"/shader2.glsl"), &scratch),
-        .texture = assets_register_texture(&assets, str_lit(SPRITE_PATH"/test.png"), &scratch),
-        .white_texture = assets_register_texture(&assets, str_lit(SPRITE_PATH"/white.png"), &scratch),
+        .shader = assets_register_shader(&assets, str_lit("shader.glsl"), &scratch),
+        .shader2 = assets_register_shader(&assets, str_lit("shader2.glsl"), &scratch),
+        .texture = assets_register_texture(&assets, str_lit("test.png"), &scratch),
+        .white_texture = assets_register_texture(&assets, str_lit("white.png"), &scratch),
     };
 
     RenderBatch rb = {0};
@@ -353,7 +377,7 @@ int main()
 
             for (StringNode *file = list_head(&asset_watcher.asset_reload_queue); file;) {
                 StringNode *next = file->next;
-                AssetSlot *slot = assets_get_asset_by_path(&assets, file->data);
+                AssetSlot *slot = assets_get_asset_by_path(&assets, file->data, &scratch);
 
                 b32 should_pop = true;
 
@@ -382,9 +406,6 @@ int main()
         }
 
         {
-            AssetSlot *slot = assets_get_asset_by_path(&assets, str_lit("assets/sprites/test.png"));
-            assets_reload_asset(&assets, slot, &scratch);
-
             ShaderAsset *shader_asset = assets_get_shader(&assets, asset_list.shader);
             renderer_backend_use_shader(shader_asset);
 

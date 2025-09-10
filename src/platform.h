@@ -32,6 +32,7 @@ String         platform_get_canonical_path(String path, Allocator allocator, Lin
 String         platform_get_working_directory(Allocator allocator);
 void           platform_change_working_directory(String path);
 String         platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena);
+String         platform_get_filename(String path);
 
 /* File */
 typedef enum {

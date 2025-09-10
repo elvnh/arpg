@@ -722,6 +722,13 @@ void tests_path()
         ASSERT(str_equal(platform_get_parent_path(str_lit("/"), alloc, &arena), str_lit("/")));
     }
 
+    {
+        ASSERT(str_equal(platform_get_filename(str_lit("/home/bar.txt")), str_lit("bar.txt")));
+        ASSERT(str_equal(platform_get_filename(str_lit("/home/foo/bar.txt")), str_lit("bar.txt")));
+        ASSERT(str_equal(platform_get_filename(str_lit("/home/foo")), str_lit("foo")));
+        ASSERT(str_equal(platform_get_filename(str_lit("foo.txt")), str_lit("foo.txt")));
+    }
+
     la_destroy(&arena);
 }
 

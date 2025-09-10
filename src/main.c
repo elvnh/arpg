@@ -56,15 +56,10 @@ static RendererState switch_renderer_state(RendererState new_state, AssetManager
     (void)backend;
 
     if (new_state.texture.id != old_state.texture.id) {
-        TextureAsset *texture = 0;
-
         if (new_state.texture.id != NULL_TEXTURE.id) {
-            texture = assets_get_texture(assets, new_state.texture);
-        } else {
-            texture = assets_get_texture(assets, asset_list->white_texture);
+            TextureAsset *texture = assets_get_texture(assets, new_state.texture);
+            renderer_backend_bind_texture(texture);
         }
-
-        renderer_backend_bind_texture(texture);
     }
 
     if (new_state.shader.id != old_state.shader.id) {

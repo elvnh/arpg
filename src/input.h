@@ -10,10 +10,18 @@ typedef enum {
     KEYSTATE_RELEASED,
 } Keystate;
 
+#define INPUT_KEY_LIST                          \
+    INPUT_KEY(KEY_W)                            \
+    INPUT_KEY(KEY_A)                            \
+    INPUT_KEY(KEY_S)                            \
+    INPUT_KEY(KEY_D)                            \
+
+#define INPUT_KEY(key) key,
 typedef enum {
-    KEY_A,
+    INPUT_KEY_LIST
     KEY_COUNT
 } Key;
+#undef INPUT_KEY
 
 typedef struct Input {
     Keystate keystates[KEY_COUNT];

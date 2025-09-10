@@ -66,7 +66,9 @@ void platform_poll_events(WindowHandle *window)
 static s32 get_glfw_key_equivalent(Key key)
 {
     switch (key) {
-        case KEY_A: return GLFW_KEY_A;
+#define INPUT_KEY(key) case key: return GLFW_##key;
+        INPUT_KEY_LIST
+#undef INPUT_KEY
         INVALID_DEFAULT_CASE;
     }
 

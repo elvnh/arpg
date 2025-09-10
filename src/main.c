@@ -166,24 +166,24 @@ static void sort_render_commands(RenderBatch *rb)
 
 #include "game/game.h"
 
-typedef void (*GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *);
+typedef void (*GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *, const Input *);
 
 typedef struct {
     void *handle;
     GameUpdateAndRender update_and_render;
 } GameCode;
 
-static void load_game_code(GameCode *game_code, LinearArena *scratch)
+#define GAME_SO_NAME "libgame.so"
+
+static void load_game_code(GameCode *game_code, String so_path, LinearArena *scratch)
 {
-    String bin_dir = platform_get_executable_directory(la_allocator(scratch), scratch);
+    so_path = str_null_terminate(so_path, la_allocator(scratch));
+    String bin_dir = platform_get_parent_path(so_path, la_allocator(scratch), scratch);
 
     {
-        String lock_file_path = str_concat(bin_dir, str_lit("/lock"), la_allocator(scratch));
+        String lock_file_path = str_concat(bin_dir, str_lit("/build/lock"), la_allocator(scratch));
         while (platform_file_exists(lock_file_path, scratch));
     }
-
-    String so_path = str_concat(bin_dir, str_lit("/libgame.so"), la_allocator(scratch));
-    so_path = str_null_terminate(so_path, la_allocator(scratch));
 
     void *handle = dlopen(so_path.data, RTLD_NOW);
     ASSERT(handle);
@@ -360,8 +360,11 @@ int main()
         .frame_arena = la_create(default_allocator, MB(4))
     };
 
+    String executable_dir = platform_get_executable_directory(alloc, &scratch);
+    String so_path = str_concat(executable_dir, str_lit("/"GAME_SO_NAME), alloc);
+
     GameCode game_code = {0};
-    load_game_code(&game_code, &scratch);
+    load_game_code(&game_code, so_path, &scratch);
 
     Input input = {0};
 
@@ -369,6 +372,8 @@ int main()
 
     AssetWatcherContext asset_watcher = {0};
     file_watcher_start(&asset_watcher);
+
+
 
     while (!platform_window_should_close(window)) {
         {
@@ -415,23 +420,22 @@ int main()
             renderer_backend_set_global_projection(backend, proj);
         }
 
-        Timestamp so_mod_time = platform_get_file_info(str_lit("build/libgame.so"), &scratch).last_modification_time;
+        Timestamp so_mod_time = platform_get_file_info(so_path, &scratch).last_modification_time;
 
         if (timestamp_less_than(game_so_load_time, so_mod_time)) {
             unload_game_code(&game_code);
-            load_game_code(&game_code, &scratch);
+            load_game_code(&game_code, so_path, &scratch);
 
             game_so_load_time = platform_get_time();
+            printf("Hot reloaded game.\n");
         }
-
-        //printf("%.2f\n", glfwGetTime());
 
         platform_update_input(&input, window);
 
         renderer_backend_clear(backend);
         rb.entry_count = 0;
 
-        game_code.update_and_render(&game_state, &rb, &asset_list);
+        game_code.update_and_render(&game_state, &rb, &asset_list, &input);
 
         execute_render_commands(&rb, &assets, &asset_list, backend, &scratch);
 

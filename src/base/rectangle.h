@@ -105,9 +105,6 @@ static inline Vector2 rect_bounds_point_closest_to_point(Rectangle rect, Vector2
         bounds_point = (Vector2){point.x, min_y};
     }
 
-    // TODO: why is this needed?
-    bounds_point = v2_neg(bounds_point);
-
     return bounds_point;
 }
 

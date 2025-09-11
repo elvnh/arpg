@@ -3,6 +3,8 @@
 
 #include "maths.h"
 
+#define V2_ZERO ((Vector2) {0})
+
 typedef struct {
     f32 x;
     f32 y;
@@ -34,6 +36,17 @@ static inline Vector2 v2_sub(Vector2 lhs, Vector2 rhs)
 
     return result;
 }
+
+static inline Vector2 v2_div(Vector2 lhs, f32 scalar)
+{
+    Vector2 result = {
+        .x = lhs.x / scalar,
+        .y = lhs.y / scalar
+    };
+
+    return result;
+}
+
 
 static inline Vector2 v2_neg(Vector2 v)
 {

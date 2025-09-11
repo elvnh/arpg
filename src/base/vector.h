@@ -19,30 +19,28 @@ typedef struct {
 
 static inline Vector2 v2_add(Vector2 lhs, Vector2 rhs)
 {
-    Vector2 result = {
-        .x = lhs.x + rhs.x,
-        .y = lhs.y + rhs.y
-    };
+    Vector2 result = { lhs.x + rhs.x, lhs.y + rhs.y };
 
     return result;
 }
 
 static inline Vector2 v2_sub(Vector2 lhs, Vector2 rhs)
 {
-    Vector2 result = {
-        .x = lhs.x - rhs.x,
-        .y = lhs.y - rhs.y
-    };
+    Vector2 result = { lhs.x - rhs.x, lhs.y - rhs.y };
+
+    return result;
+}
+
+static inline Vector2 v2_mul(Vector2 lhs, f32 scalar)
+{
+    Vector2 result = { lhs.x * scalar, lhs.y * scalar};
 
     return result;
 }
 
 static inline Vector2 v2_div(Vector2 lhs, f32 scalar)
 {
-    Vector2 result = {
-        .x = lhs.x / scalar,
-        .y = lhs.y / scalar
-    };
+    Vector2 result = {lhs.x / scalar, lhs.y / scalar};
 
     return result;
 }
@@ -50,10 +48,7 @@ static inline Vector2 v2_div(Vector2 lhs, f32 scalar)
 
 static inline Vector2 v2_neg(Vector2 v)
 {
-    Vector2 result = {
-        .x = -v.x,
-        .y = -v.y
-    };
+    Vector2 result = { -v.x, -v.y };
 
     return result;
 }
@@ -69,6 +64,20 @@ static inline f32 v2_dist(Vector2 a, Vector2 b)
 {
     f32 sq = ((b.x - a.x) * (b.x - a.x)) + ((b.y - a.y) * (b.y - a.y));
     f32 result = (f32)sqrt(sq);
+
+    return result;
+}
+
+static inline f32 v2_cross(Vector2 a, Vector2 b)
+{
+    f32 result = a.x * b.y - a.y * b.x;
+
+    return result;
+}
+
+static inline f32 v2_dot(Vector2 a, Vector2 b)
+{
+    f32 result = a.x * b.x + a.y * b.y;
 
     return result;
 }

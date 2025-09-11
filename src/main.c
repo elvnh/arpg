@@ -166,11 +166,11 @@ static void sort_render_commands(RenderBatch *rb)
 
 #include "game/game.h"
 
-typedef void (*GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *, const Input *);
+typedef void (GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *, FrameData);
 
 typedef struct {
     void *handle;
-    GameUpdateAndRender update_and_render;
+    GameUpdateAndRender *update_and_render;
 } GameCode;
 
 #define GAME_SO_NAME "libgame.so"
@@ -192,7 +192,7 @@ static void load_game_code(GameCode *game_code, String so_path, LinearArena *scr
     ASSERT(func);
 
     game_code->handle = handle;
-    game_code->update_and_render = (GameUpdateAndRender)func;
+    game_code->update_and_render = (GameUpdateAndRender *)func;
 }
 
 static void unload_game_code(GameCode *game_code)
@@ -373,8 +373,6 @@ int main()
     AssetWatcherContext asset_watcher = {0};
     file_watcher_start(&asset_watcher);
 
-
-
     while (!platform_window_should_close(window)) {
         {
             // TODO: hot reload game code this way too
@@ -435,7 +433,15 @@ int main()
         renderer_backend_clear(backend);
         rb.entry_count = 0;
 
-        game_code.update_and_render(&game_state, &rb, &asset_list, &input);
+        // TODO: proper dt
+        f32 dt = 0.16f;
+
+        FrameData frame_data = {
+            .dt = dt,
+            .input = &input
+        };
+
+        game_code.update_and_render(&game_state, &rb, &asset_list, frame_data);
 
         execute_render_commands(&rb, &assets, backend, &scratch);
 

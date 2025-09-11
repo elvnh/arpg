@@ -26,7 +26,12 @@ typedef struct {
     GameWorld world;
 } GameState;
 
+typedef struct {
+    f32 dt;
+    const Input *input;
+} FrameData;
+
 void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
-    const Input *input);
+    FrameData frame_data);
 
 #endif //GAME_H

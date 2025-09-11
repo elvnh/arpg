@@ -65,7 +65,7 @@ static void collision_response_rectangles_discrete(RectangleCollision collision,
     }
 }
 
-static void world_update(GameWorld *world, const Input *input)
+static void world_update(GameWorld *world, const Input *input, f32 dt)
 {
     if (world->entity_count == 0) {
         world->entities[world->entity_count++] = (Entity){ {0, 0}, {0, 0}, {16, 16}, RGBA32_BLUE };
@@ -73,10 +73,10 @@ static void world_update(GameWorld *world, const Input *input)
         //world->entities[world->entity_count++] = (Entity){ {32, 64}, {0, 0}, {32, 16} };
     }
 
+    f32 velocity = 10.0f;
     {
 	Vector2 dir = {0};
 
-	f32 velocity = 1.0f;
 	if (input_is_key_down(input, KEY_W)) {
 	    dir.y = velocity;
 	} else if (input_is_key_down(input, KEY_S)) {
@@ -95,7 +95,6 @@ static void world_update(GameWorld *world, const Input *input)
     {
 	Vector2 dir = {0};
 
-	f32 velocity = 1.0f;
 	if (input_is_key_down(input, KEY_UP)) {
 	    dir.y = velocity;
 	} else if (input_is_key_down(input, KEY_DOWN)) {
@@ -114,7 +113,7 @@ static void world_update(GameWorld *world, const Input *input)
     // Collision
     for (s32 i = 0; i < world->entity_count; ++i) {
         Entity *e = &world->entities[i];
-	e->position = v2_add(e->position, e->velocity);
+	e->position = v2_add(e->position, v2_mul(e->velocity, dt));
     }
 
     for (s32 i = 0; i < world->entity_count; ++i) {
@@ -142,9 +141,9 @@ static void world_render(const GameWorld *world, RenderBatch *rb, const AssetLis
 
 }
 
-static void game_update(GameState *game_state, const Input *input)
+static void game_update(GameState *game_state, const Input *input, f32 dt)
 {
-    world_update(&game_state->world, input);
+    world_update(&game_state->world, input, dt);
 }
 
 static void game_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets)
@@ -153,10 +152,10 @@ static void game_render(GameState *game_state, RenderBatch *render_cmds, const A
 }
 
 void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
-    const Input *input)
+    FrameData frame_data)
 {
     la_reset(&game_state->frame_arena);
 
-    game_update(game_state, input);
+    game_update(game_state, frame_data.input, frame_data.dt);
     game_render(game_state, render_cmds, assets);
 }

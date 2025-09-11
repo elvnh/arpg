@@ -8,6 +8,7 @@
 typedef enum {
     RENDER_CMD_RECTANGLE,
     RENDER_CMD_CIRCLE,
+    RENDER_CMD_LINE,
 } RenderCmdKind;
 
 typedef enum {
@@ -38,6 +39,14 @@ typedef struct {
     RGBA32 color;
     f32 radius;
 } CircleCmd;
+
+typedef struct {
+    RenderCmdHeader header;
+    Vector2 start;
+    Vector2 end;
+    RGBA32 color;
+    f32 thickness;
+} LineCmd;
 
 /* Setup command types */
 typedef struct {

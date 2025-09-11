@@ -148,8 +148,53 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
                     renderer_backend_draw_triangle(backend, a, b, c);
                 }
+            } break;
 
+            case RENDER_CMD_LINE: {
+                LineCmd *cmd = (LineCmd *)entry->data;
 
+                Vector2 start = cmd->start;
+                Vector2 end = cmd->end;
+                f32 thick = cmd->thickness;
+                RGBA32 color = cmd->color;
+                ASSERT(thick > 0.0f);
+
+                Vector2 dir_r = v2_mul(v2_norm(v2_sub(end, start)), thick / 2.0f);
+                Vector2 dir_l = v2_neg(dir_r);
+                Vector2 dir_u = { -dir_r.y, dir_r.x };
+                Vector2 dir_d = v2_neg(dir_u);
+
+                Vector2 tl = v2_add(v2_add(start, dir_l), dir_u);
+                Vector2 tr = v2_add(end, v2_add(dir_r, dir_u));
+                Vector2 br = v2_add(end, v2_add(dir_d, dir_r));
+                Vector2 bl = v2_add(start, v2_add(dir_d, dir_l));
+
+                // TODO: UV constants to make this easier to remember
+                Vertex vtl = {
+                    .position = tl,
+                    .uv = {0,1},
+                    .color = color
+                };
+
+                Vertex vtr = {
+                    .position = tr,
+                    .uv = {1, 1},
+                    .color = color
+                };
+
+                Vertex vbr = {
+                    .position = br,
+                    .uv = {1, 0},
+                    .color = color
+                };
+
+                Vertex vbl = {
+                    .position = bl,
+                    .uv = {0, 0},
+                    .color = color
+                };
+
+                renderer_backend_draw_quad(backend, vtl, vtr, vbr, vbl);
             } break;
 
            INVALID_DEFAULT_CASE;

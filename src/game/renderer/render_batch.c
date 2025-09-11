@@ -20,6 +20,10 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
             result = la_allocate_item(arena, CircleCmd);
         } break;
 
+        case RENDER_CMD_LINE: {
+            result = la_allocate_item(arena, LineCmd);
+        } break;
+
         INVALID_DEFAULT_CASE;
     }
 
@@ -75,6 +79,21 @@ RenderEntry *render_batch_push_circle(RenderBatch *rb, LinearArena *arena, Vecto
     RGBA32 color, f32 radius, ShaderHandle shader, s32 layer)
 {
     return render_batch_push_sprite_circle(rb, arena, NULL_TEXTURE, position, color, radius, shader, layer);
+}
+
+RenderEntry *render_batch_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
+    RGBA32 color, f32 thickness, ShaderHandle shader, s32 layer)
+{
+    LineCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_LINE);
+    cmd->start = start;
+    cmd->end = end;
+    cmd->color = color;
+    cmd->thickness = thickness;
+
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, (s32)start.y);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
 }
 
 void render_entry_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)

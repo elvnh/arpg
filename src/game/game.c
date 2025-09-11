@@ -139,6 +139,7 @@ static void world_render(const GameWorld *world, RenderBatch *rb, const AssetLis
         entity_render(&world->entities[i], rb, assets, scratch);
     }
 
+    render_batch_push_line(rb, scratch, (Vector2){-64, -20}, (Vector2){64, -20}, RGBA32_WHITE, 1.0f, assets->shader2, 0);
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt)

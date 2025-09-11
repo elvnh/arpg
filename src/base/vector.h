@@ -82,4 +82,16 @@ static inline f32 v2_dot(Vector2 a, Vector2 b)
     return result;
 }
 
+static inline Vector2 v2_norm(Vector2 v)
+{
+    f32 mag = v2_mag(v);
+
+    if (mag == 0.0f) {
+        return V2_ZERO;
+    }
+
+    Vector2 result = v2_div(v, mag);
+    return result;
+}
+
 #endif //VECTOR2_H

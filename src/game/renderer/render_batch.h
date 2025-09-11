@@ -24,6 +24,8 @@ RenderEntry *render_batch_push_sprite_circle(RenderBatch *rb, LinearArena *arena
     Vector2 position, RGBA32 color, f32 radius, ShaderHandle shader, s32 layer);
 RenderEntry *render_batch_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
     RGBA32 color, f32 radius, ShaderHandle shader, s32 layer);
+RenderEntry *render_batch_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
+    RGBA32 color, f32 thickness, ShaderHandle shader, s32 layer);
 
 void render_entry_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec);
 

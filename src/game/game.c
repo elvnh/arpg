@@ -9,12 +9,55 @@
 
 #include <stdio.h>
 
+typedef struct {
+    Vector2 start;
+    Vector2 end;
+} Line;
+
+typedef struct {
+    bool are_intersecting;
+    Vector2 intersection_point;
+} LineIntersection;
+
+// Taken from: https://blog.hamaluik.ca/posts/swept-aabb-collision-using-minkowski-difference/
+static LineIntersection line_intersection(Line a, Line b)
+{
+    LineIntersection result = {0};
+
+    Vector2 r = v2_sub(a.end, a.start);
+    Vector2 s = v2_sub(b.end, b.start);
+
+    f32 numerator = v2_cross(v2_sub(b.start, a.start), r);
+    f32 denominator = v2_cross(r, s);
+
+    if ((numerator == 0.0f) && (denominator == 0.0f)) {
+        // Lines are colinear so they might still overlap
+        // TODO: check if they overlap
+    } else if (denominator != 0.0f) {
+        f32 u = numerator / denominator;
+        f32 t = v2_cross(v2_sub(b.start, a.start), s) / denominator;
+
+        if ((u >= 0.0f) && (u <= 1.0f) && (t >= 0.0f) && (t <= 1.0f)) {
+            Vector2 intersection = {
+                a.start.x + r.x * t,
+                b.start.y + s.y * u,
+            };
+
+            result.are_intersecting = true;
+            result.intersection_point = intersection;
+        }
+    }
+
+    return result;
+}
+
 static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
     Rectangle rect = {
 	.position = entity->position,
 	.size = entity->size
     };
+
     render_batch_push_rect(rb, scratch, rect, entity->color, assets->shader2, 0);
 }
 
@@ -22,6 +65,9 @@ typedef struct {
     b32     are_colliding;
     Vector2 collision_vector;
 } RectangleCollision;
+
+static Line line_a = { {0.0f, 0.0f}, {64.0f, 0.0f} };
+static Line line_b = { {20.0f, -10.0f}, {20.0f, 20.0f} };
 
 // Taken from: https://blog.hamaluik.ca/posts/simple-aabb-collision-using-minkowski-difference/
 static RectangleCollision rectangles_collide_discrete(Rectangle a, Rectangle b)
@@ -53,8 +99,8 @@ static void collision_response_rectangles_discrete(RectangleCollision collision,
 
     if ((a_moving && b_moving) || (!a_moving && !b_moving)) {
         // If either both are moving or neither are moving, move half of the distance each
-        Vector2 a_vec = v2_div(collision.collision_vector, 2);
-        Vector2 b_vec = v2_div(collision.collision_vector, 2);
+        Vector2 a_vec = v2_div_s(collision.collision_vector, 2);
+        Vector2 b_vec = v2_div_s(collision.collision_vector, 2);
 
         a->position = v2_sub(a->position, a_vec);
         b->position = v2_add(b->position, b_vec);
@@ -90,6 +136,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 	}
 
 	world->entities[0].velocity = dir;
+        line_a.start = v2_add(line_a.start, v2_mul_s(dir, dt));
     }
 
     {
@@ -108,12 +155,13 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 	}
 
 	world->entities[1].velocity = dir;
+        line_a.end = v2_add(line_a.end, v2_mul_s(dir, dt));
     }
 
     // Collision
     for (s32 i = 0; i < world->entity_count; ++i) {
         Entity *e = &world->entities[i];
-	e->position = v2_add(e->position, v2_mul(e->velocity, dt));
+	e->position = v2_add(e->position, v2_mul_s(e->velocity, dt));
     }
 
     for (s32 i = 0; i < world->entity_count; ++i) {
@@ -135,11 +183,18 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
 static void world_render(const GameWorld *world, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
-    for (s32 i = 0; i < world->entity_count; ++i) {
-        entity_render(&world->entities[i], rb, assets, scratch);
-    }
+    /* for (s32 i = 0; i < world->entity_count; ++i) { */
+    /*     entity_render(&world->entities[i], rb, assets, scratch); */
+    /* } */
 
-    render_batch_push_line(rb, scratch, (Vector2){-64, -20}, (Vector2){64, -20}, RGBA32_WHITE, 1.0f, assets->shader2, 0);
+    render_batch_push_line(rb, scratch, line_a.start, line_a.end, RGBA32_WHITE, 1.0f, assets->shader2, 0);
+    render_batch_push_line(rb, scratch, line_b.start, line_b.end, RGBA32_BLUE, 1.0f, assets->shader2, 0);
+
+    LineIntersection i = line_intersection(line_a, line_b);
+
+    if (i.are_intersecting) {
+        render_batch_push_circle(rb, scratch, i.intersection_point, RGBA32_RED, 2.0f, assets->shader2, 0);
+    }
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt)

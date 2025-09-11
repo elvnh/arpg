@@ -159,7 +159,7 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 RGBA32 color = cmd->color;
                 ASSERT(thick > 0.0f);
 
-                Vector2 dir_r = v2_mul(v2_norm(v2_sub(end, start)), thick / 2.0f);
+                Vector2 dir_r = v2_mul_s(v2_norm(v2_sub(end, start)), thick / 2.0f);
                 Vector2 dir_l = v2_neg(dir_r);
                 Vector2 dir_u = { -dir_r.y, dir_r.x };
                 Vector2 dir_d = v2_neg(dir_u);

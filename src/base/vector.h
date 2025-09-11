@@ -31,20 +31,19 @@ static inline Vector2 v2_sub(Vector2 lhs, Vector2 rhs)
     return result;
 }
 
-static inline Vector2 v2_mul(Vector2 lhs, f32 scalar)
+static inline Vector2 v2_mul_s(Vector2 lhs, f32 scalar)
 {
     Vector2 result = { lhs.x * scalar, lhs.y * scalar};
 
     return result;
 }
 
-static inline Vector2 v2_div(Vector2 lhs, f32 scalar)
+static inline Vector2 v2_div_s(Vector2 lhs, f32 scalar)
 {
     Vector2 result = {lhs.x / scalar, lhs.y / scalar};
 
     return result;
 }
-
 
 static inline Vector2 v2_neg(Vector2 v)
 {
@@ -90,7 +89,7 @@ static inline Vector2 v2_norm(Vector2 v)
         return V2_ZERO;
     }
 
-    Vector2 result = v2_div(v, mag);
+    Vector2 result = v2_div_s(v, mag);
     return result;
 }
 

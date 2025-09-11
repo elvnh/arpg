@@ -4,10 +4,10 @@
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
+#include "base/maths.h"
 #include "renderer/render_batch.h"
 
 #include <stdio.h>
-
 
 static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
@@ -18,31 +18,30 @@ static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList
     render_batch_push_rect(rb, scratch, rect, entity->color, assets->shader2, 0);
 }
 
-static Vector2 closest_point_on_rect_bounds(Rectangle rect, Vector2 point)
+typedef struct {
+    b32     are_colliding;
+    Vector2 collision_vector;
+} RectangleCollision;
+
+static RectangleCollision rectangles_collide_discrete(Rectangle a, Rectangle b)
 {
-    f32 min_dist = (f32)fabs(point.x - rect.position.x);
-    Vector2 bounds_point = { rect.position.x, point.y };
+    RectangleCollision result = {0};
 
-    f32 max_x = rect.position.x + rect.size.x;
-    f32 max_y = rect.position.y + rect.size.y;
-    f32 min_y = rect.position.y;
+    Vector2 size = v2_add(a.size, b.size);
+    Vector2 left = v2_sub(a.position, rect_bottom_right(b));
+    Vector2 bottom = v2_sub(rect_top_left(b), rect_bottom_left(a));
+    Vector2 right = v2_add(left, size);
+    Vector2 top = v2_add(bottom, size);
 
-    if ((f32)fabs(max_x - point.x) < min_dist) {
-        min_dist = (f32)fabs(max_x - point.x);
-        bounds_point = (Vector2){ max_x, point.y };
+    Vector2 pos = { left.x, left.y };
+    Rectangle rect = { pos, size };
+
+    if (left.x <= 0 && right.x >= 0 && bottom.y <= 0 && top.y >= 0) {
+        result.are_colliding = true;
+        result.collision_vector = rect_bounds_point_closest_to_point(rect, (Vector2){ 0 });
     }
 
-    if ((f32)fabs(max_y - point.y) < min_dist) {
-        min_dist = (f32)fabs(max_y - point.y);
-        bounds_point = (Vector2){ point.x, max_y };
-    }
-
-    if ((f32)fabs(min_y - point.y) < min_dist) {
-        min_dist = (f32)fabs(min_y - point.y);
-        bounds_point = (Vector2){point.x, min_y};
-    }
-
-    return bounds_point;
+    return result;
 }
 
 static void world_update(GameWorld *world, const Input *input)
@@ -86,22 +85,10 @@ static void world_update(GameWorld *world, const Input *input)
 	    Rectangle rect_a = { a->position, a->size};
 	    Rectangle rect_b = { b->position, b->size};
 
-            f32 width = rect_a.size.x + rect_b.size.x;
-            f32 height = rect_a.size.y + rect_b.size.y;
-            Vector2 size = { width, height };
+            RectangleCollision collision = rectangles_collide_discrete(rect_a, rect_b);
 
-            Vector2 left = v2_sub(rect_a.position, rect_bottom_right(rect_b));
-            Vector2 bottom = v2_sub(rect_top_left(rect_b), rect_bottom_left(rect_a));
-            Vector2 right = v2_add(left, size);
-            Vector2 top = v2_add(bottom, size);
-
-            Vector2 pos = { left.x, left.y };
-
-            Rectangle rect = { pos, size };
-
-            if (left.x <= 0 && right.x >= 0 && bottom.y <= 0 && top.y >= 0) {
-                Vector2 pen = closest_point_on_rect_bounds(rect, (Vector2){ 0 });
-                a->position = v2_sub(a->position, pen);
+            if (collision.are_colliding) {
+                a->position = v2_add(a->position, collision.collision_vector);
             }
         }
     }

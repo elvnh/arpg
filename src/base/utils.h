@@ -141,5 +141,4 @@ static inline s32 cast_ssize_to_s32(ssize value)
     return (s32)value;
 }
 
-
 #endif //UTILS_H

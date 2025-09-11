@@ -1,9 +1,7 @@
 #ifndef VECTOR2_H
 #define VECTOR2_H
 
-#include <math.h>
-
-#include "typedefs.h"
+#include "maths.h"
 
 typedef struct {
     f32 x;
@@ -32,6 +30,16 @@ static inline Vector2 v2_sub(Vector2 lhs, Vector2 rhs)
     Vector2 result = {
         .x = lhs.x - rhs.x,
         .y = lhs.y - rhs.y
+    };
+
+    return result;
+}
+
+static inline Vector2 v2_neg(Vector2 v)
+{
+    Vector2 result = {
+        .x = -v.x,
+        .y = -v.y
     };
 
     return result;

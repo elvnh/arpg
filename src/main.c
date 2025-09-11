@@ -50,7 +50,7 @@ static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
     return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
 }
 
-static RendererState switch_renderer_state(RendererState new_state, AssetManager *assets, const AssetList *asset_list,
+static RendererState switch_renderer_state(RendererState new_state, AssetManager *assets,
     RendererState old_state, RendererBackend *backend)
 {
     (void)backend;
@@ -73,7 +73,7 @@ static RendererState switch_renderer_state(RendererState new_state, AssetManager
 
 #define INVALID_RENDERER_STATE (RendererState){{(AssetID)-1}, {(AssetID)-1}}
 
-static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const AssetList *asset_list,
+static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
     RendererBackend *backend, LinearArena *scratch)
 {
     if (rb->entry_count == 0) {
@@ -81,7 +81,7 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const
     }
 
     RendererState current_state = get_state_needed_for_entry(rb->entries[0].key);
-    switch_renderer_state(current_state, assets, asset_list, INVALID_RENDERER_STATE, backend);
+    switch_renderer_state(current_state, assets, INVALID_RENDERER_STATE, backend);
 
     for (ssize i = 0; i < rb->entry_count; ++i) {
         RenderEntry *entry = &rb->entries[i];
@@ -91,7 +91,7 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets, const
 
         if (renderer_state_change_needed(current_state, needed_state)) {
             renderer_backend_flush(backend);
-            current_state = switch_renderer_state(needed_state, assets, asset_list, current_state, backend);
+            current_state = switch_renderer_state(needed_state, assets, current_state, backend);
         }
 
         for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
@@ -437,7 +437,7 @@ int main()
 
         game_code.update_and_render(&game_state, &rb, &asset_list, &input);
 
-        execute_render_commands(&rb, &assets, &asset_list, backend, &scratch);
+        execute_render_commands(&rb, &assets, backend, &scratch);
 
         platform_poll_events(window);
     }

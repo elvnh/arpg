@@ -1,9 +1,8 @@
 #ifndef RENDER_KEY_H
 #define RENDER_KEY_H
 
-#include <math.h>
-
 #include "base/utils.h"
+#include "base/maths.h"
 #include "asset.h"
 
 #define NULL_TEXTURE         ((TextureHandle){(1 << TEXTURE_KEY_BITS) - 1})

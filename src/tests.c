@@ -1,5 +1,3 @@
-#include <math.h>
-
 #include "base/free_list_arena.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
@@ -13,6 +11,7 @@
 #include "base/free_list_arena.h"
 #include "base/list.h"
 #include "base/utils.h"
+#include "base/maths.h"
 #include "platform.h"
 
 static void tests_arena()

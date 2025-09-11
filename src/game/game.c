@@ -5,17 +5,12 @@
 #include "base/rectangle.h"
 #include "base/rgba.h"
 #include "renderer/render_batch.h"
+
 #include <stdio.h>
 
-//#include <stdio.h>
 
 static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
-    /* if (entity->collider.is_colliding) { */
-    /*     color = (RGBA32){1, 0, 0, 1}; */
-    /* } else { */
-    /*     color = RGBA32_BLUE; */
-    /* } */
     Rectangle rect = {
 	.position = entity->position,
 	.size = entity->size
@@ -23,11 +18,38 @@ static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList
     render_batch_push_rect(rb, scratch, rect, entity->color, assets->shader2, 0);
 }
 
+static Vector2 closest_point_on_rect_bounds(Rectangle rect, Vector2 point)
+{
+    f32 min_dist = (f32)fabs(point.x - rect.position.x);
+    Vector2 bounds_point = { rect.position.x, point.y };
+
+    f32 max_x = rect.position.x + rect.size.x;
+    f32 max_y = rect.position.y + rect.size.y;
+    f32 min_y = rect.position.y;
+
+    if ((f32)fabs(max_x - point.x) < min_dist) {
+        min_dist = (f32)fabs(max_x - point.x);
+        bounds_point = (Vector2){ max_x, point.y };
+    }
+
+    if ((f32)fabs(max_y - point.y) < min_dist) {
+        min_dist = (f32)fabs(max_y - point.y);
+        bounds_point = (Vector2){ point.x, max_y };
+    }
+
+    if ((f32)fabs(min_y - point.y) < min_dist) {
+        min_dist = (f32)fabs(min_y - point.y);
+        bounds_point = (Vector2){point.x, min_y};
+    }
+
+    return bounds_point;
+}
+
 static void world_update(GameWorld *world, const Input *input)
 {
     if (world->entity_count == 0) {
         world->entities[world->entity_count++] = (Entity){ {0, 0}, {0, 0}, {16, 16}, RGBA32_BLUE };
-        world->entities[world->entity_count++] = (Entity){ {64, -64}, {-0.0f, 0}, {16, 32}, RGBA32_WHITE };
+        world->entities[world->entity_count++] = (Entity){ {64, 0}, {-0.0f, 0}, {16, 32}, RGBA32_WHITE };
         //world->entities[world->entity_count++] = (Entity){ {32, 64}, {0, 0}, {32, 16} };
     }
 
@@ -51,54 +73,46 @@ static void world_update(GameWorld *world, const Input *input)
     }
 
     // Collision
-
-
     for (s32 i = 0; i < world->entity_count; ++i) {
         Entity *e = &world->entities[i];
 	e->position = v2_add(e->position, e->velocity);
+    }
+
+    for (s32 i = 0; i < world->entity_count; ++i) {
+        for (s32 j = i + 1; j < world->entity_count; ++j) {
+            Entity *a = &world->entities[i];
+            Entity *b = &world->entities[j];
+
+	    Rectangle rect_a = { a->position, a->size};
+	    Rectangle rect_b = { b->position, b->size};
+
+            f32 width = rect_a.size.x + rect_b.size.x;
+            f32 height = rect_a.size.y + rect_b.size.y;
+            Vector2 size = { width, height };
+
+            Vector2 left = v2_sub(rect_a.position, rect_bottom_right(rect_b));
+            Vector2 bottom = v2_sub(rect_top_left(rect_b), rect_bottom_left(rect_a));
+            Vector2 right = v2_add(left, size);
+            Vector2 top = v2_add(bottom, size);
+
+            Vector2 pos = { left.x, left.y };
+
+            Rectangle rect = { pos, size };
+
+            if (left.x <= 0 && right.x >= 0 && bottom.y <= 0 && top.y >= 0) {
+                Vector2 pen = closest_point_on_rect_bounds(rect, (Vector2){ 0 });
+                a->position = v2_sub(a->position, pen);
+            }
+        }
     }
 }
 
 static void world_render(const GameWorld *world, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
     for (s32 i = 0; i < world->entity_count; ++i) {
-        for (s32 j = i + 1; j < world->entity_count; ++j) {
-            const Entity *a = &world->entities[i];
-            const Entity *b = &world->entities[j];
-
-	    entity_render(a, rb, assets, scratch);
-	    entity_render(b, rb, assets, scratch);
-
-	    Rectangle rect_a = { a->position, a->size};
-	    Rectangle rect_b = { b->position, b->size};
-
-	    Vector2 tl = v2_sub(rect_top_left(rect_a), rect_bottom_right(rect_b));
-	    Vector2 br = v2_sub(rect_bottom_right(rect_a), rect_top_left(rect_b));
-	    //Vector2 tr = v2_sub(rect_top_right(rect_a), rect_bottom_left(rect_b));
-	    //Vector2 bl = v2_sub(rect_bottom_left(rect_a), rect_top_right(rect_b));
-
-	    if (tl.x <= 0 && br.x >= 0 && tl.y <= 0 && br.y >= 0) {
-		printf("C\n");
-	    }
-
-
-/*
-black.top_right = red.top_right - blue.bottom_left;
-black.top_left = red.top_left - blue.bottom_right;
-black.bottom_right = red.bottom_right - blue.top_left;
-black.bottom_left = red.bottom_left - blue.top_right;
-
- */
-
-	    //RGBA32 color = { 0, 0.5f, 0.9f, 0.9f };
-	    //render_batch_push_rect(rb, scratch, rect, color, assets->shader2, 0);
-
-        }
+        entity_render(&world->entities[i], rb, assets, scratch);
     }
 
-    /* for (s32 i = 0; i < world->entity_count; ++i) { */
-    /*     entity_render(&world->entities[i], rb, assets, scratch); */
-    /* } */
 }
 
 static void game_update(GameState *game_state, const Input *input)

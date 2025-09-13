@@ -5,10 +5,9 @@
 #include "base/rectangle.h"
 #include "base/rgba.h"
 #include "base/maths.h"
+#include "base/vector.h"
+#include "input.h"
 #include "renderer/render_batch.h"
-
-#include <math.h>
-#include <stdio.h>
 
 typedef struct {
     Vector2 start;
@@ -97,6 +96,8 @@ typedef struct {
     b32 are_colliding;
     Vector2 collision_vector_a;
     Vector2 collision_vector_b;
+    Vector2 velocity_a;
+    Vector2 velocity_b;
 } ContinuousRectangleCollision;
 
 static f32 ray_vs_line_intersection_fraction(Vector2 ray_origin, Vector2 ray_end, Line line)
@@ -122,8 +123,10 @@ static inline Vector2 v2(f32 x, f32 y)
     return result;
 }
 
-static f32 rect_min_ray_intersection_fraction(Rectangle rect, Vector2 origin, Vector2 end)
+static f32 rect_min_ray_intersection_fraction(Rectangle rect, Vector2 origin, Vector2 direction)
 {
+    Vector2 end = v2_add(origin, direction);
+
     Line left = {
         rect.position,
         v2(rect.position.x, rect.position.y + rect.size.y)
@@ -135,8 +138,8 @@ static f32 rect_min_ray_intersection_fraction(Rectangle rect, Vector2 origin, Ve
     };
 
     Line right = {
-        v2(rect.position.x + rect.size.x, rect.position.y + rect.size.y),
-        v2(rect.position.x + rect.size.x, rect.position.y)
+        v2(rect.position.x + rect.size.x, rect.position.y),
+        v2(rect.position.x + rect.size.x, rect.position.y + rect.size.y)
     };
 
     Line bottom = {
@@ -145,6 +148,7 @@ static f32 rect_min_ray_intersection_fraction(Rectangle rect, Vector2 origin, Ve
     };
 
     f32 min_fraction = ray_vs_line_intersection_fraction(origin, end, left);
+
     min_fraction = MIN(min_fraction, ray_vs_line_intersection_fraction(origin, end, top));
     min_fraction = MIN(min_fraction, ray_vs_line_intersection_fraction(origin, end, right));
     min_fraction = MIN(min_fraction, ray_vs_line_intersection_fraction(origin, end, bottom));
@@ -153,10 +157,14 @@ static f32 rect_min_ray_intersection_fraction(Rectangle rect, Vector2 origin, Ve
 }
 
 static void
-collision_response_rectangles_continuous(ContinuousRectangleCollision collision, Entity *a, Entity *b)
+collision_response_rectangles_continuous(ContinuousRectangleCollision collision, Entity *a, Entity *b, f32 dt)
 {
-    a->velocity = collision.collision_vector_a;
-    b->velocity = collision.collision_vector_b;
+    f32 s = 1.0f;
+    a->position = v2_sub(a->position, v2_mul_s(v2_mul_s(collision.collision_vector_a, s), dt));
+    b->position = v2_add(b->position, v2_mul_s(v2_mul_s(collision.collision_vector_b, s), dt));
+
+    a->velocity = collision.velocity_a;
+    b->velocity = collision.velocity_b;
 }
 
 static ContinuousRectangleCollision
@@ -170,30 +178,65 @@ rectangles_collide_continuous(Rectangle a, Vector2 a_vel, Rectangle b, Vector2 b
     Vector2 bottom = v2_sub(rect_top_left(a), rect_bottom_left(b));
     Vector2 right = v2_add(left, size);
     Vector2 top = v2_add(bottom, size);
-
     Vector2 pos = { left.x, left.y };
     Rectangle rect = { pos, size };
 
+
     if (left.x <= 0 && right.x >= 0 && bottom.y <= 0 && top.y >= 0) {
+        /* static s32 counter = 0; */
+        /* printf("Collision %d\n", counter++); */
+
         result.are_colliding = true;
-        result.collision_vector_a = rect_bounds_point_closest_to_point(rect, V2_ZERO);
+        Vector2 collision_vector = rect_bounds_point_closest_to_point(rect, V2_ZERO);
+
+        if (collision_vector.x != 0.0f && collision_vector.y != 0.0f) {
+            Vector2 tangent = v2_norm(collision_vector);
+            tangent = (Vector2){ -tangent.y, tangent.x };
+
+            Vector2 va = v2_mul_s(tangent, v2_dot(a_vel, tangent));
+            Vector2 vb = v2_mul_s(tangent, v2_dot(b_vel, tangent));
+            result.velocity_a = va;
+            result.velocity_b = vb;
+        } else {
+            result.velocity_a = a_vel;
+            result.velocity_b = b_vel;
+        }
+
+        b32 a_moving = (a_vel.x != 0.0f) && (a_vel.y != 0.0f);
+        b32 b_moving = (b_vel.x != 0.0f) && (b_vel.y != 0.0f);
+        b32 both_moving = a_moving && b_moving;
+        b32 neither_moving = !a_moving && !b_moving;
+
+        if (both_moving || neither_moving) {
+            Vector2 half = v2_div_s(collision_vector, 2);
+            result.collision_vector_a = half;
+            result.collision_vector_b = half;
+        } else if (a_moving) {
+            result.collision_vector_a = collision_vector;
+        } else {
+            result.collision_vector_b = collision_vector;
+
+        }
+
     } else {
-        Vector2 relative_velocity = v2_mul_s(v2_sub(a_vel, b_vel), dt);
+        Vector2 relative_velocity = v2_mul_s(v2_sub(a_vel, b_vel), 1);
         f32 h = rect_min_ray_intersection_fraction(rect, V2_ZERO, relative_velocity);
 
         if (h != INFINITY) {
-            // TODO: calculate collision vectors
-            /* Vector2 tangent = v2_tangent(v2_norm(relative_velocity)); */
+            Vector2 ca = v2_mul_s(v2_mul_s(a_vel, h), dt);
+            Vector2 cb = v2_mul_s(v2_mul_s(b_vel, h), dt);
 
-            Vector2 ca = v2_mul_s(a_vel, h);
-            Vector2 cb = v2_mul_s(b_vel, h);
+            Vector2 tangent = v2_norm(relative_velocity);
+            tangent = (Vector2){ -tangent.y, tangent.x };
 
-            /* ca = v2_mul(tangent, v2_dot(ca, tangent)); */
-            /* cb = v2_mul(tangent, v2_dot(cb, tangent)); */
+            Vector2 va = v2_mul_s(tangent, v2_dot(a_vel, tangent));
+            Vector2 vb = v2_mul_s(tangent, v2_dot(b_vel, tangent));
 
             result.are_colliding = true;
             result.collision_vector_a = ca;
             result.collision_vector_b = cb;
+            result.velocity_a = va;
+            result.velocity_b = vb;
         }
     }
 
@@ -228,20 +271,20 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
         //world->entities[world->entity_count++] = (Entity){ {32, 64}, {0, 0}, {32, 16} };
     }
 
-    f32 velocity = 10.0f;
+    f32 speed = 10.0f;
     {
 	Vector2 dir = {0};
 
 	if (input_is_key_down(input, KEY_W)) {
-	    dir.y = velocity;
+	    dir.y = speed;
 	} else if (input_is_key_down(input, KEY_S)) {
-	    dir.y = -velocity;
+	    dir.y = -speed;
 	}
 
 	if (input_is_key_down(input, KEY_A)) {
-	    dir.x = -velocity;
+	    dir.x = -speed;
 	} else if (input_is_key_down(input, KEY_D)) {
-	    dir.x = velocity;
+	    dir.x = speed;
 	}
 
 	world->entities[0].velocity = dir;
@@ -252,15 +295,16 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 	Vector2 dir = {0};
 
 	if (input_is_key_down(input, KEY_UP)) {
-	    dir.y = velocity;
+	    dir.y = speed;
+            world->entities[0].position = V2_ZERO;
 	} else if (input_is_key_down(input, KEY_DOWN)) {
-	    dir.y = -velocity;
+	    dir.y = -speed;
 	}
 
 	if (input_is_key_down(input, KEY_LEFT)) {
-	    dir.x = -velocity;
+	    dir.x = -speed;
 	} else if (input_is_key_down(input, KEY_RIGHT)) {
-	    dir.x = velocity;
+	    dir.x = speed;
 	}
 
 	world->entities[1].velocity = dir;
@@ -268,6 +312,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     }
 
     // Collision
+#if 0
     for (s32 i = 0; i < world->entity_count; ++i) {
         Entity *e = &world->entities[i];
 	e->position = v2_add(e->position, v2_mul_s(e->velocity, dt));
@@ -288,15 +333,76 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
                 collision_response_rectangles_discrete(collision, a, b);
             }
 #else
-        ContinuousRectangleCollision collision = rectangles_collide_continuous(rect_a, a->velocity, rect_b, b->velocity, dt);
+            ContinuousRectangleCollision collision = rectangles_collide_continuous(rect_a, a->velocity, rect_b, b->velocity, dt);
+            if (collision.are_colliding) {
+                collision_response_rectangles_continuous(collision, a, b, dt);
+            }
 #endif
-        if (collision.are_colliding) {
-            static s32 counter = 0;
-            printf("Collision %d\n", counter++);
-            collision_response_rectangles_continuous(collision, a, b);
-
         }
+    }
+#endif
 
+    /* if (input_is_key_pressed(input, KEY_D) || input_is_key_pressed(input, KEY_A) */
+    /*    || input_is_key_pressed(input, KEY_S) ||input_is_key_pressed(input, KEY_W)) { */
+    /*     printf("d\n"); */
+    /* } */
+
+    for (s32 i = 0; i < world->entity_count; ++i) {
+        for (s32 j = i + 1; j < world->entity_count; ++j) {
+            Entity *a = &world->entities[i];
+            Entity *b = &world->entities[j];
+
+	    Rectangle rect_a = { a->position, a->size};
+	    Rectangle rect_b = { b->position, b->size};
+
+            Vector2 size = v2_add(rect_a.size, rect_b.size);
+
+            Vector2 left = v2_sub(rect_a.position, rect_bottom_right(rect_b));
+            Vector2 bottom = v2_sub(rect_top_left(rect_a), rect_bottom_left(rect_b));
+            Vector2 right = v2_add(left, size);
+            Vector2 top = v2_add(bottom, size);
+            Vector2 pos = { left.x, left.y };
+            Rectangle md = { pos, size };
+            Vector2 collision_vector = rect_bounds_point_closest_to_point(md, V2_ZERO);
+
+            b32 should_move = true;
+
+            if ((left.x <= 0 && right.x >= 0 && bottom.y <= 0 && top.y >= 0)
+               && !v2_is_zero(collision_vector)) {
+                // Have already collided
+                a->position = v2_sub(a->position, collision_vector);
+
+                Vector2 tangent = { -collision_vector.y, collision_vector.x };
+
+                a->velocity = V2_ZERO;
+                b->velocity = V2_ZERO;
+            } else {
+                Vector2 relative_velocity = v2_mul_s(v2_sub(b->velocity, a->velocity), dt);
+                Vector2 ray_origin = v2_mul_s(v2_norm(a->velocity), 0.1f);
+
+                f32 intersect_fraction = rect_min_ray_intersection_fraction(md, ray_origin, relative_velocity);
+
+                f32 epsilon = 0.00001f;
+
+                if ((intersect_fraction != INFINITY) && (intersect_fraction > epsilon)) {
+
+                    should_move = false;
+
+                    a->position = v2_add(a->position, v2_mul_s(v2_mul_s(a->velocity, intersect_fraction), dt));
+                    b->position = v2_add(b->position, v2_mul_s(v2_mul_s(b->velocity, intersect_fraction), dt));
+
+                    Vector2 normalized_rel_velocity = v2_norm(relative_velocity);
+                    Vector2 tangent = { -normalized_rel_velocity.y, normalized_rel_velocity.x };
+
+                    a->velocity = v2_mul_s(tangent, v2_dot(a->velocity, tangent));
+                    b->velocity = v2_mul_s(tangent, v2_dot(b->velocity, tangent));
+                }
+            }
+
+            if (should_move) {
+                a->position = v2_add(a->position, v2_mul_s(a->velocity, dt));
+                b->position = v2_add(b->position, v2_mul_s(b->velocity, dt));
+            }
         }
     }
 }

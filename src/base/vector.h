@@ -93,4 +93,17 @@ static inline Vector2 v2_norm(Vector2 v)
     return result;
 }
 
+static inline b32 v2_eq(Vector2 a, Vector2 b)
+{
+    b32 result = (a.x == b.x) && (a.y == b.y);
+    return result;
+}
+
+static inline b32 v2_is_zero(Vector2 v)
+{
+    b32 result = v2_eq(v, V2_ZERO);
+
+    return result;
+}
+
 #endif //VECTOR2_H

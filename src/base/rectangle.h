@@ -108,4 +108,31 @@ static inline Vector2 rect_bounds_point_closest_to_point(Rectangle rect, Vector2
     return bounds_point;
 }
 
+static inline b32 rect_contains_point(Rectangle rect, Vector2 p)
+{
+    b32 result = (rect.position.x <= p.x) && (rect.position.x + rect.size.x >= p.x)
+        && (rect.position.y <= p.y) && (rect.position.y + rect.size.y >= p.y);
+
+    return result;
+}
+
+static inline Rectangle rect_move_to(Rectangle rect, Vector2 v)
+{
+    rect.position = v;
+
+    return rect;
+}
+
+static inline b32 rect_intersects(Rectangle a, Rectangle b)
+{
+    b32 result =
+            (a.position.x < (b.position.x + b.size.x))
+        && ((a.position.x + a.size.x) > b.position.x)
+        && (a.position.y < (b.position.y + b.size.y))
+        && ((a.position.y + a.size.y) < b.position.y);
+
+    return result;
+}
+
+
 #endif //RECTANGLE_H

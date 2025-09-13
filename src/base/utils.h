@@ -141,4 +141,11 @@ static inline s32 cast_ssize_to_s32(ssize value)
     return (s32)value;
 }
 
+static inline b32 f32_in_range(f32 val, f32 low, f32 high, f32 epsilon)
+{
+    b32 result = (val >= (low - epsilon)) && (val <= (high + epsilon));
+
+    return result;
+}
+
 #endif //UTILS_H

@@ -17,6 +17,12 @@ typedef struct {
     f32 w;
 } Vector4;
 
+static inline Vector2 v2(f32 x, f32 y)
+{
+    Vector2 result = {x, y};
+    return result;
+}
+
 static inline Vector2 v2_add(Vector2 lhs, Vector2 rhs)
 {
     Vector2 result = { lhs.x + rhs.x, lhs.y + rhs.y };

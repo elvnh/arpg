@@ -8,6 +8,10 @@
 #include "base/vector.h"
 #include "input.h"
 #include "renderer/render_batch.h"
+#include <math.h>
+
+#define INTERSECTION_EPSILON 0.00001f
+#define COLLISION_MARGIN     0.01f
 
 typedef struct {
     Vector2 start;
@@ -20,7 +24,7 @@ typedef struct {
 } LineIntersection;
 
 // Taken from: https://blog.hamaluik.ca/posts/swept-aabb-collision-using-minkowski-difference/
-static LineIntersection line_intersection(Line a, Line b)
+static LineIntersection line_intersection(Line a, Line b, f32 epsilon)
 {
     LineIntersection result = {0};
 
@@ -37,7 +41,7 @@ static LineIntersection line_intersection(Line a, Line b)
         f32 u = numerator / denominator;
         f32 t = v2_cross(v2_sub(b.start, a.start), s) / denominator;
 
-        if ((u >= 0.0f) && (u <= 1.0f) && (t >= 0.0f) && (t <= 1.0f)) {
+        if (f32_in_range(u, 0.0f, 1.0f, epsilon) && f32_in_range(t, 0.0f, 1.0f, epsilon)) {
             Vector2 intersection = {
                 a.start.x + r.x * t,
                 b.start.y + s.y * u,
@@ -61,16 +65,16 @@ static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList
     render_batch_push_rect(rb, scratch, rect, entity->color, assets->shader2, 0);
 }
 
+static Line line_a = { {0.0f, 0.0f}, {64.0f, 0.0f} };
+static Line line_b = { {20.0f, -10.0f}, {20.0f, 20.0f} };
+
 typedef struct {
     b32     are_colliding;
     Vector2 collision_vector;
 } RectangleCollision;
 
-static Line line_a = { {0.0f, 0.0f}, {64.0f, 0.0f} };
-static Line line_b = { {20.0f, -10.0f}, {20.0f, 20.0f} };
-
 // Taken from: https://blog.hamaluik.ca/posts/simple-aabb-collision-using-minkowski-difference/
-static RectangleCollision rectangles_collide_discrete(Rectangle a, Rectangle b)
+RectangleCollision rectangles_collide_discrete(Rectangle a, Rectangle b)
 {
     RectangleCollision result = {0};
 
@@ -92,19 +96,30 @@ static RectangleCollision rectangles_collide_discrete(Rectangle a, Rectangle b)
     return result;
 }
 
-typedef struct {
-    b32 are_colliding;
-    Vector2 collision_vector_a;
-    Vector2 collision_vector_b;
-    Vector2 velocity_a;
-    Vector2 velocity_b;
-} ContinuousRectangleCollision;
+void collision_response_rectangles_discrete(RectangleCollision collision, Entity *a, Entity *b)
+{
+    b32 a_moving = v2_mag(a->velocity) > 0.0f;
+    b32 b_moving = v2_mag(b->velocity) > 0.0f;
+
+    if ((a_moving && b_moving) || (!a_moving && !b_moving)) {
+        // If either both are moving or neither are moving, move half of the distance each
+        Vector2 a_vec = v2_div_s(collision.collision_vector, 2);
+        Vector2 b_vec = v2_div_s(collision.collision_vector, 2);
+
+        a->position = v2_sub(a->position, a_vec);
+        b->position = v2_add(b->position, b_vec);
+    } else if (a_moving) {
+        a->position = v2_sub(a->position, collision.collision_vector);
+    } else if (b_moving) {
+        b->position = v2_add(b->position, collision.collision_vector);
+    }
+}
 
 static f32 ray_vs_line_intersection_fraction(Vector2 ray_origin, Vector2 ray_end, Line line)
 {
     // TODO: don't use sentinel value
     Line ray_line = { ray_origin, ray_end };
-    LineIntersection intersection = line_intersection(ray_line, line);
+    LineIntersection intersection = line_intersection(ray_line, line, INTERSECTION_EPSILON);
 
     if (intersection.are_intersecting) {
         // TODO: use squared distances
@@ -115,12 +130,6 @@ static f32 ray_vs_line_intersection_fraction(Vector2 ray_origin, Vector2 ray_end
     }
 
     return INFINITY;
-}
-
-static inline Vector2 v2(f32 x, f32 y)
-{
-    Vector2 result = {x, y};
-    return result;
 }
 
 static f32 rect_min_ray_intersection_fraction(Rectangle rect, Vector2 origin, Vector2 direction)
@@ -156,111 +165,15 @@ static f32 rect_min_ray_intersection_fraction(Rectangle rect, Vector2 origin, Ve
     return min_fraction;
 }
 
-static void
-collision_response_rectangles_continuous(ContinuousRectangleCollision collision, Entity *a, Entity *b, f32 dt)
+static Rectangle minkowski_diff(Rectangle a, Rectangle b)
 {
-    f32 s = 1.0f;
-    a->position = v2_sub(a->position, v2_mul_s(v2_mul_s(collision.collision_vector_a, s), dt));
-    b->position = v2_add(b->position, v2_mul_s(v2_mul_s(collision.collision_vector_b, s), dt));
-
-    a->velocity = collision.velocity_a;
-    b->velocity = collision.velocity_b;
-}
-
-static ContinuousRectangleCollision
-rectangles_collide_continuous(Rectangle a, Vector2 a_vel, Rectangle b, Vector2 b_vel, f32 dt)
-{
-    ContinuousRectangleCollision result = {0};
-
     Vector2 size = v2_add(a.size, b.size);
-
     Vector2 left = v2_sub(a.position, rect_bottom_right(b));
-    Vector2 bottom = v2_sub(rect_top_left(a), rect_bottom_left(b));
-    Vector2 right = v2_add(left, size);
-    Vector2 top = v2_add(bottom, size);
     Vector2 pos = { left.x, left.y };
-    Rectangle rect = { pos, size };
 
-
-    if (left.x <= 0 && right.x >= 0 && bottom.y <= 0 && top.y >= 0) {
-        /* static s32 counter = 0; */
-        /* printf("Collision %d\n", counter++); */
-
-        result.are_colliding = true;
-        Vector2 collision_vector = rect_bounds_point_closest_to_point(rect, V2_ZERO);
-
-        if (collision_vector.x != 0.0f && collision_vector.y != 0.0f) {
-            Vector2 tangent = v2_norm(collision_vector);
-            tangent = (Vector2){ -tangent.y, tangent.x };
-
-            Vector2 va = v2_mul_s(tangent, v2_dot(a_vel, tangent));
-            Vector2 vb = v2_mul_s(tangent, v2_dot(b_vel, tangent));
-            result.velocity_a = va;
-            result.velocity_b = vb;
-        } else {
-            result.velocity_a = a_vel;
-            result.velocity_b = b_vel;
-        }
-
-        b32 a_moving = (a_vel.x != 0.0f) && (a_vel.y != 0.0f);
-        b32 b_moving = (b_vel.x != 0.0f) && (b_vel.y != 0.0f);
-        b32 both_moving = a_moving && b_moving;
-        b32 neither_moving = !a_moving && !b_moving;
-
-        if (both_moving || neither_moving) {
-            Vector2 half = v2_div_s(collision_vector, 2);
-            result.collision_vector_a = half;
-            result.collision_vector_b = half;
-        } else if (a_moving) {
-            result.collision_vector_a = collision_vector;
-        } else {
-            result.collision_vector_b = collision_vector;
-
-        }
-
-    } else {
-        Vector2 relative_velocity = v2_mul_s(v2_sub(a_vel, b_vel), 1);
-        f32 h = rect_min_ray_intersection_fraction(rect, V2_ZERO, relative_velocity);
-
-        if (h != INFINITY) {
-            Vector2 ca = v2_mul_s(v2_mul_s(a_vel, h), dt);
-            Vector2 cb = v2_mul_s(v2_mul_s(b_vel, h), dt);
-
-            Vector2 tangent = v2_norm(relative_velocity);
-            tangent = (Vector2){ -tangent.y, tangent.x };
-
-            Vector2 va = v2_mul_s(tangent, v2_dot(a_vel, tangent));
-            Vector2 vb = v2_mul_s(tangent, v2_dot(b_vel, tangent));
-
-            result.are_colliding = true;
-            result.collision_vector_a = ca;
-            result.collision_vector_b = cb;
-            result.velocity_a = va;
-            result.velocity_b = vb;
-        }
-    }
+    Rectangle result = { pos, size };
 
     return result;
-}
-
-
-static void collision_response_rectangles_discrete(RectangleCollision collision, Entity *a, Entity *b)
-{
-    b32 a_moving = v2_mag(a->velocity) > 0.0f;
-    b32 b_moving = v2_mag(b->velocity) > 0.0f;
-
-    if ((a_moving && b_moving) || (!a_moving && !b_moving)) {
-        // If either both are moving or neither are moving, move half of the distance each
-        Vector2 a_vec = v2_div_s(collision.collision_vector, 2);
-        Vector2 b_vec = v2_div_s(collision.collision_vector, 2);
-
-        a->position = v2_sub(a->position, a_vec);
-        b->position = v2_add(b->position, b_vec);
-    } else if (a_moving) {
-        a->position = v2_sub(a->position, collision.collision_vector);
-    } else if (b_moving) {
-        b->position = v2_add(b->position, collision.collision_vector);
-    }
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)
@@ -296,7 +209,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
 	if (input_is_key_down(input, KEY_UP)) {
 	    dir.y = speed;
-            world->entities[0].position = V2_ZERO;
+            //world->entities[0].position = V2_ZERO;
 	} else if (input_is_key_down(input, KEY_DOWN)) {
 	    dir.y = -speed;
 	}
@@ -312,98 +225,60 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     }
 
     // Collision
-#if 0
-    for (s32 i = 0; i < world->entity_count; ++i) {
-        Entity *e = &world->entities[i];
-	e->position = v2_add(e->position, v2_mul_s(e->velocity, dt));
+
+    if (input_is_key_pressed(input, KEY_D) || input_is_key_pressed(input, KEY_A)
+        || input_is_key_pressed(input, KEY_S) ||input_is_key_pressed(input, KEY_W)
+        || input_is_key_pressed(input, KEY_LEFT) || input_is_key_pressed(input, KEY_RIGHT)
+        || input_is_key_pressed(input, KEY_UP) ||input_is_key_pressed(input, KEY_DOWN)       ) {
+        printf("d\n");
     }
 
     for (s32 i = 0; i < world->entity_count; ++i) {
+        Entity *a = &world->entities[i];
+        Vector2 velocity_this_frame = a->velocity;
+
         for (s32 j = i + 1; j < world->entity_count; ++j) {
-            Entity *a = &world->entities[i];
             Entity *b = &world->entities[j];
 
 	    Rectangle rect_a = { a->position, a->size};
 	    Rectangle rect_b = { b->position, b->size};
 
-#if 0
-            RectangleCollision collision = rectangles_collide_discrete(rect_a, rect_b);
-
-            if (collision.are_colliding) {
-                collision_response_rectangles_discrete(collision, a, b);
-            }
-#else
-            ContinuousRectangleCollision collision = rectangles_collide_continuous(rect_a, a->velocity, rect_b, b->velocity, dt);
-            if (collision.are_colliding) {
-                collision_response_rectangles_continuous(collision, a, b, dt);
-            }
-#endif
-        }
-    }
-#endif
-
-    /* if (input_is_key_pressed(input, KEY_D) || input_is_key_pressed(input, KEY_A) */
-    /*    || input_is_key_pressed(input, KEY_S) ||input_is_key_pressed(input, KEY_W)) { */
-    /*     printf("d\n"); */
-    /* } */
-
-    for (s32 i = 0; i < world->entity_count; ++i) {
-        for (s32 j = i + 1; j < world->entity_count; ++j) {
-            Entity *a = &world->entities[i];
-            Entity *b = &world->entities[j];
-
-	    Rectangle rect_a = { a->position, a->size};
-	    Rectangle rect_b = { b->position, b->size};
-
-            Vector2 size = v2_add(rect_a.size, rect_b.size);
-
-            Vector2 left = v2_sub(rect_a.position, rect_bottom_right(rect_b));
-            Vector2 bottom = v2_sub(rect_top_left(rect_a), rect_bottom_left(rect_b));
-            Vector2 right = v2_add(left, size);
-            Vector2 top = v2_add(bottom, size);
-            Vector2 pos = { left.x, left.y };
-            Rectangle md = { pos, size };
+            Rectangle md = minkowski_diff(rect_a, rect_b);
             Vector2 collision_vector = rect_bounds_point_closest_to_point(md, V2_ZERO);
 
-            b32 should_move = true;
-
-            if ((left.x <= 0 && right.x >= 0 && bottom.y <= 0 && top.y >= 0)
-               && !v2_is_zero(collision_vector)) {
+            if (rect_contains_point(md, V2_ZERO) && (v2_mag(collision_vector) > INTERSECTION_EPSILON)) {
                 // Have already collided
+                printf("c\n");
                 a->position = v2_sub(a->position, collision_vector);
 
-                Vector2 tangent = { -collision_vector.y, collision_vector.x };
+                velocity_this_frame = V2_ZERO;
 
                 a->velocity = V2_ZERO;
                 b->velocity = V2_ZERO;
             } else {
                 Vector2 relative_velocity = v2_mul_s(v2_sub(b->velocity, a->velocity), dt);
-                Vector2 ray_origin = v2_mul_s(v2_norm(a->velocity), 0.1f);
+                f32 intersect_fraction = rect_min_ray_intersection_fraction(md, V2_ZERO, relative_velocity);
 
-                f32 intersect_fraction = rect_min_ray_intersection_fraction(md, ray_origin, relative_velocity);
+                if (intersect_fraction != INFINITY) {
+                    Vector2 new_pos_a = v2_add(a->position, v2_mul_s(v2_mul_s(a->velocity, intersect_fraction), dt));
+                    Vector2 new_pos_b = v2_add(b->position, v2_mul_s(v2_mul_s(b->velocity, intersect_fraction), dt));
 
-                f32 epsilon = 0.00001f;
-
-                if ((intersect_fraction != INFINITY) && (intersect_fraction > epsilon)) {
-
-                    should_move = false;
-
-                    a->position = v2_add(a->position, v2_mul_s(v2_mul_s(a->velocity, intersect_fraction), dt));
-                    b->position = v2_add(b->position, v2_mul_s(v2_mul_s(b->velocity, intersect_fraction), dt));
+                    // Move slightly in opposite direction to prevent getting stuck
+                    a->position = v2_add(new_pos_a, v2_mul_s(v2_norm(a->velocity), -COLLISION_MARGIN));
+                    b->position = v2_add(new_pos_b, v2_mul_s(v2_norm(b->velocity), -COLLISION_MARGIN));
 
                     Vector2 normalized_rel_velocity = v2_norm(relative_velocity);
                     Vector2 tangent = { -normalized_rel_velocity.y, normalized_rel_velocity.x };
 
                     a->velocity = v2_mul_s(tangent, v2_dot(a->velocity, tangent));
                     b->velocity = v2_mul_s(tangent, v2_dot(b->velocity, tangent));
+
+                    velocity_this_frame = V2_ZERO;
                 }
             }
-
-            if (should_move) {
-                a->position = v2_add(a->position, v2_mul_s(a->velocity, dt));
-                b->position = v2_add(b->position, v2_mul_s(b->velocity, dt));
-            }
         }
+
+        a->position = v2_add(a->position, v2_mul_s(velocity_this_frame, dt));
     }
 }
 
@@ -413,11 +288,17 @@ static void world_render(const GameWorld *world, RenderBatch *rb, const AssetLis
     for (s32 i = 0; i < world->entity_count; ++i) {
         entity_render(&world->entities[i], rb, assets, scratch);
     }
+
+#if 0
+    render_batch_push_rect(rb, scratch, md_rect, (RGBA32){0, 0.5f, 0.5f, 0.5f}, assets->shader2, 0);
+
+    render_batch_push_rect(rb, scratch, (Rectangle){{0, 0}, {1, 1}}, (RGBA32){1, 0.5f, 0.5f, 0.9f}, assets->shader2, 0);
+#endif
 #else
     render_batch_push_line(rb, scratch, line_a.start, line_a.end, RGBA32_WHITE, 1.0f, assets->shader2, 0);
     render_batch_push_line(rb, scratch, line_b.start, line_b.end, RGBA32_BLUE, 1.0f, assets->shader2, 0);
 
-    LineIntersection i = line_intersection(line_a, line_b);
+    LineIntersection i = line_intersection(line_a, line_b, INTERSECTION_EPSILON);
 
     if (i.are_intersecting) {
         render_batch_push_circle(rb, scratch, i.intersection_point, RGBA32_RED, 2.0f, assets->shader2, 0);

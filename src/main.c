@@ -378,6 +378,40 @@ static void file_watcher_stop(AssetWatcherContext *ctx)
     mutex_destroy(ctx->lock, ctx->allocator);
 }
 
+static void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, AssetManager *asset_mgr,
+    LinearArena *scratch)
+{
+    mutex_lock(ctx->lock);
+
+    for (StringNode *file = list_head(&ctx->asset_reload_queue); file;) {
+        StringNode *next = file->next;
+        AssetSlot *slot = assets_get_asset_by_path(asset_mgr, file->data, scratch);
+
+        b32 should_pop = true;
+
+        if (slot) {
+            b32 reloaded = assets_reload_asset(asset_mgr, slot, scratch);
+
+            if (reloaded) {
+                printf("Reloaded asset '%s'.\n",
+                    str_null_terminate(file->data, la_allocator(scratch)).data);
+            } else {
+                // Failed to reload, try again later
+                should_pop = false;
+            }
+        }
+
+        if (should_pop) {
+            list_pop_head(&ctx->asset_reload_queue);
+            deallocate(ctx->allocator, file->data.data);
+            deallocate(ctx->allocator, file);
+        }
+
+        file = next;
+    }
+
+    mutex_release(ctx->lock);
+}
 int main()
 {
     LinearArena arena = la_create(default_allocator, MB(4));
@@ -389,6 +423,7 @@ int main()
 	WINDOW_FLAG_NON_RESIZABLE, alloc);
     RendererBackend *backend = renderer_backend_initialize(alloc);
 
+    // TODO: use the same scratch arena as in game.c
     AssetManager assets = assets_initialize(alloc);
     LinearArena scratch = la_create(default_allocator, MB(4));
 
@@ -419,39 +454,9 @@ int main()
     file_watcher_start(&asset_watcher);
 
     while (!platform_window_should_close(window)) {
-        {
-            // TODO: hot reload game code this way too
-            mutex_lock(asset_watcher.lock);
+        la_reset(&scratch);
 
-            for (StringNode *file = list_head(&asset_watcher.asset_reload_queue); file;) {
-                StringNode *next = file->next;
-                AssetSlot *slot = assets_get_asset_by_path(&assets, file->data, &scratch);
-
-                b32 should_pop = true;
-
-                if (slot) {
-                    b32 reloaded = assets_reload_asset(&assets, slot, &scratch);
-
-                    if (reloaded) {
-                        printf("Reloaded asset '%s'.\n",
-                            str_null_terminate(file->data, la_allocator(&scratch)).data);
-                    } else {
-                        // Failed to reload, try again later
-                        should_pop = false;
-                    }
-                }
-
-                if (should_pop) {
-                    list_pop_head(&asset_watcher.asset_reload_queue);
-                    deallocate(asset_watcher.allocator, file->data.data);
-                    deallocate(asset_watcher.allocator, file);
-                }
-
-                file = next;
-            }
-
-            mutex_release(asset_watcher.lock);
-        }
+        file_watcher_reload_modified_assets(&asset_watcher, &assets, &scratch);
 
         {
             ShaderAsset *shader_asset = assets_get_shader(&assets, asset_list.shader);

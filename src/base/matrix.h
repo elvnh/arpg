@@ -4,6 +4,11 @@
 #include "base/typedefs.h"
 #include "base/vector.h"
 
+enum {
+    Y_IS_UP,
+    Y_IS_DOWN
+};
+
 typedef struct {
     f32 data[4][4];
 } Matrix4;
@@ -20,7 +25,7 @@ inline static Matrix4 mat4_identity()
     return m;
 }
 
-inline static Matrix4 mat4_orthographic(f32 left, f32 right, f32 bottom, f32 top, f32 z_near, f32 z_far)
+inline static Matrix4 mat4_orthographic_base(f32 left, f32 right, f32 bottom, f32 top, f32 z_near, f32 z_far)
 {
     Matrix4 m = {0};
 
@@ -34,6 +39,19 @@ inline static Matrix4 mat4_orthographic(f32 left, f32 right, f32 bottom, f32 top
     m.data[3][2] = -((z_far + z_near) / (z_far - z_near));
 
     return m;
+}
+
+inline static Matrix4 mat4_orthographic(s32 window_width, s32 window_height, s32 y_direction)
+{
+    Matrix4 result = {0};
+
+    if (y_direction == Y_IS_UP) {
+        result = mat4_orthographic_base(0.0f, (f32)window_width, 0.0f, (f32)window_height, 0.1f, 100.0f);
+    } else {
+        result = mat4_orthographic_base(0.0f, (f32)window_width, (f32)window_height, 0.0f, 0.1f, 100.0f);
+    }
+
+    return result;
 }
 
 inline static Matrix4 mat4_translate(Matrix4 m, Vector2 v)

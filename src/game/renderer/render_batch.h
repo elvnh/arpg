@@ -3,6 +3,7 @@
 
 #include "base/linear_arena.h"
 #include "base/vector.h"
+#include "base/matrix.h"
 #include "render_command.h"
 #include "render_key.h"
 
@@ -14,6 +15,7 @@ typedef struct {
 typedef struct {
     RenderEntry  entries[512];
     ssize        entry_count;
+    Matrix4      projection;
 } RenderBatch;
 
 RenderEntry *render_batch_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,

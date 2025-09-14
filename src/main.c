@@ -83,6 +83,8 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
     RendererState current_state = get_state_needed_for_entry(rb->entries[0].key);
     switch_renderer_state(current_state, assets, INVALID_RENDERER_STATE, backend);
 
+    renderer_backend_set_global_projection(backend, rb->projection);
+
     for (ssize i = 0; i < rb->entry_count; ++i) {
         RenderEntry *entry = &rb->entries[i];
         RenderCmdHeader *header = entry->data;
@@ -458,16 +460,6 @@ int main()
 
         file_watcher_reload_modified_assets(&asset_watcher, &assets, &scratch);
 
-        {
-            ShaderAsset *shader_asset = assets_get_shader(&assets, asset_list.shader);
-            renderer_backend_use_shader(shader_asset);
-
-            Matrix4 proj = mat4_orthographic(0.0f, WINDOW_WIDTH, 0.0f, WINDOW_HEIGHT, 0.1f, 100.0f);
-            proj = mat4_translate(proj, (Vector2){WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2});
-            proj = mat4_scale(proj, 3.0f);
-            renderer_backend_set_global_projection(backend, proj);
-        }
-
         Timestamp so_mod_time = platform_get_file_info(so_path, &scratch).last_modification_time;
 
         if (timestamp_less_than(game_so_load_time, so_mod_time)) {
@@ -488,7 +480,9 @@ int main()
 
         FrameData frame_data = {
             .dt = dt,
-            .input = &input
+            .input = &input,
+            .window_width = WINDOW_WIDTH,
+            .window_height = WINDOW_HEIGHT,
         };
 
         game_code.update_and_render(&game_state, &rb, &asset_list, frame_data);

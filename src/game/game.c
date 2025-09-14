@@ -92,6 +92,8 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
         world->entities[world->entity_count++] = (Entity){ {32, 32}, {0, 0}, {32, 16}, RGBA32_RED};
     }
 
+    world->camera.position = world->entities[0].position;
+
     f32 speed = 10.0f;
     {
 	Vector2 dir = {0};
@@ -115,8 +117,10 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 	Vector2 dir = {0};
 
 	if (input_is_key_down(input, KEY_UP)) {
+            world->camera.zoom += 0.1f;
 	    dir.y = 1.0f;
 	} else if (input_is_key_down(input, KEY_DOWN)) {
+            world->camera.zoom -= 0.1f;
 	    dir.y = -1.0f;
 	}
 
@@ -139,8 +143,11 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     handle_collision_and_movement(world, dt);
 }
 
-static void world_render(const GameWorld *world, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
+static void world_render(const GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
+    LinearArena *scratch)
 {
+    rb->projection = camera_get_matrix(world->camera, frame_data.window_width, frame_data.window_height);
+
     for (s32 i = 0; i < world->entity_count; ++i) {
         entity_render(&world->entities[i], rb, assets, scratch);
     }
@@ -151,9 +158,10 @@ static void game_update(GameState *game_state, const Input *input, f32 dt)
     world_update(&game_state->world, input, dt);
 }
 
-static void game_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets)
+static void game_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
+    FrameData frame_data)
 {
-    world_render(&game_state->world, render_cmds, assets, &game_state->frame_arena);
+    world_render(&game_state->world, render_cmds, assets, frame_data, &game_state->frame_arena);
 }
 
 void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
@@ -162,5 +170,5 @@ void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, con
     la_reset(&game_state->frame_arena);
 
     game_update(game_state, frame_data.input, frame_data.dt);
-    game_render(game_state, render_cmds, assets);
+    game_render(game_state, render_cmds, assets, frame_data);
 }

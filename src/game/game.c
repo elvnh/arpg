@@ -10,8 +10,8 @@
 #include "input.h"
 #include "renderer/render_batch.h"
 
-#define INTERSECTION_EPSILON 0.00001f
-#define COLLISION_MARGIN     0.01f
+#define INTERSECTION_EPSILON   0.00001f
+#define COLLISION_MARGIN       0.01f
 
 static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
@@ -23,58 +23,8 @@ static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList
     render_batch_push_rect(rb, scratch, rect, entity->color, assets->shader2, 0);
 }
 
-static void world_update(GameWorld *world, const Input *input, f32 dt)
+static void handle_collision_and_movement(GameWorld *world, f32 dt)
 {
-    if (world->entity_count == 0) {
-        world->entities[world->entity_count++] = (Entity){ {0, 0}, {0, 0}, {16, 16}, RGBA32_BLUE };
-        world->entities[world->entity_count++] = (Entity){ {64, 0}, {-0.0f, 0}, {16, 32}, RGBA32_WHITE };
-        //world->entities[world->entity_count++] = (Entity){ {32, 64}, {0, 0}, {32, 16} };
-    }
-
-    f32 speed = 10.0f;
-    {
-	Vector2 dir = {0};
-
-	if (input_is_key_down(input, KEY_W)) {
-	    dir.y = speed;
-	} else if (input_is_key_down(input, KEY_S)) {
-	    dir.y = -speed;
-	}
-
-	if (input_is_key_down(input, KEY_A)) {
-	    dir.x = -speed;
-	} else if (input_is_key_down(input, KEY_D)) {
-	    dir.x = speed;
-	}
-
-	world->entities[0].velocity = dir;
-    }
-
-    {
-	Vector2 dir = {0};
-
-	if (input_is_key_down(input, KEY_UP)) {
-	    dir.y = speed;
-	} else if (input_is_key_down(input, KEY_DOWN)) {
-	    dir.y = -speed;
-	}
-
-	if (input_is_key_down(input, KEY_LEFT)) {
-	    dir.x = -speed;
-	} else if (input_is_key_down(input, KEY_RIGHT)) {
-	    dir.x = speed;
-	}
-
-	world->entities[1].velocity = dir;
-    }
-
-    // Collision
-    /* if (input_is_key_pressed(input, KEY_D) || input_is_key_pressed(input, KEY_A) */
-    /*     || input_is_key_pressed(input, KEY_S) ||input_is_key_pressed(input, KEY_W) */
-    /*     || input_is_key_pressed(input, KEY_LEFT) || input_is_key_pressed(input, KEY_RIGHT) */
-    /*     || input_is_key_pressed(input, KEY_UP) ||input_is_key_pressed(input, KEY_DOWN)       ) { */
-    /*     printf("d\n"); */
-    /* } */
 
     for (s32 i = 0; i < world->entity_count; ++i) {
         Entity *a = &world->entities[i];
@@ -104,15 +54,19 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
                     INTERSECTION_EPSILON);
 
                 if (intersection.is_intersecting) {
-                    Vector2 new_pos_a = v2_add(a->position, v2_mul_s(v2_mul_s(a->velocity, intersection.time_of_impact), dt));
-                    Vector2 new_pos_b = v2_add(b->position, v2_mul_s(v2_mul_s(b->velocity, intersection.time_of_impact), dt));
+                    Vector2 a_dist_to_collision = v2_mul_s(a->velocity, intersection.time_of_impact);
+                    Vector2 b_dist_to_collision =  v2_mul_s(b->velocity, intersection.time_of_impact);
+
+                    Vector2 new_pos_a = v2_add(a->position, v2_mul_s(a_dist_to_collision, dt));
+                    Vector2 new_pos_b = v2_add(b->position, v2_mul_s(b_dist_to_collision, dt));
 
                     // Move slightly in opposite direction to prevent getting stuck
                     a->position = v2_add(new_pos_a, v2_mul_s(v2_norm(a->velocity), -COLLISION_MARGIN));
                     b->position = v2_add(new_pos_b, v2_mul_s(v2_norm(b->velocity), -COLLISION_MARGIN));
 
                     if ((intersection.side_of_collision == RECT_SIDE_LEFT)
-                     || (intersection.side_of_collision == RECT_SIDE_RIGHT)) {
+                        || (intersection.side_of_collision == RECT_SIDE_RIGHT)) {
+                        // TODO: this makes diagonal movement into walls slower, instead transfer velocity from other axis
                         a->velocity.x = 0.0f;
                         b->velocity.x = 0.0f;
                     } else {
@@ -128,6 +82,61 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
         Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(a->velocity, movement_fraction_left), dt);
         a->position = v2_add(a->position, to_move_this_frame);
     }
+}
+
+static void world_update(GameWorld *world, const Input *input, f32 dt)
+{
+    if (world->entity_count == 0) {
+        world->entities[world->entity_count++] = (Entity){ {0, 0}, {0, 0}, {16, 16}, RGBA32_BLUE };
+        world->entities[world->entity_count++] = (Entity){ {64, 0}, {-0.0f, 0}, {16, 32}, RGBA32_WHITE };
+        world->entities[world->entity_count++] = (Entity){ {32, 32}, {0, 0}, {32, 16}, RGBA32_RED};
+    }
+
+    f32 speed = 10.0f;
+    {
+	Vector2 dir = {0};
+
+	if (input_is_key_down(input, KEY_W)) {
+	    dir.y = 1.0f;
+	} else if (input_is_key_down(input, KEY_S)) {
+	    dir.y = -1.0f;
+	}
+
+	if (input_is_key_down(input, KEY_A)) {
+	    dir.x = -1.0f;
+	} else if (input_is_key_down(input, KEY_D)) {
+	    dir.x = 1.0f;
+	}
+
+	world->entities[0].velocity = v2_mul_s(v2_norm(dir), speed);
+    }
+
+    {
+	Vector2 dir = {0};
+
+	if (input_is_key_down(input, KEY_UP)) {
+	    dir.y = 1.0f;
+	} else if (input_is_key_down(input, KEY_DOWN)) {
+	    dir.y = -1.0f;
+	}
+
+	if (input_is_key_down(input, KEY_LEFT)) {
+	    dir.x = -1.0f;
+	} else if (input_is_key_down(input, KEY_RIGHT)) {
+	    dir.x = 1.0f;
+	}
+
+	world->entities[1].velocity = v2_mul_s(v2_norm(dir), speed);
+    }
+
+    /* if (input_is_key_pressed(input, KEY_D) || input_is_key_pressed(input, KEY_A) */
+    /*     || input_is_key_pressed(input, KEY_S) ||input_is_key_pressed(input, KEY_W) */
+    /*     || input_is_key_pressed(input, KEY_LEFT) || input_is_key_pressed(input, KEY_RIGHT) */
+    /*     || input_is_key_pressed(input, KEY_UP) ||input_is_key_pressed(input, KEY_DOWN)       ) { */
+    /*     printf("d\n"); */
+    /* } */
+
+    handle_collision_and_movement(world, dt);
 }
 
 static void world_render(const GameWorld *world, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)

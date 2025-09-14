@@ -20,7 +20,6 @@ typedef struct {
 } GameWorld;
 
 typedef struct {
-    LinearArena frame_arena;
     GameWorld world;
 } GameState;
 
@@ -32,7 +31,6 @@ typedef struct {
 } FrameData;
 
 void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
-    FrameData frame_data);
-
+    FrameData frame_data, LinearArena *frame_arena);
 
 #endif //GAME_H

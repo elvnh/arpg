@@ -144,31 +144,30 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 }
 
 static void world_render(const GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
-    LinearArena *scratch)
+    LinearArena *frame_arena)
 {
     rb->projection = camera_get_matrix(world->camera, frame_data.window_width, frame_data.window_height);
 
     for (s32 i = 0; i < world->entity_count; ++i) {
-        entity_render(&world->entities[i], rb, assets, scratch);
+        entity_render(&world->entities[i], rb, assets, frame_arena);
     }
 }
 
-static void game_update(GameState *game_state, const Input *input, f32 dt)
+static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
 {
+    (void)frame_arena;
     world_update(&game_state->world, input, dt);
 }
 
 static void game_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
-    FrameData frame_data)
+    FrameData frame_data, LinearArena *frame_arena)
 {
-    world_render(&game_state->world, render_cmds, assets, frame_data, &game_state->frame_arena);
+    world_render(&game_state->world, render_cmds, assets, frame_data, frame_arena);
 }
 
 void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
-    FrameData frame_data)
+    FrameData frame_data, LinearArena *frame_arena)
 {
-    la_reset(&game_state->frame_arena);
-
-    game_update(game_state, frame_data.input, frame_data.dt);
-    game_render(game_state, render_cmds, assets, frame_data);
+    game_update(game_state, frame_data.input, frame_data.dt, frame_arena);
+    game_render(game_state, render_cmds, assets, frame_data, frame_arena);
 }

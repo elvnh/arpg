@@ -213,7 +213,7 @@ static void sort_render_commands(RenderBatch *rb)
 
 #include "game/game.h"
 
-typedef void (GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *, FrameData);
+typedef void (GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *, FrameData, LinearArena *);
 
 typedef struct {
     void *handle;
@@ -414,39 +414,41 @@ static void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, AssetM
 
     mutex_release(ctx->lock);
 }
+
+#define GAME_MEMORY_SIZE MB(32)
+#define FRAME_ARENA_SIZE GAME_MEMORY_SIZE / 2
+
 int main()
 {
-    LinearArena arena = la_create(default_allocator, MB(4));
-    Allocator alloc = la_allocator(&arena);
+    // TODO: should this be a free list arena?
+    LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);
+    Allocator main_allocator = la_allocator(&main_arena);
 
     run_tests();
 
     WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
-	WINDOW_FLAG_NON_RESIZABLE, alloc);
-    RendererBackend *backend = renderer_backend_initialize(alloc);
+	WINDOW_FLAG_NON_RESIZABLE, main_allocator);
+    RendererBackend *backend = renderer_backend_initialize(main_allocator);
 
-    // TODO: use the same scratch arena as in game.c
-    AssetManager assets = assets_initialize(alloc);
-    LinearArena scratch = la_create(default_allocator, MB(4));
+    AssetManager assets = assets_initialize(main_allocator);
+    LinearArena frame_arena = la_create(main_allocator, FRAME_ARENA_SIZE);
 
     AssetList asset_list = {
-        .shader = assets_register_shader(&assets, str_lit("shader.glsl"), &scratch),
-        .shader2 = assets_register_shader(&assets, str_lit("shader2.glsl"), &scratch),
-        .texture = assets_register_texture(&assets, str_lit("test.png"), &scratch),
-        .white_texture = assets_register_texture(&assets, str_lit("white.png"), &scratch),
+        .shader = assets_register_shader(&assets, str_lit("shader.glsl"), &frame_arena),
+        .shader2 = assets_register_shader(&assets, str_lit("shader2.glsl"), &frame_arena),
+        .texture = assets_register_texture(&assets, str_lit("test.png"), &frame_arena),
+        .white_texture = assets_register_texture(&assets, str_lit("white.png"), &frame_arena),
     };
 
     RenderBatch rb = {0};
 
-    GameState game_state = {
-        .frame_arena = la_create(default_allocator, MB(4))
-    };
+    GameState game_state = {0};
 
-    String executable_dir = platform_get_executable_directory(alloc, &scratch);
-    String so_path = str_concat(executable_dir, str_lit("/"GAME_SO_NAME), alloc);
+    String executable_dir = platform_get_executable_directory(main_allocator, &frame_arena);
+    String so_path = str_concat(executable_dir, str_lit("/"GAME_SO_NAME), main_allocator);
 
     GameCode game_code = {0};
-    load_game_code(&game_code, so_path, &scratch);
+    load_game_code(&game_code, so_path, &frame_arena);
 
     Input input = {0};
 
@@ -456,15 +458,15 @@ int main()
     file_watcher_start(&asset_watcher);
 
     while (!platform_window_should_close(window)) {
-        la_reset(&scratch);
+        la_reset(&frame_arena);
 
-        file_watcher_reload_modified_assets(&asset_watcher, &assets, &scratch);
+        file_watcher_reload_modified_assets(&asset_watcher, &assets, &frame_arena);
 
-        Timestamp so_mod_time = platform_get_file_info(so_path, &scratch).last_modification_time;
+        Timestamp so_mod_time = platform_get_file_info(so_path, &frame_arena).last_modification_time;
 
         if (timestamp_less_than(game_so_load_time, so_mod_time)) {
             unload_game_code(&game_code);
-            load_game_code(&game_code, so_path, &scratch);
+            load_game_code(&game_code, so_path, &frame_arena);
 
             game_so_load_time = platform_get_time();
             printf("Hot reloaded game.\n");
@@ -485,15 +487,15 @@ int main()
             .window_height = WINDOW_HEIGHT,
         };
 
-        game_code.update_and_render(&game_state, &rb, &asset_list, frame_data);
+        game_code.update_and_render(&game_state, &rb, &asset_list, frame_data, &frame_arena);
 
-        execute_render_commands(&rb, &assets, backend, &scratch);
+        execute_render_commands(&rb, &assets, backend, &frame_arena);
 
         platform_poll_events(window);
     }
 
     platform_destroy_window(window);
-    la_destroy(&arena);
+    la_destroy(&main_arena);
 
     file_watcher_stop(&asset_watcher);
 

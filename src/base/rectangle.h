@@ -3,11 +3,25 @@
 
 #include "base/vector.h"
 #include "base/vertex.h"
+#include "base/line.h"
 
 typedef struct {
     Vector2 position;
     Vector2 size;
 } Rectangle;
+
+typedef enum {
+    RECT_SIDE_TOP,
+    RECT_SIDE_RIGHT,
+    RECT_SIDE_BOTTOM,
+    RECT_SIDE_LEFT,
+} RectangleSide;
+
+typedef struct {
+    b32 is_intersecting;
+    f32 time_of_impact;
+    RectangleSide side_of_collision;
+} RectRayIntersection;
 
 typedef struct {
     Vertex top_left;
@@ -130,6 +144,83 @@ static inline b32 rect_intersects(Rectangle a, Rectangle b)
         && ((a.position.x + a.size.x) > b.position.x)
         && (a.position.y < (b.position.y + b.size.y))
         && ((a.position.y + a.size.y) < b.position.y);
+
+    return result;
+}
+
+static inline Rectangle rect_minkowski_diff(Rectangle a, Rectangle b)
+{
+    Vector2 size = v2_add(a.size, b.size);
+    Vector2 left = v2_sub(a.position, rect_bottom_right(b));
+    Vector2 pos = { left.x, left.y };
+
+    Rectangle result = { pos, size };
+
+    return result;
+}
+
+static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect, Line ray_line,
+    f32 epsilon)
+{
+    Line left = {
+        rect.position,
+        v2(rect.position.x, rect.position.y + rect.size.y)
+    };
+
+    Line top = {
+        v2(rect.position.x, rect.position.y + rect.size.y),
+        v2(rect.position.x + rect.size.x, rect.position.y + rect.size.y)
+    };
+
+    Line right = {
+        v2(rect.position.x + rect.size.x, rect.position.y),
+        v2(rect.position.x + rect.size.x, rect.position.y + rect.size.y)
+    };
+
+    Line bottom = {
+        v2(rect.position.x, rect.position.y),
+        v2(rect.position.x + rect.size.x, rect.position.y)
+    };
+
+    RectangleSide side_of_collision = 0;
+    f32 min_fraction = INFINITY;
+    f32 x = min_fraction;
+
+    x = line_intersection_fraction(ray_line, left, epsilon);
+
+    if (x < min_fraction) {
+        min_fraction = x;
+        side_of_collision = RECT_SIDE_LEFT;
+    }
+
+    x = MIN(min_fraction, line_intersection_fraction(ray_line, top, epsilon));
+
+    if (x < min_fraction) {
+        min_fraction = x;
+        side_of_collision = RECT_SIDE_TOP;
+    }
+
+    x = MIN(min_fraction, line_intersection_fraction(ray_line, right, epsilon));
+
+    if (x < min_fraction) {
+        min_fraction = x;
+        side_of_collision = RECT_SIDE_RIGHT;
+    }
+
+    x = MIN(min_fraction, line_intersection_fraction(ray_line, bottom, epsilon));
+
+    if (x < min_fraction) {
+        min_fraction = x;
+        side_of_collision = RECT_SIDE_BOTTOM;
+    }
+
+    RectRayIntersection result = {0};
+
+    if (min_fraction != INFINITY) {
+        result.is_intersecting = true;
+        result.side_of_collision = side_of_collision;
+        result.time_of_impact = min_fraction;
+    }
 
     return result;
 }

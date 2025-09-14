@@ -5,11 +5,6 @@
 #include "input.h"
 
 typedef struct {
-    f32 radius;
-    b32 is_colliding;
-} CircleCollider;
-
-typedef struct {
     Vector2 position;
     Vector2 velocity;
     Vector2 size;

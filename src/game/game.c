@@ -120,8 +120,8 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 {
     if (world->entity_count == 0) {
         world->entities[world->entity_count++] = (Entity){ {32, 32}, {0, 0}, {16, 16}, RGBA32_BLUE };
-        world->entities[world->entity_count++] = (Entity){ {64, 64}, {-0.0f, 0}, {16, 32}, RGBA32_RED };
-        /* world->entities[world->entity_count++] = (Entity){ {32, 32}, {0, 0}, {32, 16}, RGBA32_RED}; */
+        world->entities[world->entity_count++] = (Entity){ {64, 64}, {-0.0f, 0}, {64, 64}, RGBA32_RED };
+        world->entities[world->entity_count++] = (Entity){ {128, 64}, {0, 0}, {64, 64}, RGBA32_BLUE};
 
         world->tilemap.tiles[0] = TILE_FLOOR;
         world->tilemap.tiles[1] = TILE_WALL;

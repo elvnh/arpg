@@ -94,32 +94,58 @@ static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color)
     return result;
 }
 
-static inline Vector2 rect_bounds_point_closest_to_point(Rectangle rect, Vector2 point)
+typedef struct {
+    Vector2 point;
+    RectangleSide side;
+} RectanglePoint;
+
+static inline RectanglePoint rect_bounds_point_closest_to_point(Rectangle rect, Vector2 point)
 {
     f32 min_x = rect.position.x;
     f32 max_x = min_x + rect.size.x;
     f32 min_y = rect.position.y;
     f32 max_y = min_y + rect.size.y;
 
-    f32 min_dist = abs_f32(point.x - min_x);
+    RectangleSide side;
     Vector2 bounds_point = { min_x, point.y };
 
-    if (abs_f32(max_x - point.x) < min_dist) {
-        min_dist = abs_f32(max_x - point.x);
+    f32 min_dist  = INFINITY;
+    f32 x = 0;
+
+    x = abs_f32(point.x - min_x);
+    if (x < min_dist) {
+        min_dist = x;
+        bounds_point = (Vector2){min_x, point.y};
+        side = RECT_SIDE_LEFT;
+    }
+
+    x = abs_f32(max_x - point.x);
+    if (x < min_dist) {
+        min_dist = x;
         bounds_point = (Vector2){ max_x, point.y };
+        side = RECT_SIDE_RIGHT;
     }
 
-    if (abs_f32(max_y - point.y) < min_dist) {
-        min_dist = abs_f32(max_y - point.y);
+    x = abs_f32(max_y - point.y);
+    if (x < min_dist) {
+        min_dist = x;
         bounds_point = (Vector2){ point.x, max_y };
+        side = RECT_SIDE_TOP;
     }
 
-    if (abs_f32(min_y - point.y) < min_dist) {
-        min_dist = abs_f32(min_y - point.y);
+    x = abs_f32(min_y - point.y);
+    if (x < min_dist) {
+        min_dist = x;
         bounds_point = (Vector2){point.x, min_y};
+        side = RECT_SIDE_BOTTOM;
     }
 
-    return bounds_point;
+    RectanglePoint result = {
+        .point = bounds_point,
+        .side = side
+    };
+
+    return result;
 }
 
 static inline b32 rect_contains_point(Rectangle rect, Vector2 p)

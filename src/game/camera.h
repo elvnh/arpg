@@ -4,8 +4,8 @@
 #include "base/typedefs.h"
 
 #define ZOOM_MIN_VALUE  0.0f
-#define ZOOM_MAX_VALUE  100.0f
-#define ZOOM_SPEED      0.03f
+#define ZOOM_MAX_VALUE  10.0f
+#define ZOOM_SPEED      0.05f
 
 // TODO: lerping to target position
 

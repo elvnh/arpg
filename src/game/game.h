@@ -27,12 +27,12 @@ typedef struct {
     TileType tiles[TILEMAP_WIDTH * TILEMAP_HEIGHT];
 } Tilemap;
 
-static inline TileType *tilemap_get_tile(Tilemap *tilemap, s32 x, s32 y)
+static inline TileType *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
 {
     TileType *result = 0;
 
-    if ((x >= 0) && (x < TILEMAP_WIDTH) && (y >= 0) && (y < TILEMAP_HEIGHT)) {
-        TileType *tile = &tilemap->tiles[x + (TILEMAP_HEIGHT - 1 - y) * TILEMAP_WIDTH];
+    if ((coords.x >= 0) && (coords.x < TILEMAP_WIDTH) && (coords.y >= 0) && (coords.y < TILEMAP_HEIGHT)) {
+        TileType *tile = &tilemap->tiles[coords.x + (TILEMAP_HEIGHT - 1 - coords.y) * TILEMAP_WIDTH];
 
         if (*tile != TILE_NULL) {
             result = tile;

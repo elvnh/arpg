@@ -460,6 +460,8 @@ int main()
     f32 time_point_last = platform_get_seconds_since_launch();
     f32 time_point_new = time_point_last;
 
+    platform_set_scroll_value_storage(&input.scroll_delta, window);
+
     while (!platform_window_should_close(window)) {
         time_point_new = platform_get_seconds_since_launch();
         f32 dt = time_point_new - time_point_last;
@@ -495,6 +497,7 @@ int main()
 
         execute_render_commands(&rb, &assets, backend, &frame_arena);
 
+        input.scroll_delta = 0.0f;
         platform_poll_events(window);
     }
 

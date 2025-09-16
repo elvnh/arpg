@@ -108,6 +108,21 @@ void platform_update_input(Input *input, WindowHandle *window)
     }
 }
 
+static f32 *g_scroll_value_storage_address;
+
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    (void)window;
+    (void)xoffset;
+    *g_scroll_value_storage_address = (f32)yoffset;
+}
+
+void platform_set_scroll_value_storage(f32 *ptr, struct WindowHandle *window)
+{
+    g_scroll_value_storage_address = ptr;
+    glfwSetScrollCallback(window->window, scroll_callback);
+}
+
 /* Paths */
 String platform_get_executable_path(Allocator allocator)
 {

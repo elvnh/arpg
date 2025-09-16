@@ -9,10 +9,8 @@
 #include "base/vector.h"
 #include "base/line.h"
 #include "input.h"
+#include "collision.h"
 #include "renderer/render_batch.h"
-
-#define INTERSECTION_EPSILON   0.00001f
-#define COLLISION_MARGIN       0.001f
 
 static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
@@ -24,68 +22,23 @@ static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList
     render_batch_push_rect(rb, scratch, rect, entity->color, assets->shader2, 0);
 }
 
-typedef struct {
-    Vector2 new_position_a;
-    Vector2 new_position_b;
-    Vector2 new_velocity_a;
-    Vector2 new_velocity_b;
-    f32 movement_fraction_left;
-} CollisionInfo;
 
-static CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,
-    Vector2 velocity_a, Vector2 velocity_b, f32 dt)
+static Vector2i world_to_tile_coords(Vector2 world_coords)
 {
-    ASSERT(movement_fraction_left >= 0.0f);
-
-    CollisionInfo result = {
-        .new_position_a = rect_a.position,
-        .new_position_b = rect_b.position,
-        .new_velocity_a = velocity_a,
-        .new_velocity_b = velocity_b,
-        .movement_fraction_left = movement_fraction_left
+    Vector2i result = {
+        (s32)(world_coords.x / TILE_SIZE),
+        (s32)(world_coords.y / TILE_SIZE)
     };
 
-    Rectangle md = rect_minkowski_diff(rect_a, rect_b);
-    Vector2 collision_vector = rect_bounds_point_closest_to_point(md, V2_ZERO);
+    return result;
+}
 
-    if (rect_contains_point(md, V2_ZERO) && (v2_mag(collision_vector) > INTERSECTION_EPSILON)) {
-        // Have already collided
-        result.new_position_a = v2_sub(result.new_position_a, collision_vector);
-
-        // TODO: only reset velocity in collision direction
-        result.new_velocity_a = V2_ZERO;
-        result.new_velocity_b = V2_ZERO;
-    } else {
-        Vector2 a_movement = v2_mul_s(velocity_a, movement_fraction_left);
-        Vector2 relative_movement = v2_mul_s(v2_sub(velocity_b, a_movement), dt);
-        Line ray_line = { V2_ZERO, relative_movement };
-
-        RectRayIntersection intersection = rect_shortest_ray_intersection(md, ray_line, INTERSECTION_EPSILON);
-
-        if (intersection.is_intersecting) {
-            Vector2 a_dist_to_move = v2_mul_s(velocity_a, intersection.time_of_impact);
-            Vector2 b_dist_to_move =  v2_mul_s(velocity_b, intersection.time_of_impact);
-
-            result.new_position_a = v2_add(rect_a.position, v2_mul_s(a_dist_to_move, intersection.time_of_impact * dt));
-            result.new_position_b = v2_add(rect_b.position, v2_mul_s(b_dist_to_move, intersection.time_of_impact * dt));
-
-            // Move slightly in opposite direction to prevent getting stuck
-            result.new_position_a = v2_add(result.new_position_a, v2_mul_s(v2_norm(velocity_a), -COLLISION_MARGIN));
-            result.new_position_b = v2_add(result.new_position_b, v2_mul_s(v2_norm(velocity_b), -COLLISION_MARGIN));
-
-            if ((intersection.side_of_collision == RECT_SIDE_LEFT)
-             || (intersection.side_of_collision == RECT_SIDE_RIGHT)) {
-                // TODO: this makes diagonal movement into walls slower, instead transfer velocity from other axis
-                result.new_velocity_a.x = 0.0f;
-                result.new_velocity_b.x = 0.0f;
-            } else {
-                result.new_velocity_a.y = 0.0f;
-                result.new_velocity_b.y = 0.0f;
-            }
-
-            result.movement_fraction_left = MAX(0.0f, result.movement_fraction_left - intersection.time_of_impact);
-        }
-    }
+static Vector2 tile_to_world_coords(Vector2i tile_coords)
+{
+    Vector2 result = {
+        (f32)tile_coords.x * TILE_SIZE,
+        (f32)tile_coords.y * TILE_SIZE
+    };
 
     return result;
 }
@@ -108,18 +61,21 @@ static void entity_vs_tilemap_collision(Entity *entity, GameWorld *world, f32 *m
 {
     Rectangle entity_rect = { entity->position, entity->size };
 
-    s32 min_tile_x = (s32)(entity->position.x / TILE_SIZE) - 1;
-    s32 max_tile_x = (s32)(entity->position.x / TILE_SIZE) + (s32)(entity->size.x / TILE_SIZE) + 1;
-    s32 min_tile_y = (s32)(entity->position.y / TILE_SIZE) - 1;
-    s32 max_tile_y = (s32)(entity->position.y / TILE_SIZE) + (s32)(entity->size.y / TILE_SIZE) + 1;
+    Vector2i entity_tile_coords = world_to_tile_coords(entity->position);
+
+    s32 min_tile_x = entity_tile_coords.x - 1;
+    s32 max_tile_x = entity_tile_coords.x + (s32)(entity->size.x / TILE_SIZE) + 1;
+    s32 min_tile_y = entity_tile_coords.y - 1;
+    s32 max_tile_y = entity_tile_coords.y + (s32)(entity->size.y / TILE_SIZE) + 1;
 
     for (s32 y = min_tile_y; y <= max_tile_y; ++y) {
         for (s32 x = min_tile_x; x <= max_tile_x; ++x) {
-            TileType *tile = tilemap_get_tile(&world->tilemap, x, y);
+            Vector2i tile_coords = {x, y};
+            TileType *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
             if (tile) {
                 Rectangle tile_rect = {
-                    {(f32)(x * TILE_SIZE), (f32)(y * TILE_SIZE) },
+                    tile_to_world_coords(tile_coords),
                     {(f32)TILE_SIZE, (f32)TILE_SIZE },
                 };
 
@@ -172,6 +128,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     }
 
     world->camera.position = world->entities[0].position;
+    camera_zoom(&world->camera, (s32)input->scroll_delta);
 
     f32 speed = 100.0f;
     {
@@ -192,14 +149,14 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 	world->entities[0].velocity = v2_mul_s(v2_norm(dir), speed);
     }
 
+
+
     {
 	Vector2 dir = {0};
 
 	if (input_is_key_down(input, KEY_UP)) {
-            camera_change_zoom(&world->camera, 0.1f);
 	    dir.y = 1.0f;
 	} else if (input_is_key_down(input, KEY_DOWN)) {
-            camera_change_zoom(&world->camera, -0.1f);
 	    dir.y = -1.0f;
 	}
 
@@ -229,7 +186,8 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
 
     for (s32 y = 0; y < TILEMAP_HEIGHT; ++y) {
         for (s32 x = 0; x < TILEMAP_WIDTH; ++x) {
-            TileType *tile = tilemap_get_tile(&world->tilemap, x, y);
+            Vector2i tile_coords = {x, y};
+            TileType *tile = tilemap_get_tile(&world->tilemap, tile_coords);
             RGBA32 color;
 
             if (tile) {

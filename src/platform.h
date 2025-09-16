@@ -22,6 +22,7 @@ void           platform_poll_events(WindowHandle *window);
 struct Input;
 
 void           platform_update_input(struct Input *input, struct WindowHandle *window);
+void           platform_set_scroll_value_storage(f32 *ptr, struct WindowHandle *window);
 
 /* Path */
 String         platform_get_executable_path(Allocator allocator);

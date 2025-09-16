@@ -11,6 +11,11 @@ typedef struct {
 } Vector2;
 
 typedef struct {
+    s32 x;
+    s32 y;
+} Vector2i;
+
+typedef struct {
     f32 x;
     f32 y;
     f32 z;

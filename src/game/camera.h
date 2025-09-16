@@ -3,6 +3,10 @@
 
 #include "base/typedefs.h"
 
+#define ZOOM_MIN_VALUE  0.0f
+#define ZOOM_MAX_VALUE  100.0f
+#define ZOOM_SPEED      0.03f
+
 // TODO: lerping to target position
 
 typedef struct {
@@ -27,7 +31,19 @@ static inline Matrix4 camera_get_matrix(Camera cam, s32 window_width, s32 window
 static inline void camera_change_zoom(Camera *cam, f32 delta)
 {
     f32 new_zoom = cam->zoom + delta;
-    cam->zoom = CLAMP(new_zoom, 0.0f, 10.0f);
+
+    cam->zoom = CLAMP(new_zoom, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
+}
+
+static inline void camera_zoom(Camera *cam, s32 direction)
+{
+    if (direction != 0) {
+        ASSERT((direction == -1) || (direction == 1));
+        f32 x = (direction == -1) ? (1.0f - ZOOM_SPEED) : (1.0f + ZOOM_SPEED);
+        f32 new_zoom = (1.0f + cam->zoom) * x;
+
+        cam->zoom = CLAMP(new_zoom - 1.0f, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
+    }
 }
 
 #endif //CAMERA_H

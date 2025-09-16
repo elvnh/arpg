@@ -4,10 +4,10 @@
 #include "base/typedefs.h"
 #include "base/vector.h"
 
-enum {
+typedef enum {
     Y_IS_UP,
     Y_IS_DOWN
-};
+} YDirection;
 
 typedef struct {
     f32 data[4][4];
@@ -41,7 +41,7 @@ inline static Matrix4 mat4_orthographic_base(f32 left, f32 right, f32 bottom, f3
     return m;
 }
 
-inline static Matrix4 mat4_orthographic(s32 window_width, s32 window_height, s32 y_direction)
+inline static Matrix4 mat4_orthographic(s32 window_width, s32 window_height, YDirection y_direction)
 {
     Matrix4 result = {0};
 

@@ -465,8 +465,6 @@ int main()
         f32 dt = time_point_new - time_point_last;
         time_point_last = time_point_new;
 
-        printf("%.4f\n", (f64)dt);
-
         la_reset(&frame_arena);
 
         file_watcher_reload_modified_assets(&asset_watcher, &assets, &frame_arena);

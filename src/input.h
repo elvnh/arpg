@@ -30,6 +30,7 @@ typedef enum {
 typedef struct Input {
     Keystate keystates[KEY_COUNT];
     Keystate previous_keystates[KEY_COUNT];
+    f32 scroll_delta;
 } Input;
 
 static inline Keystate input_get_key(const Input *input, Key key)

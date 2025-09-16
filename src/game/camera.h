@@ -24,4 +24,10 @@ static inline Matrix4 camera_get_matrix(Camera cam, s32 window_width, s32 window
     return result;
 }
 
+static inline void camera_change_zoom(Camera *cam, f32 delta)
+{
+    f32 new_zoom = cam->zoom + delta;
+    cam->zoom = CLAMP(new_zoom, 0.0f, 10.0f);
+}
+
 #endif //CAMERA_H

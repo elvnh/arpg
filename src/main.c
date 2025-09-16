@@ -457,7 +457,16 @@ int main()
     AssetWatcherContext asset_watcher = {0};
     file_watcher_start(&asset_watcher);
 
+    f32 time_point_last = platform_get_seconds_since_launch();
+    f32 time_point_new = time_point_last;
+
     while (!platform_window_should_close(window)) {
+        time_point_new = platform_get_seconds_since_launch();
+        f32 dt = time_point_new - time_point_last;
+        time_point_last = time_point_new;
+
+        printf("%.4f\n", (f64)dt);
+
         la_reset(&frame_arena);
 
         file_watcher_reload_modified_assets(&asset_watcher, &assets, &frame_arena);
@@ -476,9 +485,6 @@ int main()
 
         renderer_backend_clear(backend);
         rb.entry_count = 0;
-
-        // TODO: proper dt
-        f32 dt = 0.16f;
 
         FrameData frame_data = {
             .dt = dt,

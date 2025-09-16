@@ -364,6 +364,13 @@ Timestamp platform_get_time()
     return result;
 }
 
+f32 platform_get_seconds_since_launch()
+{
+    f32 result = (f32)glfwGetTime();
+
+    return result;
+}
+
 /* Mutex */
 Mutex mutex_create(Allocator allocator)
 {

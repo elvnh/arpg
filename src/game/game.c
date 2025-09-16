@@ -94,7 +94,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
     world->camera.position = world->entities[0].position;
 
-    f32 speed = 10.0f;
+    f32 speed = 100.0f;
     {
 	Vector2 dir = {0};
 
@@ -117,10 +117,10 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 	Vector2 dir = {0};
 
 	if (input_is_key_down(input, KEY_UP)) {
-            world->camera.zoom += 0.1f;
+            camera_change_zoom(&world->camera, 0.1f);
 	    dir.y = 1.0f;
 	} else if (input_is_key_down(input, KEY_DOWN)) {
-            world->camera.zoom -= 0.1f;
+            camera_change_zoom(&world->camera, -0.1f);
 	    dir.y = -1.0f;
 	}
 

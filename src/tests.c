@@ -400,7 +400,13 @@ static void tests_utils()
         ASSERT(bit_span(USIZE_MAX, 0, 64) == USIZE_MAX);
         ASSERT(bit_span(USIZE_MAX, 0, 63) == (USIZE_MAX >> 1));
     }
+
+    ASSERT(CLAMP(0, 1, 2) == 1);
+    ASSERT(CLAMP(-1, 0, 2) == 0);
+    ASSERT(CLAMP(-1, -2, 2) == -1);
+    ASSERT(CLAMP(4, -2, 2) == 2);
 }
+
 
 static void tests_file()
 {

@@ -56,6 +56,7 @@ void           platform_for_each_file_in_dir(String directory, void (*callback)(
 
 /* Time */
 Timestamp      platform_get_time();
+f32            platform_get_seconds_since_launch();
 
 /* Mutex */
 typedef struct {

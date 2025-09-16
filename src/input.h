@@ -2,6 +2,7 @@
 #define INPUT_H
 
 #include "base/utils.h"
+#include "base/vector.h"
 
 typedef enum {
     KEYSTATE_UP = 0,
@@ -31,6 +32,7 @@ typedef struct Input {
     Keystate keystates[KEY_COUNT];
     Keystate previous_keystates[KEY_COUNT];
     f32 scroll_delta;
+    Vector2 mouse_position;
 } Input;
 
 static inline Keystate input_get_key(const Input *input, Key key)

@@ -93,6 +93,10 @@ void platform_update_input(Input *input, WindowHandle *window)
 {
     memcpy(input->previous_keystates, input->keystates, KEY_COUNT * sizeof(*input->keystates));
 
+    double x, y;
+    glfwGetCursorPos(window->window, &x, &y);
+    input->mouse_position = v2((f32)x, (f32)y);
+
     for (Key key = 0; key < KEY_COUNT; ++key) {
         Keystate current = get_current_keystate(key, window);
         Keystate previous = input->previous_keystates[key];

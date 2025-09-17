@@ -52,6 +52,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 
         rect_collision_reset_velocities(&result.new_velocity_a, &result.new_velocity_b, penetration.side);
     } else {
+	// Will collide this frame
         Vector2 a_movement = v2_mul_s(velocity_a, movement_fraction_left);
         Vector2 relative_movement = v2_mul_s(v2_sub(velocity_b, a_movement), dt);
         Line ray_line = { V2_ZERO, relative_movement };
@@ -73,12 +74,20 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 	    );
 
             // Move slightly in opposite direction to prevent getting stuck
-            result.new_position_a = v2_add(result.new_position_a, v2_mul_s(v2_norm(velocity_a), -COLLISION_MARGIN));
-            result.new_position_b = v2_add(result.new_position_b, v2_mul_s(v2_norm(velocity_b), -COLLISION_MARGIN));
+            result.new_position_a = v2_add(
+		result.new_position_a,
+		v2_mul_s(v2_norm(velocity_a), -COLLISION_MARGIN)
+	    );
+            result.new_position_b = v2_add(
+		result.new_position_b,
+		v2_mul_s(v2_norm(velocity_b), -COLLISION_MARGIN)
+	    );
 
-            rect_collision_reset_velocities(&result.new_velocity_a, &result.new_velocity_b, intersection.side_of_collision);
+            rect_collision_reset_velocities(&result.new_velocity_a, &result.new_velocity_b,
+		intersection.side_of_collision);
 
-            result.movement_fraction_left = MAX(0.0f, result.movement_fraction_left - intersection.time_of_impact);
+	    f32 remaining = result.movement_fraction_left - intersection.time_of_impact;
+            result.movement_fraction_left = MAX(0.0f, remaining);
         }
     }
 

@@ -48,7 +48,8 @@ static void entity_vs_entity_collision(Entity *a, Entity *b, f32 *movement_fract
     Rectangle rect_a_ = { a->position, a->size};
     Rectangle rect_b_ = { b->position, b->size};
 
-    CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, rect_a_, rect_b_, a->velocity, b->velocity, dt);
+    CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, rect_a_, rect_b_,
+	a->velocity, b->velocity, dt);
 
     a->position = collision.new_position_a;
     b->position = collision.new_position_b;
@@ -63,6 +64,7 @@ static void entity_vs_tilemap_collision(Entity *entity, GameWorld *world, f32 *m
 
     Vector2i entity_tile_coords = world_to_tile_coords(entity->position);
 
+    // TODO: check all tiles that can be reached this frame
     s32 min_tile_x = entity_tile_coords.x - 1;
     s32 max_tile_x = entity_tile_coords.x + (s32)(entity->size.x / TILE_SIZE) + 1;
     s32 min_tile_y = entity_tile_coords.y - 1;
@@ -79,8 +81,8 @@ static void entity_vs_tilemap_collision(Entity *entity, GameWorld *world, f32 *m
                     {(f32)TILE_SIZE, (f32)TILE_SIZE },
                 };
 
-                CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, entity_rect, tile_rect,
-                    entity->velocity, V2_ZERO, dt);
+                CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, entity_rect,
+		    tile_rect, entity->velocity, V2_ZERO, dt);
 
                 entity->position = collision.new_position_a;
                 entity->velocity = collision.new_velocity_a;
@@ -130,7 +132,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     world->camera.position = world->entities[0].position;
     camera_zoom(&world->camera, (s32)input->scroll_delta);
 
-    f32 speed = 100.0f;
+    f32 speed = 1000.0f;
     {
 	Vector2 dir = {0};
 

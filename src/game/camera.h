@@ -1,7 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include "base/typedefs.h"
+#include "base/matrix.h"
 
 #define ZOOM_MIN_VALUE  0.0f
 #define ZOOM_MAX_VALUE  10.0f
@@ -44,6 +44,21 @@ static inline void camera_zoom(Camera *cam, s32 direction)
 
         cam->zoom = CLAMP(new_zoom - 1.0f, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
     }
+}
+
+static inline Vector2 screen_to_world_coords(Camera cam, Vector2 v,
+    s32 window_width, s32 window_height)
+{
+    Vector2 result = {0};
+
+    f32 scale = 1.0f + cam.zoom;
+
+    f32 center_x = ((f32)window_width / 2.0f);
+    f32 center_y = ((f32)window_height / 2.0f);
+    result.x = (v.x - center_x) / scale + cam.position.x;
+    result.y = (center_y - v.y) / scale + cam.position.y;
+
+    return result;
 }
 
 #endif //CAMERA_H

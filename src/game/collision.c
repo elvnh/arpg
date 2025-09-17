@@ -60,18 +60,11 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
         RectRayIntersection intersection = rect_shortest_ray_intersection(md, ray_line, INTERSECTION_EPSILON);
 
         if (intersection.is_intersecting) {
-            Vector2 a_dist_to_move = v2_mul_s(velocity_a, intersection.time_of_impact);
-            Vector2 b_dist_to_move =  v2_mul_s(velocity_b, intersection.time_of_impact);
+            Vector2 a_dist_to_move = v2_mul_s(velocity_a, intersection.time_of_impact * dt);
+            Vector2 b_dist_to_move =  v2_mul_s(velocity_b, intersection.time_of_impact * dt);
 
-            result.new_position_a = v2_add(
-		rect_a.position,
-		v2_mul_s(a_dist_to_move, intersection.time_of_impact * dt)
-	    );
-
-            result.new_position_b = v2_add(
-		rect_b.position,
-		v2_mul_s(b_dist_to_move, intersection.time_of_impact * dt)
-	    );
+            result.new_position_a = v2_add(rect_a.position, a_dist_to_move);
+            result.new_position_b = v2_add(rect_b.position, b_dist_to_move);
 
             // Move slightly in opposite direction to prevent getting stuck
             result.new_position_a = v2_add(

@@ -60,22 +60,28 @@ static void entity_vs_entity_collision(Entity *a, Entity *b, f32 *movement_fract
 
 static void entity_vs_tilemap_collision(Entity *entity, GameWorld *world, f32 *movement_fraction_left, f32 dt)
 {
-    Rectangle entity_rect = { entity->position, entity->size };
+    Vector2 old_entity_pos = entity->position;
+    Vector2 new_entity_pos = v2_add(entity->position, v2_mul_s(entity->velocity, dt));
+    f32 entity_width = entity->size.x;
+    f32 entity_height = entity->size.y;
+    
+    f32 min_x = MIN(old_entity_pos.x, new_entity_pos.x);
+    f32 max_x = MAX(old_entity_pos.x, new_entity_pos.x) + entity_width;
+    f32 min_y = MIN(old_entity_pos.y, new_entity_pos.y);
+    f32 max_y = MAX(old_entity_pos.y, new_entity_pos.y) + entity_height;
 
-    Vector2i entity_tile_coords = world_to_tile_coords(entity->position);
+    s32 min_tile_x = (s32)(min_x / TILE_SIZE);
+    s32 max_tile_x = (s32)(max_x / TILE_SIZE);
+    s32 min_tile_y = (s32)(min_y / TILE_SIZE);
+    s32 max_tile_y = (s32)(max_y / TILE_SIZE);
 
-    // TODO: check all tiles that can be reached this frame
-    s32 min_tile_x = entity_tile_coords.x - 1;
-    s32 max_tile_x = entity_tile_coords.x + (s32)(entity->size.x / TILE_SIZE) + 1;
-    s32 min_tile_y = entity_tile_coords.y - 1;
-    s32 max_tile_y = entity_tile_coords.y + (s32)(entity->size.y / TILE_SIZE) + 1;
-
-    for (s32 y = min_tile_y; y <= max_tile_y; ++y) {
-        for (s32 x = min_tile_x; x <= max_tile_x; ++x) {
+    for (s32 y = min_tile_y - 1; y <= max_tile_y + 1; ++y) {
+        for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
             Vector2i tile_coords = {x, y};
             TileType *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
             if (tile) {
+                Rectangle entity_rect = { entity->position, entity->size };
                 Rectangle tile_rect = {
                     tile_to_world_coords(tile_coords),
                     {(f32)TILE_SIZE, (f32)TILE_SIZE },
@@ -132,7 +138,11 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     world->camera.position = world->entities[0].position;
     camera_zoom(&world->camera, (s32)input->scroll_delta);
 
-    f32 speed = 1000.0f;
+    if (input_is_key_pressed(input, KEY_W)) {
+        printf("b");
+    }
+    
+    f32 speed = 10000.0f;
     {
 	Vector2 dir = {0};
 
@@ -150,8 +160,6 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
 	world->entities[0].velocity = v2_mul_s(v2_norm(dir), speed);
     }
-
-
 
     {
 	Vector2 dir = {0};

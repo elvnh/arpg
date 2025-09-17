@@ -319,7 +319,7 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
     struct stat st;
     s32 stat_result = stat(null_terminated.data, &st);
 
-    FileInfo result = {-1, -1, {0}};
+    FileInfo result = {(FileType)-1, -1, {0}};
 
     if ((stat_result == -1) || !S_ISREG(st.st_mode)) {
         return result;

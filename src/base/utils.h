@@ -23,9 +23,11 @@
     abort()
 
 #if defined(__GNUC__)
-    #define ALIGNOF(t)   (ssize)__alignof__(t)
-    #define FILE_NAME    __FILE__
-    #define LINE         __LINE__
+    #define ALIGNOF(t)    (ssize)__alignof__(t)
+    #define ALIGNAS(n)    __attribute__ ((aligned ((n))))
+    #define ALIGNAS_T(t)  __attribute__ ((aligned ((ALIGNOF(t)))))
+    #define FILE_NAME     __FILE__
+    #define LINE          __LINE__
 #else
     #error Unsupported compiler
 #endif

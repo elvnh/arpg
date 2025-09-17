@@ -51,6 +51,7 @@ FLAGS="
       -Wduplicated-cond
       -Wduplicated-branches
       -Wlogical-op
+      -Wcast-align
       -Werror=return-type
       -Werror=incompatible-pointer-types
       -Werror=int-conversion
@@ -58,6 +59,8 @@ FLAGS="
       -Werror=overflow
       -Werror=implicit-int
       -Werror=discarded-qualifiers
+      -Wsign-conversion
+      -Wcast-align
 
       -Isrc
       -Ideps

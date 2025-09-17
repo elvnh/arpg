@@ -65,7 +65,7 @@ static inline Vector2 v2_neg(Vector2 v)
 
 static inline f32 v2_mag(Vector2 v)
 {
-    f32 result = (f32)sqrt(v.x * v.x + v.y * v.y);
+    f32 result = sqrt_f32(v.x * v.x + v.y * v.y);
 
     return result;
 }
@@ -80,7 +80,7 @@ static inline f32 v2_dist_sq(Vector2 a, Vector2 b)
 static inline f32 v2_dist(Vector2 a, Vector2 b)
 {
     f32 sq = v2_dist_sq(a, b);
-    f32 result = (f32)sqrt(sq);
+    f32 result = sqrt_f32(sq);
 
     return result;
 }

@@ -298,7 +298,7 @@ void *file_watcher_thread(void *user_data)
     s32 fd = inotify_init();
     ASSERT(fd >= 0);
 
-    char event_buffer[INOTIFY_MAX_BUFFER_LENGTH];
+    ALIGNAS_T(struct inotify_event) char event_buffer[INOTIFY_MAX_BUFFER_LENGTH];
 
     String root_path = get_assets_directory(&scratch);
     String shader_path = get_shader_directory(&scratch);

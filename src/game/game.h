@@ -14,8 +14,7 @@ typedef struct {
 } Entity;
 
 typedef enum {
-    TILE_NULL,
-    TILE_FLOOR,
+    TILE_FLOOR = 0,
     TILE_WALL,
 } TileType;
 
@@ -32,11 +31,7 @@ static inline TileType *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
     TileType *result = 0;
 
     if ((coords.x >= 0) && (coords.x < TILEMAP_WIDTH) && (coords.y >= 0) && (coords.y < TILEMAP_HEIGHT)) {
-        TileType *tile = &tilemap->tiles[coords.x + (TILEMAP_HEIGHT - 1 - coords.y) * TILEMAP_WIDTH];
-
-        if (*tile != TILE_NULL) {
-            result = tile;
-        }
+        result = &tilemap->tiles[coords.x + (TILEMAP_HEIGHT - 1 - coords.y) * TILEMAP_WIDTH];
     }
 
     return result;

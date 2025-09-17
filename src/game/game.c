@@ -79,8 +79,8 @@ static void entity_vs_tilemap_collision(Entity *entity, GameWorld *world, f32 *m
         for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
             Vector2i tile_coords = {x, y};
             TileType *tile = tilemap_get_tile(&world->tilemap, tile_coords);
-
-            if (tile) {
+            
+            if (!tile || (*tile == TILE_WALL)) {
                 Rectangle entity_rect = { entity->position, entity->size };
                 Rectangle tile_rect = {
                     tile_to_world_coords(tile_coords),
@@ -133,6 +133,8 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
         world->tilemap.tiles[0] = TILE_FLOOR;
         world->tilemap.tiles[1] = TILE_WALL;
+        world->tilemap.tiles[2] = TILE_WALL;
+        world->tilemap.tiles[3] = TILE_WALL;
     }
 
     world->camera.position = world->entities[0].position;
@@ -142,7 +144,12 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
         printf("b");
     }
     
-    f32 speed = 10000.0f;
+    f32 speed = 250.0f;
+
+    if (input_is_key_held(input, KEY_LEFT_SHIFT)) {
+        speed *= 3.0f;
+    }
+
     {
 	Vector2 dir = {0};
 
@@ -178,13 +185,6 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
 	world->entities[1].velocity = v2_mul_s(v2_norm(dir), speed);
     }
-
-    /* if (input_is_key_pressed(input, KEY_D) || input_is_key_pressed(input, KEY_A) */
-    /*     || input_is_key_pressed(input, KEY_S) ||input_is_key_pressed(input, KEY_W) */
-    /*     || input_is_key_pressed(input, KEY_LEFT) || input_is_key_pressed(input, KEY_RIGHT) */
-    /*     || input_is_key_pressed(input, KEY_UP) ||input_is_key_pressed(input, KEY_DOWN)       ) { */
-    /*     printf("d\n"); */
-    /* } */
 
     handle_collision_and_movement(world, dt);
 }

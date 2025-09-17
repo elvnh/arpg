@@ -33,7 +33,22 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 
     if (rect_contains_point(md, V2_ZERO) && (v2_mag(penetration.point) > INTERSECTION_EPSILON)) {
         // Have already collided
-        result.new_position_a = v2_sub(result.new_position_a, penetration.point);
+        Vector2 new_pos = v2_sub(result.new_position_a, penetration.point);
+
+	Vector2 push_dir = {0};
+	if (penetration.side == RECT_SIDE_TOP) {
+	    push_dir.y = -1;
+	} else if (penetration.side == RECT_SIDE_BOTTOM) {
+	    push_dir.y = 1;
+	} else if (penetration.side == RECT_SIDE_LEFT) {
+	    push_dir.x = 1;
+	} else if (penetration.side == RECT_SIDE_RIGHT) {
+	    push_dir.x = -1;
+	} else {
+	    ASSERT(0);
+	}
+
+	result.new_position_a = v2_add(new_pos, v2_mul_s(push_dir, COLLISION_MARGIN));
 
         rect_collision_reset_velocities(&result.new_velocity_a, &result.new_velocity_b, penetration.side);
     } else {
@@ -47,8 +62,15 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
             Vector2 a_dist_to_move = v2_mul_s(velocity_a, intersection.time_of_impact);
             Vector2 b_dist_to_move =  v2_mul_s(velocity_b, intersection.time_of_impact);
 
-            result.new_position_a = v2_add(rect_a.position, v2_mul_s(a_dist_to_move, intersection.time_of_impact * dt));
-            result.new_position_b = v2_add(rect_b.position, v2_mul_s(b_dist_to_move, intersection.time_of_impact * dt));
+            result.new_position_a = v2_add(
+		rect_a.position,
+		v2_mul_s(a_dist_to_move, intersection.time_of_impact * dt)
+	    );
+
+            result.new_position_b = v2_add(
+		rect_b.position,
+		v2_mul_s(b_dist_to_move, intersection.time_of_impact * dt)
+	    );
 
             // Move slightly in opposite direction to prevent getting stuck
             result.new_position_a = v2_add(result.new_position_a, v2_mul_s(v2_norm(velocity_a), -COLLISION_MARGIN));

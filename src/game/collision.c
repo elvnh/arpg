@@ -1,7 +1,7 @@
 #include "collision.h"
 
 #define INTERSECTION_EPSILON   0.00001f
-#define COLLISION_MARGIN       0.01f
+#define COLLISION_MARGIN       0.015f
 
 static void rect_collision_reset_velocities(Vector2 *a, Vector2 *b, RectangleSide side)
 {

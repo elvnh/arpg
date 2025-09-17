@@ -233,6 +233,11 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
 {
     (void)frame_arena;
+
+    if (input_is_key_pressed(input, KEY_ESCAPE)) {
+        DEBUG_BREAK;
+    }
+
     world_update(&game_state->world, input, dt);
 }
 

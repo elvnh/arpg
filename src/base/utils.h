@@ -15,6 +15,7 @@
 #define SIZEOF(t) ((ssize)(sizeof(t)))
 #define CLAMP(n, low, high) ((n) < (low) ? (low) : ((n) > (high) ? (high) : (n)))
 #define PI 3.1415926535f
+#define DEBUG_BREAK __asm volatile("int3")
 #define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
 
 #define UNIMPLEMENTED                                                                     \

@@ -8,6 +8,7 @@
 #include "base/utils.h"
 #include "base/vector.h"
 #include "base/line.h"
+#include "game/entity.h"
 #include "input.h"
 #include "collision.h"
 #include "renderer/render_batch.h"
@@ -103,15 +104,15 @@ static void entity_vs_tilemap_collision(Entity *entity, GameWorld *world, f32 *m
 
 static void handle_collision_and_movement(GameWorld *world, f32 dt)
 {
-    for (s32 i = 0; i < world->entity_count; ++i) {
-        Entity *a = &world->entities[i];
+    for (EntityID_Type i = 0; i < world->entities.entity_count; ++i) {
+        Entity *a = &world->entities.entities[i];
 
         f32 movement_fraction_left = 1.0f;
 
         entity_vs_tilemap_collision(a, world, &movement_fraction_left, dt);
 
-        for (s32 j = i + 1; j < world->entity_count; ++j) {
-            Entity *b = &world->entities[j];
+        for (EntityID_Type j = i + 1; j < world->entities.entity_count; ++j) {
+            Entity *b = &world->entities.entities[j];
 
             entity_vs_entity_collision(a, b, &movement_fraction_left, dt);
         }
@@ -126,10 +127,15 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)
 {
-    if (world->entity_count == 0) {
-        world->entities[world->entity_count++] = (Entity){ {32, 32}, {0, 0}, {16, 16}, RGBA32_BLUE };
-        world->entities[world->entity_count++] = (Entity){ {64, 64}, {-0.0f, 0}, {64, 64}, RGBA32_RED };
-        world->entities[world->entity_count++] = (Entity){ {128, 64}, {0, 0}, {64, 64}, RGBA32_BLUE};
+    if (world->entities.entity_count == 0) {
+        /* world->entities[world->entity_count++] = (Entity){ {32, 32}, {0, 0}, {16, 16}, RGBA32_BLUE }; */
+        /* world->entities[world->entity_count++] = (Entity){ {64, 64}, {-0.0f, 0}, {64, 64}, RGBA32_RED }; */
+        /* world->entities[world->entity_count++] = (Entity){ {128, 64}, {0, 0}, {64, 64}, RGBA32_BLUE}; */
+        EntityID id = es_create_entity(&world->entities);
+        Entity *entity = es_get_entity(&world->entities, id);
+
+        entity->size = (Vector2){16, 16};
+        entity->color = RGBA32_BLUE;
 
         world->tilemap.tiles[0] = TILE_FLOOR;
         world->tilemap.tiles[1] = TILE_WALL;
@@ -137,13 +143,9 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
         world->tilemap.tiles[3] = TILE_WALL;
     }
 
-    world->camera.position = world->entities[0].position;
+    world->camera.position = world->entities.entities[0].position;
     camera_zoom(&world->camera, (s32)input->scroll_delta);
 
-    if (input_is_key_pressed(input, KEY_W)) {
-        printf("b");
-    }
-    
     f32 speed = 250.0f;
 
     if (input_is_key_held(input, KEY_LEFT_SHIFT)) {
@@ -165,8 +167,17 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 	    dir.x = 1.0f;
 	}
 
-	world->entities[0].velocity = v2_mul_s(v2_norm(dir), speed);
+	world->entities.entities[0].velocity = v2_mul_s(v2_norm(dir), speed);
     }
+
+#if 0
+    if (input_is_key_pressed(input, KEY_W)) {
+        printf("b");
+    }
+    
+
+
+
 
     {
 	Vector2 dir = {0};
@@ -185,7 +196,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
 	world->entities[1].velocity = v2_mul_s(v2_norm(dir), speed);
     }
-
+#endif
     handle_collision_and_movement(world, dt);
 }
 
@@ -225,8 +236,8 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         }
     }
 
-    for (s32 i = 0; i < world->entity_count; ++i) {
-        entity_render(&world->entities[i], rb, assets, frame_arena);
+    for (EntityID_Type i = 0; i < world->entities.entity_count; ++i) {
+        entity_render(&world->entities.entities[i], rb, assets, frame_arena);
     }
 }
 

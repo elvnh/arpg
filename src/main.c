@@ -239,12 +239,17 @@ static void load_game_code(GameCode *game_code, String so_path, LinearArena *scr
     }
 
     void *handle = dlopen(so_path.data, RTLD_NOW);
-    ASSERT(handle);
+
+    if (!handle) {
+        fprintf(stderr, "%s\n", dlerror());
+    }
 
     void *initialize = dlsym(handle, "game_initialize");
     void *update_and_render = dlsym(handle, "game_update_and_render");
+
     ASSERT(initialize);
     ASSERT(update_and_render);
+
 
     BEGIN_IGNORE_FUNCTION_PTR_WARNINGS;
 

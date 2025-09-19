@@ -212,14 +212,7 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
     (void)frame_arena;
 
     if (input_is_key_pressed(input, KEY_ESCAPE)) {
-        //DEBUG_BREAK;
-        EntityID id = {.slot_index = 0};
-        es_remove_entity(&game_state->world.entities, id);
-
-        EntityID new_id = es_create_entity(&game_state->world.entities);
-        Entity *entity = es_get_entity(&game_state->world.entities, new_id);
-        entity->size = v2(8, 8);
-        entity->color = RGBA32_WHITE;
+        DEBUG_BREAK;
     }
 
     world_update(&game_state->world, input, dt);

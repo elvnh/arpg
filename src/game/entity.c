@@ -62,7 +62,8 @@ void es_initialize(EntityStorage *es)
 
     for (ssize i = 0; i < MAX_ENTITIES; ++i) {
         EntityID new_id = {
-            .slot_index = (s32)i
+            .slot_index = (s32)i,
+            .generation = 0
         };
 
         id_queue_push(&es->free_id_queue, new_id);
@@ -71,8 +72,9 @@ void es_initialize(EntityStorage *es)
 
 static b32 entity_id_is_valid(EntityStorage *es, EntityID id)
 {
-    // TODO: generations
-    b32 result = (id.slot_index < MAX_ENTITIES);
+    b32 result = (id.slot_index < MAX_ENTITIES)
+        && (es->entities[id.slot_index].generation == id.generation);
+
     return result;
 }
 
@@ -100,11 +102,15 @@ EntityID es_create_entity(EntityStorage *es)
     slot->alive_entity_array_index = alive_index;
     slot->entity = (Entity){0};
 
+    ASSERT(slot->generation == id.generation);
+
     return id;
 }
 
 void es_remove_entity(EntityStorage *es, EntityID id)
 {
+    ASSERT(entity_id_is_valid(es, id));
+
     EntitySlot *slot = get_entity_slot(es, id);
     ASSERT(slot->alive_entity_array_index < es->alive_entity_count);
 
@@ -113,6 +119,17 @@ void es_remove_entity(EntityStorage *es, EntityID id)
     *removed_id = *last_alive;
     es->alive_entity_count--;
     
+    EntityGeneration new_generation;
+    if (add_overflows_s32(id.generation, 1)) {
+        // TODO: what to do when generation overflows? inactivate slot?
+        new_generation = 0;
+    } else {
+        new_generation = id.generation + 1;
+    }
+
+    slot->generation = new_generation;
+    id.generation = new_generation;
+
     id_queue_push(&es->free_id_queue, id);
 }
 

@@ -13,6 +13,7 @@
 */
 
 typedef s32 EntityIndex;
+typedef s32 EntityGeneration; 
 
 typedef struct {
     Vector2 position;
@@ -22,12 +23,14 @@ typedef struct {
 } Entity;
 
 typedef struct {
-    EntityIndex alive_entity_array_index; // Used when removing entity
+    EntityIndex alive_entity_array_index;
+    EntityGeneration generation;
     Entity      entity;
 } EntitySlot;
 
 typedef struct {
-    EntityIndex slot_index;
+    EntityIndex      slot_index;
+    EntityGeneration generation;
 } EntityID;
 
 typedef struct {

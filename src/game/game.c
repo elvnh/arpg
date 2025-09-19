@@ -21,9 +21,8 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
 	.size = es_get_component(entity, ColliderComponent)->size
     };
 
-    render_batch_push_rect(rb, scratch, rect, entity->color, assets->shader2, 0);
+    rb_push_rect(rb, scratch, rect, entity->color, assets->shader2, RENDER_LAYER_ENTITIES);
 }
-
 
 static Vector2i world_to_tile_coords(Vector2 world_coords)
 {
@@ -190,6 +189,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena)
 {
+    // TODO: set this when creating render btach
     rb->projection = camera_get_matrix(world->camera, frame_data.window_width, frame_data.window_height);
 
     for (s32 y = 0; y < TILEMAP_HEIGHT; ++y) {
@@ -219,7 +219,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
                 .size = { (f32)TILE_SIZE, (f32)TILE_SIZE }
             };
 
-            render_batch_push_rect(rb, frame_arena, tile_rect, color, assets->shader2, 0);
+            rb_push_rect(rb, frame_arena, tile_rect, color, assets->shader2, RENDER_LAYER_TILEMAP);
         }
     }
 
@@ -245,6 +245,8 @@ static void game_render(GameState *game_state, RenderBatch *render_cmds, const A
     FrameData frame_data, LinearArena *frame_arena)
 {
     world_render(&game_state->world, render_cmds, assets, frame_data, frame_arena);
+
+    render_batch_sort(render_cmds);
 }
 
 void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
@@ -267,10 +269,10 @@ void game_initialize(GameState *game_state)
 
         player->color = RGBA32_BLUE;
         PhysicsComponent *physics = es_add_component(player, PhysicsComponent);
-        physics->position = v2(16 * i, 16);
+        physics->position = v2((f32)(16 * i), 16.0f);
 
         ColliderComponent *collider = es_add_component(player, ColliderComponent);
-        collider->size = v2(32, 16 * (i + 1));
+        collider->size = v2(32.0f, (f32)(16 * (i + 1)));
 
         ASSERT(es_has_component(player, PhysicsComponent));
         ASSERT(es_has_component(player, ColliderComponent));        

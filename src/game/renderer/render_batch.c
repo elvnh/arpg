@@ -5,7 +5,36 @@
 #include "game/renderer/render_key.h"
 #include "render_command.h"
 
+#include <stdlib.h>
+
 #define allocate_render_cmd(arena, kind) init_render_cmd(arena, kind)
+
+static int sort_cmp(const void *a, const void *b)
+{
+    const RenderEntry *entry_a = a;
+    const RenderEntry *entry_b = b;
+
+    if (entry_a->key < entry_b->key) {
+        return -1;
+    } else if (entry_a->key > entry_b->key) {
+        return 1;
+    }
+
+    return 0;
+}
+
+void render_batch_sort(RenderBatch *rb)
+{
+    // TODO: don't use qsort here, use a stable sort
+    qsort(rb->entries, (usize)rb->entry_count, sizeof(*rb->entries), sort_cmp);
+
+    for (ssize i = 0; i < rb->entry_count - 1; ++i) {
+        RenderEntry *a = &rb->entries[i];
+        RenderEntry *b = &rb->entries[i + 1];
+
+        ASSERT(a->key <= b->key);
+    }
+}
 
 static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
 {
@@ -42,8 +71,8 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
     return entry;
 }
 
-RenderEntry *render_batch_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, RGBA32 color, ShaderHandle shader, s32 layer)
+RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     RectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_RECTANGLE);
     cmd->rect = rectangle;
@@ -55,14 +84,14 @@ RenderEntry *render_batch_push_sprite(RenderBatch *rb, LinearArena *arena, Textu
     return result;
 }
 
-RenderEntry *render_batch_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
-    RGBA32 color, ShaderHandle shader, s32 layer)
+RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
+    RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
-    return render_batch_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);
+    return rb_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);
 }
 
-RenderEntry *render_batch_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Vector2 position, RGBA32 color, f32 radius, ShaderHandle shader, s32 layer)
+RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Vector2 position, RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer)
 {
     CircleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_CIRCLE);
     cmd->position = position;
@@ -75,14 +104,14 @@ RenderEntry *render_batch_push_sprite_circle(RenderBatch *rb, LinearArena *arena
     return result;
 }
 
-RenderEntry *render_batch_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
-    RGBA32 color, f32 radius, ShaderHandle shader, s32 layer)
+RenderEntry *rb_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
+    RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer)
 {
-    return render_batch_push_sprite_circle(rb, arena, NULL_TEXTURE, position, color, radius, shader, layer);
+    return rb_push_sprite_circle(rb, arena, NULL_TEXTURE, position, color, radius, shader, layer);
 }
 
-RenderEntry *render_batch_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
-    RGBA32 color, f32 thickness, ShaderHandle shader, s32 layer)
+RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
+    RGBA32 color, f32 thickness, ShaderHandle shader, RenderLayer layer)
 {
     LineCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_LINE);
     cmd->start = start;
@@ -96,7 +125,7 @@ RenderEntry *render_batch_push_line(RenderBatch *rb, LinearArena *arena, Vector2
     return result;
 }
 
-void render_entry_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
+void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
 {
     SetupCmdUniformVec4 *cmd = la_allocate_item(arena, SetupCmdUniformVec4);
     cmd->header.kind = SETUP_CMD_SET_UNIFORM_VEC4;

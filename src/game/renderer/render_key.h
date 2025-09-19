@@ -9,14 +9,17 @@
 
 #define LAYER_KEY_POSITION   (64u - LAYER_KEY_BITS)
 #define LAYER_KEY_BITS       8u
-
 #define SHADER_KEY_POSITION  (LAYER_KEY_POSITION - SHADER_KEY_BITS)
 #define SHADER_KEY_BITS      8u
-
 #define TEXTURE_KEY_POSITION (SHADER_KEY_POSITION - TEXTURE_KEY_BITS)
 #define TEXTURE_KEY_BITS     16u
 
 typedef u64 RenderKey;
+
+typedef enum {
+    RENDER_LAYER_TILEMAP,
+    RENDER_LAYER_ENTITIES,
+} RenderLayer;
 
 inline static RenderKey render_key_extract_shader(RenderKey key)
 {

@@ -206,11 +206,6 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
     renderer_backend_flush(backend);
 }
 
-static void sort_render_commands(RenderBatch *rb)
-{
-    (void)rb;
-}
-
 #include "game/game.h"
 
 typedef void (GameInitialize)(GameState *);

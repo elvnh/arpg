@@ -8,17 +8,33 @@
 
 /*
   TODO:
-  - Entity slot generations
-  - Components
+  - Component macros
+  - Entity archetypes?
 */
 
 typedef s32 EntityIndex;
 typedef s32 EntityGeneration; 
+typedef u64 ComponentBitset;
+
+typedef enum {
+    COMP_PhysicsComponent,
+    COMP_ColliderComponent,
+} ComponentType;
 
 typedef struct {
     Vector2 position;
-    Vector2 velocity;
-    Vector2 size;
+    Vector2 velocity;    
+} PhysicsComponent;
+
+typedef struct {
+    Vector2 size;    
+} ColliderComponent;
+
+typedef struct {
+    ComponentBitset   active_components;
+    PhysicsComponent  physics_component;
+    ColliderComponent collider_component;
+
     RGBA32 color;
 } Entity;
 
@@ -50,5 +66,7 @@ void     es_initialize(EntityStorage *es);
 EntityID es_create_entity(EntityStorage *es);
 void     es_remove_entity(EntityStorage *es, EntityID id);
 Entity  *es_get_entity(EntityStorage *es, EntityID id);
+void    *es_add_component_impl(Entity *entity, ComponentType type); // TODO: allow providing initialized component
+void    *es_get_component_impl(Entity *entity, ComponentType type);
 
 #endif //ENTITY_H

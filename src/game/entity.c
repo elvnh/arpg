@@ -1,5 +1,67 @@
+#include <string.h>
+
 #include "entity.h"
 #include "base/utils.h"
+
+static ssize get_component_size(ComponentType type)
+{
+    switch (type) {
+        case COMP_PhysicsComponent: return SIZEOF(PhysicsComponent);
+        case COMP_ColliderComponent: return SIZEOF(ColliderComponent);
+    }
+
+    ASSERT(0);
+    return 0;
+}
+
+static ssize get_component_offset(ComponentType type)
+{
+    switch (type) {
+        case COMP_PhysicsComponent: return offsetof(Entity, physics_component);
+        case COMP_ColliderComponent: return offsetof(Entity, collider_component);
+    }
+
+    ASSERT(0);
+    return 0;
+}
+
+static u32 component_bit_value(ComponentType type)
+{
+    u32 result = 1 << type;
+
+    return result;
+}
+
+b32 entity_has_component(Entity *entity, ComponentType type)
+{
+    u32 mask = component_bit_value(type);
+    b32 result = (entity->active_components & mask) != 0;
+
+    return result;
+}
+
+void *es_add_component_impl(Entity *entity, ComponentType type)
+{
+    ASSERT(!entity_has_component(entity, type));
+
+    entity->active_components |= component_bit_value(type);
+    void *result = es_get_component_impl(entity, type);
+    ASSERT(result);
+    
+    return result;
+}
+
+void *es_get_component_impl(Entity *entity, ComponentType type)
+{
+    if (!entity_has_component(entity, type)) {
+        return 0;
+    }
+
+    ssize component_offset = get_component_offset(type);
+    void *result = byte_offset(entity, component_offset);
+
+    return result;
+}
 
 static void id_queue_set_to_empty(EntityIDQueue *queue)
 {
@@ -116,6 +178,8 @@ void es_remove_entity(EntityStorage *es, EntityID id)
 
     EntityID *removed_id = &es->alive_entity_ids[slot->alive_entity_array_index];
     EntityID *last_alive =  &es->alive_entity_ids[es->alive_entity_count - 1];
+    ASSERT(removed_id->slot_index == id.slot_index);
+    ASSERT(removed_id->generation == id.generation);
     *removed_id = *last_alive;
     es->alive_entity_count--;
     

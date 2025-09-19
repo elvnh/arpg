@@ -5,11 +5,13 @@
 #include "base/rectangle.h"
 
 typedef struct {
-    Vector2 new_position_a;
-    Vector2 new_position_b;
-    Vector2 new_velocity_a;
-    Vector2 new_velocity_b;
-    f32 movement_fraction_left;
+    Vector2  new_position_a;
+    Vector2  new_position_b;
+             
+    Vector2  new_velocity_a;
+    Vector2  new_velocity_b;
+             
+    f32      movement_fraction_left;
 } CollisionInfo;
 
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,

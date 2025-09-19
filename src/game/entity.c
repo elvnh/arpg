@@ -3,36 +3,29 @@
 #include "entity.h"
 #include "base/utils.h"
 
-static ssize get_component_size(ComponentType type)
-{
-    switch (type) {
-        case COMP_PhysicsComponent: return SIZEOF(PhysicsComponent);
-        case COMP_ColliderComponent: return SIZEOF(ColliderComponent);
-    }
-
-    ASSERT(0);
-    return 0;
-}
+static ssize component_offsets[] = {
+    #define COMPONENT(type) offsetof(Entity, ES_IMPL_COMP_FIELD_NAME(type)),
+        COMPONENT_LIST
+    #undef COMPONENT
+};
 
 static ssize get_component_offset(ComponentType type)
 {
-    switch (type) {
-        case COMP_PhysicsComponent: return offsetof(Entity, physics_component);
-        case COMP_ColliderComponent: return offsetof(Entity, collider_component);
-    }
+    ASSERT(type < COMPONENT_COUNT);
+    ssize result = component_offsets[type];
 
-    ASSERT(0);
-    return 0;
+    return result;
 }
 
 static u32 component_bit_value(ComponentType type)
 {
+    ASSERT(type < COMPONENT_COUNT);
     u32 result = 1 << type;
 
     return result;
 }
 
-b32 entity_has_component(Entity *entity, ComponentType type)
+b32 es_impl_has_component(Entity *entity, ComponentType type)
 {
     u32 mask = component_bit_value(type);
     b32 result = (entity->active_components & mask) != 0;
@@ -40,20 +33,20 @@ b32 entity_has_component(Entity *entity, ComponentType type)
     return result;
 }
 
-void *es_add_component_impl(Entity *entity, ComponentType type)
+void *es_impl_add_component(Entity *entity, ComponentType type)
 {
-    ASSERT(!entity_has_component(entity, type));
+    ASSERT(!es_impl_has_component(entity, type));
 
     entity->active_components |= component_bit_value(type);
-    void *result = es_get_component_impl(entity, type);
+    void *result = es_impl_get_component(entity, type);
     ASSERT(result);
     
     return result;
 }
 
-void *es_get_component_impl(Entity *entity, ComponentType type)
+void *es_impl_get_component(Entity *entity, ComponentType type)
 {
-    if (!entity_has_component(entity, type)) {
+    if (!es_impl_has_component(entity, type)) {
         return 0;
     }
 

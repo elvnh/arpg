@@ -13,11 +13,12 @@
 #include "collision.h"
 #include "renderer/render_batch.h"
 
-static void entity_render(const Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
+static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
+    // TODO: provide components instead
     Rectangle rect = {
-	.position = entity->physics_component.position,
-	.size = entity->collider_component.size
+	.position = es_get_component(entity, PhysicsComponent)->position,
+	.size = es_get_component(entity, ColliderComponent)->size
     };
 
     render_batch_push_rect(rb, scratch, rect, entity->color, assets->shader2, 0);
@@ -113,8 +114,8 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
         // TODO: this seems bug prone
         EntityID id_a = world->entities.alive_entity_ids[i];
         Entity *a = es_get_entity(&world->entities,id_a);
-        PhysicsComponent *physics_a = es_get_component_impl(a, COMP_PhysicsComponent);
-        ColliderComponent *collider_a = es_get_component_impl(a, COMP_ColliderComponent);
+        PhysicsComponent *physics_a = es_get_component(a, PhysicsComponent);
+        ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
 
         if (!physics_a || !collider_a) {
             continue;
@@ -127,8 +128,8 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
         for (EntityIndex j = i + 1; j < world->entities.alive_entity_count; ++j) {
             EntityID id_b = world->entities.alive_entity_ids[j];
             Entity *b = es_get_entity(&world->entities, id_b);
-            PhysicsComponent *physics_b = es_get_component_impl(b, COMP_PhysicsComponent);
-            ColliderComponent *collider_b = es_get_component_impl(b, COMP_ColliderComponent);
+            PhysicsComponent *physics_b = es_get_component(b, PhysicsComponent);
+            ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
 
             if (!physics_b || !collider_b) {
                 continue;
@@ -151,7 +152,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
     EntityID player_id = world->entities.alive_entity_ids[0];
     Entity *player = es_get_entity(&world->entities, player_id);
-    PhysicsComponent *physics = es_get_component_impl(player, COMP_PhysicsComponent);
+    PhysicsComponent *physics = es_get_component(player, PhysicsComponent);
 
     if (physics) {
         world->camera.position = physics->position;
@@ -261,12 +262,18 @@ void game_initialize(GameState *game_state)
         EntityID id = es_create_entity(&game_state->world.entities);
         Entity *player = es_get_entity(&game_state->world.entities, id);
 
+        ASSERT(!es_has_component(player, PhysicsComponent));
+        ASSERT(!es_has_component(player, ColliderComponent));
+
         player->color = RGBA32_BLUE;
-        PhysicsComponent *physics = es_add_component_impl(player, COMP_PhysicsComponent);
+        PhysicsComponent *physics = es_add_component(player, PhysicsComponent);
         physics->position = v2(16 * i, 16);
 
-        ColliderComponent *collider = es_add_component_impl(player, COMP_ColliderComponent);
+        ColliderComponent *collider = es_add_component(player, ColliderComponent);
         collider->size = v2(32, 16 * (i + 1));
+
+        ASSERT(es_has_component(player, PhysicsComponent));
+        ASSERT(es_has_component(player, ColliderComponent));        
     }
 
     /* EntityID other_id = es_create_entity(&game_state->world.entities); */

@@ -3,45 +3,35 @@
 
 #include "base/vector.h"
 #include "base/rgba.h"
+#include "component.h"
 
 #define MAX_ENTITIES 32
 
+#define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
+#define es_get_component(entity, type) ((type *)es_impl_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
+#define es_has_component(entity, type)         es_impl_has_component(entity, ES_IMPL_COMP_ENUM_NAME(type))
+
 /*
   TODO:
-  - Component macros
   - Entity archetypes?
 */
 
 typedef s32 EntityIndex;
 typedef s32 EntityGeneration; 
-typedef u64 ComponentBitset;
-
-typedef enum {
-    COMP_PhysicsComponent,
-    COMP_ColliderComponent,
-} ComponentType;
 
 typedef struct {
-    Vector2 position;
-    Vector2 velocity;    
-} PhysicsComponent;
-
-typedef struct {
-    Vector2 size;    
-} ColliderComponent;
-
-typedef struct {
-    ComponentBitset   active_components;
-    PhysicsComponent  physics_component;
-    ColliderComponent collider_component;
-
+    ComponentBitset active_components;
     RGBA32 color;
+
+    #define COMPONENT(type) type ES_IMPL_COMP_FIELD_NAME(type);
+        COMPONENT_LIST
+    #undef COMPONENT    
 } Entity;
 
 typedef struct {
-    EntityIndex alive_entity_array_index;
-    EntityGeneration generation;
-    Entity      entity;
+    EntityIndex        alive_entity_array_index;
+    EntityGeneration   generation;
+    Entity             entity;
 } EntitySlot;
 
 typedef struct {
@@ -50,9 +40,9 @@ typedef struct {
 } EntityID;
 
 typedef struct {
-    EntityID ids[MAX_ENTITIES];
-    ssize head;
-    ssize tail;
+    EntityID   ids[MAX_ENTITIES];
+    ssize      head;
+    ssize      tail;
 } EntityIDQueue;
 
 typedef struct {
@@ -66,7 +56,8 @@ void     es_initialize(EntityStorage *es);
 EntityID es_create_entity(EntityStorage *es);
 void     es_remove_entity(EntityStorage *es, EntityID id);
 Entity  *es_get_entity(EntityStorage *es, EntityID id);
-void    *es_add_component_impl(Entity *entity, ComponentType type); // TODO: allow providing initialized component
-void    *es_get_component_impl(Entity *entity, ComponentType type);
+void    *es_impl_add_component(Entity *entity, ComponentType type); // TODO: allow providing initialized component?
+void    *es_impl_get_component(Entity *entity, ComponentType type);
+b32      es_impl_has_component(Entity *entity, ComponentType type);
 
 #endif //ENTITY_H

@@ -213,10 +213,12 @@ static void sort_render_commands(RenderBatch *rb)
 
 #include "game/game.h"
 
+typedef void (GameInitialize)(GameState *);
 typedef void (GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *, FrameData, LinearArena *);
 
 typedef struct {
     void *handle;
+    GameInitialize *initialize;
     GameUpdateAndRender *update_and_render;
 } GameCode;
 
@@ -235,11 +237,14 @@ static void load_game_code(GameCode *game_code, String so_path, LinearArena *scr
     void *handle = dlopen(so_path.data, RTLD_NOW);
     ASSERT(handle);
 
-    void *func = dlsym(handle, "game_update_and_render");
-    ASSERT(func);
+    void *initialize = dlsym(handle, "game_initialize");
+    void *update_and_render = dlsym(handle, "game_update_and_render");
+    ASSERT(initialize);
+    ASSERT(update_and_render);
 
     game_code->handle = handle;
-    game_code->update_and_render = (GameUpdateAndRender *)func;
+    game_code->initialize = initialize;
+    game_code->update_and_render = (GameUpdateAndRender *)update_and_render;
 }
 
 static void unload_game_code(GameCode *game_code)
@@ -461,6 +466,8 @@ int main()
     f32 time_point_new = time_point_last;
 
     platform_set_scroll_value_storage(&input.scroll_delta, window);
+
+    game_code.initialize(&game_state);
 
     while (!platform_window_should_close(window)) {
         time_point_new = platform_get_seconds_since_launch();

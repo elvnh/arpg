@@ -104,6 +104,7 @@ static void entity_vs_tilemap_collision(Entity *entity, GameWorld *world, f32 *m
 
 static void handle_collision_and_movement(GameWorld *world, f32 dt)
 {
+#if 0
     for (EntityID_Type i = 0; i < world->entities.entity_count; ++i) {
         Entity *a = &world->entities.entities[i];
 
@@ -123,10 +124,12 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
         Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(a->velocity, movement_fraction_left), dt);
         a->position = v2_add(a->position, to_move_this_frame);
     }
+#endif
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)
 {
+#if 0
     if (world->entities.entity_count == 0) {
         /* world->entities[world->entity_count++] = (Entity){ {32, 32}, {0, 0}, {16, 16}, RGBA32_BLUE }; */
         /* world->entities[world->entity_count++] = (Entity){ {64, 64}, {-0.0f, 0}, {64, 64}, RGBA32_RED }; */
@@ -196,8 +199,9 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
 	world->entities[1].velocity = v2_mul_s(v2_norm(dir), speed);
     }
-#endif
     handle_collision_and_movement(world, dt);
+#endif
+#endif
 }
 
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
@@ -236,9 +240,11 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         }
     }
 
+#if 0
     for (EntityID_Type i = 0; i < world->entities.entity_count; ++i) {
         entity_render(&world->entities.entities[i], rb, assets, frame_arena);
     }
+#endif
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
@@ -263,4 +269,9 @@ void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, con
 {
     game_update(game_state, frame_data.input, frame_data.dt, frame_arena);
     game_render(game_state, render_cmds, assets, frame_data, frame_arena);
+}
+
+void game_initialize(GameState *game_state)
+{
+    es_initialize(&game_state->world.entities);
 }

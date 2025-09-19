@@ -1,24 +1,98 @@
 #include "entity.h"
 #include "base/utils.h"
 
+static void id_queue_set_to_empty(EntityIDQueue *queue)
+{
+    queue->head = S_SIZE_MAX;
+    queue->tail = S_SIZE_MAX;
+}
+
+static void id_queue_initialize(EntityIDQueue *queue)
+{
+    id_queue_set_to_empty(queue);
+}
+
+static b32 id_queue_is_empty(const EntityIDQueue *queue)
+{
+    b32 result = (queue->head == S_SIZE_MAX) && (queue->tail == S_SIZE_MAX);
+    return result;
+}
+
+static b32 id_queue_is_full(const EntityIDQueue *queue)
+{
+    b32 result = (queue->head == queue->tail) && !id_queue_is_empty(queue);
+    return result;
+}
+
+static void id_queue_push(EntityIDQueue *queue, EntityID id)
+{
+    ASSERT(!id_queue_is_full(queue));
+
+    ssize push_index;
+
+    if (id_queue_is_empty(queue)) {
+        queue->head = 0;
+        queue->tail = 1;
+        push_index = 0;
+    } else {
+        push_index = queue->tail;
+        queue->tail = (queue->tail + 1) % MAX_ENTITIES; // TODO: bitwise AND
+    }
+
+    queue->ids[push_index] = id;
+}
+
+static EntityID id_queue_pop(EntityIDQueue *queue)
+{
+    ASSERT(!id_queue_is_empty(queue));
+
+    EntityID id = queue->ids[queue->head];
+    queue->head = (queue->head + 1) % MAX_ENTITIES;
+
+    if (queue->head == queue->tail) {
+        id_queue_set_to_empty(queue);
+    }
+
+    return id;
+}
+
+void es_initialize(EntityStorage *es)
+{
+    id_queue_initialize(&es->free_id_queue);
+
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        EntityID new_id = {
+            .slot_index = (s32)i
+        };
+
+        id_queue_push(&es->free_id_queue, new_id);
+    }
+}
+
 static b32 entity_id_is_valid(EntityStorage *es, EntityID id)
 {
-    b32 result = (id.id < es->entity_count);
+    b32 result = (id.slot_index < MAX_ENTITIES);
+    return result;
+}
+
+static EntityID get_new_entity_id(EntityStorage *es)
+{
+    EntityID result = id_queue_pop(&es->free_id_queue);
     return result;
 }
 
 EntityID es_create_entity(EntityStorage *es)
 {
-    EntityID_Type id = es->entity_count++;
-    es->entities[id] = (Entity){0};
+    EntityID id = get_new_entity_id(es);
+    es->entities[id.slot_index].entity = (Entity){0};
 
-    return (EntityID){id};
+    return id;
 }
 
 Entity  *es_get_entity(EntityStorage *es, EntityID id)
 {
     ASSERT(entity_id_is_valid(es, id));
-    Entity *result = &es->entities[id.id];
+    Entity *result = &es->entities[id.slot_index].entity;
 
     return result;
 }

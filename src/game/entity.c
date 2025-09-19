@@ -71,6 +71,7 @@ void es_initialize(EntityStorage *es)
 
 static b32 entity_id_is_valid(EntityStorage *es, EntityID id)
 {
+    // TODO: generations
     b32 result = (id.slot_index < MAX_ENTITIES);
     return result;
 }
@@ -81,18 +82,54 @@ static EntityID get_new_entity_id(EntityStorage *es)
     return result;
 }
 
+EntitySlot *get_entity_slot(EntityStorage *es, EntityID id)
+{
+    ASSERT(id.slot_index < MAX_ENTITIES);
+    EntitySlot *result = &es->entities[id.slot_index];
+
+    return result;
+}
 EntityID es_create_entity(EntityStorage *es)
 {
     EntityID id = get_new_entity_id(es);
-    es->entities[id.slot_index].entity = (Entity){0};
+
+    EntityIndex alive_index = es->alive_entity_count++;
+    es->alive_entity_ids[alive_index] = id;
+    
+    EntitySlot *slot = get_entity_slot(es, id);
+    slot->alive_entity_array_index = alive_index;
+    slot->entity = (Entity){0};
 
     return id;
 }
 
-Entity  *es_get_entity(EntityStorage *es, EntityID id)
+void es_remove_entity(EntityStorage *es, EntityID id)
+{
+    EntitySlot *slot = get_entity_slot(es, id);
+    ASSERT(slot->alive_entity_array_index < es->alive_entity_count);
+
+    EntityID *removed_id = &es->alive_entity_ids[slot->alive_entity_array_index];
+    EntityID *last_alive =  &es->alive_entity_ids[es->alive_entity_count - 1];
+    *removed_id = *last_alive;
+    es->alive_entity_count--;
+    
+    id_queue_push(&es->free_id_queue, id);
+}
+
+Entity *es_get_entity(EntityStorage *es, EntityID id)
 {
     ASSERT(entity_id_is_valid(es, id));
     Entity *result = &es->entities[id.slot_index].entity;
 
+    return result;
+}
+
+Entity *es_get_entity_in_slot(EntityStorage *es, EntityIndex slot_index)
+{
+    EntityID id = {
+        .slot_index = slot_index
+    };
+
+    Entity *result = es_get_entity(es, id);
     return result;
 }

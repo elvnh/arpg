@@ -104,16 +104,18 @@ static void entity_vs_tilemap_collision(Entity *entity, GameWorld *world, f32 *m
 
 static void handle_collision_and_movement(GameWorld *world, f32 dt)
 {
-#if 0
-    for (EntityID_Type i = 0; i < world->entities.entity_count; ++i) {
-        Entity *a = &world->entities.entities[i];
+    for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
+        // TODO: this seems bug prone
+        EntityID id_a = world->entities.alive_entity_ids[i];
+        Entity *a = es_get_entity(&world->entities,id_a);
 
         f32 movement_fraction_left = 1.0f;
 
         entity_vs_tilemap_collision(a, world, &movement_fraction_left, dt);
 
-        for (EntityID_Type j = i + 1; j < world->entities.entity_count; ++j) {
-            Entity *b = &world->entities.entities[j];
+        for (EntityIndex j = i + 1; j < world->entities.alive_entity_count; ++j) {
+            EntityID id_b = world->entities.alive_entity_ids[j];
+            Entity *b = es_get_entity(&world->entities, id_b);
 
             entity_vs_entity_collision(a, b, &movement_fraction_left, dt);
         }
@@ -124,29 +126,15 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
         Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(a->velocity, movement_fraction_left), dt);
         a->position = v2_add(a->position, to_move_this_frame);
     }
-#endif
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)
 {
-#if 0
-    if (world->entities.entity_count == 0) {
-        /* world->entities[world->entity_count++] = (Entity){ {32, 32}, {0, 0}, {16, 16}, RGBA32_BLUE }; */
-        /* world->entities[world->entity_count++] = (Entity){ {64, 64}, {-0.0f, 0}, {64, 64}, RGBA32_RED }; */
-        /* world->entities[world->entity_count++] = (Entity){ {128, 64}, {0, 0}, {64, 64}, RGBA32_BLUE}; */
-        EntityID id = es_create_entity(&world->entities);
-        Entity *entity = es_get_entity(&world->entities, id);
+    ASSERT(world->entities.alive_entity_count >= 1);
 
-        entity->size = (Vector2){16, 16};
-        entity->color = RGBA32_BLUE;
-
-        world->tilemap.tiles[0] = TILE_FLOOR;
-        world->tilemap.tiles[1] = TILE_WALL;
-        world->tilemap.tiles[2] = TILE_WALL;
-        world->tilemap.tiles[3] = TILE_WALL;
-    }
-
-    world->camera.position = world->entities.entities[0].position;
+    EntityID player_id = world->entities.alive_entity_ids[0];
+    Entity *player = es_get_entity(&world->entities, player_id);
+    world->camera.position = player->position;
     camera_zoom(&world->camera, (s32)input->scroll_delta);
 
     f32 speed = 250.0f;
@@ -170,38 +158,10 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 	    dir.x = 1.0f;
 	}
 
-	world->entities.entities[0].velocity = v2_mul_s(v2_norm(dir), speed);
+        player->velocity = v2_mul_s(v2_norm(dir), speed);
     }
 
-#if 0
-    if (input_is_key_pressed(input, KEY_W)) {
-        printf("b");
-    }
-    
-
-
-
-
-    {
-	Vector2 dir = {0};
-
-	if (input_is_key_down(input, KEY_UP)) {
-	    dir.y = 1.0f;
-	} else if (input_is_key_down(input, KEY_DOWN)) {
-	    dir.y = -1.0f;
-	}
-
-	if (input_is_key_down(input, KEY_LEFT)) {
-	    dir.x = -1.0f;
-	} else if (input_is_key_down(input, KEY_RIGHT)) {
-	    dir.x = 1.0f;
-	}
-
-	world->entities[1].velocity = v2_mul_s(v2_norm(dir), speed);
-    }
     handle_collision_and_movement(world, dt);
-#endif
-#endif
 }
 
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
@@ -240,11 +200,11 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         }
     }
 
-#if 0
-    for (EntityID_Type i = 0; i < world->entities.entity_count; ++i) {
-        entity_render(&world->entities.entities[i], rb, assets, frame_arena);
+    for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
+        EntityID id = world->entities.alive_entity_ids[i];
+        Entity *entity = es_get_entity(&world->entities, id);
+        entity_render(entity, rb, assets, frame_arena);
     }
-#endif
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
@@ -252,7 +212,14 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
     (void)frame_arena;
 
     if (input_is_key_pressed(input, KEY_ESCAPE)) {
-        DEBUG_BREAK;
+        //DEBUG_BREAK;
+        EntityID id = {.slot_index = 0};
+        es_remove_entity(&game_state->world.entities, id);
+
+        EntityID new_id = es_create_entity(&game_state->world.entities);
+        Entity *entity = es_get_entity(&game_state->world.entities, new_id);
+        entity->size = v2(8, 8);
+        entity->color = RGBA32_WHITE;
     }
 
     world_update(&game_state->world, input, dt);
@@ -274,4 +241,21 @@ void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, con
 void game_initialize(GameState *game_state)
 {
     es_initialize(&game_state->world.entities);
+    EntityID id = es_create_entity(&game_state->world.entities);
+    Entity *player = es_get_entity(&game_state->world.entities, id);
+
+    player->size = (Vector2){16, 16};
+    player->color = RGBA32_BLUE;
+
+    EntityID other_id = es_create_entity(&game_state->world.entities);
+    Entity *other = es_get_entity(&game_state->world.entities, other_id);
+    
+    other->position = v2(32, 32);
+    other->size = (Vector2){16, 32};
+    other->color = RGBA32_RED;        
+
+    game_state->world.tilemap.tiles[0] = TILE_WALL;
+    game_state->world.tilemap.tiles[1] = TILE_WALL;
+    game_state->world.tilemap.tiles[2] = TILE_WALL;
+    game_state->world.tilemap.tiles[3] = TILE_WALL;
 }

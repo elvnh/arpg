@@ -223,6 +223,10 @@ typedef struct {
 } GameCode;
 
 #define GAME_SO_NAME "libgame.so"
+#define BEGIN_IGNORE_FUNCTION_PTR_WARNINGS              \
+    _Pragma("GCC diagnostic push");                     \
+    _Pragma("GCC diagnostic ignored \"-Wpedantic\"");    
+#define END_IGNORE_FUNCTION_PTR_WARNINGS _Pragma("GCC diagnostic pop")
 
 static void load_game_code(GameCode *game_code, String so_path, LinearArena *scratch)
 {
@@ -242,9 +246,13 @@ static void load_game_code(GameCode *game_code, String so_path, LinearArena *scr
     ASSERT(initialize);
     ASSERT(update_and_render);
 
+    BEGIN_IGNORE_FUNCTION_PTR_WARNINGS;
+
     game_code->handle = handle;
     game_code->initialize = initialize;
     game_code->update_and_render = (GameUpdateAndRender *)update_and_render;
+
+    END_IGNORE_FUNCTION_PTR_WARNINGS;
 }
 
 static void unload_game_code(GameCode *game_code)

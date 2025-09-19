@@ -8,9 +8,7 @@
 
 /*
   TODO:
-  - Removing entities
   - Entity slot generations
-  - Dense array of alive entity ids
   - Components
 */
 
@@ -24,7 +22,8 @@ typedef struct {
 } Entity;
 
 typedef struct {
-    Entity entity;
+    EntityIndex alive_entity_array_index; // Used when removing entity
+    Entity      entity;
 } EntitySlot;
 
 typedef struct {
@@ -38,12 +37,15 @@ typedef struct {
 } EntityIDQueue;
 
 typedef struct {
-    EntitySlot entities[MAX_ENTITIES];    
-    EntityIDQueue free_id_queue;
+    EntitySlot     entities[MAX_ENTITIES];
+    EntityIDQueue  free_id_queue;
+    EntityID       alive_entity_ids[MAX_ENTITIES];
+    EntityIndex    alive_entity_count; 
 } EntityStorage;
 
 void     es_initialize(EntityStorage *es);
 EntityID es_create_entity(EntityStorage *es);
+void     es_remove_entity(EntityStorage *es, EntityID id);
 Entity  *es_get_entity(EntityStorage *es, EntityID id);
 
 #endif //ENTITY_H

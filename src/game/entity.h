@@ -5,11 +5,6 @@
 #include "base/rgba.h"
 #include "component.h"
 
-/*
-  TODO:
-  - Entity archetypes?
-*/
-
 #define MAX_ENTITIES 32
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))

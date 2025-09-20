@@ -1,9 +1,11 @@
 #ifndef TILEMAP_H
 #define TILEMAP_H
 
-#define TILEMAP_WIDTH 4
-#define TILEMAP_HEIGHT 4
-#define TILE_SIZE 64
+#include "base/linear_arena.h"
+#include "base/vector.h"
+
+#define TILEMAP_MAX_TILES 1024
+#define TILE_SIZE      64
 
 typedef enum {
     TILE_FLOOR = 0,
@@ -11,20 +13,21 @@ typedef enum {
 } TileType;
 
 typedef struct {
-    TileType tiles[TILEMAP_WIDTH * TILEMAP_HEIGHT];
+    TileType type;
+} Tile;
+
+typedef struct TileNode {
+    Tile       tile;
+    Vector2i   coordinates;
+    struct TileNode  *next;
+} TileNode;
+
+typedef struct {
+    TileNode *tile_nodes[TILEMAP_MAX_TILES]; // NOTE: must be power of 2
 } Tilemap;
 
-static inline TileType *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
-{
-    TileType *result = 0;
-
-    // TODO: IN_RANGE macro
-    if ((coords.x >= 0) && (coords.x < TILEMAP_WIDTH) && (coords.y >= 0) && (coords.y < TILEMAP_HEIGHT)) {
-        result = &tilemap->tiles[coords.x + (TILEMAP_HEIGHT - 1 - coords.y) * TILEMAP_WIDTH];
-    }
-
-    return result;
-}
+void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena);
+Tile *tilemap_get_tile(Tilemap *tilemap, Vector2i coords);
 
 
 #endif //TILEMAP_H

@@ -10,6 +10,7 @@
 #include "base/line.h"
 #include "game/component.h"
 #include "game/entity.h"
+#include "game/tilemap.h"
 #include "input.h"
 #include "collision.h"
 #include "renderer/render_batch.h"
@@ -89,9 +90,9 @@ static void entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompo
     for (s32 y = min_tile_y - 1; y <= max_tile_y + 1; ++y) {
         for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
             Vector2i tile_coords = {x, y};
-            TileType *tile = tilemap_get_tile(&world->tilemap, tile_coords);
+            Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
-            if (!tile || (*tile == TILE_WALL)) {
+            if (!tile || (tile->type == TILE_WALL)) {
                 Rectangle entity_rect = { physics->position, collider->size };
                 Rectangle tile_rect = {
                     tile_to_world_coords(tile_coords),
@@ -195,14 +196,14 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena)
 {
-    for (s32 y = 0; y < TILEMAP_HEIGHT; ++y) {
-        for (s32 x = 0; x < TILEMAP_WIDTH; ++x) {
+    for (s32 y = 0; y < 4; ++y) {
+        for (s32 x = 0; x < 4; ++x) {
             Vector2i tile_coords = {x, y};
-            TileType *tile = tilemap_get_tile(&world->tilemap, tile_coords);
+            Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
             RGBA32 color;
 
             if (tile) {
-                switch (*tile) {
+                switch (tile->type) {
                     case TILE_FLOOR: {
                         color = (RGBA32){0.1f, 0.5f, 0.9f, 1.0f};
                     } break;
@@ -267,7 +268,7 @@ void game_initialize(GameState *game_state)
 {
     es_initialize(&game_state->world.entities);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 1; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);
         Entity *player = es_get_entity(&game_state->world.entities, id);
 
@@ -285,15 +286,11 @@ void game_initialize(GameState *game_state)
         ASSERT(es_has_component(player, ColliderComponent));
     }
 
-    /* EntityID other_id = es_create_entity(&game_state->world.entities); */
-    /* Entity *other = es_get_entity(&game_state->world.entities, other_id); */
-
-    /* other->position = v2(32, 32); */
-    /* other->size = (Vector2){16, 32}; */
-    /* other->color = RGBA32_RED;       */
-
-    game_state->world.tilemap.tiles[0] = TILE_WALL;
-    game_state->world.tilemap.tiles[1] = TILE_WALL;
-    game_state->world.tilemap.tiles[2] = TILE_WALL;
-    game_state->world.tilemap.tiles[3] = TILE_WALL;
+    // TODO: get rid of this
+    LinearArena temp_arena = la_create(default_allocator, MB(2));
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0}, TILE_FLOOR, &temp_arena);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 0}, TILE_FLOOR, &temp_arena);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0, 1}, TILE_FLOOR, &temp_arena);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 1}, TILE_WALL, &temp_arena);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){3, 3}, TILE_WALL, &temp_arena);
 }

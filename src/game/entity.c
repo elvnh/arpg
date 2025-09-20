@@ -131,6 +131,7 @@ EntitySlot *get_entity_slot(EntityStorage *es, EntityID id)
 
     return result;
 }
+
 EntityID es_create_entity(EntityStorage *es)
 {
     EntityID id = get_new_entity_id(es);

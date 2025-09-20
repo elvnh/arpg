@@ -209,7 +209,7 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 #include "game/game.h"
 
 typedef void (GameInitialize)(GameState *);
-typedef void (GameUpdateAndRender)(GameState *, RenderBatch *, const AssetList *, FrameData, LinearArena *);
+typedef void (GameUpdateAndRender)(GameState *, RenderBatchList *, const AssetList *, FrameData, LinearArena *);
 
 typedef struct {
     void *handle;
@@ -236,15 +236,18 @@ static void load_game_code(GameCode *game_code, String so_path, LinearArena *scr
     void *handle = dlopen(so_path.data, RTLD_NOW);
 
     if (!handle) {
-        fprintf(stderr, "%s\n", dlerror());
+        goto error;
     }
 
     void *initialize = dlsym(handle, "game_initialize");
     void *update_and_render = dlsym(handle, "game_update_and_render");
 
+    if (!initialize || !update_and_render) {
+        goto error;
+    }
+
     ASSERT(initialize);
     ASSERT(update_and_render);
-
 
     BEGIN_IGNORE_FUNCTION_PTR_WARNINGS;
 
@@ -253,6 +256,12 @@ static void load_game_code(GameCode *game_code, String so_path, LinearArena *scr
     game_code->update_and_render = (GameUpdateAndRender *)update_and_render;
 
     END_IGNORE_FUNCTION_PTR_WARNINGS;
+
+    return;
+
+  error:
+    fprintf(stderr, "%s\n", dlerror());
+    ASSERT(0);    
 }
 
 static void unload_game_code(GameCode *game_code)
@@ -453,8 +462,6 @@ int main()
         .white_texture = assets_register_texture(&assets, str_lit("white.png"), &frame_arena),
     };
 
-    RenderBatch rb = {0};
-
     GameState game_state = {0};
 
     String executable_dir = platform_get_executable_directory(main_allocator, &frame_arena);
@@ -476,6 +483,8 @@ int main()
     platform_set_scroll_value_storage(&input.scroll_delta, window);
 
     game_code.initialize(&game_state);
+
+    RenderBatchList render_batches = {0};
 
     while (!platform_window_should_close(window)) {
         time_point_new = platform_get_seconds_since_launch();
@@ -499,7 +508,6 @@ int main()
         platform_update_input(&input, window);
 
         renderer_backend_clear(backend);
-        rb.entry_count = 0;
 
         FrameData frame_data = {
             .dt = dt,
@@ -508,9 +516,12 @@ int main()
             .window_height = WINDOW_HEIGHT,
         };
 
-        game_code.update_and_render(&game_state, &rb, &asset_list, frame_data, &frame_arena);
+        list_clear(&render_batches);
+        game_code.update_and_render(&game_state, &render_batches, &asset_list, frame_data, &frame_arena);
 
-        execute_render_commands(&rb, &assets, backend, &frame_arena);
+        for (RenderBatchNode *node = list_head(&render_batches); node; node = list_next(node)) {
+            execute_render_commands(&node->render_batch, &assets, backend, &frame_arena);
+        }
 
         input.scroll_delta = 0.0f;
         platform_poll_events(window);

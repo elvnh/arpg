@@ -76,6 +76,12 @@
         }                                                               \
     } while (0)
 
+#define list_clear(list)                        \
+    do {                                        \
+    (list)->head = 0;                           \
+    (list)->tail = 0;                           \
+    } while (0);
+
 #define list_pop_head(list) list_remove((list), (list)->head)
 #define list_pop_tail(list) list_remove((list), (list)->tail)
 

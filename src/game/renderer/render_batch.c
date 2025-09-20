@@ -9,6 +9,16 @@
 
 #define allocate_render_cmd(arena, kind) init_render_cmd(arena, kind)
 
+RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, LinearArena *arena)
+{
+    RenderBatchNode *node = la_allocate_item(arena, RenderBatchNode);
+    list_push_back(list, node);
+
+    node->render_batch.projection = projection;
+
+    return &node->render_batch;
+}
+
 static int sort_cmp(const void *a, const void *b)
 {
     const RenderEntry *entry_a = a;
@@ -23,7 +33,7 @@ static int sort_cmp(const void *a, const void *b)
     return 0;
 }
 
-void render_batch_sort(RenderBatch *rb)
+void rb_sort_entries(RenderBatch *rb)
 {
     // TODO: don't use qsort here, use a stable sort
     qsort(rb->entries, (usize)rb->entry_count, sizeof(*rb->entries), sort_cmp);

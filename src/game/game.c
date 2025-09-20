@@ -189,9 +189,6 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena)
 {
-    // TODO: set this when creating render btach
-    rb->projection = camera_get_matrix(world->camera, frame_data.window_width, frame_data.window_height);
-
     for (s32 y = 0; y < TILEMAP_HEIGHT; ++y) {
         for (s32 x = 0; x < TILEMAP_WIDTH; ++x) {
             Vector2i tile_coords = {x, y};
@@ -226,6 +223,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
     for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
         EntityID id = world->entities.alive_entity_ids[i];
         Entity *entity = es_get_entity(&world->entities, id);
+
         entity_render(entity, rb, assets, frame_arena);
     }
 }
@@ -241,19 +239,22 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
     world_update(&game_state->world, input, dt);
 }
 
-static void game_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
+static void game_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
     FrameData frame_data, LinearArena *frame_arena)
 {
-    world_render(&game_state->world, render_cmds, assets, frame_data, frame_arena);
+    Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_width, frame_data.window_height);
+    RenderBatch *rb = rb_list_push_new(rbs, proj, frame_arena);
 
-    render_batch_sort(render_cmds);
+    world_render(&game_state->world, rb, assets, frame_data, frame_arena);
+
+    rb_sort_entries(rb);
 }
 
-void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
+void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
     FrameData frame_data, LinearArena *frame_arena)
 {
     game_update(game_state, frame_data.input, frame_data.dt, frame_arena);
-    game_render(game_state, render_cmds, assets, frame_data, frame_arena);
+    game_render(game_state, rbs, assets, frame_data, frame_arena);
 }
 
 void game_initialize(GameState *game_state)

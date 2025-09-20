@@ -17,7 +17,7 @@ typedef struct {
     s32 window_height;
 } FrameData;
 
-void game_update_and_render(GameState *game_state, RenderBatch *render_cmds, const AssetList *assets,
+void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
     FrameData frame_data, LinearArena *frame_arena);
 void game_initialize(GameState *game_state);
 

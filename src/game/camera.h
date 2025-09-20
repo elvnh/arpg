@@ -3,9 +3,9 @@
 
 #include "base/matrix.h"
 
-#define ZOOM_MIN_VALUE  0.0f
+#define ZOOM_MIN_VALUE  -0.9f
 #define ZOOM_MAX_VALUE  10.0f
-#define ZOOM_SPEED      0.05f
+#define ZOOM_SPEED      0.1f
 
 // TODO: lerping to target position
 

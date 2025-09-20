@@ -7,7 +7,7 @@
 #define ZOOM_MIN_VALUE          -0.9f
 #define ZOOM_MAX_VALUE           10.0f
 #define ZOOM_SPEED               0.15f
-#define ZOOM_INTERPOLATE_SPEED   12.0f
+#define ZOOM_INTERPOLATE_SPEED   5.0f
 
 typedef struct {
     Vector2 position;
@@ -31,8 +31,9 @@ static inline Matrix4 camera_get_matrix(Camera cam, s32 window_width, s32 window
 
 static inline void camera_update(Camera *cam, f32 dt)
 {
-    f32 x = (1.0f + cam->zoom) / (1.0f + cam->target_zoom);
-    f32 new_zoom = interpolate(cam->zoom, cam->target_zoom, x * ZOOM_INTERPOLATE_SPEED * dt);
+    f32 t = (1.0f + cam->zoom) / (1.0f + cam->target_zoom);
+    f32 x = t * ZOOM_INTERPOLATE_SPEED * dt;
+    f32 new_zoom = interpolate(cam->zoom, cam->target_zoom, sin_f32(x * PI * 0.5f));
 
     cam->zoom = CLAMP(new_zoom, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
 }

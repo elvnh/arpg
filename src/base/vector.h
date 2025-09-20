@@ -124,4 +124,16 @@ static inline b32 v2_is_zero(Vector2 v)
     return result;
 }
 
+static inline Vector2 v2_interpolate(Vector2 a, Vector2 b, f32 speed)
+{
+    f32 x_ratio = (1.0f + a.x) / (1.0f + b.x);
+    f32 y_ratio = (1.0f + a.y) / (1.0f + b.y);
+
+    f32 new_x = interpolate_sin(a.x, b.x, x_ratio * speed);
+    f32 new_y = interpolate_sin(a.y, b.y, y_ratio * speed);
+
+    Vector2 result = v2(new_x, new_y);
+    return result;
+}
+
 #endif //VECTOR2_H

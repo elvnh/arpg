@@ -5,6 +5,8 @@
 
 #include "typedefs.h"
 
+#define PI 3.1415926535f
+
 static inline f32 abs_f32(f32 n)
 {
     f32 result = (f32)fabs((f64)n);
@@ -27,6 +29,13 @@ static inline f32 sin_f32(f32 n)
 static inline f32 interpolate(f32 a, f32 b, f32 t)
 {
     f32 result = (a * (1.0f - t)) + (b * t);
+
+    return result;
+}
+
+static inline f32 interpolate_sin(f32 a, f32 b, f32 t)
+{
+    f32 result = interpolate(a, b, sin_f32(t * PI * 0.5f));
 
     return result;
 }

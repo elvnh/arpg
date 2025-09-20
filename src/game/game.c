@@ -149,15 +149,13 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 {
     ASSERT(world->entities.alive_entity_count >= 1);
 
-
     EntityID player_id = world->entities.alive_entity_ids[0];
     Entity *player = es_get_entity(&world->entities, player_id);
     PhysicsComponent *physics = es_get_component(player, PhysicsComponent);
 
     if (physics) {
-        world->camera.position = physics->position;
+        camera_set_target(&world->camera, physics->position);
     }
-
 
     camera_zoom(&world->camera, (s32)input->scroll_delta);
     camera_update(&world->camera, dt);

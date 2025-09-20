@@ -70,7 +70,7 @@ static void entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompo
     f32 entity_width = collider->size.x;
     f32 entity_height = collider->size.y;
 
-    
+
     f32 min_x = MIN(old_entity_pos.x, new_entity_pos.x);
     f32 max_x = MAX(old_entity_pos.x, new_entity_pos.x) + entity_width;
     f32 min_y = MIN(old_entity_pos.y, new_entity_pos.y);
@@ -85,7 +85,7 @@ static void entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompo
         for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
             Vector2i tile_coords = {x, y};
             TileType *tile = tilemap_get_tile(&world->tilemap, tile_coords);
-            
+
             if (!tile || (*tile == TILE_WALL)) {
                 Rectangle entity_rect = { physics->position, collider->size };
                 Rectangle tile_rect = {
@@ -149,6 +149,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 {
     ASSERT(world->entities.alive_entity_count >= 1);
 
+
     EntityID player_id = world->entities.alive_entity_ids[0];
     Entity *player = es_get_entity(&world->entities, player_id);
     PhysicsComponent *physics = es_get_component(player, PhysicsComponent);
@@ -157,7 +158,9 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
         world->camera.position = physics->position;
     }
 
+
     camera_zoom(&world->camera, (s32)input->scroll_delta);
+    camera_update(&world->camera, dt);
 
     f32 speed = 250.0f;
 
@@ -189,6 +192,8 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena)
 {
+
+
     for (s32 y = 0; y < TILEMAP_HEIGHT; ++y) {
         for (s32 x = 0; x < TILEMAP_WIDTH; ++x) {
             Vector2i tile_coords = {x, y};
@@ -276,15 +281,15 @@ void game_initialize(GameState *game_state)
         collider->size = v2(32.0f, (f32)(16 * (i + 1)));
 
         ASSERT(es_has_component(player, PhysicsComponent));
-        ASSERT(es_has_component(player, ColliderComponent));        
+        ASSERT(es_has_component(player, ColliderComponent));
     }
 
     /* EntityID other_id = es_create_entity(&game_state->world.entities); */
     /* Entity *other = es_get_entity(&game_state->world.entities, other_id); */
-    
+
     /* other->position = v2(32, 32); */
     /* other->size = (Vector2){16, 32}; */
-    /* other->color = RGBA32_RED;       */  
+    /* other->color = RGBA32_RED;       */
 
     game_state->world.tilemap.tiles[0] = TILE_WALL;
     game_state->world.tilemap.tiles[1] = TILE_WALL;

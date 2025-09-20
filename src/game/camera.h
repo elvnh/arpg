@@ -1,17 +1,18 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "base/maths.h"
 #include "base/matrix.h"
 
-#define ZOOM_MIN_VALUE  -0.9f
-#define ZOOM_MAX_VALUE  10.0f
-#define ZOOM_SPEED      0.1f
-
-// TODO: lerping to target position
+#define ZOOM_MIN_VALUE          -0.9f
+#define ZOOM_MAX_VALUE           10.0f
+#define ZOOM_SPEED               0.15f
+#define ZOOM_INTERPOLATE_SPEED   12.0f
 
 typedef struct {
     Vector2 position;
     f32 zoom;
+    f32 target_zoom;
 } Camera;
 
 static inline Matrix4 camera_get_matrix(Camera cam, s32 window_width, s32 window_height)
@@ -28,6 +29,14 @@ static inline Matrix4 camera_get_matrix(Camera cam, s32 window_width, s32 window
     return result;
 }
 
+static inline void camera_update(Camera *cam, f32 dt)
+{
+    f32 x = (1.0f + cam->zoom) / (1.0f + cam->target_zoom);
+    f32 new_zoom = interpolate(cam->zoom, cam->target_zoom, x * ZOOM_INTERPOLATE_SPEED * dt);
+
+    cam->zoom = CLAMP(new_zoom, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
+}
+
 static inline void camera_change_zoom(Camera *cam, f32 delta)
 {
     f32 new_zoom = cam->zoom + delta;
@@ -39,10 +48,11 @@ static inline void camera_zoom(Camera *cam, s32 direction)
 {
     if (direction != 0) {
         ASSERT((direction == -1) || (direction == 1));
-        f32 x = (direction == -1) ? (1.0f - ZOOM_SPEED) : (1.0f + ZOOM_SPEED);
-        f32 new_zoom = (1.0f + cam->zoom) * x;
 
-        cam->zoom = CLAMP(new_zoom - 1.0f, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
+        f32 x = (direction == -1) ? (1.0f - ZOOM_SPEED) : (1.0f + ZOOM_SPEED);
+        f32 new_target = (1.0f + cam->target_zoom) * x;
+
+        cam->target_zoom = CLAMP(new_target - 1.0f, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
     }
 }
 

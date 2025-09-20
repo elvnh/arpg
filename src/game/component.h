@@ -7,6 +7,9 @@
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
+#define ES_IMPL_COMP_ENUM_BIT_VALUE(e) ((u64)1 << (e))
+
+#define component_flag(type) ES_IMPL_COMP_ENUM_BIT_VALUE(ES_IMPL_COMP_ENUM_NAME(type))
 
 typedef u64 ComponentBitset;
 
@@ -19,11 +22,13 @@ typedef enum {
 
 typedef struct {
     Vector2 position;
-    Vector2 velocity;    
+    Vector2 velocity;
 } PhysicsComponent;
 
 typedef struct {
-    Vector2 size;    
+    Vector2 size;
 } ColliderComponent;
+
+
 
 #endif //COMPONENT_H

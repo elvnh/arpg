@@ -8,6 +8,7 @@
 #include "base/utils.h"
 #include "base/vector.h"
 #include "base/line.h"
+#include "game/component.h"
 #include "game/entity.h"
 #include "input.h"
 #include "collision.h"
@@ -15,13 +16,17 @@
 
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
-    // TODO: provide components instead
-    Rectangle rect = {
-	.position = es_get_component(entity, PhysicsComponent)->position,
-	.size = es_get_component(entity, ColliderComponent)->size
-    };
+    if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ColliderComponent))) {
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+        ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
-    rb_push_rect(rb, scratch, rect, entity->color, assets->shader2, RENDER_LAYER_ENTITIES);
+        Rectangle rect = {
+            .position = physics->position,
+            .size = collider->size
+        };
+
+        rb_push_rect(rb, scratch, rect, entity->color, assets->shader2, RENDER_LAYER_ENTITIES);
+    }
 }
 
 static Vector2i world_to_tile_coords(Vector2 world_coords)
@@ -190,8 +195,6 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena)
 {
-
-
     for (s32 y = 0; y < TILEMAP_HEIGHT; ++y) {
         for (s32 x = 0; x < TILEMAP_WIDTH; ++x) {
             Vector2i tile_coords = {x, y};

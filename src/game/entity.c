@@ -2,6 +2,7 @@
 
 #include "entity.h"
 #include "base/utils.h"
+#include "game/component.h"
 
 static ssize component_offsets[] = {
     #define COMPONENT(type) offsetof(Entity, ES_IMPL_COMP_FIELD_NAME(type)),
@@ -17,36 +18,20 @@ static ssize get_component_offset(ComponentType type)
     return result;
 }
 
-static u32 component_bit_value(ComponentType type)
-{
-    ASSERT(type < COMPONENT_COUNT);
-    u32 result = 1 << type;
-
-    return result;
-}
-
-b32 es_impl_has_component(Entity *entity, ComponentType type)
-{
-    u32 mask = component_bit_value(type);
-    b32 result = (entity->active_components & mask) != 0;
-
-    return result;
-}
-
 void *es_impl_add_component(Entity *entity, ComponentType type)
 {
-    ASSERT(!es_impl_has_component(entity, type));
+    ASSERT(!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
 
-    entity->active_components |= component_bit_value(type);
+    entity->active_components |= ES_IMPL_COMP_ENUM_BIT_VALUE(type);
     void *result = es_impl_get_component(entity, type);
     ASSERT(result);
-    
+
     return result;
 }
 
 void *es_impl_get_component(Entity *entity, ComponentType type)
 {
-    if (!es_impl_has_component(entity, type)) {
+    if (!es_has_components(entity, type)) {
         return 0;
     }
 
@@ -152,7 +137,7 @@ EntityID es_create_entity(EntityStorage *es)
 
     EntityIndex alive_index = es->alive_entity_count++;
     es->alive_entity_ids[alive_index] = id;
-    
+
     EntitySlot *slot = get_entity_slot(es, id);
     slot->alive_entity_array_index = alive_index;
     slot->entity = (Entity){0};
@@ -175,7 +160,7 @@ void es_remove_entity(EntityStorage *es, EntityID id)
     ASSERT(removed_id->generation == id.generation);
     *removed_id = *last_alive;
     es->alive_entity_count--;
-    
+
     EntityGeneration new_generation;
     if (add_overflows_s32(id.generation, 1)) {
         // TODO: what to do when generation overflows? inactivate slot?

@@ -38,17 +38,11 @@ static inline Matrix4 camera_get_matrix(Camera cam, s32 window_width, s32 window
 
 static inline void camera_update(Camera *cam, f32 dt)
 {
-    {
-        f32 t = (1.0f + cam->zoom) / (1.0f + cam->target_zoom);
-        f32 x = t * ZOOM_INTERPOLATE_SPEED * dt;
-        f32 new_zoom = interpolate_sin(cam->zoom, cam->target_zoom, x);
+    f32 zoom_t = (1.0f + cam->zoom) / (1.0f + cam->target_zoom);
+    f32 new_zoom = interpolate_sin(cam->zoom, cam->target_zoom, zoom_t * ZOOM_INTERPOLATE_SPEED * dt);
 
-        cam->zoom = CLAMP(new_zoom, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
-    }
-
-    {
-        cam->position = v2_interpolate(cam->position, cam->target_position, CAMERA_FOLLOW_SPEED * dt);
-    }
+    cam->zoom = CLAMP(new_zoom, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
+    cam->position = v2_interpolate(cam->position, cam->target_position, CAMERA_FOLLOW_SPEED * dt);
 }
 
 static inline void camera_set_target(Camera *cam, Vector2 target)

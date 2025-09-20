@@ -14,10 +14,11 @@
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_get_component(entity, type) ((type *)es_impl_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
-#define es_has_component(entity, type)         es_impl_has_component(entity, ES_IMPL_COMP_ENUM_NAME(type))
+#define es_has_component(entity, type)          es_has_components((entity), component_flag(type))
+#define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
 
 typedef s32 EntityIndex;
-typedef s32 EntityGeneration; 
+typedef s32 EntityGeneration;
 
 typedef struct {
     ComponentBitset active_components;
@@ -25,7 +26,7 @@ typedef struct {
 
     #define COMPONENT(type) type ES_IMPL_COMP_FIELD_NAME(type);
         COMPONENT_LIST
-    #undef COMPONENT    
+    #undef COMPONENT
 } Entity;
 
 typedef struct {
@@ -49,7 +50,7 @@ typedef struct {
     EntitySlot     entities[MAX_ENTITIES];
     EntityIDQueue  free_id_queue;
     EntityID       alive_entity_ids[MAX_ENTITIES];
-    EntityIndex    alive_entity_count; 
+    EntityIndex    alive_entity_count;
 } EntityStorage;
 
 void       es_initialize(EntityStorage *es);
@@ -58,6 +59,5 @@ void       es_remove_entity(EntityStorage *es, EntityID id);
 Entity    *es_get_entity(EntityStorage *es, EntityID id);
 void      *es_impl_add_component(Entity *entity, ComponentType type); // TODO: allow providing initialized component?
 void      *es_impl_get_component(Entity *entity, ComponentType type);
-b32        es_impl_has_component(Entity *entity, ComponentType type);
 
 #endif //ENTITY_H

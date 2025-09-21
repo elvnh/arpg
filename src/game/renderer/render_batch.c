@@ -55,6 +55,10 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
             result = la_allocate_item(arena, RectangleCmd);
         } break;
 
+        case RENDER_CMD_OUTLINED_RECTANGLE: {
+            result = la_allocate_item(arena, OutlinedRectangleCmd);
+        } break;
+
         case RENDER_CMD_CIRCLE: {
             result = la_allocate_item(arena, CircleCmd);
         } break;
@@ -98,6 +102,20 @@ RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     return rb_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);
+}
+
+RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
+    f32 thickness, ShaderHandle shader, RenderLayer layer)
+{
+    OutlinedRectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_OUTLINED_RECTANGLE);
+    cmd->rect = rect;
+    cmd->color = color;
+    cmd->thickness = thickness;
+
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, 0);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
 }
 
 RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,

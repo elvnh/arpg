@@ -5,8 +5,11 @@
 #include "base/rectangle.h"
 #include "base/string8.h"
 
+// TODO: X macro to avoid defining new commands in multiple places
+
 typedef enum {
     RENDER_CMD_RECTANGLE,
+    RENDER_CMD_OUTLINED_RECTANGLE,
     RENDER_CMD_CIRCLE,
     RENDER_CMD_LINE,
 } RenderCmdKind;
@@ -32,6 +35,13 @@ typedef struct {
     Rectangle rect;
     RGBA32 color;
 } RectangleCmd;
+
+typedef struct {
+    RenderCmdHeader header;
+    Rectangle rect;
+    RGBA32 color;
+    f32 thickness;
+} OutlinedRectangleCmd;
 
 typedef struct {
     RenderCmdHeader header;

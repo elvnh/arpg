@@ -73,6 +73,47 @@ static RendererState switch_renderer_state(RendererState new_state, AssetManager
 
 #define INVALID_RENDERER_STATE (RendererState){{(AssetID)-1}, {(AssetID)-1}}
 
+// TODO: move elsewhere
+static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f32 thickness, RGBA32 color)
+{
+    Vector2 dir_r = v2_mul_s(v2_norm(v2_sub(end, start)), thickness / 2.0f);
+    Vector2 dir_l = v2_neg(dir_r);
+    Vector2 dir_u = { -dir_r.y, dir_r.x };
+    Vector2 dir_d = v2_neg(dir_u);
+
+    Vector2 tl = v2_add(v2_add(start, dir_l), dir_u);
+    Vector2 tr = v2_add(end, v2_add(dir_r, dir_u));
+    Vector2 br = v2_add(end, v2_add(dir_d, dir_r));
+    Vector2 bl = v2_add(start, v2_add(dir_d, dir_l));
+
+    // TODO: UV constants to make this easier to remember
+    Vertex vtl = {
+	.position = tl,
+	.uv = {0,1},
+	.color = color
+    };
+
+    Vertex vtr = {
+	.position = tr,
+	.uv = {1, 1},
+	.color = color
+    };
+
+    Vertex vbr = {
+	.position = br,
+	.uv = {1, 0},
+	.color = color
+    };
+
+    Vertex vbl = {
+	.position = bl,
+	.uv = {0, 0},
+	.color = color
+    };
+
+    renderer_backend_draw_quad(backend, vtl, vtr, vbr, vbl);
+}
+
 static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
     RendererBackend *backend, LinearArena *scratch)
 {
@@ -114,9 +155,27 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 RectangleCmd *cmd = (RectangleCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color);
 
-                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+		renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
 		    verts.bottom_right, verts.bottom_left);
             } break;
+
+            case RENDER_CMD_OUTLINED_RECTANGLE: {
+                OutlinedRectangleCmd *cmd = (OutlinedRectangleCmd *)entry->data;
+
+		RGBA32 color = cmd->color;
+		f32 thick = cmd->thickness;
+
+		Vector2 tl = rect_top_left(cmd->rect);
+		Vector2 tr = rect_top_right(cmd->rect);
+		Vector2 br = rect_bottom_right(cmd->rect);
+		Vector2 bl = rect_bottom_left(cmd->rect);
+
+		render_line(backend, tl, tr, thick, color);
+		render_line(backend, tr, br, thick, color);
+		render_line(backend, br, bl, thick, color);
+		render_line(backend, bl, tl, thick, color);
+
+	    } break;
 
             case RENDER_CMD_CIRCLE: {
                 CircleCmd *cmd = (CircleCmd *)entry->data;
@@ -155,48 +214,7 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
             case RENDER_CMD_LINE: {
                 LineCmd *cmd = (LineCmd *)entry->data;
 
-                Vector2 start = cmd->start;
-                Vector2 end = cmd->end;
-                f32 thick = cmd->thickness;
-                RGBA32 color = cmd->color;
-                ASSERT(thick > 0.0f);
-
-                Vector2 dir_r = v2_mul_s(v2_norm(v2_sub(end, start)), thick / 2.0f);
-                Vector2 dir_l = v2_neg(dir_r);
-                Vector2 dir_u = { -dir_r.y, dir_r.x };
-                Vector2 dir_d = v2_neg(dir_u);
-
-                Vector2 tl = v2_add(v2_add(start, dir_l), dir_u);
-                Vector2 tr = v2_add(end, v2_add(dir_r, dir_u));
-                Vector2 br = v2_add(end, v2_add(dir_d, dir_r));
-                Vector2 bl = v2_add(start, v2_add(dir_d, dir_l));
-
-                // TODO: UV constants to make this easier to remember
-                Vertex vtl = {
-                    .position = tl,
-                    .uv = {0,1},
-                    .color = color
-                };
-
-                Vertex vtr = {
-                    .position = tr,
-                    .uv = {1, 1},
-                    .color = color
-                };
-
-                Vertex vbr = {
-                    .position = br,
-                    .uv = {1, 0},
-                    .color = color
-                };
-
-                Vertex vbl = {
-                    .position = bl,
-                    .uv = {0, 0},
-                    .color = color
-                };
-
-                renderer_backend_draw_quad(backend, vtl, vtr, vbr, vbl);
+		render_line(backend, cmd->start, cmd->end, cmd->thickness, cmd->color);
             } break;
 
            INVALID_DEFAULT_CASE;
@@ -220,7 +238,7 @@ typedef struct {
 #define GAME_SO_NAME "libgame.so"
 #define BEGIN_IGNORE_FUNCTION_PTR_WARNINGS              \
     _Pragma("GCC diagnostic push");                     \
-    _Pragma("GCC diagnostic ignored \"-Wpedantic\"");    
+    _Pragma("GCC diagnostic ignored \"-Wpedantic\"");
 #define END_IGNORE_FUNCTION_PTR_WARNINGS _Pragma("GCC diagnostic pop")
 
 static void load_game_code(GameCode *game_code, String so_path, LinearArena *scratch)
@@ -261,7 +279,7 @@ static void load_game_code(GameCode *game_code, String so_path, LinearArena *scr
 
   error:
     fprintf(stderr, "%s\n", dlerror());
-    ASSERT(0);    
+    ASSERT(0);
 }
 
 static void unload_game_code(GameCode *game_code)

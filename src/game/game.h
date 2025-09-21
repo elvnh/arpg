@@ -3,11 +3,13 @@
 
 #include "base/matrix.h"
 #include "renderer/render_batch.h"
+#include "game/quad_tree.h"
 #include "game_world.h"
 #include "input.h"
 
 typedef struct {
     GameWorld world;
+    QuadTree quad_tree;
 } GameState;
 
 typedef struct {

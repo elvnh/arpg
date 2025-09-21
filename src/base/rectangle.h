@@ -30,8 +30,16 @@ typedef struct {
     Vertex bottom_left;
 } RectangleVertices;
 
+typedef struct {
+    Rectangle top_left;
+    Rectangle top_right;
+    Rectangle bottom_right;
+    Rectangle bottom_left;
+} RectangleQuadrants;
+
 static inline Vector2 rect_top_left(Rectangle rect)
 {
+    // TODO: this is wrong
     Vector2 result = rect.position;
 
     return result;
@@ -267,6 +275,42 @@ static inline b32 rect_contains_rect(Rectangle a, Rectangle b)
 	&& a_right >= b_right
 	&& a_bottom <= b_bottom
 	&& a_top >= b_top;
+
+    return result;
+}
+
+static inline RectangleQuadrants rect_quadrants(Rectangle rect)
+{
+    f32 half_width = rect.size.x / 2.0f;
+    f32 half_height = rect.size.y / 2.0f;
+    Vector2 size = v2(half_width, half_height);
+
+    Rectangle top_left = {
+	.position = v2(rect.position.x, rect.position.y + half_height),
+	.size = size
+    };
+
+    Rectangle top_right = {
+	.position = v2(rect.position.x + half_width, rect.position.y + half_height),
+	.size = size
+    };
+
+    Rectangle bottom_right = {
+	.position = v2(rect.position.x + half_width, rect.position.y),
+	.size = size
+    };
+
+    Rectangle bottom_left = {
+	.position = v2(rect.position.x, rect.position.y),
+	.size = size
+    };
+
+    RectangleQuadrants result = {
+	.top_left = top_left,
+	.top_right = top_right,
+	.bottom_right = bottom_right,
+	.bottom_left = bottom_left
+    };
 
     return result;
 }

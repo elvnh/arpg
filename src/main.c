@@ -170,6 +170,7 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 		Vector2 br = rect_bottom_right(cmd->rect);
 		Vector2 bl = rect_bottom_left(cmd->rect);
 
+		// TODO: These lines overlap which looks wrong when color is transparent
 		render_line(backend, tl, tr, thick, color);
 		render_line(backend, tr, br, thick, color);
 		render_line(backend, br, bl, thick, color);

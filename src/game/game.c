@@ -1,4 +1,5 @@
 #include "game.h"
+#include "asset.h"
 #include "base/allocator.h"
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
@@ -10,6 +11,7 @@
 #include "base/line.h"
 #include "game/component.h"
 #include "game/entity.h"
+#include "game/quad_tree.h"
 #include "game/tilemap.h"
 #include "input.h"
 #include "collision.h"
@@ -246,6 +248,30 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
     world_update(&game_state->world, input, dt);
 }
 
+static void render_tree(QuadTree *tree, RenderBatch *rb, LinearArena *arena,
+    const AssetList *assets, ssize depth)
+{
+    if (tree) {
+	render_tree(tree->top_left, rb, arena, assets, depth + 1);
+	render_tree(tree->top_right, rb, arena, assets, depth + 1);
+	render_tree(tree->bottom_right, rb, arena, assets, depth + 1);
+	render_tree(tree->bottom_left, rb, arena, assets, depth + 1);
+
+	static const RGBA32 colors[] = {
+	    {1.0f, 0.0f, 0.0f, 0.5f},
+	    {0.0f, 1.0f, 0.0f, 0.5f},
+	    {0.0f, 0.0f, 1.0f, 0.5f},
+	    {1.0f, 0.0f, 1.0f, 0.5f},
+	};
+
+	ASSERT(depth < ARRAY_COUNT(colors));
+
+	RGBA32 color = colors[depth];
+	rb_push_outlined_rect(rb, arena, tree->area, color, 4.0f, assets->shader2, 2);
+
+    }
+}
+
 static void game_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
     FrameData frame_data, LinearArena *frame_arena)
 {
@@ -253,6 +279,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
     RenderBatch *rb = rb_list_push_new(rbs, proj, frame_arena);
 
     world_render(&game_state->world, rb, assets, frame_data, frame_arena);
+    render_tree(&game_state->quad_tree, rb, frame_arena, assets, 0);
 
     rb_sort_entries(rb);
 }
@@ -293,4 +320,12 @@ void game_initialize(GameState *game_state)
     tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0, 1}, TILE_FLOOR, &temp_arena);
     tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 1}, TILE_WALL, &temp_arena);
     tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){3, 3}, TILE_WALL, &temp_arena);
+
+    // TODO: get size of world
+    qt_initialize(&game_state->quad_tree, (Rectangle){{0, 0}, {512, 512}});
+
+    Rectangle rect = {{1, 1}, {4, 4}};
+    Rectangle rect2 = {{10, 10}, {500, 500}};
+    qt_insert(&game_state->quad_tree, rect, 0, &temp_arena);
+    qt_insert(&game_state->quad_tree, rect2, 0, &temp_arena);
 }

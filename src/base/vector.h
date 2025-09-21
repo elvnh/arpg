@@ -132,13 +132,10 @@ static inline b32 v2i_eq(Vector2i a, Vector2i b)
     return result;
 }
 
-static inline Vector2 v2_interpolate(Vector2 a, Vector2 b, f32 speed)
+static inline Vector2 v2_interpolate(Vector2 a, Vector2 b, f32 t)
 {
-    f32 x_ratio = (1.0f + a.x) / (1.0f + b.x);
-    f32 y_ratio = (1.0f + a.y) / (1.0f + b.y);
-
-    f32 new_x = interpolate_sin(a.x, b.x, x_ratio * speed);
-    f32 new_y = interpolate_sin(a.y, b.y, y_ratio * speed);
+    f32 new_x = interpolate_sin(a.x, b.x, t);
+    f32 new_y = interpolate_sin(a.y, b.y, t);
 
     Vector2 result = v2(new_x, new_y);
     return result;

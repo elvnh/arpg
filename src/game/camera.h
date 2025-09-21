@@ -7,13 +7,8 @@
 #define ZOOM_MIN_VALUE          -0.9f
 #define ZOOM_MAX_VALUE           10.0f
 #define ZOOM_SPEED               0.15f
-#define ZOOM_INTERPOLATE_SPEED   5.0f
+#define ZOOM_INTERPOLATE_SPEED   7.0f
 #define CAMERA_FOLLOW_SPEED      10.0f
-
-/*
-   TODO:
-   - Camera acts weird when lower left corner of entity is colliding with wall
- */
 
 typedef struct {
     Vector2 position;
@@ -38,11 +33,10 @@ static inline Matrix4 camera_get_matrix(Camera cam, s32 window_width, s32 window
 
 static inline void camera_update(Camera *cam, f32 dt)
 {
-    f32 zoom_t = (1.0f + cam->zoom) / (1.0f + cam->target_zoom);
-    f32 new_zoom = interpolate_sin(cam->zoom, cam->target_zoom, zoom_t * ZOOM_INTERPOLATE_SPEED * dt);
-
+    f32 new_zoom = interpolate_sin(cam->zoom, cam->target_zoom, MIN(dt * ZOOM_INTERPOLATE_SPEED, 1.0f));
     cam->zoom = CLAMP(new_zoom, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
-    cam->position = v2_interpolate(cam->position, cam->target_position, CAMERA_FOLLOW_SPEED * dt);
+
+    cam->position = v2_interpolate(cam->position, cam->target_position, MIN(dt * CAMERA_FOLLOW_SPEED, 1.0f));
 }
 
 static inline void camera_set_target(Camera *cam, Vector2 target)

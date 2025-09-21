@@ -280,7 +280,7 @@ void game_initialize(GameState *game_state)
         physics->position = v2((f32)(16 * i), 16.0f);
 
         ColliderComponent *collider = es_add_component(player, ColliderComponent);
-        collider->size = v2(32.0f, (f32)(16 * (i + 1)));
+        collider->size = v2(32.0f, 32.0f);
 
         ASSERT(es_has_component(player, PhysicsComponent));
         ASSERT(es_has_component(player, ColliderComponent));

@@ -251,5 +251,24 @@ static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect,
     return result;
 }
 
+static inline b32 rect_contains_rect(Rectangle a, Rectangle b)
+{
+    f32 a_left = a.position.x;
+    f32 b_left = b.position.x;
+    f32 a_right = a.position.x + a.size.x;
+    f32 b_right = b.position.x + b.size.x;
+
+    f32 a_bottom = a.position.y;
+    f32 b_bottom = b.position.y;
+    f32 a_top = a.position.y + a.size.y;
+    f32 b_top = b.position.y + b.size.y;
+
+    b32 result = a_left <= b_left
+	&& a_right >= b_right
+	&& a_bottom <= b_bottom
+	&& a_top >= b_top;
+
+    return result;
+}
 
 #endif //RECTANGLE_H

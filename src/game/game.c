@@ -162,7 +162,14 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     PhysicsComponent *physics = es_get_component(player, PhysicsComponent);
 
     if (physics) {
-        camera_set_target(&world->camera, physics->position);
+        Vector2 target = physics->position;
+
+        if (es_has_component(player, ColliderComponent)) {
+            ColliderComponent *collider = es_get_component(player, ColliderComponent);
+            target = v2_add(target, v2_div_s(collider->size, 2));
+        }
+
+        camera_set_target(&world->camera, target);
     }
 
     camera_zoom(&world->camera, (s32)input->scroll_delta);

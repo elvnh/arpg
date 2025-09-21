@@ -71,7 +71,7 @@ static inline void qt_insert(QuadTree *qt, Rectangle area, ssize depth, LinearAr
 
     b32 no_children = !qt->top_left;
     RectangleQuadrants quads = rect_quadrants(qt->area);
-    b32 found = false;
+    b32 insert_in_this = false;
 
     if (depth < QUAD_TREE_MAX_DEPTH - 1) {
 	if (rect_contains_rect(quads.top_left, area)) {
@@ -99,13 +99,13 @@ static inline void qt_insert(QuadTree *qt, Rectangle area, ssize depth, LinearAr
 
 	    qt_insert(qt->bottom_left, area, depth + 1, arena);
 	} else {
-	    found = true;
+	    insert_in_this = true;
 	}
     } else {
-	found = true;
+	insert_in_this = true;
     }
 
-    if (found) {
+    if (insert_in_this) {
 	// insert here
     }
 }

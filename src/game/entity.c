@@ -113,7 +113,7 @@ void es_initialize(EntityStorage *es)
 static b32 entity_id_is_valid(EntityStorage *es, EntityID id)
 {
     b32 result = (id.slot_index < MAX_ENTITIES)
-        && (es->entities[id.slot_index].generation == id.generation);
+        && (es->entity_slots[id.slot_index].generation == id.generation);
 
     return result;
 }
@@ -127,7 +127,7 @@ static EntityID get_new_entity_id(EntityStorage *es)
 EntitySlot *get_entity_slot(EntityStorage *es, EntityID id)
 {
     ASSERT(id.slot_index < MAX_ENTITIES);
-    EntitySlot *result = &es->entities[id.slot_index];
+    EntitySlot *result = &es->entity_slots[id.slot_index];
 
     return result;
 }
@@ -179,7 +179,7 @@ void es_remove_entity(EntityStorage *es, EntityID id)
 Entity *es_get_entity(EntityStorage *es, EntityID id)
 {
     ASSERT(entity_id_is_valid(es, id));
-    Entity *result = &es->entities[id.slot_index].entity;
+    Entity *result = &es->entity_slots[id.slot_index].entity;
 
     return result;
 }

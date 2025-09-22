@@ -16,6 +16,7 @@
 #include "input.h"
 #include "collision.h"
 #include "renderer/render_batch.h"
+#include <stdio.h>
 
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
@@ -52,11 +53,21 @@ static Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
+static Rectangle get_entity_rect(PhysicsComponent *physics, ColliderComponent *collider)
+{
+    Rectangle result = {
+        physics->position,
+        collider->size
+    };
+
+    return result;
+}
+
 static void entity_vs_entity_collision(PhysicsComponent *physics_a, ColliderComponent *collider_a,
     PhysicsComponent *physics_b, ColliderComponent *collider_b, f32 *movement_fraction_left, f32 dt)
 {
-    Rectangle rect_a_ = { physics_a->position, collider_a->size};
-    Rectangle rect_b_ = { physics_b->position, collider_b->size};
+    Rectangle rect_a_ = get_entity_rect(physics_a, collider_a);
+    Rectangle rect_b_ = get_entity_rect(physics_b, collider_b);
 
     CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, rect_a_, rect_b_,
 	physics_a->velocity, physics_b->velocity, dt);
@@ -78,7 +89,6 @@ static void entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompo
     f32 entity_width = collider->size.x;
     f32 entity_height = collider->size.y;
 
-
     f32 min_x = MIN(old_entity_pos.x, new_entity_pos.x);
     f32 max_x = MAX(old_entity_pos.x, new_entity_pos.x) + entity_width;
     f32 min_y = MIN(old_entity_pos.y, new_entity_pos.y);
@@ -95,7 +105,7 @@ static void entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompo
             Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
             if (!tile || (tile->type == TILE_WALL)) {
-                Rectangle entity_rect = { physics->position, collider->size };
+                Rectangle entity_rect = get_entity_rect(physics, collider);
                 Rectangle tile_rect = {
                     tile_to_world_coords(tile_coords),
                     {(f32)TILE_SIZE, (f32)TILE_SIZE },
@@ -288,6 +298,8 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
     world_render(&game_state->world, rb, assets, frame_data, frame_arena);
     render_tree(&game_state->quad_tree, rb, frame_arena, assets, 0);
 
+    rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, assets->shader2, 3);
+
     rb_sort_entries(rb);
 }
 
@@ -302,7 +314,7 @@ void game_initialize(GameState *game_state)
 {
     es_initialize(&game_state->world.entities);
 
-    for (s32 i = 0; i < 1; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);
         Entity *player = es_get_entity(&game_state->world.entities, id);
 
@@ -311,10 +323,10 @@ void game_initialize(GameState *game_state)
 
         player->color = RGBA32_BLUE;
         PhysicsComponent *physics = es_add_component(player, PhysicsComponent);
-        physics->position = v2((f32)(16 * i), 16.0f);
+        physics->position = v2((f32)(16 * (i * 2)), 16.0f * ((f32)i * 2.0f));
 
         ColliderComponent *collider = es_add_component(player, ColliderComponent);
-        collider->size = v2(32.0f, 32.0f);
+        collider->size = v2(16.0f, 16.0f);
 
         ASSERT(es_has_component(player, PhysicsComponent));
         ASSERT(es_has_component(player, ColliderComponent));

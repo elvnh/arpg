@@ -39,29 +39,28 @@ typedef struct {
 
 static inline Vector2 rect_top_left(Rectangle rect)
 {
-    // TODO: this is wrong
-    Vector2 result = rect.position;
+    Vector2 result = v2_add(rect.position, v2(0.0f, rect.size.y));
 
     return result;
 }
 
 static inline Vector2 rect_top_right(Rectangle rect)
 {
-    Vector2 result = v2_add(rect.position, (Vector2){rect.size.x, 0});
+    Vector2 result = v2_add(rect.position, rect.size);
 
     return result;
 }
 
 static inline Vector2 rect_bottom_right(Rectangle rect)
 {
-    Vector2 result = v2_add(rect.position, (Vector2){rect.size.x, rect.size.y});
+    Vector2 result = v2_add(rect.position, v2(rect.size.x, 0.0f));
 
     return result;
 }
 
 static inline Vector2 rect_bottom_left(Rectangle rect)
 {
-    Vector2 result = v2_add(rect.position, (Vector2){0, rect.size.y});
+    Vector2 result = rect.position;
 
     return result;
 }
@@ -185,7 +184,7 @@ static inline b32 rect_intersects(Rectangle a, Rectangle b)
 static inline Rectangle rect_minkowski_diff(Rectangle a, Rectangle b)
 {
     Vector2 size = v2_add(a.size, b.size);
-    Vector2 left = v2_sub(a.position, rect_bottom_right(b));
+    Vector2 left = v2_sub(a.position, rect_top_right(b));
     Vector2 pos = { left.x, left.y };
 
     Rectangle result = { pos, size };
@@ -197,23 +196,23 @@ static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect,
     f32 epsilon)
 {
     Line left = {
-        rect.position,
-        v2(rect.position.x, rect.position.y + rect.size.y)
+        rect_bottom_left(rect),
+        rect_top_left(rect)
     };
 
     Line top = {
-        v2(rect.position.x, rect.position.y + rect.size.y),
-        v2(rect.position.x + rect.size.x, rect.position.y + rect.size.y)
+        rect_top_left(rect),
+        rect_top_right(rect)
     };
 
     Line right = {
-        v2(rect.position.x + rect.size.x, rect.position.y),
-        v2(rect.position.x + rect.size.x, rect.position.y + rect.size.y)
+        rect_top_right(rect),
+        rect_bottom_right(rect)
     };
 
     Line bottom = {
-        v2(rect.position.x, rect.position.y),
-        v2(rect.position.x + rect.size.x, rect.position.y)
+        rect_bottom_right(rect),
+        rect_bottom_left(rect)
     };
 
     RectangleSide side_of_collision = 0;

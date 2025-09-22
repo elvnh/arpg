@@ -42,7 +42,7 @@ typedef struct {
 } EntityIDQueue;
 
 typedef struct {
-    EntitySlot     entities[MAX_ENTITIES];
+    EntitySlot     entity_slots[MAX_ENTITIES];
     EntityIDQueue  free_id_queue;
     EntityID       alive_entity_ids[MAX_ENTITIES];
     EntityIndex    alive_entity_count;

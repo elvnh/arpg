@@ -18,13 +18,45 @@ static ssize get_component_offset(ComponentType type)
     return result;
 }
 
-void *es_impl_add_component(Entity *entity, ComponentType type)
+static EntityID get_entity_id_from_slot(EntityStorage *es, EntitySlot *slot)
+{
+    UNIMPLEMENTED;
+    (void)es;
+    (void)slot;
+    return (EntityID){0};
+}
+
+static inline Rectangle es_get_entity_quad_tree_area(Entity *entity)
+{
+    // TODO: don't assume it has these components
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    ColliderComponent *collider = es_get_component(entity, ColliderComponent);
+
+    Rectangle result = {
+        physics->position,
+        collider->size
+    };
+
+    return result;
+}
+
+void *es_impl_add_component(EntityStorage *es, Entity *entity, ComponentType type)
 {
     ASSERT(!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
 
     entity->active_components |= ES_IMPL_COMP_ENUM_BIT_VALUE(type);
     void *result = es_impl_get_component(entity, type);
     ASSERT(result);
+
+    if ((type == ES_IMPL_COMP_ENUM_NAME(PhysicsComponent))
+     || (type == ES_IMPL_COMP_ENUM_NAME(ColliderComponent))) {
+        // NOTE: this is safe as long as entity is first member of EntitySlot
+        EntitySlot *slot = (EntitySlot *)entity;
+        EntityID id = get_entity_id_from_slot(es, slot);
+        Rectangle rect = es_get_entity_quad_tree_area(entity);
+
+        slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, es, id, slot->quad_tree_location, rect, &es->arena);
+    }
 
     return result;
 }
@@ -96,9 +128,14 @@ static EntityID id_queue_pop(EntityIDQueue *queue)
     return id;
 }
 
-void es_initialize(EntityStorage *es)
+#define ES_MEMORY_SIZE MB(2)
+
+void es_initialize(EntityStorage *es, Rectangle world_area, LinearArena *parent_arena)
 {
+    es->arena = la_create(la_allocator(parent_arena), ES_MEMORY_SIZE);
+
     id_queue_initialize(&es->free_id_queue);
+    qt_initialize(&es->quad_tree, world_area);
 
     for (ssize i = 0; i < MAX_ENTITIES; ++i) {
         EntityID new_id = {
@@ -140,8 +177,8 @@ EntityID es_create_entity(EntityStorage *es)
     es->alive_entity_ids[alive_index] = id;
 
     EntitySlot *slot = get_entity_slot(es, id);
+    *slot = (EntitySlot){0};
     slot->alive_entity_array_index = alive_index;
-    slot->entity = (Entity){0};
 
     ASSERT(slot->generation == id.generation);
 

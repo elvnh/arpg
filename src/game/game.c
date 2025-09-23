@@ -311,7 +311,14 @@ void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const A
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
-    es_initialize(&game_state->world.entities);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0}, TILE_FLOOR, &game_memory->permanent_memory);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 0}, TILE_FLOOR, &game_memory->permanent_memory);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0, 1}, TILE_FLOOR, &game_memory->permanent_memory);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 1}, TILE_WALL, &game_memory->permanent_memory);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){3, 3}, TILE_WALL, &game_memory->permanent_memory);
+
+    Rectangle tilemap_area = {{0, 0}, {512, 512}};
+    es_initialize(&game_state->world.entities, tilemap_area, &game_memory->permanent_memory);
 
     for (s32 i = 0; i < 2; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);
@@ -321,19 +328,15 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         ASSERT(!es_has_component(player, ColliderComponent));
 
         player->color = RGBA32_BLUE;
-        PhysicsComponent *physics = es_add_component(player, PhysicsComponent);
+        PhysicsComponent *physics = es_add_component(&game_state->world.entities, player, PhysicsComponent);
         physics->position = v2((f32)(16 * (i * 2)), 16.0f * ((f32)i * 2.0f));
 
-        ColliderComponent *collider = es_add_component(player, ColliderComponent);
+        ColliderComponent *collider = es_add_component(&game_state->world.entities, player, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
 
         ASSERT(es_has_component(player, PhysicsComponent));
         ASSERT(es_has_component(player, ColliderComponent));
     }
 
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0}, TILE_FLOOR, &game_memory->permanent_memory);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 0}, TILE_FLOOR, &game_memory->permanent_memory);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0, 1}, TILE_FLOOR, &game_memory->permanent_memory);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 1}, TILE_WALL, &game_memory->permanent_memory);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){3, 3}, TILE_WALL, &game_memory->permanent_memory);
+
 }

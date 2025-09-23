@@ -4,7 +4,7 @@
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
 #include "base/utils.h"
-#include "game/entity.h"
+#include "entity_id.h"
 
 #define QUAD_TREE_MAX_DEPTH 4
 
@@ -21,6 +21,13 @@
   - Move children into one struct, allocate all at once
  */
 
+#define QT_NULL_LOCATION (QuadTreeLocation){0}
+
+// TODO: this is only temporary, get rid of it
+#define MAX_ENTITIES_PER_NODE 32
+
+struct EntityStorage;
+
 typedef struct QuadTree {
     Rectangle area;
 
@@ -29,7 +36,7 @@ typedef struct QuadTree {
     struct QuadTree *bottom_right;
     struct QuadTree *bottom_left;
 
-    EntityID entities[MAX_ENTITIES];
+    EntityID entities[MAX_ENTITIES_PER_NODE];
     ssize  entity_count;
 } QuadTree;
 
@@ -40,76 +47,16 @@ typedef struct {
     ssize array_index;
 } QuadTreeLocation;
 
-static inline void qt_initialize(QuadTree *qt, Rectangle area)
-{
-    qt->area = area;
-}
+// TODO: the EntityStorage* parameters are only temporary
 
-static inline void qt_subdivide(QuadTree *qt, LinearArena *arena)
-{
-    ASSERT(!qt->top_left);
-    ASSERT(!qt->top_right);
-    ASSERT(!qt->bottom_right);
-    ASSERT(!qt->bottom_left);
-
-    qt->top_left = la_allocate_item(arena, QuadTree);
-    qt->top_right = la_allocate_item(arena, QuadTree);
-    qt->bottom_right = la_allocate_item(arena, QuadTree);
-    qt->bottom_left = la_allocate_item(arena, QuadTree);
-
-    RectangleQuadrants quads = rect_quadrants(qt->area);
-
-    qt_initialize(qt->top_left, quads.top_left);
-    qt_initialize(qt->top_right, quads.top_right);
-    qt_initialize(qt->bottom_right, quads.bottom_right);
-    qt_initialize(qt->bottom_left, quads.bottom_left);
-}
-
-static inline void qt_insert(QuadTree *qt, Rectangle area, ssize depth, LinearArena *arena)
-{
-    ASSERT(area.size.x > 0);
-    ASSERT(area.size.y > 0);
-    ASSERT(rect_contains_rect(qt->area, area));
-
-    b32 no_children = !qt->top_left;
-    RectangleQuadrants quads = rect_quadrants(qt->area);
-    b32 insert_in_this = false;
-
-    if (depth < QUAD_TREE_MAX_DEPTH - 1) {
-	if (rect_contains_rect(quads.top_left, area)) {
-	    if (no_children) {
-		qt_subdivide(qt, arena);
-	    }
-
-	    qt_insert(qt->top_left, area, depth + 1, arena);
-	} else if (rect_contains_rect(quads.top_right, area)) {
-	    if (no_children) {
-		qt_subdivide(qt, arena);
-	    }
-
-	    qt_insert(qt->top_right, area, depth + 1, arena);
-	} else if (rect_contains_rect(quads.bottom_right, area)) {
-	    if (no_children) {
-		qt_subdivide(qt, arena);
-	    }
-
-	    qt_insert(qt->bottom_right, area, depth + 1, arena);
-	} else if (rect_contains_rect(quads.bottom_left, area)) {
-	    if (no_children) {
-		qt_subdivide(qt, arena);
-	    }
-
-	    qt_insert(qt->bottom_left, area, depth + 1, arena);
-	} else {
-	    insert_in_this = true;
-	}
-    } else {
-	insert_in_this = true;
-    }
-
-    if (insert_in_this) {
-	// insert here
-    }
-}
+void qt_initialize(QuadTree *qt, Rectangle area);
+// if location is null, just insert, otherwise, move entity
+// return new location
+QuadTreeLocation qt_move_entity(QuadTree *qt, struct EntityStorage *es, EntityID id,
+    QuadTreeLocation location, Vector2 new_position, LinearArena *arena);
+QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, EntityID id,
+    QuadTreeLocation location, Rectangle area, LinearArena *arena);
+void qt_remove_entity(QuadTree *qt, struct EntityStorage *es, EntityID id,
+    QuadTreeLocation location);
 
 #endif //QUAD_TREE_H

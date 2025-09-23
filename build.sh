@@ -23,6 +23,7 @@ src/asset_manager.c
 GAME_SOURCES="
 src/game/game.c
 src/game/collision.c
+src/game/quad_tree.c
 src/game/entity.c
 src/game/tilemap.c
 src/game/renderer/render_batch.c

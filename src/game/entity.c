@@ -253,3 +253,12 @@ void es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_pos)
     slot->quad_tree_location = qt_move_entity(&es->quad_tree, es, id, slot->quad_tree_location,
 	new_pos, &es->arena);
 }
+
+void es_remove_entity_from_quad_tree(EntityStorage *es, Entity *entity)
+{
+    EntitySlot *slot = es_get_entity_slot(entity);
+    EntityID id = get_entity_id_from_slot(es, slot);
+
+    qt_remove_entity(&es->quad_tree, es, id, slot->quad_tree_location);
+    slot->quad_tree_location = QT_NULL_LOCATION;
+}

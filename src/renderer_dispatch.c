@@ -1,0 +1,199 @@
+#include "renderer_dispatch.h"
+
+typedef struct {
+    ShaderHandle shader;
+    TextureHandle texture;
+} RendererState;
+
+static RendererState get_state_needed_for_entry(RenderKey key)
+{
+    RenderKey shader_id = render_key_extract_shader(key);
+    RenderKey texture_id = render_key_extract_texture(key);
+
+    RendererState result = {
+        .shader = (ShaderHandle){(u32)shader_id},
+        .texture = (TextureHandle){(u32)texture_id}
+    };
+
+    return result;
+}
+
+static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
+{
+    return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
+}
+
+static RendererState switch_renderer_state(RendererState new_state, AssetManager *assets,
+    RendererState old_state, RendererBackend *backend)
+{
+    (void)backend;
+
+    if (new_state.texture.id != old_state.texture.id) {
+        if (new_state.texture.id != NULL_TEXTURE.id) {
+            TextureAsset *texture = assets_get_texture(assets, new_state.texture);
+            renderer_backend_bind_texture(texture);
+        }
+    }
+
+    if (new_state.shader.id != old_state.shader.id) {
+        ShaderAsset *shader = assets_get_shader(assets, new_state.shader);
+
+        renderer_backend_use_shader(shader);
+    }
+
+    return new_state;
+}
+
+#define INVALID_RENDERER_STATE (RendererState){{(AssetID)-1}, {(AssetID)-1}}
+
+// TODO: move elsewhere
+static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f32 thickness, RGBA32 color)
+{
+    Vector2 dir_r = v2_mul_s(v2_norm(v2_sub(end, start)), thickness / 2.0f);
+    Vector2 dir_l = v2_neg(dir_r);
+    Vector2 dir_u = { -dir_r.y, dir_r.x };
+    Vector2 dir_d = v2_neg(dir_u);
+
+    Vector2 tl = v2_add(v2_add(start, dir_l), dir_u);
+    Vector2 tr = v2_add(end, v2_add(dir_r, dir_u));
+    Vector2 br = v2_add(end, v2_add(dir_d, dir_r));
+    Vector2 bl = v2_add(start, v2_add(dir_d, dir_l));
+
+    // TODO: UV constants to make this easier to remember
+    Vertex vtl = {
+	.position = tl,
+	.uv = {0,1},
+	.color = color
+    };
+
+    Vertex vtr = {
+	.position = tr,
+	.uv = {1, 1},
+	.color = color
+    };
+
+    Vertex vbr = {
+	.position = br,
+	.uv = {1, 0},
+	.color = color
+    };
+
+    Vertex vbl = {
+	.position = bl,
+	.uv = {0, 0},
+	.color = color
+    };
+
+    renderer_backend_draw_quad(backend, vtl, vtr, vbr, vbl);
+}
+
+void execute_render_commands(RenderBatch *rb, AssetManager *assets,
+    RendererBackend *backend, LinearArena *scratch)
+{
+    if (rb->entry_count == 0) {
+        return;
+    }
+
+    RendererState current_state = get_state_needed_for_entry(rb->entries[0].key);
+    switch_renderer_state(current_state, assets, INVALID_RENDERER_STATE, backend);
+
+    renderer_backend_set_global_projection(backend, rb->projection);
+
+    for (ssize i = 0; i < rb->entry_count; ++i) {
+        RenderEntry *entry = &rb->entries[i];
+        RenderCmdHeader *header = entry->data;
+
+        RendererState needed_state = get_state_needed_for_entry(entry->key);
+
+        if (renderer_state_change_needed(current_state, needed_state)) {
+            renderer_backend_flush(backend);
+            current_state = switch_renderer_state(needed_state, assets, current_state, backend);
+        }
+
+        for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
+            switch (setup_cmd->kind) {
+                case SETUP_CMD_SET_UNIFORM_VEC4: {
+                    SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
+                    ShaderAsset *shader = assets_get_shader(assets, current_state.shader);
+
+                    renderer_backend_set_uniform_vec4(shader, cmd->uniform_name, cmd->vector, scratch);
+                } break;
+
+                INVALID_DEFAULT_CASE;
+            }
+        }
+
+        switch (entry->data->kind) {
+            case RENDER_CMD_RECTANGLE: {
+                RectangleCmd *cmd = (RectangleCmd *)entry->data;
+                RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color);
+
+		renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+		    verts.bottom_right, verts.bottom_left);
+            } break;
+
+            case RENDER_CMD_OUTLINED_RECTANGLE: {
+                OutlinedRectangleCmd *cmd = (OutlinedRectangleCmd *)entry->data;
+
+		RGBA32 color = cmd->color;
+		f32 thick = cmd->thickness;
+
+		Vector2 tl = rect_top_left(cmd->rect);
+		Vector2 tr = rect_top_right(cmd->rect);
+		Vector2 br = rect_bottom_right(cmd->rect);
+		Vector2 bl = rect_bottom_left(cmd->rect);
+
+		// TODO: These lines overlap which looks wrong when color is transparent
+		render_line(backend, tl, v2_sub(tr, v2(thick, 0.0f)), thick, color);
+		render_line(backend, tr, v2_add(br, v2(0.0f, thick)), thick, color);
+		render_line(backend, br, v2_add(bl, v2(thick, 0.0f)), thick, color);
+		render_line(backend, bl, v2_sub(tl, v2(0.0f, thick)), thick, color);
+
+	    } break;
+
+            case RENDER_CMD_CIRCLE: {
+                CircleCmd *cmd = (CircleCmd *)entry->data;
+
+                s32 segments = 64;
+                f32 radius = cmd->radius;
+                f32 posx = cmd->position.x;
+                f32 posy = cmd->position.y;
+                RGBA32 color = cmd->color;
+
+                Vertex a = { {posx, posy}, {0.5f, 0.5f}, color };
+
+                f32 step_angle = (2.0f * PI) / (f32)segments;
+
+                for (s32 k = 0; k < segments; ++k) {
+                    f32 segment = (f32)k;
+
+                    f32 x1 = posx + radius * cosf(step_angle * segment);
+                    f32 y1 = posy + radius * sinf(step_angle * segment);
+                    f32 tx1 = (x1 / radius + 1.0f) * 0.5f;
+                    f32 ty1 = 1.0f - ((y1 / radius + 1.0f) * 0.5f);
+
+                    f32 x2 = posx + radius * cosf(step_angle * (segment + 1));
+                    f32 y2 = posy + radius * sinf(step_angle * (segment + 1));
+                    f32 tx2 = (x2 / radius + 1.0f) * 0.5f;
+                    f32 ty2 = 1.0f - ((y2 / radius + 1.0f) * 0.5f);
+
+
+                    Vertex b = { {x1, y1}, {tx1, ty1}, color};
+                    Vertex c = { {x2, y2}, {tx2, ty2}, color};
+
+                    renderer_backend_draw_triangle(backend, a, b, c);
+                }
+            } break;
+
+            case RENDER_CMD_LINE: {
+                LineCmd *cmd = (LineCmd *)entry->data;
+
+		render_line(backend, cmd->start, cmd->end, cmd->thickness, cmd->color);
+            } break;
+
+           INVALID_DEFAULT_CASE;
+        }
+    }
+
+    renderer_backend_flush(backend);
+}

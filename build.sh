@@ -13,6 +13,9 @@ src/base/free_list_arena.c
 
 PLATFORM_SOURCES="
 src/main.c
+src/file_watcher.c
+src/hot_reload.c
+src/renderer_dispatch.c
 src/platform_linux.c
 src/asset_manager.c
 "

@@ -16,7 +16,6 @@
 #include "input.h"
 #include "collision.h"
 #include "renderer/render_batch.h"
-#include <stdio.h>
 
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
@@ -296,7 +295,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
     RenderBatch *rb = rb_list_push_new(rbs, proj, frame_arena);
 
     world_render(&game_state->world, rb, assets, frame_data, frame_arena);
-    render_tree(&game_state->quad_tree, rb, frame_arena, assets, 0);
+    //render_tree(&game_state->quad_tree, rb, frame_arena, assets, 0);
 
     rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, assets->shader2, 3);
 
@@ -304,13 +303,13 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
 }
 
 void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
-    FrameData frame_data, LinearArena *frame_arena)
+    FrameData frame_data, GameMemory *game_memory)
 {
-    game_update(game_state, frame_data.input, frame_data.dt, frame_arena);
-    game_render(game_state, rbs, assets, frame_data, frame_arena);
+    game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
+    game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
 }
 
-void game_initialize(GameState *game_state)
+void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
     es_initialize(&game_state->world.entities);
 
@@ -332,19 +331,9 @@ void game_initialize(GameState *game_state)
         ASSERT(es_has_component(player, ColliderComponent));
     }
 
-    // TODO: get rid of this
-    LinearArena temp_arena = la_create(default_allocator, MB(2));
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0}, TILE_FLOOR, &temp_arena);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 0}, TILE_FLOOR, &temp_arena);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0, 1}, TILE_FLOOR, &temp_arena);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 1}, TILE_WALL, &temp_arena);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){3, 3}, TILE_WALL, &temp_arena);
-
-    // TODO: get size of world
-    qt_initialize(&game_state->quad_tree, (Rectangle){{0, 0}, {512, 512}});
-
-    Rectangle rect = {{1, 1}, {4, 4}};
-    Rectangle rect2 = {{10, 10}, {500, 500}};
-    qt_insert(&game_state->quad_tree, rect, 0, &temp_arena);
-    qt_insert(&game_state->quad_tree, rect2, 0, &temp_arena);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0}, TILE_FLOOR, &game_memory->permanent_memory);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 0}, TILE_FLOOR, &game_memory->permanent_memory);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0, 1}, TILE_FLOOR, &game_memory->permanent_memory);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 1}, TILE_WALL, &game_memory->permanent_memory);
+    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){3, 3}, TILE_WALL, &game_memory->permanent_memory);
 }

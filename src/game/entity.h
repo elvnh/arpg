@@ -27,7 +27,7 @@ typedef struct {
 typedef struct {
     EntityIndex        alive_entity_array_index;
     EntityGeneration   generation;
-    Entity             entity;
+    Entity             entity; // TODO: if this is first member, Entity* can be cast to EntitySlot*
 } EntitySlot;
 
 typedef struct {

@@ -67,6 +67,8 @@ static inline void qt_subdivide(QuadTree *qt, LinearArena *arena)
 
 static inline void qt_insert(QuadTree *qt, Rectangle area, ssize depth, LinearArena *arena)
 {
+    ASSERT(area.size.x > 0);
+    ASSERT(area.size.y > 0);
     ASSERT(rect_contains_rect(qt->area, area));
 
     b32 no_children = !qt->top_left;

@@ -3,13 +3,11 @@
 
 #include "base/matrix.h"
 #include "renderer/render_batch.h"
-#include "game/quad_tree.h"
 #include "game_world.h"
 #include "input.h"
 
 typedef struct {
     GameWorld world;
-    QuadTree quad_tree;
 } GameState;
 
 typedef struct {
@@ -19,8 +17,13 @@ typedef struct {
     s32 window_height;
 } FrameData;
 
+typedef struct {
+    LinearArena permanent_memory;
+    LinearArena temporary_memory;
+} GameMemory;
+
 void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
-    FrameData frame_data, LinearArena *frame_arena);
-void game_initialize(GameState *game_state);
+    FrameData frame_data, GameMemory *game_memory);
+void game_initialize(GameState *game_state, GameMemory *game_memory);
 
 #endif //GAME_H

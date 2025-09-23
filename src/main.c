@@ -227,8 +227,8 @@ static void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
 #include "game/game.h"
 
-typedef void (GameInitialize)(GameState *);
-typedef void (GameUpdateAndRender)(GameState *, RenderBatchList *, const AssetList *, FrameData, LinearArena *);
+typedef void (GameInitialize)(GameState *, GameMemory *);
+typedef void (GameUpdateAndRender)(GameState *, RenderBatchList *, const AssetList *, FrameData, GameMemory *);
 
 typedef struct {
     void *handle;
@@ -457,37 +457,57 @@ static void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, AssetM
 }
 
 #define GAME_MEMORY_SIZE MB(32)
+#define PERMANENT_ARENA_SIZE GAME_MEMORY_SIZE / 2
 #define FRAME_ARENA_SIZE GAME_MEMORY_SIZE / 2
+
+static b32 reload_game_code_if_recompiled(String so_path, Timestamp load_time, GameCode *game_code,
+    LinearArena *frame_arena)
+{
+    Timestamp so_mod_time = platform_get_file_info(so_path, frame_arena).last_modification_time;
+
+    if (timestamp_less_than(load_time, so_mod_time)) {
+        unload_game_code(game_code);
+        load_game_code(game_code, so_path, frame_arena);
+
+        return true;
+    }
+
+    return false;
+}
 
 int main()
 {
-    // TODO: should this be a free list arena?
+    // TODO: make this use mmap
     LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);
-    Allocator main_allocator = la_allocator(&main_arena);
 
-    run_tests();
-
-    WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
-	WINDOW_FLAG_NON_RESIZABLE, main_allocator);
-    RendererBackend *backend = renderer_backend_initialize(main_allocator);
-
-    AssetManager assets = assets_initialize(main_allocator);
-    LinearArena frame_arena = la_create(main_allocator, FRAME_ARENA_SIZE);
-
-    AssetList asset_list = {
-        .shader = assets_register_shader(&assets, str_lit("shader.glsl"), &frame_arena),
-        .shader2 = assets_register_shader(&assets, str_lit("shader2.glsl"), &frame_arena),
-        .texture = assets_register_texture(&assets, str_lit("test.png"), &frame_arena),
-        .white_texture = assets_register_texture(&assets, str_lit("white.png"), &frame_arena),
+    GameMemory game_memory = {
+        .permanent_memory = la_create(la_allocator(&main_arena), PERMANENT_ARENA_SIZE),
+        .temporary_memory = la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE)
     };
 
     GameState game_state = {0};
 
-    String executable_dir = platform_get_executable_directory(main_allocator, &frame_arena);
-    String so_path = str_concat(executable_dir, str_lit("/"GAME_SO_NAME), main_allocator);
+    run_tests();
+
+    WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
+	WINDOW_FLAG_NON_RESIZABLE, la_allocator(&game_memory.permanent_memory));
+    RendererBackend *backend = renderer_backend_initialize(la_allocator(&game_memory.permanent_memory));
+
+    AssetManager assets = assets_initialize(la_allocator(&game_memory.permanent_memory));
+
+    AssetList asset_list = {
+        .shader = assets_register_shader(&assets, str_lit("shader.glsl"), &game_memory.temporary_memory),
+        .shader2 = assets_register_shader(&assets, str_lit("shader2.glsl"), &game_memory.temporary_memory),
+        .texture = assets_register_texture(&assets, str_lit("test.png"), &game_memory.temporary_memory),
+        .white_texture = assets_register_texture(&assets, str_lit("white.png"), &game_memory.temporary_memory),
+    };
+
+    String executable_dir = platform_get_executable_directory(la_allocator(&game_memory.permanent_memory),
+        &game_memory.temporary_memory);
+    String so_path = str_concat(executable_dir, str_lit("/"GAME_SO_NAME), la_allocator(&game_memory.permanent_memory));
 
     GameCode game_code = {0};
-    load_game_code(&game_code, so_path, &frame_arena);
+    load_game_code(&game_code, so_path, &game_memory.temporary_memory);
 
     Input input = {0};
 
@@ -501,7 +521,7 @@ int main()
 
     platform_set_scroll_value_storage(&input.scroll_delta, window);
 
-    game_code.initialize(&game_state);
+    game_code.initialize(&game_state, &game_memory);
 
     RenderBatchList render_batches = {0};
 
@@ -510,16 +530,11 @@ int main()
         f32 dt = time_point_new - time_point_last;
         time_point_last = time_point_new;
 
-        la_reset(&frame_arena);
+        la_reset(&game_memory.temporary_memory);
 
-        file_watcher_reload_modified_assets(&asset_watcher, &assets, &frame_arena);
+        file_watcher_reload_modified_assets(&asset_watcher, &assets, &game_memory.temporary_memory);
 
-        Timestamp so_mod_time = platform_get_file_info(so_path, &frame_arena).last_modification_time;
-
-        if (timestamp_less_than(game_so_load_time, so_mod_time)) {
-            unload_game_code(&game_code);
-            load_game_code(&game_code, so_path, &frame_arena);
-
+        if (reload_game_code_if_recompiled(so_path, game_so_load_time, &game_code, &game_memory.temporary_memory)) {
             game_so_load_time = platform_get_time();
             printf("Hot reloaded game.\n");
         }
@@ -536,10 +551,10 @@ int main()
         };
 
         list_clear(&render_batches);
-        game_code.update_and_render(&game_state, &render_batches, &asset_list, frame_data, &frame_arena);
+        game_code.update_and_render(&game_state, &render_batches, &asset_list, frame_data, &game_memory);
 
         for (RenderBatchNode *node = list_head(&render_batches); node; node = list_next(node)) {
-            execute_render_commands(&node->render_batch, &assets, backend, &frame_arena);
+            execute_render_commands(&node->render_batch, &assets, backend, &game_memory.temporary_memory);
         }
 
         input.scroll_delta = 0.0f;

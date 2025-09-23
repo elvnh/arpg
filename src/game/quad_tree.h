@@ -6,7 +6,7 @@
 #include "base/utils.h"
 #include "entity_id.h"
 
-#define QUAD_TREE_MAX_DEPTH 4
+#define QUAD_TREE_MAX_DEPTH 6
 
 /*
   TODO:
@@ -28,6 +28,11 @@
 
 struct EntityStorage;
 
+typedef struct {
+    EntityID entity_id;
+    Rectangle area;
+} QuadTreeElement;
+
 typedef struct QuadTree {
     Rectangle area;
 
@@ -36,8 +41,8 @@ typedef struct QuadTree {
     struct QuadTree *bottom_right;
     struct QuadTree *bottom_left;
 
-    EntityID entities[MAX_ENTITIES_PER_NODE];
-    ssize  entity_count;
+    QuadTreeElement entities[MAX_ENTITIES_PER_NODE];
+    ssize entity_count;
 } QuadTree;
 
 // Store in EntitySlot

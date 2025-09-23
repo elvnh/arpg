@@ -27,10 +27,6 @@ void qt_initialize(QuadTree *qt, Rectangle area)
     qt->area = area;
 }
 
-/* QuadTreeLocation qt_move_entity(QuadTree *qt, EntityID id, QuadTreeLocation location, Vector2 new_position, LinearArena *arena) */
-/* { */
-
-/* } */
 
 static inline b32 qt_location_is_null(QuadTreeLocation location)
 {
@@ -85,11 +81,27 @@ static QuadTreeLocation qt_insert(QuadTree *qt, EntityID id, Rectangle area, ssi
 	ASSERT(qt->entity_count < ARRAY_COUNT(qt->entities));
 
         ssize index = qt->entity_count++;
-        qt->entities[index] = id;
+        qt->entities[index] = (QuadTreeElement) {
+	    .entity_id = id,
+	    .area = area
+	};
 
         result.node = qt;
         result.array_index = index;
     }
+
+    return result;
+}
+
+QuadTreeLocation qt_move_entity(QuadTree *qt, struct EntityStorage *es, EntityID id,
+    QuadTreeLocation location, Vector2 new_position, LinearArena *arena)
+{
+    ASSERT(!qt_location_is_null(location));
+    QuadTreeElement *elem = &location.node->entities[location.array_index];
+    Rectangle new_area = {new_position, elem->area.size};
+
+    QuadTreeLocation result = qt_set_entity_area(qt, es, id, location, new_area, arena);
+    //ASSERT_BREAK(result.node->entity_count == 2);
 
     return result;
 }
@@ -111,17 +123,18 @@ void qt_remove_entity(QuadTree *qt, struct EntityStorage *es, EntityID id, QuadT
     ASSERT(!qt_location_is_null(location));
 
     ssize last_index = location.node->entity_count - 1;
-    EntityID *to_remove = &location.node->entities[location.array_index];
+    QuadTreeElement *to_remove = &location.node->entities[location.array_index];
     // TODO: ID comparison function
-    ASSERT(to_remove->slot_index == id.slot_index);
-    ASSERT(to_remove->generation == id.generation);
+    ASSERT(to_remove->entity_id.slot_index == id.slot_index);
+    ASSERT(to_remove->entity_id.generation == id.generation);
 
-    EntityID *last = &location.node->entities[last_index];
+    QuadTreeElement *last = &location.node->entities[last_index];
     *to_remove = *last;
 
     // TODO: don't do it this way
     // Update swapped entity's array index
-    es->entity_slots[last->slot_index].quad_tree_location.array_index = location.array_index;
 
-    --qt->entity_count;
+    es->entity_slots[last->entity_id.slot_index].quad_tree_location.array_index = location.array_index;
+
+    location.node->entity_count -= 1;
 }

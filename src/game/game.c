@@ -159,6 +159,8 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
 
         Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(physics_a->velocity, movement_fraction_left), dt);
         physics_a->position = v2_add(physics_a->position, to_move_this_frame);
+
+	es_set_entity_position(&world->entities, a, physics_a->position);
     }
 }
 
@@ -278,6 +280,10 @@ static void render_tree(QuadTree *tree, RenderBatch *rb, LinearArena *arena,
 	    {0.0f, 1.0f, 0.0f, 0.5f},
 	    {0.0f, 0.0f, 1.0f, 0.5f},
 	    {1.0f, 0.0f, 1.0f, 0.5f},
+	    {0.2f, 0.3f, 0.8f, 0.5f},
+	    {1.0f, 0.1f, 0.5f, 0.5f},
+	    {0.5f, 0.5f, 0.5f, 0.5f},
+	    {0.5f, 1.0f, 0.5f, 0.5f},
 	};
 
 	ASSERT(depth < ARRAY_COUNT(colors));
@@ -295,7 +301,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
     RenderBatch *rb = rb_list_push_new(rbs, proj, frame_arena);
 
     world_render(&game_state->world, rb, assets, frame_data, frame_arena);
-    //render_tree(&game_state->quad_tree, rb, frame_arena, assets, 0);
+    render_tree(&game_state->world.entities.quad_tree, rb, frame_arena, assets, 0);
 
     rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, assets->shader2, 3);
 
@@ -311,11 +317,12 @@ void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const A
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0}, TILE_FLOOR, &game_memory->permanent_memory);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 0}, TILE_FLOOR, &game_memory->permanent_memory);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){0, 1}, TILE_FLOOR, &game_memory->permanent_memory);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){1, 1}, TILE_WALL, &game_memory->permanent_memory);
-    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){3, 3}, TILE_WALL, &game_memory->permanent_memory);
+    for (s32 y = 0; y < 8; ++y) {
+	for (s32 x = 0; x < 8; ++x) {
+	    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){x, y}, TILE_FLOOR,
+		&game_memory->permanent_memory);
+	}
+    }
 
     Rectangle tilemap_area = {{0, 0}, {512, 512}};
     es_initialize(&game_state->world.entities, tilemap_area, &game_memory->permanent_memory);
@@ -328,15 +335,16 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         ASSERT(!es_has_component(player, ColliderComponent));
 
         player->color = RGBA32_BLUE;
-        PhysicsComponent *physics = es_add_component(&game_state->world.entities, player, PhysicsComponent);
+        PhysicsComponent *physics = es_add_component(player, PhysicsComponent);
         physics->position = v2((f32)(16 * (i * 2)), 16.0f * ((f32)i * 2.0f));
 
-        ColliderComponent *collider = es_add_component(&game_state->world.entities, player, ColliderComponent);
+        ColliderComponent *collider = es_add_component(player, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
 
         ASSERT(es_has_component(player, PhysicsComponent));
         ASSERT(es_has_component(player, ColliderComponent));
+
+	Rectangle rect = get_entity_rect(physics, collider);
+	es_set_entity_area(&game_state->world.entities, player, rect);
     }
-
-
 }

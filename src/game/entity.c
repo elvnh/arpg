@@ -3,6 +3,9 @@
 #include "entity.h"
 #include "base/utils.h"
 #include "game/component.h"
+#include "game/quad_tree.h"
+
+#define ES_MEMORY_SIZE MB(2)
 
 static ssize component_offsets[] = {
     #define COMPONENT(type) offsetof(Entity, ES_IMPL_COMP_FIELD_NAME(type)),
@@ -20,10 +23,15 @@ static ssize get_component_offset(ComponentType type)
 
 static EntityID get_entity_id_from_slot(EntityStorage *es, EntitySlot *slot)
 {
-    UNIMPLEMENTED;
-    (void)es;
-    (void)slot;
-    return (EntityID){0};
+    EntityIndex index = (EntityIndex)(slot - es->entity_slots);
+    EntityGeneration generation = slot->generation;
+
+    EntityID result = {
+	.slot_index = index,
+	.generation = generation
+    };
+
+    return result;
 }
 
 static inline Rectangle es_get_entity_quad_tree_area(Entity *entity)
@@ -40,23 +48,13 @@ static inline Rectangle es_get_entity_quad_tree_area(Entity *entity)
     return result;
 }
 
-void *es_impl_add_component(EntityStorage *es, Entity *entity, ComponentType type)
+void *es_impl_add_component(Entity *entity, ComponentType type)
 {
     ASSERT(!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
 
     entity->active_components |= ES_IMPL_COMP_ENUM_BIT_VALUE(type);
     void *result = es_impl_get_component(entity, type);
     ASSERT(result);
-
-    if ((type == ES_IMPL_COMP_ENUM_NAME(PhysicsComponent))
-     || (type == ES_IMPL_COMP_ENUM_NAME(ColliderComponent))) {
-        // NOTE: this is safe as long as entity is first member of EntitySlot
-        EntitySlot *slot = (EntitySlot *)entity;
-        EntityID id = get_entity_id_from_slot(es, slot);
-        Rectangle rect = es_get_entity_quad_tree_area(entity);
-
-        slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, es, id, slot->quad_tree_location, rect, &es->arena);
-    }
 
     return result;
 }
@@ -128,7 +126,7 @@ static EntityID id_queue_pop(EntityIDQueue *queue)
     return id;
 }
 
-#define ES_MEMORY_SIZE MB(2)
+
 
 void es_initialize(EntityStorage *es, Rectangle world_area, LinearArena *parent_arena)
 {
@@ -161,7 +159,7 @@ static EntityID get_new_entity_id(EntityStorage *es)
     return result;
 }
 
-EntitySlot *get_entity_slot(EntityStorage *es, EntityID id)
+EntitySlot *es_get_entity_slot_by_id(EntityStorage *es, EntityID id)
 {
     ASSERT(id.slot_index < MAX_ENTITIES);
     EntitySlot *result = &es->entity_slots[id.slot_index];
@@ -176,7 +174,7 @@ EntityID es_create_entity(EntityStorage *es)
     EntityIndex alive_index = es->alive_entity_count++;
     es->alive_entity_ids[alive_index] = id;
 
-    EntitySlot *slot = get_entity_slot(es, id);
+    EntitySlot *slot = es_get_entity_slot_by_id(es, id);
     *slot = (EntitySlot){0};
     slot->alive_entity_array_index = alive_index;
 
@@ -189,7 +187,7 @@ void es_remove_entity(EntityStorage *es, EntityID id)
 {
     ASSERT(entity_id_is_valid(es, id));
 
-    EntitySlot *slot = get_entity_slot(es, id);
+    EntitySlot *slot = es_get_entity_slot_by_id(es, id);
     ASSERT(slot->alive_entity_array_index < es->alive_entity_count);
 
     EntityID *removed_id = &es->alive_entity_ids[slot->alive_entity_array_index];
@@ -229,4 +227,29 @@ Entity *es_get_entity_in_slot(EntityStorage *es, EntityIndex slot_index)
 
     Entity *result = es_get_entity(es, id);
     return result;
+}
+
+static EntitySlot *es_get_entity_slot(Entity *entity)
+{
+    // NOTE: this is safe as long as entity is first member of EntitySlot
+    EntitySlot *result = (EntitySlot *)entity;
+
+    return result;
+}
+
+void es_set_entity_area(EntityStorage *es, Entity *entity, Rectangle rectangle)
+{
+    EntitySlot *slot = es_get_entity_slot(entity);
+    EntityID id = get_entity_id_from_slot(es, slot);
+
+    slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, es, id,
+	slot->quad_tree_location, rectangle, &es->arena);
+}
+
+void es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_pos)
+{
+    EntitySlot *slot = es_get_entity_slot(entity);
+    EntityID id = get_entity_id_from_slot(es, slot);
+    slot->quad_tree_location = qt_move_entity(&es->quad_tree, es, id, slot->quad_tree_location,
+	new_pos, &es->arena);
 }

@@ -7,6 +7,7 @@
 
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
 #define ASSERT(expr) do { if (!(expr)) { assert_impl(#expr, __func__, FILE_NAME, LINE); } } while (0)
+#define ASSERT_BREAK(expr) do { if (!(expr)) { DEBUG_BREAK; } } while (0)
 #define INVALID_DEFAULT_CASE default: ASSERT(0); break;
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))

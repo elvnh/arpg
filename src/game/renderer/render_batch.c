@@ -78,6 +78,7 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
 
 static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data)
 {
+    ASSERT(rb->entry_count < ARRAY_COUNT(rb->entries));
     RenderEntry *entry = &rb->entries[rb->entry_count++];
     entry->key = key;
     entry->data = data;

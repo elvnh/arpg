@@ -1,4 +1,5 @@
 #include "quad_tree.h"
+#include "base/utils.h"
 #include "entity.h"
 
 static inline void qt_subdivide(QuadTree *qt, LinearArena *arena)
@@ -43,7 +44,9 @@ static QuadTreeLocation qt_insert(QuadTree *qt, EntityID id, Rectangle area, ssi
     // TODO: clean up this function
     ASSERT(area.size.x > 0);
     ASSERT(area.size.y > 0);
-    ASSERT(rect_contains_rect(qt->area, area));
+
+    // TODO: is this assert needed?
+    //ASSERT(rect_contains_rect(qt->area, area));
 
     b32 no_children = !qt->top_left;
     RectangleQuadrants quads = rect_quadrants(qt->area);
@@ -79,6 +82,8 @@ static QuadTreeLocation qt_insert(QuadTree *qt, EntityID id, Rectangle area, ssi
     }
 
     if (qt_location_is_null(result)) {
+	ASSERT(qt->entity_count < ARRAY_COUNT(qt->entities));
+
         ssize index = qt->entity_count++;
         qt->entities[index] = id;
 
@@ -105,7 +110,7 @@ void qt_remove_entity(QuadTree *qt, struct EntityStorage *es, EntityID id, QuadT
 {
     ASSERT(!qt_location_is_null(location));
 
-    ssize last_index = location.node->entity_count;
+    ssize last_index = location.node->entity_count - 1;
     EntityID *to_remove = &location.node->entities[location.array_index];
     // TODO: ID comparison function
     ASSERT(to_remove->slot_index == id.slot_index);

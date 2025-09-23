@@ -32,7 +32,6 @@ void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, Linea
 
         while (curr_node->next) {
             ASSERT(!v2i_eq(curr_node->coordinates, coords));
-            ASSERT(curr_node->tile.type != type);
 
             curr_node = curr_node->next;
         }

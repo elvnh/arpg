@@ -110,7 +110,7 @@ QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, Enti
     QuadTreeLocation location, Rectangle area, LinearArena *arena)
 {
     if (!qt_location_is_null(location)) {
-        qt_remove_entity(qt, es, id, location);
+        qt_remove_entity(es, id, location);
     }
 
     QuadTreeLocation result = qt_insert(qt, id, area, 0, arena);
@@ -118,7 +118,7 @@ QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, Enti
     return result;
 }
 
-void qt_remove_entity(QuadTree *qt, struct EntityStorage *es, EntityID id, QuadTreeLocation location)
+void qt_remove_entity(struct EntityStorage *es, EntityID id, QuadTreeLocation location)
 {
     ASSERT(!qt_location_is_null(location));
 

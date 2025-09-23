@@ -61,7 +61,6 @@ QuadTreeLocation qt_move_entity(QuadTree *qt, struct EntityStorage *es, EntityID
     QuadTreeLocation location, Vector2 new_position, LinearArena *arena);
 QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, EntityID id,
     QuadTreeLocation location, Rectangle area, LinearArena *arena);
-void qt_remove_entity(QuadTree *qt, struct EntityStorage *es, EntityID id,
-    QuadTreeLocation location);
+void qt_remove_entity(struct EntityStorage *es, EntityID id, QuadTreeLocation location);
 
 #endif //QUAD_TREE_H

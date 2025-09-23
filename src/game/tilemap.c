@@ -41,6 +41,11 @@ void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, Linea
     } else {
         tilemap->tile_nodes[index] = new_node;
     }
+
+    tilemap->min_x = MIN(tilemap->min_x, coords.x);
+    tilemap->min_y = MIN(tilemap->min_y, coords.y);
+    tilemap->max_x = MAX(tilemap->max_x, coords.x);
+    tilemap->max_y = MAX(tilemap->max_y, coords.y);
 }
 
 Tile *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
@@ -62,4 +67,15 @@ Tile *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
     }
 
     return 0;
+}
+
+Rectangle tilemap_get_bounding_box(const Tilemap *tilemap)
+{
+    Rectangle result = {
+	{(f32)(tilemap->min_x * TILE_SIZE), (f32)(tilemap->min_y * TILE_SIZE)},
+	{(f32)((tilemap->max_x - tilemap->min_x + 1) * TILE_SIZE),
+	 (f32)((tilemap->max_y - tilemap->min_y + 1) * TILE_SIZE)}
+    };
+
+    return result;
 }

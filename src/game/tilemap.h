@@ -3,6 +3,7 @@
 
 #include "base/linear_arena.h"
 #include "base/vector.h"
+#include "base/rectangle.h"
 
 #define TILEMAP_MAX_TILES   2048
 #define TILE_SIZE           64
@@ -24,9 +25,14 @@ typedef struct TileNode {
 
 typedef struct {
     TileNode *tile_nodes[TILEMAP_MAX_TILES]; // NOTE: must be power of 2
+    s32 min_x;
+    s32 min_y;
+    s32 max_x;
+    s32 max_y;
 } Tilemap;
 
 void   tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena);
 Tile  *tilemap_get_tile(Tilemap *tilemap, Vector2i coords);
+Rectangle tilemap_get_bounding_box(const Tilemap *tilemap);
 
 #endif //TILEMAP_H

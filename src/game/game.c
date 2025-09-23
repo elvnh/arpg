@@ -151,7 +151,8 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
                 continue;
             }
 
-            entity_vs_entity_collision(physics_a, collider_a, physics_b, collider_b, &movement_fraction_left, dt);
+            entity_vs_entity_collision(physics_a, collider_a, physics_b, collider_b,
+		&movement_fraction_left, dt);
         }
 
         ASSERT(movement_fraction_left >= 0.0f);
@@ -216,8 +217,14 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena)
 {
-    for (s32 y = 0; y < 4; ++y) {
-        for (s32 x = 0; x < 4; ++x) {
+    // TODO: only render visible part of tilemap
+    s32 min_x = world->tilemap.min_x;
+    s32 max_x = world->tilemap.max_x;
+    s32 min_y = world->tilemap.min_y;
+    s32 max_y = world->tilemap.max_y;
+
+    for (s32 y = min_y; y <= max_y; ++y) {
+        for (s32 x = min_x; x <= max_x; ++x) {
             Vector2i tile_coords = {x, y};
             Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
             RGBA32 color;
@@ -239,7 +246,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
             }
 
             Rectangle tile_rect = {
-                .position = {(f32)(x * TILE_SIZE), (f32)(y * TILE_SIZE)},
+                .position = tile_to_world_coords(tile_coords),
                 .size = { (f32)TILE_SIZE, (f32)TILE_SIZE }
             };
 
@@ -297,7 +304,8 @@ static void render_tree(QuadTree *tree, RenderBatch *rb, LinearArena *arena,
 static void game_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
     FrameData frame_data, LinearArena *frame_arena)
 {
-    Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_width, frame_data.window_height);
+    Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_width,
+	frame_data.window_height);
     RenderBatch *rb = rb_list_push_new(rbs, proj, frame_arena);
 
     world_render(&game_state->world, rb, assets, frame_data, frame_arena);
@@ -324,7 +332,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 	}
     }
 
-    Rectangle tilemap_area = {{0, 0}, {512, 512}};
+    Rectangle tilemap_area = tilemap_get_bounding_box(&game_state->world.tilemap);
     es_initialize(&game_state->world.entities, tilemap_area, &game_memory->permanent_memory);
 
     for (s32 i = 0; i < 2; ++i) {

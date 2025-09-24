@@ -52,7 +52,7 @@ void      *es_impl_add_component(Entity *entity, ComponentType type);
 void      *es_impl_get_component(Entity *entity, ComponentType type);
 void	   es_set_entity_area(EntityStorage *es, Entity *entity, Rectangle rectangle, LinearArena *arena);
 void	   es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_pos, LinearArena *arena);
-void	   es_remove_entity_from_quad_tree(EntityStorage *es, Entity *entity);
+void	   es_remove_entity_from_quad_tree(QuadTree *qt, EntityStorage *es, Entity *entity);
 EntityID   es_get_id_of_entity(EntityStorage *es, Entity *entity);
 
 #endif //ENTITY_H

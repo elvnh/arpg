@@ -388,6 +388,8 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     }
 
     handle_collision_and_movement(world, dt);
+
+    printf("%zu\n", la_get_memory_usage(&world->world_arena));
 }
 
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,

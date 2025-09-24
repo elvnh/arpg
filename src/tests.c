@@ -1,6 +1,7 @@
 #include "base/free_list_arena.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
+#include "base/sl_list.h"
 #include "base/typedefs.h"
 #include "base/string8.h"
 #include "base/linear_arena.h"
@@ -1084,6 +1085,125 @@ static void tests_free_list()
     }
 }
 
+static void tests_sl_list()
+{
+    typedef struct s32_node {
+        s32 data;
+        struct s32_node *next;
+    } s32_node;
+
+    typedef struct {
+        s32_node *head;
+        s32_node *tail;
+    } s32_list;
+
+    LinearArena arena = la_create(default_allocator, MB(4));
+
+    {
+        s32_list list = {0};
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
+        sl_list_push_front(&list, node1);
+        ASSERT(sl_list_head(&list) == node1);
+        ASSERT(sl_list_tail(&list) == node1);
+        ASSERT(!sl_list_is_empty(&list));
+    }
+
+    {
+        s32_list list = {0};
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
+        sl_list_push_back(&list, node1);
+        ASSERT(sl_list_head(&list) == node1);
+        ASSERT(sl_list_tail(&list) == node1);
+        ASSERT(!sl_list_is_empty(&list));
+    }
+
+    {
+        s32_list list = {0};
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
+        sl_list_push_front(&list, node1);
+        sl_list_pop(&list);
+        ASSERT(sl_list_head(&list) == 0);
+        ASSERT(sl_list_tail(&list) == 0);
+        ASSERT(sl_list_is_empty(&list));
+    }
+
+    {
+        s32_list list = {0};
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
+        sl_list_push_back(&list, node1);
+        sl_list_push_back(&list, node2);
+
+        ASSERT(sl_list_head(&list) == node1);
+        ASSERT(sl_list_tail(&list) == node2);
+
+        sl_list_pop(&list);
+        ASSERT(sl_list_head(&list) == node2);
+        ASSERT(sl_list_tail(&list) == node2);
+        ASSERT(!sl_list_is_empty(&list));
+
+        sl_list_pop(&list);
+        ASSERT(sl_list_is_empty(&list));
+    }
+
+    {
+        s32_list list = {0};
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
+
+        sl_list_push_front(&list, node1);
+        sl_list_push_front(&list, node2);
+        ASSERT(sl_list_head(&list) == node2);
+        ASSERT(sl_list_tail(&list) == node1);
+    }
+
+    {
+        s32_list list = {0};
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
+        node1->data = 0;
+
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
+        node2->data = 1;
+
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
+        node3->data = 2;
+
+        sl_list_push_back(&list, node1);
+        sl_list_push_back(&list, node2);
+        sl_list_push_back(&list, node3);
+
+        s32 i = 0;
+        for (s32_node *node = sl_list_head(&list); node; node = sl_list_next(node)) {
+            ASSERT(node->data == i);
+            ++i;
+        }
+    }
+
+    {
+        s32_list list = {0};
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
+        node1->data = 0;
+
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
+        node2->data = 1;
+
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
+        node3->data = 2;
+
+        sl_list_push_front(&list, node1);
+        sl_list_push_front(&list, node2);
+        sl_list_push_front(&list, node3);
+
+        s32 i = 2;
+        for (s32_node *node = sl_list_head(&list); node; node = sl_list_next(node)) {
+            ASSERT(node->data == i);
+            --i;
+        }
+    }
+
+    la_destroy(&arena);
+}
+
 static void run_tests()
 {
     tests_arena();
@@ -1093,4 +1213,5 @@ static void run_tests()
     tests_list();
     tests_path();
     tests_free_list();
+    tests_sl_list();
 }

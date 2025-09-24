@@ -1,5 +1,3 @@
-#include <dlfcn.h>
-
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <string.h>
@@ -17,29 +15,23 @@
 #include "platform.h"
 #include "renderer/renderer_backend.h"
 #include "asset_manager.h"
-
 #include "game/renderer/render_command.h"
 #include "base/vertex.h"
+#include "game/renderer/render_batch.h"
+#include "game/game.h"
 #include "tests.c"
+#include "file_watcher.h"
+#include "hot_reload.h"
+#include "renderer_dispatch.h"
 
 #define WINDOW_WIDTH 768
 #define WINDOW_HEIGHT 468
-
-#include "game/renderer/render_batch.h"
-
-#include "game/game.h"
 
 #define GAME_MEMORY_SIZE MB(32)
 #define PERMANENT_ARENA_SIZE GAME_MEMORY_SIZE / 2
 #define FRAME_ARENA_SIZE GAME_MEMORY_SIZE / 2
 
-#include "file_watcher.h"
-#include "hot_reload.h"
-#include "renderer_dispatch.h"
-
 #define GAME_SO_NAME "libgame.so"
-
-// TODO: clean up this file
 
 int main()
 {

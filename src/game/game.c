@@ -131,7 +131,6 @@ static CollisionRule *collision_rule_find(GameWorld *world, EntityID a, EntityID
 static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 should_collide)
 {
     // TODO: remove collision rules when entity dies
-    // TODO: reuse already allocated rules
     ASSERT(!entity_id_equal(a, b));
 
     CollisionRule *rule = world->collision_rules.first_free_node;
@@ -180,9 +179,9 @@ static void remove_collision_rules_with_entity(CollisionRuleTable *table, Entity
     }
 }
 
-static void entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a,
+static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a,
     ColliderComponent *collider_a, Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b,
-    f32 *movement_fraction_left, f32 dt)
+    f32 movement_fraction_left, f32 dt)
 {
     EntityID id_a = es_get_id_of_entity(&world->entities, a);
     EntityID id_b = es_get_id_of_entity(&world->entities, b);
@@ -194,7 +193,7 @@ static void entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompo
         Rectangle rect_a = get_entity_rect(physics_a, collider_a);
         Rectangle rect_b = get_entity_rect(physics_b, collider_b);
 
-        CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, rect_a, rect_b,
+        CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
             physics_a->velocity, physics_b->velocity, dt);
 
         if (!collider_a->non_blocking && !collider_b->non_blocking) {
@@ -204,7 +203,7 @@ static void entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompo
             physics_a->velocity = collision.new_velocity_a;
             physics_b->velocity = collision.new_velocity_b;
 
-            *movement_fraction_left = collision.movement_fraction_left;
+            movement_fraction_left = collision.movement_fraction_left;
         }
 
         if (collision.are_colliding) {
@@ -217,10 +216,12 @@ static void entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompo
             }
         }
     }
+
+    return movement_fraction_left;
 }
 
-static void entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderComponent *collider,
-    GameWorld *world, f32 *movement_fraction_left, f32 dt)
+static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderComponent *collider,
+    GameWorld *world, f32 movement_fraction_left, f32 dt)
 {
     Vector2 old_entity_pos = physics->position;
     Vector2 new_entity_pos = v2_add(physics->position, v2_mul_s(physics->velocity, dt));
@@ -249,18 +250,20 @@ static void entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompo
                     {(f32)TILE_SIZE, (f32)TILE_SIZE },
                 };
 
-                CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, entity_rect,
+                CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
 		    tile_rect, physics->velocity, V2_ZERO, dt);
 
                 physics->position = collision.new_position_a;
                 physics->velocity = collision.new_velocity_a;
-                *movement_fraction_left = collision.movement_fraction_left;
+                movement_fraction_left = collision.movement_fraction_left;
 
                 ASSERT(v2_eq(collision.new_position_b, tile_rect.position));
                 ASSERT(v2_eq(collision.new_velocity_b, V2_ZERO));
             }
         }
     }
+
+    return movement_fraction_left;
 }
 
 static void handle_collision_and_movement(GameWorld *world, f32 dt)
@@ -277,7 +280,8 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
             f32 movement_fraction_left = 1.0f;
 
             if (collider_a) {
-                entity_vs_tilemap_collision(physics_a, collider_a, world, &movement_fraction_left, dt);
+                movement_fraction_left = entity_vs_tilemap_collision(physics_a,
+		    collider_a, world, movement_fraction_left, dt);
 
                 for (EntityIndex j = i + 1; j < world->entities.alive_entity_count; ++j) {
                     EntityID id_b = world->entities.alive_entity_ids[j];
@@ -291,8 +295,8 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
                     }
 
                     if (entities_should_collide(a, b)) {
-                        entity_vs_entity_collision(world, a, physics_a, collider_a, b, physics_b, collider_b,
-                            &movement_fraction_left, dt);
+                        movement_fraction_left = entity_vs_entity_collision(world, a, physics_a,
+			    collider_a, b, physics_b, collider_b, movement_fraction_left, dt);
                     }
                 }
             }

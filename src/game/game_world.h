@@ -5,6 +5,7 @@
 #include "tilemap.h"
 #include "camera.h"
 
+// TODO: more arbitrary collision responses
 typedef struct CollisionRule {
     EntityID   a;
     EntityID   b;

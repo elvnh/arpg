@@ -1,6 +1,7 @@
 #ifndef VECTOR2_H
 #define VECTOR2_H
 
+#include "utils.h"
 #include "maths.h"
 
 #define V2_ZERO ((Vector2) {0})
@@ -138,6 +139,14 @@ static inline Vector2 v2_interpolate(Vector2 a, Vector2 b, f32 t)
     f32 new_y = interpolate_sin(a.y, b.y, t);
 
     Vector2 result = v2(new_x, new_y);
+    return result;
+}
+
+static inline Vector2 v2_reflect(Vector2 v, Vector2 normal)
+{
+    ASSERT(v2_mag(normal) == 1.0f);
+    Vector2 result = v2_sub(v, v2_mul_s(normal, 2.0f * v2_dot(v, normal)));
+
     return result;
 }
 

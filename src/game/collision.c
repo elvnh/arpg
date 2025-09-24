@@ -27,6 +27,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
         .new_velocity_b = velocity_b,
         .movement_fraction_left = movement_fraction_left,
         .are_colliding = false,
+        .collision_normal = {0}
     };
 
     Rectangle md = rect_minkowski_diff(rect_a, rect_b);
@@ -36,21 +37,22 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
         // Have already collided
         Vector2 new_pos = v2_sub(result.new_position_a, penetration.point);
 
-	Vector2 push_dir = {0};
+	Vector2 collision_normal = {0};
 	if (penetration.side == RECT_SIDE_TOP) {
-	    push_dir.y = -1;
+	    collision_normal.y = -1;
 	} else if (penetration.side == RECT_SIDE_BOTTOM) {
-	    push_dir.y = 1;
+	    collision_normal.y = 1;
 	} else if (penetration.side == RECT_SIDE_LEFT) {
-	    push_dir.x = 1;
+	    collision_normal.x = 1;
 	} else if (penetration.side == RECT_SIDE_RIGHT) {
-	    push_dir.x = -1;
+	    collision_normal.x = -1;
 	} else {
 	    ASSERT(0);
 	}
 
-	result.new_position_a = v2_add(new_pos, v2_mul_s(push_dir, COLLISION_MARGIN));
+	result.new_position_a = v2_add(new_pos, v2_mul_s(collision_normal, COLLISION_MARGIN));
         result.are_colliding = true;
+        result.collision_normal = collision_normal;
 
         rect_collision_reset_velocities(&result.new_velocity_a, &result.new_velocity_b, penetration.side);
     } else {
@@ -84,6 +86,24 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 	    f32 remaining = result.movement_fraction_left - intersection.time_of_impact;
             result.movement_fraction_left = MAX(0.0f, remaining);
             result.are_colliding = true;
+
+            switch (intersection.side_of_collision) {
+                case RECT_SIDE_TOP: {
+                    result.collision_normal = v2(0, -1);
+                } break;
+
+                case RECT_SIDE_BOTTOM: {
+                    result.collision_normal = v2(0, 1);
+                } break;
+
+                case RECT_SIDE_LEFT: {
+                    result.collision_normal = v2(1, 0);
+                } break;
+
+                case RECT_SIDE_RIGHT: {
+                    result.collision_normal = v2(1, 0);
+                } break;
+            }
         }
     }
 

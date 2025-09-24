@@ -186,6 +186,7 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
             physics_a->velocity, physics_b->velocity, dt);
 
         if (!collider_a->non_blocking && !collider_b->non_blocking) {
+            // TODO: allow entities to bounce ofdf eachother too
             physics_a->position = collision.new_position_a;
             physics_b->position = collision.new_position_b;
 
@@ -242,12 +243,20 @@ static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompon
                 CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
 		    tile_rect, physics->velocity, V2_ZERO, dt);
 
-                physics->position = collision.new_position_a;
-                physics->velocity = collision.new_velocity_a;
-                movement_fraction_left = collision.movement_fraction_left;
+                if (collision.are_colliding) {
+                    physics->position = collision.new_position_a;
+#if 0
+                    physics->velocity = collision.new_velocity_a;
+#else
+                    physics->velocity = v2_reflect(physics->velocity, collision.collision_normal);
+                    /* physics->velocity = v2_sub(physics->velocity, */
+                    /*     v2_mul_s(collision.collision_normal, 2 * v2_dot(physics->velocity, collision.collision_normal))); */
+#endif
+                    movement_fraction_left = collision.movement_fraction_left;
 
-                ASSERT(v2_eq(collision.new_position_b, tile_rect.position));
-                ASSERT(v2_eq(collision.new_velocity_b, V2_ZERO));
+                    ASSERT(v2_eq(collision.new_position_b, tile_rect.position));
+                    ASSERT(v2_eq(collision.new_velocity_b, V2_ZERO));
+                }
             }
         }
     }
@@ -310,7 +319,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 
     PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
     physics->position = pos;
-    physics->velocity = v2(100.0f, 0.0f);
+    physics->velocity = v2(250.f, 100.0f);
 
     ColliderComponent *collider = es_add_component(entity, ColliderComponent);
     collider->size = v2(16.0f, 16.0f);
@@ -420,7 +429,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         }
     }
 
-    Rectangle rect = {{100, 100}, {100, 100}};
+    Rectangle rect = {{0, 0}, {1000, 1000}};
     EntityIDList entities_in_area = qt_get_entities_in_area(&world->entities.quad_tree, rect, frame_arena);
 
     for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {
@@ -429,7 +438,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         entity_render(entity, rb, assets, frame_arena);
     }
 
-    rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.7f}, assets->shader2, 3);
+    rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shader2, 3);
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
@@ -518,7 +527,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
         player->color = RGBA32_BLUE;
         PhysicsComponent *physics = es_add_component(player, PhysicsComponent);
-        physics->position = v2((f32)(16 * (i * 2)), 16.0f * ((f32)i * 2.0f));
+        physics->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
 
         ColliderComponent *collider = es_add_component(player, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);

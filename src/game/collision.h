@@ -13,6 +13,7 @@ typedef struct {
 
     f32      movement_fraction_left;
 
+    Vector2 collision_normal;
     b32 are_colliding;
 } CollisionInfo;
 

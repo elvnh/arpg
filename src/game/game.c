@@ -86,90 +86,87 @@ static b32 entity_id_less_than(EntityID lhs, EntityID rhs)
     return result;
 }
 
-static CollisionRule *allocate_new_collision_rule(EntityID a, EntityID b, b32 should_collide)
+static CollisionRule collision_rule_create(EntityID a, EntityID b)
+{
+    if (entity_id_less_than(b, a)) {
+        EntityID tmp = a;
+        a = b;
+        b = tmp;
+    }
+
+    CollisionRule result = {0};
+    result.a = a;
+    result.b = b;
+
+    return result;
+}
+
+static CollisionRule *allocate_collision_rule(EntityID a, EntityID b, b32 should_collide)
 {
     // TODO: use world arena
-    ASSERT(entity_id_less_than(a, b));
-
     CollisionRule *rule = allocate_item(default_allocator, CollisionRule);
-    rule->a = a;
-    rule->b = b;
+    *rule = collision_rule_create(a, b);
     rule->should_collide = should_collide;
 
     return rule;
 }
 
-static u64 collision_rule_hash(CollisionRule rule)
+static ssize collision_rule_hash_index(CollisionRule rule, const CollisionRuleTable *table)
 {
-    (void)rule;
-    return 0;
+    ssize length = ARRAY_COUNT(table->collision_rules);
+    u64 hash = 0; // TODO: hash
+
+    ssize result = hash_index(hash, length);
+
+    return result;
 }
 
-static void add_collision_rule(GameWorld *world, EntityID a, EntityID b, b32 should_collide)
+static CollisionRule *collision_rule_find(GameWorld *world, EntityID a, EntityID b)
 {
-    // TODO: remove collision rules when entity dies
-
-    // make lower entity come first
-    ASSERT(!entity_id_equal(a, b));
-
-    if (entity_id_less_than(b, a)) {
-        EntityID tmp = a;
-        a = b;
-        b = tmp;
-    }
-
-    ASSERT(a.slot_index <= b.slot_index);
-
-    // TODO: reuse already allocated rules
-    CollisionRule *rule = allocate_new_collision_rule(a, b, should_collide);
-    u64 rule_hash = collision_rule_hash(*rule);
-    ssize index = rule_hash & (ARRAY_COUNT(world->collision_rules.collision_rules) - 1);
-
-    CollisionRule *rule_in_slot = world->collision_rules.collision_rules[index];
-
-    for (CollisionRule *r = rule_in_slot; r; r = r->next_in_hash) {
-        ASSERT(!(r->a.slot_index == r->b.slot_index));
-    }
-
-    if (rule_in_slot) {
-        rule->next_in_hash = rule_in_slot;
-    }
-
-    world->collision_rules.collision_rules[index] = rule;
-}
-
-static CollisionRule *find_collision_rule(GameWorld *world, EntityID a, EntityID b)
-{
-    // TODO: function for creating rules
-    if (entity_id_less_than(b, a)) {
-        EntityID tmp = a;
-        a = b;
-        b = tmp;
-    }
-
-    CollisionRule rule = {a, b, 0, 0};
-
-    u64 rule_hash = collision_rule_hash(rule);
-    ssize index = rule_hash & (ARRAY_COUNT(world->collision_rules.collision_rules) - 1);
+    CollisionRule rule = collision_rule_create(a, b);
+    ssize index = collision_rule_hash_index(rule, &world->collision_rules);
 
     CollisionRule *current_rule = world->collision_rules.collision_rules[index];
-    for (; current_rule; current_rule = current_rule->next_in_hash) {
+    while (current_rule) {
         if (entity_id_equal(current_rule->a, a) && entity_id_equal(current_rule->b, b)) {
             break;
         }
+
+	current_rule = current_rule->next;
     }
 
     return current_rule;
 }
 
+static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 should_collide)
+{
+    // TODO: remove collision rules when entity dies
+    // TODO: reuse already allocated rules
+    ASSERT(!entity_id_equal(a, b));
 
-static void entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a, ColliderComponent *collider_a,
-    Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b, f32 *movement_fraction_left, f32 dt)
+    CollisionRule *rule = allocate_collision_rule(a, b, should_collide);
+    ssize index = collision_rule_hash_index(*rule, &world->collision_rules);
+
+    CollisionRule *rule_in_slot = world->collision_rules.collision_rules[index];
+
+    ASSERT(!collision_rule_find(world, rule->a, rule->b));
+
+    if (rule_in_slot) {
+        rule->next = rule_in_slot;
+    }
+
+    world->collision_rules.collision_rules[index] = rule;
+}
+
+
+static void entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a,
+    ColliderComponent *collider_a, Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b,
+    f32 *movement_fraction_left, f32 dt)
 {
     EntityID id_a = es_get_id_of_entity(&world->entities, a);
     EntityID id_b = es_get_id_of_entity(&world->entities, b);
 
-    CollisionRule *rule_for_entities = find_collision_rule(world, id_a, id_b);
+    CollisionRule *rule_for_entities = collision_rule_find(world, id_a, id_b);
     b32 should_collide = !rule_for_entities || rule_for_entities->should_collide;
 
     if (should_collide) {
@@ -311,7 +308,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 
     es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size});
 
-    add_collision_rule(world, spawner_id, id, false);
+    collision_rule_add(world, spawner_id, id, false);
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)

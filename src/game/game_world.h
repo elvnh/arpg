@@ -9,7 +9,7 @@ typedef struct CollisionRule {
     EntityID   a;
     EntityID   b;
     b32        should_collide;
-    struct CollisionRule *next_in_hash;
+    struct CollisionRule *next;
 } CollisionRule;
 
 typedef struct {

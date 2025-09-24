@@ -152,4 +152,12 @@ static inline b32 f32_in_range(f32 val, f32 low, f32 high, f32 epsilon)
     return result;
 }
 
+static inline ssize hash_index(u64 hash, ssize array_size)
+{
+    ASSERT(is_pow2(array_size));
+
+    ssize result = (ssize)(hash & (usize)(array_size - 1));
+    return result;
+}
+
 #endif //UTILS_H

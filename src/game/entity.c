@@ -142,10 +142,8 @@ static EntityID id_queue_pop(EntityIDQueue *queue)
     return id;
 }
 
-void es_initialize(EntityStorage *es, Rectangle world_area, LinearArena *parent_arena)
+void es_initialize(EntityStorage *es, Rectangle world_area)
 {
-    es->arena = la_create(la_allocator(parent_arena), ES_MEMORY_SIZE);
-
     id_queue_initialize(&es->free_id_queue);
     qt_initialize(&es->quad_tree, world_area);
 
@@ -244,21 +242,21 @@ Entity *es_get_entity_in_slot(EntityStorage *es, EntityIndex slot_index)
 }
 
 
-void es_set_entity_area(EntityStorage *es, Entity *entity, Rectangle rectangle)
+void es_set_entity_area(EntityStorage *es, Entity *entity, Rectangle rectangle, LinearArena *arena)
 {
     EntitySlot *slot = es_get_entity_slot(entity);
     EntityID id = get_entity_id_from_slot(es, slot);
 
     slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, es, id,
-	slot->quad_tree_location, rectangle, &es->arena);
+	slot->quad_tree_location, rectangle, arena);
 }
 
-void es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_pos)
+void es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_pos, LinearArena *arena)
 {
     EntitySlot *slot = es_get_entity_slot(entity);
     EntityID id = get_entity_id_from_slot(es, slot);
     slot->quad_tree_location = qt_move_entity(&es->quad_tree, es, id, slot->quad_tree_location,
-	new_pos, &es->arena);
+	new_pos, arena);
 }
 
 void es_remove_entity_from_quad_tree(EntityStorage *es, Entity *entity)

@@ -42,17 +42,16 @@ typedef struct EntityStorage {
     EntityID       alive_entity_ids[MAX_ENTITIES];
     EntityIndex    alive_entity_count;
     QuadTree       quad_tree;
-    LinearArena    arena; // TODO: use world arena
 } EntityStorage;
 
-void       es_initialize(EntityStorage *es, Rectangle world_area, LinearArena *parent_arena);
+void       es_initialize(EntityStorage *es, Rectangle world_area);
 EntityID   es_create_entity(EntityStorage *es);
 void       es_remove_entity(EntityStorage *es, EntityID id);
 Entity    *es_get_entity(EntityStorage *es, EntityID id);
 void      *es_impl_add_component(Entity *entity, ComponentType type);
 void      *es_impl_get_component(Entity *entity, ComponentType type);
-void	   es_set_entity_area(EntityStorage *es, Entity *entity, Rectangle rectangle);
-void	   es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_pos);
+void	   es_set_entity_area(EntityStorage *es, Entity *entity, Rectangle rectangle, LinearArena *arena);
+void	   es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_pos, LinearArena *arena);
 void	   es_remove_entity_from_quad_tree(EntityStorage *es, Entity *entity);
 EntityID   es_get_id_of_entity(EntityStorage *es, Entity *entity);
 

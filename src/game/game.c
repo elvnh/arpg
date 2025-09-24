@@ -274,7 +274,7 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
             Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(physics_a->velocity, movement_fraction_left), dt);
             physics_a->position = v2_add(physics_a->position, to_move_this_frame);
 
-            es_set_entity_position(&world->entities, a, physics_a->position);
+            es_set_entity_position(&world->entities, a, physics_a->position, &world->world_arena);
         }
     }
 }
@@ -298,7 +298,8 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
     DamageComponent *damage = es_add_component(entity, DamageComponent);
     damage->damage = 10;
 
-    es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size});
+    es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size},
+	&world->world_arena);
 
     collision_rule_add(world, spawner_id, id, false);
 }
@@ -479,7 +480,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     }
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&game_state->world.tilemap);
-    es_initialize(&game_state->world.entities, tilemap_area, &game_state->world.world_arena);
+    es_initialize(&game_state->world.entities, tilemap_area);
 
     for (s32 i = 0; i < 2; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);
@@ -499,6 +500,6 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         ASSERT(es_has_component(player, ColliderComponent));
 
 	Rectangle rect = get_entity_rect(physics, collider);
-	es_set_entity_area(&game_state->world.entities, player, rect);
+	es_set_entity_area(&game_state->world.entities, player, rect, &game_state->world.world_arena);
     }
 }

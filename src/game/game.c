@@ -3,6 +3,7 @@
 #include "base/allocator.h"
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
+#include "base/list.h"
 #include "base/rectangle.h"
 #include "base/sl_list.h"
 #include "base/rgba.h"
@@ -104,7 +105,7 @@ static CollisionRule collision_rule_create(EntityID a, EntityID b)
 
 static ssize collision_rule_hash_index(CollisionRule rule, const CollisionRuleTable *table)
 {
-    ssize length = ARRAY_COUNT(table->collision_rules);
+    ssize length = ARRAY_COUNT(table->table);
     u64 hash = 0; // TODO: hash
 
     ssize result = hash_index(hash, length);
@@ -114,16 +115,15 @@ static ssize collision_rule_hash_index(CollisionRule rule, const CollisionRuleTa
 
 static CollisionRule *collision_rule_find(GameWorld *world, EntityID a, EntityID b)
 {
-    CollisionRule rule = collision_rule_create(a, b);
-    ssize index = collision_rule_hash_index(rule, &world->collision_rules);
+    CollisionRule searched_rule = collision_rule_create(a, b);
+    ssize index = collision_rule_hash_index(searched_rule, &world->collision_rules);
 
-    CollisionRule *current_rule = world->collision_rules.collision_rules[index];
-    while (current_rule) {
+    CollisionRuleList *list = &world->collision_rules.table[index];
+    CollisionRule *current_rule;
+    for (current_rule = list_head(list); current_rule; current_rule = list_next(current_rule)) {
         if (entity_id_equal(current_rule->a, a) && entity_id_equal(current_rule->b, b)) {
             break;
         }
-
-	current_rule = current_rule->next;
     }
 
     return current_rule;
@@ -134,11 +134,11 @@ static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 sho
     // TODO: remove collision rules when entity dies
     ASSERT(!entity_id_equal(a, b));
 
-    CollisionRule *rule = world->collision_rules.first_free_node;
+    CollisionRule *rule = list_head(&world->collision_rules.free_node_list);
     if (!rule) {
 	rule = la_allocate_item(&world->world_arena, CollisionRule);
     } else {
-	world->collision_rules.first_free_node = rule->next;
+	list_pop_head(&world->collision_rules.free_node_list);
     }
 
     *rule = collision_rule_create(a, b);
@@ -147,36 +147,24 @@ static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 sho
     ASSERT(!collision_rule_find(world, rule->a, rule->b));
 
     ssize index = collision_rule_hash_index(*rule, &world->collision_rules);
-    CollisionRule *rule_in_slot = world->collision_rules.collision_rules[index];
-
-    if (rule_in_slot) {
-        rule->next = rule_in_slot;
-    }
-
-    world->collision_rules.collision_rules[index] = rule;
+    list_push_back(&world->collision_rules.table[index], rule);
 }
 
 static void remove_collision_rules_with_entity(CollisionRuleTable *table, EntityID a)
 {
-    for (s32 i = 0; i < ARRAY_COUNT(table->collision_rules); ++i) {
-	CollisionRule *curr_rule = table->collision_rules[i];
-	CollisionRule *prev_rule = 0;
+    for (s32 i = 0; i < ARRAY_COUNT(table->table); ++i) {
+        CollisionRuleList *list = &table->table[i];
 
-	while (curr_rule) {
-	    if (entity_id_equal(curr_rule->a, a) || entity_id_equal(curr_rule->b, a)) {
-		if (prev_rule) {
-		    prev_rule->next = curr_rule->next;
-		} else {
-		    table->collision_rules[i] = curr_rule->next;
-		}
+        for (CollisionRule *rule = list_head(list); rule;) {
+	    if (entity_id_equal(rule->a, a) || entity_id_equal(rule->b, a)) {
+                CollisionRule *next = list_next(rule);
 
-		curr_rule->next = table->first_free_node;
-		table->first_free_node = curr_rule;
+                list_remove(list, rule);
+                list_push_back(&table->free_node_list, rule);
+
+                rule = next;
 	    }
-
-	    prev_rule = curr_rule;
-	    curr_rule = curr_rule->next;
-	}
+        }
     }
 }
 
@@ -389,7 +377,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
     handle_collision_and_movement(world, dt);
 
-    printf("%zu\n", la_get_memory_usage(&world->world_arena));
+    //printf("%zu\n", la_get_memory_usage(&world->world_arena));
 }
 
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,

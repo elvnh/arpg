@@ -7,15 +7,21 @@
 
 // TODO: more arbitrary collision responses
 typedef struct CollisionRule {
+    struct CollisionRule *next;
+    struct CollisionRule *prev;
     EntityID   a;
     EntityID   b;
     b32        should_collide;
-    struct CollisionRule *next;
 } CollisionRule;
 
 typedef struct {
-    CollisionRule *collision_rules[512];
-    CollisionRule *first_free_node;
+    CollisionRule *head;
+    CollisionRule *tail;
+} CollisionRuleList;
+
+typedef struct {
+    CollisionRuleList  table[512];
+    CollisionRuleList  free_node_list;
 } CollisionRuleTable;
 
 typedef struct {

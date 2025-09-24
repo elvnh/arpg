@@ -17,6 +17,7 @@ typedef struct {
 } CollisionRuleTable;
 
 typedef struct {
+    LinearArena world_arena;
     Camera camera;
     Tilemap tilemap;
     EntityStorage entities;

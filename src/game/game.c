@@ -101,16 +101,6 @@ static CollisionRule collision_rule_create(EntityID a, EntityID b)
     return result;
 }
 
-static CollisionRule *allocate_collision_rule(EntityID a, EntityID b, b32 should_collide)
-{
-    // TODO: use world arena
-    CollisionRule *rule = allocate_item(default_allocator, CollisionRule);
-    *rule = collision_rule_create(a, b);
-    rule->should_collide = should_collide;
-
-    return rule;
-}
-
 static ssize collision_rule_hash_index(CollisionRule rule, const CollisionRuleTable *table)
 {
     ssize length = ARRAY_COUNT(table->collision_rules);
@@ -144,12 +134,14 @@ static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 sho
     // TODO: reuse already allocated rules
     ASSERT(!entity_id_equal(a, b));
 
-    CollisionRule *rule = allocate_collision_rule(a, b, should_collide);
-    ssize index = collision_rule_hash_index(*rule, &world->collision_rules);
-
-    CollisionRule *rule_in_slot = world->collision_rules.collision_rules[index];
+    CollisionRule *rule = la_allocate_item(&world->world_arena, CollisionRule);
+    *rule = collision_rule_create(a, b);
+    rule->should_collide = should_collide;
 
     ASSERT(!collision_rule_find(world, rule->a, rule->b));
+
+    ssize index = collision_rule_hash_index(*rule, &world->collision_rules);
+    CollisionRule *rule_in_slot = world->collision_rules.collision_rules[index];
 
     if (rule_in_slot) {
         rule->next = rule_in_slot;
@@ -473,17 +465,21 @@ void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const A
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
 }
 
+#define WORLD_ARENA_SIZE MB(2)
+
 void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
+    game_state->world.world_arena = la_create(la_allocator(&game_memory->permanent_memory), WORLD_ARENA_SIZE);
+
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {
 	    tilemap_insert_tile(&game_state->world.tilemap, (Vector2i){x, y}, TILE_FLOOR,
-		&game_memory->permanent_memory);
+		&game_state->world.world_arena);
 	}
     }
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&game_state->world.tilemap);
-    es_initialize(&game_state->world.entities, tilemap_area, &game_memory->permanent_memory);
+    es_initialize(&game_state->world.entities, tilemap_area, &game_state->world.world_arena);
 
     for (s32 i = 0; i < 2; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);

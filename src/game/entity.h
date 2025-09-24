@@ -42,7 +42,7 @@ typedef struct EntityStorage {
     EntityID       alive_entity_ids[MAX_ENTITIES];
     EntityIndex    alive_entity_count;
     QuadTree       quad_tree;
-    LinearArena    arena;
+    LinearArena    arena; // TODO: use world arena
 } EntityStorage;
 
 void       es_initialize(EntityStorage *es, Rectangle world_area, LinearArena *parent_arena);

@@ -7,6 +7,7 @@
 #include "entity_id.h"
 
 #define QUAD_TREE_MAX_DEPTH 6
+#define QT_NULL_LOCATION (QuadTreeLocation){0}
 
 /*
   TODO:
@@ -22,17 +23,19 @@
   - Move children into one struct, allocate all at once
  */
 
-#define QT_NULL_LOCATION (QuadTreeLocation){0}
-
-// TODO: this is only temporary, get rid of it
-#define MAX_ENTITIES_PER_NODE 32
-
 struct EntityStorage;
 
-typedef struct {
+typedef struct QuadTreeElement {
     EntityID entity_id;
     Rectangle area;
+    struct QuadTreeElement *next;
+    struct QuadTreeElement *prev;
 } QuadTreeElement;
+
+typedef struct {
+    QuadTreeElement *head;
+    QuadTreeElement *tail;
+} QuadTreeEntityList;
 
 typedef struct QuadTree {
     Rectangle area;
@@ -42,15 +45,14 @@ typedef struct QuadTree {
     struct QuadTree *bottom_right;
     struct QuadTree *bottom_left;
 
-    QuadTreeElement entities[MAX_ENTITIES_PER_NODE];
-    ssize entity_count;
+    QuadTreeEntityList entities_in_node;
 } QuadTree;
 
 // Store in EntitySlot
 // Return when inserting entity
 typedef struct {
     QuadTree *node;
-    ssize array_index;
+    QuadTreeElement *element;
 } QuadTreeLocation;
 
 // TODO: the EntityStorage* parameters are only temporary

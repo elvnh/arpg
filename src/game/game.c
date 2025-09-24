@@ -334,10 +334,6 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 	&world->world_arena);
 
     collision_rule_add(world, spawner_id, id, false);
-
-    remove_collision_rules_with_entity(&world->collision_rules, id);
-
-    collision_rule_add(world, spawner_id, id, false);
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)

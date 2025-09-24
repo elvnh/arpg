@@ -241,7 +241,6 @@ Entity *es_get_entity_in_slot(EntityStorage *es, EntityIndex slot_index)
     return result;
 }
 
-
 void es_set_entity_area(EntityStorage *es, Entity *entity, Rectangle rectangle, LinearArena *arena)
 {
     EntitySlot *slot = es_get_entity_slot(entity);
@@ -259,6 +258,7 @@ void es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_pos, 
 	new_pos, arena);
 }
 
+// TODO: should only be called internally
 void es_remove_entity_from_quad_tree(EntityStorage *es, Entity *entity)
 {
     EntitySlot *slot = es_get_entity_slot(entity);

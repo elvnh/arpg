@@ -1,4 +1,5 @@
 #include "quad_tree.h"
+#include "base/list.h"
 #include "base/utils.h"
 #include "entity.h"
 
@@ -78,16 +79,16 @@ static QuadTreeLocation qt_insert(QuadTree *qt, EntityID id, Rectangle area, ssi
     }
 
     if (qt_location_is_null(result)) {
-	ASSERT(qt->entity_count < ARRAY_COUNT(qt->entities));
+        // TODO: free list to reuse nodes
+        QuadTreeElement *element = la_allocate_item(arena, QuadTreeElement);
+        element->entity_id = id;
+        element->area = area;
 
-        ssize index = qt->entity_count++;
-        qt->entities[index] = (QuadTreeElement) {
-	    .entity_id = id,
-	    .area = area
-	};
+        // TODO: function that returns pushed element
+        list_push_back(&qt->entities_in_node, element);
 
         result.node = qt;
-        result.array_index = index;
+        result.element = element;
     }
 
     return result;
@@ -97,11 +98,9 @@ QuadTreeLocation qt_move_entity(QuadTree *qt, struct EntityStorage *es, EntityID
     QuadTreeLocation location, Vector2 new_position, LinearArena *arena)
 {
     ASSERT(!qt_location_is_null(location));
-    QuadTreeElement *elem = &location.node->entities[location.array_index];
-    Rectangle new_area = {new_position, elem->area.size};
+    Rectangle new_area = {new_position, location.element->area.size};
 
     QuadTreeLocation result = qt_set_entity_area(qt, es, id, location, new_area, arena);
-    //ASSERT_BREAK(result.node->entity_count == 2);
 
     return result;
 }
@@ -121,20 +120,7 @@ QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, Enti
 void qt_remove_entity(struct EntityStorage *es, EntityID id, QuadTreeLocation location)
 {
     ASSERT(!qt_location_is_null(location));
+    ASSERT(location.element->entity_id.slot_index == id.slot_index);
 
-    ssize last_index = location.node->entity_count - 1;
-    QuadTreeElement *to_remove = &location.node->entities[location.array_index];
-    // TODO: ID comparison function
-    ASSERT(to_remove->entity_id.slot_index == id.slot_index);
-    ASSERT(to_remove->entity_id.generation == id.generation);
-
-    QuadTreeElement *last = &location.node->entities[last_index];
-    *to_remove = *last;
-
-    // TODO: don't do it this way
-    // Update swapped entity's array index
-
-    es->entity_slots[last->entity_id.slot_index].quad_tree_location.array_index = location.array_index;
-
-    location.node->entity_count -= 1;
+    list_remove(&location.node->entities_in_node, location.element);
 }

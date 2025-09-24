@@ -62,22 +62,42 @@ static Rectangle get_entity_rect(PhysicsComponent *physics, ColliderComponent *c
     return result;
 }
 
-static void entity_vs_entity_collision(PhysicsComponent *physics_a, ColliderComponent *collider_a,
-    PhysicsComponent *physics_b, ColliderComponent *collider_b, f32 *movement_fraction_left, f32 dt)
+static b32 entities_should_collide(Entity *a, Entity *b)
 {
-    Rectangle rect_a_ = get_entity_rect(physics_a, collider_a);
-    Rectangle rect_b_ = get_entity_rect(physics_b, collider_b);
+    (void)a;
+    (void)b;
+    // TODO: collision rules
+    return true;
+}
 
-    CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, rect_a_, rect_b_,
+static void entity_vs_entity_collision(Entity *a, PhysicsComponent *physics_a, ColliderComponent *collider_a,
+    Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b, f32 *movement_fraction_left, f32 dt)
+{
+    Rectangle rect_a = get_entity_rect(physics_a, collider_a);
+    Rectangle rect_b = get_entity_rect(physics_b, collider_b);
+
+    CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, rect_a, rect_b,
 	physics_a->velocity, physics_b->velocity, dt);
 
-    physics_a->position = collision.new_position_a;
-    physics_b->position = collision.new_position_b;
+    if (!collider_a->non_blocking && !collider_b->non_blocking) {
+        physics_a->position = collision.new_position_a;
+        physics_b->position = collision.new_position_b;
 
-    physics_a->velocity = collision.new_velocity_a;
-    physics_b->velocity = collision.new_velocity_b;
+        physics_a->velocity = collision.new_velocity_a;
+        physics_b->velocity = collision.new_velocity_b;
 
-    *movement_fraction_left = collision.movement_fraction_left;
+        *movement_fraction_left = collision.movement_fraction_left;
+    }
+
+    if (collision.are_colliding) {
+        if (es_has_component(a, DamageComponent)) {
+            printf("Damage A: %d\n", es_get_component(a, DamageComponent)->damage);
+        }
+
+        if (es_has_component(b, DamageComponent)) {
+            printf("Damage B: %d\n", es_get_component(b, DamageComponent)->damage);
+        }
+    }
 }
 
 static void entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderComponent *collider,
@@ -128,41 +148,66 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
 {
     for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
         // TODO: this seems bug prone
+
         EntityID id_a = world->entities.alive_entity_ids[i];
         Entity *a = es_get_entity(&world->entities,id_a);
         PhysicsComponent *physics_a = es_get_component(a, PhysicsComponent);
-        ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
 
-        if (!physics_a || !collider_a) {
-            continue;
-        }
+        if (physics_a) {
+            ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
+            f32 movement_fraction_left = 1.0f;
 
-        f32 movement_fraction_left = 1.0f;
+            if (collider_a) {
+                entity_vs_tilemap_collision(physics_a, collider_a, world, &movement_fraction_left, dt);
 
-        entity_vs_tilemap_collision(physics_a, collider_a, world, &movement_fraction_left, dt);
+                for (EntityIndex j = i + 1; j < world->entities.alive_entity_count; ++j) {
+                    EntityID id_b = world->entities.alive_entity_ids[j];
+                    Entity *b = es_get_entity(&world->entities, id_b);
 
-        for (EntityIndex j = i + 1; j < world->entities.alive_entity_count; ++j) {
-            EntityID id_b = world->entities.alive_entity_ids[j];
-            Entity *b = es_get_entity(&world->entities, id_b);
-            PhysicsComponent *physics_b = es_get_component(b, PhysicsComponent);
-            ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
+                    PhysicsComponent *physics_b = es_get_component(b, PhysicsComponent);
+                    ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
 
-            if (!physics_b || !collider_b) {
-                continue;
+                    if (!physics_b || !collider_b) {
+                        continue;
+                    }
+
+                    if (entities_should_collide(a, b)) {
+                        entity_vs_entity_collision(a, physics_a, collider_a, b, physics_b, collider_b,
+                            &movement_fraction_left, dt);
+                    }
+                }
             }
 
-            entity_vs_entity_collision(physics_a, collider_a, physics_b, collider_b,
-		&movement_fraction_left, dt);
+            ASSERT(movement_fraction_left >= 0.0f);
+            ASSERT(movement_fraction_left <= 1.0f);
+
+            Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(physics_a->velocity, movement_fraction_left), dt);
+            physics_a->position = v2_add(physics_a->position, to_move_this_frame);
+
+            es_set_entity_position(&world->entities, a, physics_a->position);
         }
-
-        ASSERT(movement_fraction_left >= 0.0f);
-        ASSERT(movement_fraction_left <= 1.0f);
-
-        Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(physics_a->velocity, movement_fraction_left), dt);
-        physics_a->position = v2_add(physics_a->position, to_move_this_frame);
-
-	es_set_entity_position(&world->entities, a, physics_a->position);
     }
+}
+
+static void spawn_projectile(GameWorld *world, Vector2 pos)
+{
+    // TODO: return id and entity pointer when creating
+    EntityID id = es_create_entity(&world->entities);
+    Entity *entity = es_get_entity(&world->entities, id);
+    entity->color = RGBA32_RED;
+
+    PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
+    physics->position = v2_add(pos, v2(20.0f, 0.0f));
+    physics->velocity = v2(100.0f, 0.0f);
+
+    ColliderComponent *collider = es_add_component(entity, ColliderComponent);
+    collider->size = v2(16.0f, 16.0f);
+    collider->non_blocking = true;
+
+    DamageComponent *damage = es_add_component(entity, DamageComponent);
+    damage->damage = 10;
+
+    es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size});
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)
@@ -179,6 +224,10 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
         if (es_has_component(player, ColliderComponent)) {
             ColliderComponent *collider = es_get_component(player, ColliderComponent);
             target = v2_add(target, v2_div_s(collider->size, 2));
+        }
+
+        if (input_is_key_pressed(input, KEY_G)) {
+            spawn_projectile(world, physics->position);
         }
 
         camera_set_target(&world->camera, target);

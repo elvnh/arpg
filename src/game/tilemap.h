@@ -20,7 +20,7 @@ typedef struct {
 typedef struct TileNode {
     Tile       tile;
     Vector2i   coordinates;
-    struct TileNode  *next;
+    struct TileNode  *next_in_hash;
 } TileNode;
 
 typedef struct {

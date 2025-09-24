@@ -30,13 +30,13 @@ void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, Linea
     if (curr_node) {
         ASSERT(!v2i_eq(curr_node->coordinates, coords));
 
-        while (curr_node->next) {
+        while (curr_node->next_in_hash) {
             ASSERT(!v2i_eq(curr_node->coordinates, coords));
 
-            curr_node = curr_node->next;
+            curr_node = curr_node->next_in_hash;
         }
 
-        curr_node->next = new_node;
+        curr_node->next_in_hash = new_node;
 
     } else {
         tilemap->tile_nodes[index] = new_node;
@@ -59,7 +59,7 @@ Tile *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
             break;
         }
 
-        node = node->next;
+        node = node->next_in_hash;
     }
 
     if (node) {

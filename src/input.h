@@ -22,6 +22,7 @@ typedef enum {
     INPUT_KEY(KEY_DOWN)                         \
     INPUT_KEY(KEY_ESCAPE)                       \
     INPUT_KEY(KEY_LEFT_SHIFT)                   \
+    INPUT_KEY(KEY_G)                            \
 
 #define INPUT_KEY(key) key,
 typedef enum {

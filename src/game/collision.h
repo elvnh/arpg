@@ -7,11 +7,13 @@
 typedef struct {
     Vector2  new_position_a;
     Vector2  new_position_b;
-             
+
     Vector2  new_velocity_a;
     Vector2  new_velocity_b;
-             
+
     f32      movement_fraction_left;
+
+    b32 are_colliding;
 } CollisionInfo;
 
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,

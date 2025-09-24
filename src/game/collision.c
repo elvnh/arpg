@@ -25,7 +25,8 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
         .new_position_b = rect_b.position,
         .new_velocity_a = velocity_a,
         .new_velocity_b = velocity_b,
-        .movement_fraction_left = movement_fraction_left
+        .movement_fraction_left = movement_fraction_left,
+        .are_colliding = false,
     };
 
     Rectangle md = rect_minkowski_diff(rect_a, rect_b);
@@ -49,6 +50,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 	}
 
 	result.new_position_a = v2_add(new_pos, v2_mul_s(push_dir, COLLISION_MARGIN));
+        result.are_colliding = true;
 
         rect_collision_reset_velocities(&result.new_velocity_a, &result.new_velocity_b, penetration.side);
     } else {
@@ -81,6 +83,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 
 	    f32 remaining = result.movement_fraction_left - intersection.time_of_impact;
             result.movement_fraction_left = MAX(0.0f, remaining);
+            result.are_colliding = true;
         }
     }
 

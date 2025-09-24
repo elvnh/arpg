@@ -4,6 +4,7 @@
 #define COMPONENT_LIST                          \
     COMPONENT(PhysicsComponent)                 \
     COMPONENT(ColliderComponent)                \
+    COMPONENT(DamageComponent)                  \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -27,8 +28,12 @@ typedef struct {
 
 typedef struct {
     Vector2 size;
+    // TODO: offset from pos
+    b32 non_blocking;
 } ColliderComponent;
 
-
+typedef struct {
+    s32 damage;
+} DamageComponent;
 
 #endif //COMPONENT_H

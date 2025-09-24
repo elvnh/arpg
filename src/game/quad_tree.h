@@ -55,6 +55,16 @@ typedef struct {
     QuadTreeElement *element;
 } QuadTreeLocation;
 
+typedef struct EntityIDNode {
+    EntityID id;
+    struct EntityIDNode *next;
+} EntityIDNode;
+
+typedef struct {
+    EntityIDNode *head;
+    EntityIDNode *tail;
+} EntityIDList;
+
 // TODO: the EntityStorage* parameters are only temporary
 
 void qt_initialize(QuadTree *qt, Rectangle area);
@@ -65,5 +75,6 @@ QuadTreeLocation qt_move_entity(QuadTree *qt, struct EntityStorage *es, EntityID
 QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, EntityID id,
     QuadTreeLocation location, Rectangle area, LinearArena *arena);
 void qt_remove_entity(struct EntityStorage *es, EntityID id, QuadTreeLocation location);
+EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *arena);
 
 #endif //QUAD_TREE_H

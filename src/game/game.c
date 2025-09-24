@@ -4,6 +4,7 @@
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
+#include "base/sl_list.h"
 #include "base/rgba.h"
 #include "base/maths.h"
 #include "base/utils.h"
@@ -429,12 +430,18 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         }
     }
 
-    for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
-        EntityID id = world->entities.alive_entity_ids[i];
-        Entity *entity = es_get_entity(&world->entities, id);
+    Rectangle rect = {{100, 100}, {100, 100}};
+    EntityIDList entities_in_area = qt_get_entities_in_area(&world->entities.quad_tree, rect, frame_arena);
+
+    for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {
+        Entity *entity = es_get_entity(&world->entities, node->id);
 
         entity_render(entity, rb, assets, frame_arena);
+        /* EntityID id = world->entities.alive_entity_ids[i]; */
+
     }
+
+    rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.7f}, assets->shader2, 3);
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)

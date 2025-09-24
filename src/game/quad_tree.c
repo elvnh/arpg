@@ -1,5 +1,8 @@
 #include "quad_tree.h"
+#include "base/linear_arena.h"
 #include "base/list.h"
+#include "base/rectangle.h"
+#include "base/sl_list.h"
 #include "base/utils.h"
 #include "entity.h"
 
@@ -123,4 +126,31 @@ void qt_remove_entity(struct EntityStorage *es, EntityID id, QuadTreeLocation lo
     ASSERT(location.element->entity_id.slot_index == id.slot_index);
 
     list_remove(&location.node->entities_in_node, location.element);
+}
+
+void qt_get_entities_in_area_recursive(QuadTree *qt, Rectangle area, EntityIDList *list, LinearArena *arena)
+{
+    if (qt && rect_intersects(qt->area, area)) {
+        for (QuadTreeElement *elem = list_head(&qt->entities_in_node); elem; elem = list_next(elem)) {
+            if (rect_intersects(elem->area, area)) {
+                EntityIDNode *id_node = la_allocate_item(arena, EntityIDNode);
+                id_node->id = elem->entity_id;
+
+                sl_list_push_back(list, id_node);
+            }
+        }
+
+        qt_get_entities_in_area_recursive(qt->top_left, area, list, arena);
+        qt_get_entities_in_area_recursive(qt->top_right, area, list, arena);
+        qt_get_entities_in_area_recursive(qt->bottom_right, area, list, arena);
+        qt_get_entities_in_area_recursive(qt->bottom_left, area, list, arena);
+    }
+}
+
+EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *arena)
+{
+    EntityIDList result = {0};
+    qt_get_entities_in_area_recursive(qt, area, &result, arena);
+
+    return result;
 }

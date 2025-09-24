@@ -134,7 +134,13 @@ static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 sho
     // TODO: reuse already allocated rules
     ASSERT(!entity_id_equal(a, b));
 
-    CollisionRule *rule = la_allocate_item(&world->world_arena, CollisionRule);
+    CollisionRule *rule = world->collision_rules.first_free_node;
+    if (!rule) {
+	rule = la_allocate_item(&world->world_arena, CollisionRule);
+    } else {
+	world->collision_rules.first_free_node = rule->next;
+    }
+
     *rule = collision_rule_create(a, b);
     rule->should_collide = should_collide;
 
@@ -150,6 +156,29 @@ static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 sho
     world->collision_rules.collision_rules[index] = rule;
 }
 
+static void remove_collision_rules_with_entity(CollisionRuleTable *table, EntityID a)
+{
+    for (s32 i = 0; i < ARRAY_COUNT(table->collision_rules); ++i) {
+	CollisionRule *curr_rule = table->collision_rules[i];
+	CollisionRule *prev_rule = 0;
+
+	while (curr_rule) {
+	    if (entity_id_equal(curr_rule->a, a) || entity_id_equal(curr_rule->b, a)) {
+		if (prev_rule) {
+		    prev_rule->next = curr_rule->next;
+		} else {
+		    table->collision_rules[i] = curr_rule->next;
+		}
+
+		curr_rule->next = table->first_free_node;
+		table->first_free_node = curr_rule;
+	    }
+
+	    prev_rule = curr_rule;
+	    curr_rule = curr_rule->next;
+	}
+    }
+}
 
 static void entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a,
     ColliderComponent *collider_a, Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b,
@@ -279,7 +308,6 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
     }
 }
 
-
 static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 {
     // TODO: return id and entity pointer when creating
@@ -300,6 +328,10 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 
     es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size},
 	&world->world_arena);
+
+    collision_rule_add(world, spawner_id, id, false);
+
+    remove_collision_rules_with_entity(&world->collision_rules, id);
 
     collision_rule_add(world, spawner_id, id, false);
 }

@@ -12,6 +12,7 @@
   TODO:
   - Make sure that subdivided areas aren't too small
   - Make entityID arrays be dynamic
+  - Deallocate empty nodes, hold on to freed nodes
   - How to update entity locations on removing entity?
     - Bidirectional pointers? Element has pointer back to quad tree
       location?

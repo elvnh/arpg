@@ -14,6 +14,7 @@ typedef struct CollisionRule {
 
 typedef struct {
     CollisionRule *collision_rules[512];
+    CollisionRule *first_free_node;
 } CollisionRuleTable;
 
 typedef struct {

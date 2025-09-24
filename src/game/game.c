@@ -437,8 +437,6 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         Entity *entity = es_get_entity(&world->entities, node->id);
 
         entity_render(entity, rb, assets, frame_arena);
-        /* EntityID id = world->entities.alive_entity_ids[i]; */
-
     }
 
     rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.7f}, assets->shader2, 3);
@@ -455,7 +453,7 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
     world_update(&game_state->world, input, dt);
 }
 
-static void render_tree(QuadTree *tree, RenderBatch *rb, LinearArena *arena,
+static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
     const AssetList *assets, ssize depth)
 {
     if (tree) {
@@ -491,7 +489,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
     RenderBatch *rb = rb_list_push_new(rbs, proj, frame_arena);
 
     world_render(&game_state->world, rb, assets, frame_data, frame_arena);
-    render_tree(&game_state->world.entities.quad_tree, rb, frame_arena, assets, 0);
+    render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, assets, 0);
 
     rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, assets->shader2, 3);
 

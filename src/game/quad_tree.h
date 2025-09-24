@@ -37,21 +37,26 @@ typedef struct {
     QuadTreeElement *tail;
 } QuadTreeEntityList;
 
-typedef struct QuadTree {
+typedef struct QuadTreeNode {
     Rectangle area;
 
-    struct QuadTree *top_left;
-    struct QuadTree *top_right;
-    struct QuadTree *bottom_right;
-    struct QuadTree *bottom_left;
+    struct QuadTreeNode *top_left;
+    struct QuadTreeNode *top_right;
+    struct QuadTreeNode *bottom_right;
+    struct QuadTreeNode *bottom_left;
 
     QuadTreeEntityList entities_in_node;
+} QuadTreeNode;
+
+typedef struct {
+    QuadTreeNode root;
+    // TODO: free list for nodes and elements
 } QuadTree;
 
 // Store in EntitySlot
 // Return when inserting entity
 typedef struct {
-    QuadTree *node;
+    QuadTreeNode *node;
     QuadTreeElement *element;
 } QuadTreeLocation;
 
@@ -68,8 +73,6 @@ typedef struct {
 // TODO: the EntityStorage* parameters are only temporary
 
 void qt_initialize(QuadTree *qt, Rectangle area);
-// if location is null, just insert, otherwise, move entity
-// return new location
 QuadTreeLocation qt_move_entity(QuadTree *qt, struct EntityStorage *es, EntityID id,
     QuadTreeLocation location, Vector2 new_position, LinearArena *arena);
 QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, EntityID id,

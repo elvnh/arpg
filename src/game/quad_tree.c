@@ -6,31 +6,35 @@
 #include "base/utils.h"
 #include "entity.h"
 
-static inline void qt_subdivide(QuadTree *qt, LinearArena *arena)
+static void qt_initialize_node(QuadTreeNode *node, Rectangle area)
 {
-    ASSERT(!qt->top_left);
-    ASSERT(!qt->top_right);
-    ASSERT(!qt->bottom_right);
-    ASSERT(!qt->bottom_left);
+    node->area = area;
+}
 
-    qt->top_left = la_allocate_item(arena, QuadTree);
-    qt->top_right = la_allocate_item(arena, QuadTree);
-    qt->bottom_right = la_allocate_item(arena, QuadTree);
-    qt->bottom_left = la_allocate_item(arena, QuadTree);
+static inline void qt_subdivide(QuadTreeNode *node, LinearArena *arena)
+{
+    ASSERT(!node->top_left);
+    ASSERT(!node->top_right);
+    ASSERT(!node->bottom_right);
+    ASSERT(!node->bottom_left);
 
-    RectangleQuadrants quads = rect_quadrants(qt->area);
+    node->top_left = la_allocate_item(arena, QuadTreeNode);
+    node->top_right = la_allocate_item(arena, QuadTreeNode);
+    node->bottom_right = la_allocate_item(arena, QuadTreeNode);
+    node->bottom_left = la_allocate_item(arena, QuadTreeNode);
 
-    qt_initialize(qt->top_left, quads.top_left);
-    qt_initialize(qt->top_right, quads.top_right);
-    qt_initialize(qt->bottom_right, quads.bottom_right);
-    qt_initialize(qt->bottom_left, quads.bottom_left);
+    RectangleQuadrants quadrants = rect_quadrants(node->area);
+
+    qt_initialize_node(node->top_left, quadrants.top_left);
+    qt_initialize_node(node->top_right, quadrants.top_right);
+    qt_initialize_node(node->bottom_right, quadrants.bottom_right);
+    qt_initialize_node(node->bottom_left, quadrants.bottom_left);
 }
 
 void qt_initialize(QuadTree *qt, Rectangle area)
 {
-    qt->area = area;
+    qt_initialize_node(&qt->root, area);
 }
-
 
 static inline b32 qt_location_is_null(QuadTreeLocation location)
 {
@@ -39,45 +43,45 @@ static inline b32 qt_location_is_null(QuadTreeLocation location)
     return result;
 }
 
-static QuadTreeLocation qt_insert(QuadTree *qt, EntityID id, Rectangle area, ssize depth, LinearArena *arena)
+static QuadTreeLocation qt_insert(QuadTreeNode *node, EntityID id, Rectangle area, ssize depth, LinearArena *arena)
 {
     // TODO: clean up this function
     ASSERT(area.size.x > 0);
     ASSERT(area.size.y > 0);
 
     // TODO: is this assert needed?
-    //ASSERT(rect_contains_rect(qt->area, area));
+    ASSERT(rect_intersects(node->area, area));
 
-    b32 no_children = !qt->top_left;
-    RectangleQuadrants quads = rect_quadrants(qt->area);
+    b32 no_children = !node->top_left;
+    RectangleQuadrants quadrants = rect_quadrants(node->area);
 
     QuadTreeLocation result = {0};
 
     if (depth < QUAD_TREE_MAX_DEPTH - 1) {
-	if (rect_contains_rect(quads.top_left, area)) {
+	if (rect_contains_rect(quadrants.top_left, area)) {
 	    if (no_children) {
-		qt_subdivide(qt, arena);
+		qt_subdivide(node, arena);
 	    }
 
-	    result = qt_insert(qt->top_left, id, area, depth + 1, arena);
-	} else if (rect_contains_rect(quads.top_right, area)) {
+	    result = qt_insert(node->top_left, id, area, depth + 1, arena);
+	} else if (rect_contains_rect(quadrants.top_right, area)) {
 	    if (no_children) {
-		qt_subdivide(qt, arena);
+		qt_subdivide(node, arena);
 	    }
 
-	    result = qt_insert(qt->top_right, id, area, depth + 1, arena);
-	} else if (rect_contains_rect(quads.bottom_right, area)) {
+	    result = qt_insert(node->top_right, id, area, depth + 1, arena);
+	} else if (rect_contains_rect(quadrants.bottom_right, area)) {
 	    if (no_children) {
-		qt_subdivide(qt, arena);
+		qt_subdivide(node, arena);
 	    }
 
-	    result = qt_insert(qt->bottom_right, id, area, depth + 1, arena);
-	} else if (rect_contains_rect(quads.bottom_left, area)) {
+	    result = qt_insert(node->bottom_right, id, area, depth + 1, arena);
+	} else if (rect_contains_rect(quadrants.bottom_left, area)) {
 	    if (no_children) {
-		qt_subdivide(qt, arena);
+		qt_subdivide(node, arena);
 	    }
 
-	    result = qt_insert(qt->bottom_left, id, area, depth + 1, arena);
+	    result = qt_insert(node->bottom_left, id, area, depth + 1, arena);
 	}
     }
 
@@ -88,9 +92,9 @@ static QuadTreeLocation qt_insert(QuadTree *qt, EntityID id, Rectangle area, ssi
         element->area = area;
 
         // TODO: function that returns pushed element
-        list_push_back(&qt->entities_in_node, element);
+        list_push_back(&node->entities_in_node, element);
 
-        result.node = qt;
+        result.node = node;
         result.element = element;
     }
 
@@ -115,7 +119,7 @@ QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, Enti
         qt_remove_entity(es, id, location);
     }
 
-    QuadTreeLocation result = qt_insert(qt, id, area, 0, arena);
+    QuadTreeLocation result = qt_insert(&qt->root, id, area, 0, arena);
 
     return result;
 }
@@ -128,10 +132,10 @@ void qt_remove_entity(struct EntityStorage *es, EntityID id, QuadTreeLocation lo
     list_remove(&location.node->entities_in_node, location.element);
 }
 
-void qt_get_entities_in_area_recursive(QuadTree *qt, Rectangle area, EntityIDList *list, LinearArena *arena)
+void qt_get_entities_in_area_recursive(QuadTreeNode *node, Rectangle area, EntityIDList *list, LinearArena *arena)
 {
-    if (qt && rect_intersects(qt->area, area)) {
-        for (QuadTreeElement *elem = list_head(&qt->entities_in_node); elem; elem = list_next(elem)) {
+    if (node && rect_intersects(node->area, area)) {
+        for (QuadTreeElement *elem = list_head(&node->entities_in_node); elem; elem = list_next(elem)) {
             if (rect_intersects(elem->area, area)) {
                 EntityIDNode *id_node = la_allocate_item(arena, EntityIDNode);
                 id_node->id = elem->entity_id;
@@ -140,17 +144,17 @@ void qt_get_entities_in_area_recursive(QuadTree *qt, Rectangle area, EntityIDLis
             }
         }
 
-        qt_get_entities_in_area_recursive(qt->top_left, area, list, arena);
-        qt_get_entities_in_area_recursive(qt->top_right, area, list, arena);
-        qt_get_entities_in_area_recursive(qt->bottom_right, area, list, arena);
-        qt_get_entities_in_area_recursive(qt->bottom_left, area, list, arena);
+        qt_get_entities_in_area_recursive(node->top_left, area, list, arena);
+        qt_get_entities_in_area_recursive(node->top_right, area, list, arena);
+        qt_get_entities_in_area_recursive(node->bottom_right, area, list, arena);
+        qt_get_entities_in_area_recursive(node->bottom_left, area, list, arena);
     }
 }
 
 EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *arena)
 {
     EntityIDList result = {0};
-    qt_get_entities_in_area_recursive(qt, area, &result, arena);
+    qt_get_entities_in_area_recursive(&qt->root, area, &result, arena);
 
     return result;
 }

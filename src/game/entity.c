@@ -21,6 +21,14 @@ static ssize get_component_offset(ComponentType type)
     return result;
 }
 
+static EntitySlot *es_get_entity_slot(Entity *entity)
+{
+    // NOTE: this is safe as long as entity is first member of EntitySlot
+    EntitySlot *result = (EntitySlot *)entity;
+
+    return result;
+}
+
 static EntityID get_entity_id_from_slot(EntityStorage *es, EntitySlot *slot)
 {
     EntityIndex index = (EntityIndex)(slot - es->entity_slots);
@@ -32,6 +40,14 @@ static EntityID get_entity_id_from_slot(EntityStorage *es, EntitySlot *slot)
     };
 
     return result;
+}
+
+EntityID es_get_id_of_entity(EntityStorage *es, Entity *entity)
+{
+    EntitySlot *slot = es_get_entity_slot(entity);
+    EntityID id = get_entity_id_from_slot(es, slot);
+
+    return id;
 }
 
 static inline Rectangle es_get_entity_quad_tree_area(Entity *entity)
@@ -125,8 +141,6 @@ static EntityID id_queue_pop(EntityIDQueue *queue)
 
     return id;
 }
-
-
 
 void es_initialize(EntityStorage *es, Rectangle world_area, LinearArena *parent_arena)
 {
@@ -229,13 +243,6 @@ Entity *es_get_entity_in_slot(EntityStorage *es, EntityIndex slot_index)
     return result;
 }
 
-static EntitySlot *es_get_entity_slot(Entity *entity)
-{
-    // NOTE: this is safe as long as entity is first member of EntitySlot
-    EntitySlot *result = (EntitySlot *)entity;
-
-    return result;
-}
 
 void es_set_entity_area(EntityStorage *es, Entity *entity, Rectangle rectangle)
 {

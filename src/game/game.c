@@ -11,6 +11,7 @@
 #include "base/line.h"
 #include "game/component.h"
 #include "game/entity.h"
+#include "game/game_world.h"
 #include "game/quad_tree.h"
 #include "game/tilemap.h"
 #include "input.h"
@@ -70,32 +71,132 @@ static b32 entities_should_collide(Entity *a, Entity *b)
     return true;
 }
 
-static void entity_vs_entity_collision(Entity *a, PhysicsComponent *physics_a, ColliderComponent *collider_a,
-    Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b, f32 *movement_fraction_left, f32 dt)
+
+static b32 entity_id_equal(EntityID lhs, EntityID rhs)
 {
-    Rectangle rect_a = get_entity_rect(physics_a, collider_a);
-    Rectangle rect_b = get_entity_rect(physics_b, collider_b);
+    b32 result = (lhs.slot_index == rhs.slot_index) && (lhs.generation == rhs.generation);
 
-    CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, rect_a, rect_b,
-	physics_a->velocity, physics_b->velocity, dt);
+    return result;
+}
 
-    if (!collider_a->non_blocking && !collider_b->non_blocking) {
-        physics_a->position = collision.new_position_a;
-        physics_b->position = collision.new_position_b;
+static b32 entity_id_less_than(EntityID lhs, EntityID rhs)
+{
+    b32 result = lhs.slot_index < rhs.slot_index;
 
-        physics_a->velocity = collision.new_velocity_a;
-        physics_b->velocity = collision.new_velocity_b;
+    return result;
+}
 
-        *movement_fraction_left = collision.movement_fraction_left;
+static CollisionRule *allocate_new_collision_rule(EntityID a, EntityID b, b32 should_collide)
+{
+    // TODO: use world arena
+    ASSERT(entity_id_less_than(a, b));
+
+    CollisionRule *rule = allocate_item(default_allocator, CollisionRule);
+    rule->a = a;
+    rule->b = b;
+    rule->should_collide = should_collide;
+
+    return rule;
+}
+
+static u64 collision_rule_hash(CollisionRule rule)
+{
+    (void)rule;
+    return 0;
+}
+
+static void add_collision_rule(GameWorld *world, EntityID a, EntityID b, b32 should_collide)
+{
+    // TODO: remove collision rules when entity dies
+
+    // make lower entity come first
+    ASSERT(!entity_id_equal(a, b));
+
+    if (entity_id_less_than(b, a)) {
+        EntityID tmp = a;
+        a = b;
+        b = tmp;
     }
 
-    if (collision.are_colliding) {
-        if (es_has_component(a, DamageComponent)) {
-            printf("Damage A: %d\n", es_get_component(a, DamageComponent)->damage);
+    ASSERT(a.slot_index <= b.slot_index);
+
+    // TODO: reuse already allocated rules
+    CollisionRule *rule = allocate_new_collision_rule(a, b, should_collide);
+    u64 rule_hash = collision_rule_hash(*rule);
+    ssize index = rule_hash & (ARRAY_COUNT(world->collision_rules.collision_rules) - 1);
+
+    CollisionRule *rule_in_slot = world->collision_rules.collision_rules[index];
+
+    for (CollisionRule *r = rule_in_slot; r; r = r->next_in_hash) {
+        ASSERT(!(r->a.slot_index == r->b.slot_index));
+    }
+
+    if (rule_in_slot) {
+        rule->next_in_hash = rule_in_slot;
+    }
+
+    world->collision_rules.collision_rules[index] = rule;
+}
+
+static CollisionRule *find_collision_rule(GameWorld *world, EntityID a, EntityID b)
+{
+    // TODO: function for creating rules
+    if (entity_id_less_than(b, a)) {
+        EntityID tmp = a;
+        a = b;
+        b = tmp;
+    }
+
+    CollisionRule rule = {a, b, 0, 0};
+
+    u64 rule_hash = collision_rule_hash(rule);
+    ssize index = rule_hash & (ARRAY_COUNT(world->collision_rules.collision_rules) - 1);
+
+    CollisionRule *current_rule = world->collision_rules.collision_rules[index];
+    for (; current_rule; current_rule = current_rule->next_in_hash) {
+        if (entity_id_equal(current_rule->a, a) && entity_id_equal(current_rule->b, b)) {
+            break;
+        }
+    }
+
+    return current_rule;
+}
+
+
+static void entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a, ColliderComponent *collider_a,
+    Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b, f32 *movement_fraction_left, f32 dt)
+{
+    EntityID id_a = es_get_id_of_entity(&world->entities, a);
+    EntityID id_b = es_get_id_of_entity(&world->entities, b);
+
+    CollisionRule *rule_for_entities = find_collision_rule(world, id_a, id_b);
+    b32 should_collide = !rule_for_entities || rule_for_entities->should_collide;
+
+    if (should_collide) {
+        Rectangle rect_a = get_entity_rect(physics_a, collider_a);
+        Rectangle rect_b = get_entity_rect(physics_b, collider_b);
+
+        CollisionInfo collision = collision_rect_vs_rect(*movement_fraction_left, rect_a, rect_b,
+            physics_a->velocity, physics_b->velocity, dt);
+
+        if (!collider_a->non_blocking && !collider_b->non_blocking) {
+            physics_a->position = collision.new_position_a;
+            physics_b->position = collision.new_position_b;
+
+            physics_a->velocity = collision.new_velocity_a;
+            physics_b->velocity = collision.new_velocity_b;
+
+            *movement_fraction_left = collision.movement_fraction_left;
         }
 
-        if (es_has_component(b, DamageComponent)) {
-            printf("Damage B: %d\n", es_get_component(b, DamageComponent)->damage);
+        if (collision.are_colliding) {
+            if (es_has_component(a, DamageComponent)) {
+                printf("Damage A: %d\n", es_get_component(a, DamageComponent)->damage);
+            }
+
+            if (es_has_component(b, DamageComponent)) {
+                printf("Damage B: %d\n", es_get_component(b, DamageComponent)->damage);
+            }
         }
     }
 }
@@ -172,7 +273,7 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
                     }
 
                     if (entities_should_collide(a, b)) {
-                        entity_vs_entity_collision(a, physics_a, collider_a, b, physics_b, collider_b,
+                        entity_vs_entity_collision(world, a, physics_a, collider_a, b, physics_b, collider_b,
                             &movement_fraction_left, dt);
                     }
                 }
@@ -189,7 +290,8 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
     }
 }
 
-static void spawn_projectile(GameWorld *world, Vector2 pos)
+
+static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 {
     // TODO: return id and entity pointer when creating
     EntityID id = es_create_entity(&world->entities);
@@ -197,7 +299,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos)
     entity->color = RGBA32_RED;
 
     PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
-    physics->position = v2_add(pos, v2(20.0f, 0.0f));
+    physics->position = pos;
     physics->velocity = v2(100.0f, 0.0f);
 
     ColliderComponent *collider = es_add_component(entity, ColliderComponent);
@@ -208,6 +310,8 @@ static void spawn_projectile(GameWorld *world, Vector2 pos)
     damage->damage = 10;
 
     es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size});
+
+    add_collision_rule(world, spawner_id, id, false);
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)
@@ -227,7 +331,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
         }
 
         if (input_is_key_pressed(input, KEY_G)) {
-            spawn_projectile(world, physics->position);
+            spawn_projectile(world, physics->position, player_id);
         }
 
         camera_set_target(&world->camera, target);

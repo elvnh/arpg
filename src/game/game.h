@@ -6,6 +6,12 @@
 #include "game_world.h"
 #include "input.h"
 
+/*
+  TODO:
+  - Manually controlling dt to slow down/speed up time
+  - Entity acceleration
+ */
+
 typedef struct {
     GameWorld world;
 } GameState;

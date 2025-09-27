@@ -111,8 +111,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
     return result;
 }
 
-
-static ssize collision_rule_hashed_index(EntityPair pair, const CollisionRuleTable *table)
+static inline ssize collision_rule_hashed_index(EntityPair pair, const CollisionRuleTable *table)
 {
     u64 hash = entity_pair_hash(pair);
     ssize result = hash_index(hash, ARRAY_COUNT(table->table));
@@ -160,7 +159,7 @@ void collision_rule_add(CollisionRuleTable *table, EntityID a, EntityID b, b32 s
     list_push_back(&table->table[index], rule);
 }
 
-void remove_collision_rules_with_entity(CollisionRuleTable *table, EntityID a)
+void collision_rule_remove_rules_with_entity(CollisionRuleTable *table, EntityID a)
 {
     for (s32 i = 0; i < ARRAY_COUNT(table->table); ++i) {
         CollisionRuleList *list = &table->table[i];

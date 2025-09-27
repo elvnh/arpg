@@ -14,5 +14,4 @@ typedef struct {
     CollisionRuleTable collision_rules;
 } GameWorld;
 
-
 #endif //GAME_WORLD_H

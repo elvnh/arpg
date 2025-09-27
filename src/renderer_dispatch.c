@@ -236,13 +236,6 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                         cursor.y -= newline_advance;
                     }
                 }
-
-                Vector2 dims = font_get_text_dimensions(font_asset, text, text_size);
-                Rectangle rect = {start_position, dims};
-
-                RectangleVertices verts = rect_get_vertices(rect, (RGBA32){0.1f, 0, 1, 0.7f});
-                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right, verts.bottom_right, verts.bottom_left);
-
             } break;
 
            INVALID_DEFAULT_CASE;

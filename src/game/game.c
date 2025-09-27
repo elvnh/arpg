@@ -65,82 +65,6 @@ static Rectangle get_entity_rect(PhysicsComponent *physics, ColliderComponent *c
     return result;
 }
 
-static b32 entities_should_collide(Entity *a, Entity *b)
-{
-    (void)a;
-    (void)b;
-    // TODO: collision rules
-    return true;
-}
-
-static ssize entity_pair_hashed_index(EntityPair rule, const CollisionRuleTable *table)
-{
-    ssize length = ARRAY_COUNT(table->table);
-    u64 hash = rule.entity_a.slot_index ^ rule.entity_b.slot_index; // TODO: better hash
-
-    ssize result = hash_index(hash, length);
-
-    return result;
-}
-
-static CollisionRule *collision_rule_find(GameWorld *world, EntityID a, EntityID b)
-{
-    EntityPair searched_pair = collision_pair_create(a, b);
-    ssize index = entity_pair_hashed_index(searched_pair, &world->collision_rules);
-
-    CollisionRuleList *list = &world->collision_rules.table[index];
-    CollisionRule *current_rule;
-    for (current_rule = list_head(list); current_rule; current_rule = list_next(current_rule)) {
-        if (entity_id_equal(current_rule->entity_pair.entity_a, searched_pair.entity_a)
-	 && entity_id_equal(current_rule->entity_pair.entity_b, searched_pair.entity_b)) {
-            break;
-        }
-    }
-
-    return current_rule;
-}
-
-static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 should_collide)
-{
-    // TODO: remove collision rules when entity dies
-    ASSERT(!entity_id_equal(a, b));
-
-    CollisionRule *rule = list_head(&world->collision_rules.free_node_list);
-    if (!rule) {
-	rule = la_allocate_item(&world->world_arena, CollisionRule);
-    } else {
-	list_pop_head(&world->collision_rules.free_node_list);
-    }
-
-    *rule = (CollisionRule){0};
-    rule->entity_pair = collision_pair_create(a, b);
-    rule->should_collide = should_collide;
-
-    ASSERT(!collision_rule_find(world, rule->entity_pair.entity_a, rule->entity_pair.entity_b));
-
-    ssize index = entity_pair_hashed_index(rule->entity_pair, &world->collision_rules);
-    list_push_back(&world->collision_rules.table[index], rule);
-}
-
-static void remove_collision_rules_with_entity(CollisionRuleTable *table, EntityID a)
-{
-    for (s32 i = 0; i < ARRAY_COUNT(table->table); ++i) {
-        CollisionRuleList *list = &table->table[i];
-
-        for (CollisionRule *rule = list_head(list); rule;) {
-	    if (entity_id_equal(rule->entity_pair.entity_a, a)
-	     || entity_id_equal(rule->entity_pair.entity_b, a)) {
-                CollisionRule *next = list_next(rule);
-
-                list_remove(list, rule);
-                list_push_back(&table->free_node_list, rule);
-
-                rule = next;
-	    }
-        }
-    }
-}
-
 static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a,
     ColliderComponent *collider_a, Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b,
     f32 movement_fraction_left, f32 dt)
@@ -148,7 +72,7 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
     EntityID id_a = es_get_id_of_entity(&world->entities, a);
     EntityID id_b = es_get_id_of_entity(&world->entities, b);
 
-    CollisionRule *rule_for_entities = collision_rule_find(world, id_a, id_b);
+    CollisionRule *rule_for_entities = collision_rule_find(&world->collision_rules, id_a, id_b);
     b32 should_collide = !rule_for_entities || rule_for_entities->should_collide;
 
     if (should_collide) {
@@ -218,13 +142,13 @@ static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompon
 
                 if (collision.are_colliding) {
                     physics->position = collision.new_position_a;
+
 #if 0
                     physics->velocity = collision.new_velocity_a;
 #else
                     physics->velocity = v2_reflect(physics->velocity, collision.collision_normal);
-                    /* physics->velocity = v2_sub(physics->velocity, */
-                    /*     v2_mul_s(collision.collision_normal, 2 * v2_dot(physics->velocity, collision.collision_normal))); */
 #endif
+
                     movement_fraction_left = collision.movement_fraction_left;
 
                     ASSERT(v2_eq(collision.new_position_b, tile_rect.position));
@@ -235,6 +159,14 @@ static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompon
     }
 
     return movement_fraction_left;
+}
+
+static b32 entities_should_collide(Entity *a, Entity *b)
+{
+    (void)a;
+    (void)b;
+    // TODO: collision rules
+    return true;
 }
 
 static void handle_collision_and_movement(GameWorld *world, f32 dt)
@@ -304,7 +236,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
     es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size},
 	&world->world_arena);
 
-    collision_rule_add(world, spawner_id, id, false);
+    collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)

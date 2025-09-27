@@ -4,7 +4,7 @@
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
 #include "base/utils.h"
-#include "entity_id.h"
+#include "entity.h"
 
 #define QUAD_TREE_MAX_DEPTH 6
 #define QT_NULL_LOCATION (QuadTreeLocation){0}

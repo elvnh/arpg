@@ -265,7 +265,22 @@ TextureAsset *renderer_backend_create_texture(Image image, Allocator allocator)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    GLenum channel = (image.channels == 4) ? GL_RGBA : GL_RGB;
+    GLenum channel = 0;
+    switch (image.channels) {
+        case 4: {
+            channel = GL_RGBA;
+        } break;
+
+        case 3: {
+            channel = GL_RGB;
+        } break;
+
+        case 1: {
+            channel = GL_RED; // TODO: is this correct?
+        } break;
+
+        INVALID_DEFAULT_CASE;
+    }
 
     glTexImage2D(
         GL_TEXTURE_2D,

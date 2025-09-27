@@ -343,6 +343,12 @@ void fl_deallocate(void *context, void *ptr)
 {
     FreeListArena *arena = context;
 
+    if (!ptr) {
+        // TODO: should this be allowed?
+        ASSERT(0);
+        return;
+    }
+
     AllocationHeader *alloc_header = get_allocation_header(ptr);
     void *free_block_address = (void *)alloc_header->free_block_address;
     ssize offset_from_free_block = ptr_diff(ptr, free_block_address);

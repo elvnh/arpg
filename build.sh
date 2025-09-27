@@ -14,6 +14,7 @@ src/base/free_list_arena.c
 PLATFORM_SOURCES="
 src/main.c
 src/file_watcher.c
+src/font.c
 src/hot_reload.c
 src/renderer_dispatch.c
 src/platform_linux.c
@@ -78,6 +79,12 @@ if [ ! -f libstb_image.a ]; then
         rm stb_image.o;
 fi
 
+if [ ! -f libstb_truetype.a ]; then
+    echo "Compiling stb_truetype...";
+    ${CC} deps/stb_truetype.c -O3 -lm -c -o stb_truetype.o && ar rcs libstb_truetype.a stb_truetype.o &&
+        rm stb_truetype.o;
+fi
+
 rm -r build/** a.out libbase.a libgame.so librenderer.a;
 mkdir -p build/base build/platform build/game build/renderer &&
 
@@ -97,7 +104,7 @@ mv *.o build/renderer &&
 ar rcs librenderer.a build/renderer/*.o &&
 
 ## Main
-${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image \
+${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image -lstb_truetype \
       `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
 
 rm build/lock;

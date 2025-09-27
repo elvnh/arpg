@@ -70,25 +70,25 @@ static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color)
     Vertex tl = {
         .position = rect_top_left(rect),
         .color = color,
-        .uv = {0, 1}
+        .uv = {0, 0}
     };
 
     Vertex tr = {
         .position = rect_top_right(rect),
         .color = color,
-        .uv = {1, 1}
+        .uv = {1, 0}
     };
 
     Vertex br = {
         .position = rect_bottom_right(rect),
         .color = color,
-        .uv = {1, 0}
+        .uv = {1, 1}
     };
 
     Vertex bl = {
         .position = rect_bottom_left(rect),
         .color = color,
-        .uv = {0, 0}
+        .uv = {0, 1}
     };
 
     RectangleVertices result = {

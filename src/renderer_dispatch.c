@@ -1,19 +1,33 @@
 #include "renderer_dispatch.h"
+#include "base/rectangle.h"
+#include "font.h"
+#include "game/renderer/render_key.h"
+#include "renderer/renderer_backend.h"
 
 typedef struct {
     ShaderHandle shader;
     TextureHandle texture;
 } RendererState;
 
-static RendererState get_state_needed_for_entry(RenderKey key)
+static RendererState get_state_needed_for_entry(RenderKey key, AssetManager *assets)
 {
+    RendererState result = {0};
+
     RenderKey shader_id = render_key_extract_shader(key);
     RenderKey texture_id = render_key_extract_texture(key);
+    RenderKey font_id = render_key_extract_font(key);
 
-    RendererState result = {
-        .shader = (ShaderHandle){(u32)shader_id},
-        .texture = (TextureHandle){(u32)texture_id}
-    };
+    if (font_id != NULL_FONT.id) {
+        ASSERT(texture_id == NULL_TEXTURE.id);
+        FontAsset *font_asset = assets_get_font(assets, (FontHandle){(u32)font_id});
+        TextureHandle font_texture_handle = font_get_texture_handle(font_asset);
+
+        result.texture = font_texture_handle;
+    } else {
+        result.texture = (TextureHandle){(u32)texture_id};
+    }
+
+    result.shader = (ShaderHandle){(u32)shader_id};
 
     return result;
 }
@@ -94,7 +108,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
         return;
     }
 
-    RendererState current_state = get_state_needed_for_entry(rb->entries[0].key);
+    RendererState current_state = get_state_needed_for_entry(rb->entries[0].key, assets);
     switch_renderer_state(current_state, assets, INVALID_RENDERER_STATE, backend);
 
     renderer_backend_set_global_projection(backend, rb->projection);
@@ -103,7 +117,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
         RenderEntry *entry = &rb->entries[i];
         RenderCmdHeader *header = entry->data;
 
-        RendererState needed_state = get_state_needed_for_entry(entry->key);
+        RendererState needed_state = get_state_needed_for_entry(entry->key, assets);
 
         if (renderer_state_change_needed(current_state, needed_state)) {
             renderer_backend_flush(backend);
@@ -189,6 +203,46 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 LineCmd *cmd = (LineCmd *)entry->data;
 
 		render_line(backend, cmd->start, cmd->end, cmd->thickness, cmd->color);
+            } break;
+
+            case RENDER_CMD_TEXT: {
+                TextCmd *cmd = (TextCmd *)entry->data;
+
+                FontHandle font_handle = (FontHandle){(u32)render_key_extract_font(entry->key)};
+                FontAsset *font_asset = assets_get_font(assets, font_handle);
+
+                RGBA32 color = cmd->color;
+                s32 text_size = cmd->size;
+                String text = cmd->text;
+
+                f32 newline_advance = font_get_newline_advance(font_asset, text_size);
+
+                Vector2 start_position = cmd->position;
+                Vector2 cursor = start_position;
+
+                for (s32 ch = 0; ch < cmd->text.length; ++ch) {
+                    char glyph = text.data[ch];
+
+                    if (glyph != '\n') {
+                        GlyphVertices verts = font_get_glyph_vertices(font_asset, glyph, cursor,
+                            text_size, color);
+
+                        renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+                            verts.bottom_right, verts.bottom_left);
+
+                        cursor.x += verts.advance_x;
+                    } else {
+                        cursor.x = start_position.x;
+                        cursor.y -= newline_advance;
+                    }
+                }
+
+                Vector2 dims = font_get_text_dimensions(font_asset, text, text_size);
+                Rectangle rect = {start_position, dims};
+
+                RectangleVertices verts = rect_get_vertices(rect, (RGBA32){0.1f, 0, 1, 0.7f});
+                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right, verts.bottom_right, verts.bottom_left);
+
             } break;
 
            INVALID_DEFAULT_CASE;

@@ -67,6 +67,10 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
             result = la_allocate_item(arena, LineCmd);
         } break;
 
+        case RENDER_CMD_TEXT: {
+            result = la_allocate_item(arena, TextCmd);
+        } break;
+
         INVALID_DEFAULT_CASE;
     }
 
@@ -93,7 +97,7 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
     cmd->rect = rectangle;
     cmd->color = color;
 
-    RenderKey key = render_key_create(layer, shader, texture, (s32)rectangle.position.y);
+    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)rectangle.position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -113,7 +117,7 @@ RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangl
     cmd->color = color;
     cmd->thickness = thickness;
 
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, 0);
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -127,7 +131,7 @@ RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureH
     cmd->color = color;
     cmd->radius = radius;
 
-    RenderKey key = render_key_create(layer, shader, texture, (s32)position.y);
+    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -148,7 +152,22 @@ RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Ve
     cmd->color = color;
     cmd->thickness = thickness;
 
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, (s32)start.y);
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, NULL_FONT, (s32)start.y);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
+RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
+    RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer)
+{
+    TextCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_TEXT);
+    cmd->text = text;
+    cmd->position = position;
+    cmd->color = color;
+    cmd->size = size;
+
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, font, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;

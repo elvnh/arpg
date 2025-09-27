@@ -2,6 +2,7 @@
 #include "base/linear_arena.h"
 #include "base/string8.h"
 #include "base/utils.h"
+#include "font.h"
 #include "renderer/renderer_backend.h"
 #include "base/image.h"
 #include "platform.h"
@@ -19,7 +20,10 @@ static AssetSlotWithID acquire_asset_slot(AssetManager *assets, String asset_pat
     ASSERT(id < MAX_REGISTERED_ASSETS);
 
     AssetSlot *slot = &assets->registered_assets[id];
-    slot->absolute_asset_path = str_copy(asset_path, fl_allocator(&assets->asset_arena));
+
+    if (asset_path.data) {
+        slot->absolute_asset_path = str_copy(asset_path, fl_allocator(&assets->asset_arena));
+    }
 
     AssetSlotWithID result = {
         .id = id,
@@ -29,6 +33,7 @@ static AssetSlotWithID acquire_asset_slot(AssetManager *assets, String asset_pat
     return result;
 }
 
+// TODO: are these needed or can we just memcpy into union? since C doesn't have concept of active union member?
 static void assign_asset_slot_data(AssetSlot *slot, AssetKind kind, void *data)
 {
     slot->kind = kind;
@@ -39,6 +44,10 @@ static void assign_asset_slot_data(AssetSlot *slot, AssetKind kind, void *data)
         } break;
 
         case ASSET_KIND_SHADER: {
+            slot->as.shader_asset = data;
+        } break;
+
+        case ASSET_KIND_FONT: {
             slot->as.shader_asset = data;
         } break;
 
@@ -56,13 +65,13 @@ static void *get_asset_data(AssetManager *assets, AssetID id, AssetKind kind)
     switch (kind) {
 	case ASSET_KIND_SHADER:  return asset->as.shader_asset;
 	case ASSET_KIND_TEXTURE: return asset->as.texture_asset;
+	case ASSET_KIND_FONT:    return asset->as.font_asset;
     }
 
     ASSERT(false);
 
     return 0;
 }
-
 
 AssetManager assets_initialize(Allocator parent_allocator)
 {
@@ -101,6 +110,10 @@ static String get_absolute_asset_path(String name, AssetKind kind, LinearArena *
 
         case ASSET_KIND_TEXTURE: {
             result = str_concat(result, str_lit(SPRITE_DIRECTORY), scratch);
+        } break;
+
+        case ASSET_KIND_FONT: {
+            result = str_concat(result, str_lit(FONT_DIRECTORY), scratch);
         } break;
 
         INVALID_DEFAULT_CASE;
@@ -169,6 +182,33 @@ TextureHandle assets_register_texture(AssetManager *assets, String name, LinearA
     return (TextureHandle){slot_and_id.id};
 }
 
+static FontAsset *load_asset_data_font(AssetManager *assets, String path, LinearArena *scratch)
+{
+    FontAsset *result = 0;
+    Span file_contents = platform_read_entire_file(path, la_allocator(scratch), scratch);
+
+    if (file_contents.data && file_contents.size) {
+        result = font_create_atlas(file_contents, assets, fl_allocator(&assets->asset_arena), scratch);
+    }
+
+    return result;
+}
+
+FontHandle assets_register_font(AssetManager *assets, String name, LinearArena *scratch)
+{
+    // TODO: reduce code duplication in assets_register functions
+    String path = get_absolute_asset_path(name, ASSET_KIND_FONT, scratch);
+
+    AssetSlotWithID slot_and_id = acquire_asset_slot(assets, path);
+    FontAsset *font = load_asset_data_font(assets, path, scratch);
+    ASSERT(font);
+
+    assign_asset_slot_data(slot_and_id.slot, ASSET_KIND_FONT, font);
+
+    FontHandle result = {slot_and_id.id};
+    return result;
+}
+
 ShaderAsset *assets_get_shader(AssetManager *assets, ShaderHandle handle)
 {
     ShaderAsset *result = get_asset_data(assets, handle.id, ASSET_KIND_SHADER);
@@ -179,6 +219,13 @@ ShaderAsset *assets_get_shader(AssetManager *assets, ShaderHandle handle)
 TextureAsset *assets_get_texture(AssetManager *assets, TextureHandle handle)
 {
     TextureAsset *result = get_asset_data(assets, handle.id, ASSET_KIND_TEXTURE);
+
+    return result;
+}
+
+FontAsset *assets_get_font(AssetManager *assets, FontHandle handle)
+{
+    FontAsset *result = get_asset_data(assets, handle.id, ASSET_KIND_FONT);
 
     return result;
 }
@@ -211,15 +258,39 @@ static b32 assets_reload_texture(AssetManager *assets, AssetSlot *slot, LinearAr
     return false;
 }
 
+static b32 assets_reload_font(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
+{
+    FontAsset *new_font = load_asset_data_font(assets, slot->absolute_asset_path, scratch);
+
+    if (new_font) {
+	font_destroy_atlas(slot->as.font_asset, fl_allocator(&assets->asset_arena));
+	assign_asset_slot_data(slot, ASSET_KIND_FONT, new_font);
+    }
+
+    return false;
+}
+
 b32 assets_reload_asset(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
 {
     switch (slot->kind) {
         case ASSET_KIND_SHADER: return assets_reload_shader(assets, slot, scratch);
-
         case ASSET_KIND_TEXTURE: return assets_reload_texture(assets, slot, scratch);
+        case ASSET_KIND_FONT: return assets_reload_font(assets, slot, scratch);
 
         INVALID_DEFAULT_CASE;
     }
 
     return false;
+}
+
+TextureHandle assets_create_texture_from_memory(AssetManager *assets, Image image)
+{
+    // TODO: ensure that this doesn't get unloaded since it's not tied to a path and
+    // can't be reloaded
+    TextureAsset *texture = renderer_backend_create_texture(image, fl_allocator(&assets->asset_arena));
+    AssetSlotWithID slot_and_id = acquire_asset_slot(assets, null_string);
+    assign_asset_slot_data(slot_and_id.slot, ASSET_KIND_TEXTURE, texture);
+
+    TextureHandle result = {slot_and_id.id};
+    return result;
 }

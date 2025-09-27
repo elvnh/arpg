@@ -4,6 +4,7 @@
 #include "base/utils.h"
 #include "base/rectangle.h"
 #include "base/string8.h"
+#include "asset.h"
 
 // TODO: X macro to avoid defining new commands in multiple places
 
@@ -12,6 +13,7 @@ typedef enum {
     RENDER_CMD_OUTLINED_RECTANGLE,
     RENDER_CMD_CIRCLE,
     RENDER_CMD_LINE,
+    RENDER_CMD_TEXT,
 } RenderCmdKind;
 
 typedef enum {
@@ -57,6 +59,15 @@ typedef struct {
     RGBA32 color;
     f32 thickness;
 } LineCmd;
+
+typedef struct {
+    RenderCmdHeader header;
+    String text;
+    Vector2 position;
+    RGBA32 color;
+    s32 size;
+    FontHandle font;
+} TextCmd;
 
 /* Setup command types */
 typedef struct {

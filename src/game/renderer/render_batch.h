@@ -41,6 +41,8 @@ RenderEntry *rb_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 positio
     RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
     RGBA32 color, f32 thickness, ShaderHandle shader, RenderLayer layer);
+RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
+    RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer);
 
 void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec);
 

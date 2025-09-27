@@ -35,6 +35,15 @@ static String get_sprite_directory(LinearArena *arena)
     return result;
 }
 
+static String get_font_directory(LinearArena *arena)
+{
+    String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
+    String result = str_concat(executable_dir, str_lit("/"FONT_DIRECTORY), la_allocator(arena));
+    result = str_null_terminate(result, la_allocator(arena));
+
+    return result;
+}
+
 void *file_watcher_thread(void *user_data)
 {
     AssetWatcherContext *ctx = user_data;
@@ -48,13 +57,16 @@ void *file_watcher_thread(void *user_data)
     String root_path = get_assets_directory(&scratch);
     String shader_path = get_shader_directory(&scratch);
     String sprite_path = get_sprite_directory(&scratch);
+    String font_path = get_font_directory(&scratch);
 
     s32 root_wd = inotify_add_watch(fd, root_path.data, IN_MODIFY);
     s32 shader_wd = inotify_add_watch(fd, shader_path.data, IN_MODIFY);
     s32 sprite_wd = inotify_add_watch(fd, sprite_path.data, IN_MODIFY);
+    s32 font_wd = inotify_add_watch(fd, font_path.data, IN_MODIFY);
     ASSERT(root_wd != -1);
     ASSERT(shader_wd != -1);
     ASSERT(sprite_wd != -1);
+    ASSERT(font_wd != -1);
 
     struct pollfd poll_desc = {
         .fd = fd,
@@ -87,7 +99,9 @@ void *file_watcher_thread(void *user_data)
                     parent_path = shader_path;
                 } else if (event->wd == sprite_wd) {
                     parent_path = sprite_path;
-                } else {
+                } else if (event->wd == font_wd) {
+                    parent_path = font_path;
+		} else {
                     ASSERT(0);
                 }
 

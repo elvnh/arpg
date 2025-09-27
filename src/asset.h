@@ -1,5 +1,5 @@
-#ifndef SHARED_H
-#define SHARED_H
+#ifndef ASSET_H
+#define ASSET_H
 
 #include "base/typedefs.h"
 
@@ -14,10 +14,15 @@ typedef struct {
 } TextureHandle;
 
 typedef struct {
+    AssetID id;
+} FontHandle;
+
+typedef struct {
     ShaderHandle shader;
     ShaderHandle shader2;
     TextureHandle texture;
     TextureHandle white_texture;
+    FontHandle default_font;
 } AssetList;
 
-#endif //SHARED_H
+#endif //ASSET_H

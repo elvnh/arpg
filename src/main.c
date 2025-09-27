@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <pthread.h>
 
+#include "asset.h"
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
@@ -58,6 +59,7 @@ int main()
         .shader2 = assets_register_shader(&assets, str_lit("shader2.glsl"), &game_memory.temporary_memory),
         .texture = assets_register_texture(&assets, str_lit("test.png"), &game_memory.temporary_memory),
         .white_texture = assets_register_texture(&assets, str_lit("white.png"), &game_memory.temporary_memory),
+        .default_font = assets_register_font(&assets, str_lit("Ubuntu-M.ttf"), &game_memory.temporary_memory)
     };
 
     String executable_dir = platform_get_executable_directory(la_allocator(&game_memory.permanent_memory),

@@ -55,4 +55,18 @@ void	   es_set_entity_position(EntityStorage *es, Entity *entity, Vector2 new_po
 void	   es_remove_entity_from_quad_tree(QuadTree *qt, EntityStorage *es, Entity *entity);
 EntityID   es_get_id_of_entity(EntityStorage *es, Entity *entity);
 
+static inline b32 entity_id_equal(EntityID lhs, EntityID rhs)
+{
+    b32 result = (lhs.slot_index == rhs.slot_index) && (lhs.generation == rhs.generation);
+
+    return result;
+}
+
+static inline b32 entity_id_less_than(EntityID lhs, EntityID rhs)
+{
+    b32 result = lhs.slot_index < rhs.slot_index;
+
+    return result;
+}
+
 #endif //ENTITY_H

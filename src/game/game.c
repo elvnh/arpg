@@ -73,40 +73,10 @@ static b32 entities_should_collide(Entity *a, Entity *b)
     return true;
 }
 
-
-static b32 entity_id_equal(EntityID lhs, EntityID rhs)
-{
-    b32 result = (lhs.slot_index == rhs.slot_index) && (lhs.generation == rhs.generation);
-
-    return result;
-}
-
-static b32 entity_id_less_than(EntityID lhs, EntityID rhs)
-{
-    b32 result = lhs.slot_index < rhs.slot_index;
-
-    return result;
-}
-
-static CollisionRule collision_rule_create(EntityID a, EntityID b)
-{
-    if (entity_id_less_than(b, a)) {
-        EntityID tmp = a;
-        a = b;
-        b = tmp;
-    }
-
-    CollisionRule result = {0};
-    result.a = a;
-    result.b = b;
-
-    return result;
-}
-
-static ssize collision_rule_hash_index(CollisionRule rule, const CollisionRuleTable *table)
+static ssize entity_pair_hashed_index(EntityPair rule, const CollisionRuleTable *table)
 {
     ssize length = ARRAY_COUNT(table->table);
-    u64 hash = 0; // TODO: hash
+    u64 hash = rule.entity_a.slot_index ^ rule.entity_b.slot_index; // TODO: better hash
 
     ssize result = hash_index(hash, length);
 
@@ -115,13 +85,14 @@ static ssize collision_rule_hash_index(CollisionRule rule, const CollisionRuleTa
 
 static CollisionRule *collision_rule_find(GameWorld *world, EntityID a, EntityID b)
 {
-    CollisionRule searched_rule = collision_rule_create(a, b);
-    ssize index = collision_rule_hash_index(searched_rule, &world->collision_rules);
+    EntityPair searched_pair = collision_pair_create(a, b);
+    ssize index = entity_pair_hashed_index(searched_pair, &world->collision_rules);
 
     CollisionRuleList *list = &world->collision_rules.table[index];
     CollisionRule *current_rule;
     for (current_rule = list_head(list); current_rule; current_rule = list_next(current_rule)) {
-        if (entity_id_equal(current_rule->a, a) && entity_id_equal(current_rule->b, b)) {
+        if (entity_id_equal(current_rule->entity_pair.entity_a, searched_pair.entity_a)
+	 && entity_id_equal(current_rule->entity_pair.entity_b, searched_pair.entity_b)) {
             break;
         }
     }
@@ -141,12 +112,13 @@ static void collision_rule_add(GameWorld *world, EntityID a, EntityID b, b32 sho
 	list_pop_head(&world->collision_rules.free_node_list);
     }
 
-    *rule = collision_rule_create(a, b);
+    *rule = (CollisionRule){0};
+    rule->entity_pair = collision_pair_create(a, b);
     rule->should_collide = should_collide;
 
-    ASSERT(!collision_rule_find(world, rule->a, rule->b));
+    ASSERT(!collision_rule_find(world, rule->entity_pair.entity_a, rule->entity_pair.entity_b));
 
-    ssize index = collision_rule_hash_index(*rule, &world->collision_rules);
+    ssize index = entity_pair_hashed_index(rule->entity_pair, &world->collision_rules);
     list_push_back(&world->collision_rules.table[index], rule);
 }
 
@@ -156,7 +128,8 @@ static void remove_collision_rules_with_entity(CollisionRuleTable *table, Entity
         CollisionRuleList *list = &table->table[i];
 
         for (CollisionRule *rule = list_head(list); rule;) {
-	    if (entity_id_equal(rule->a, a) || entity_id_equal(rule->b, a)) {
+	    if (entity_id_equal(rule->entity_pair.entity_a, a)
+	     || entity_id_equal(rule->entity_pair.entity_b, a)) {
                 CollisionRule *next = list_next(rule);
 
                 list_remove(list, rule);

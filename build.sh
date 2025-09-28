@@ -93,7 +93,7 @@ else
             rm stb_truetype.o;
     fi
 
-    rm -r build/** a.out libbase.a libgame.so librenderer.a;
+    rm -rf build/** a.out libbase.a libgame.so librenderer.a;
     mkdir -p build/base build/platform build/game build/renderer &&
 
     touch build/lock &&

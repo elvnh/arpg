@@ -199,6 +199,15 @@ static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompon
     s32 min_tile_y = (s32)(min_y / TILE_SIZE);
     s32 max_tile_y = (s32)(max_y / TILE_SIZE);
 
+    // No need to consider tiles outside bounds
+    min_tile_x = MAX(min_tile_x, world->tilemap.min_x);
+    max_tile_x = MIN(max_tile_x, world->tilemap.max_x);
+    min_tile_y = MAX(min_tile_y, world->tilemap.min_y);
+    max_tile_y = MIN(max_tile_y, world->tilemap.max_y);
+
+    CollisionInfo closest_collision = {0};
+    f32 closest_collision_distance = INFINITY;
+
     for (s32 y = min_tile_y - 1; y <= max_tile_y + 1; ++y) {
         for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
             Vector2i tile_coords = {x, y};
@@ -211,6 +220,7 @@ static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompon
                     {(f32)TILE_SIZE, (f32)TILE_SIZE },
                 };
 
+                // TODO: only handle the closest collision
                 CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
 		    tile_rect, physics->velocity, V2_ZERO, dt);
 

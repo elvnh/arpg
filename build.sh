@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 
 CC="gcc"
+HOT_RELOAD=0
 
 BASE_SOURCES="
 src/base/linear_arena.c
@@ -11,6 +12,7 @@ src/base/free_list_arena.c
 "
 #src/base/thread_context.c
 
+# TODO: remove hot reload source files if hot reloading isn't enabled
 PLATFORM_SOURCES="
 src/main.c
 src/file_watcher.c
@@ -34,9 +36,12 @@ RENDERER_SOURCES="
 src/renderer/open_gl/renderer_backend.c
 "
 
+
 FLAGS="
-      -std=c99
+      -DHOT_RELOAD=${HOT_RELOAD}
+
       -fsanitize=address,undefined
+      -std=c99
       -Wall
       -Wextra
       -pedantic
@@ -95,16 +100,28 @@ ${CC} ${BASE_SOURCES} ${FLAGS} -fPIC -c &&
 mv *.o build/base &&
 ar rcs libbase.a build/base/*.o &&
 
-# Game
-${CC} ${GAME_SOURCES} ${FLAGS} -L. -lbase -fPIC -shared -o libgame.so &&
-
 # Renderer
 ${CC} ${RENDERER_SOURCES} ${FLAGS} -fPIC -c &&
 mv *.o build/renderer &&
 ar rcs librenderer.a build/renderer/*.o &&
 
+# Game
+if [ $HOT_RELOAD = 1 ]; then
+    echo "Hot reload"
+    ${CC} ${GAME_SOURCES} ${FLAGS} -L. -lbase -fPIC -shared -o libgame.so;
+else
+    ${CC} ${GAME_SOURCES} ${FLAGS} -fPIC -c &&
+    mv *.o build/game/ &&
+    ar rcs libgame.a build/game/*.o;
+fi
+
 ## Main
-${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image -lstb_truetype \
-      `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
+if [ $HOT_RELOAD = 1 ]; then
+    ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image -lstb_truetype \
+          `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
+else
+    ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lgame -lrenderer -lstb_image -lstb_truetype \
+          `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
+fi
 
 rm build/lock;

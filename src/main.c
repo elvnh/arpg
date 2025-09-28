@@ -44,7 +44,7 @@ int main()
         .temporary_memory = la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE)
     };
 
-    GameState game_state = {0};
+    GameState *game_state = la_allocate_item(&game_memory.permanent_memory, GameState);
 
     run_tests();
 
@@ -62,6 +62,8 @@ int main()
         .default_font = assets_register_font(&assets, str_lit("Ubuntu-M.ttf"), &game_memory.temporary_memory)
     };
 
+
+#if HOT_RELOAD
     String executable_dir = platform_get_executable_directory(la_allocator(&game_memory.permanent_memory),
         &game_memory.temporary_memory);
     String so_path = str_concat(executable_dir, str_lit("/"GAME_SO_NAME), la_allocator(&game_memory.permanent_memory));
@@ -71,6 +73,7 @@ int main()
     };
 
     load_game_code(&game_code, &game_memory.temporary_memory);
+#endif
 
     Input input = {0};
 
@@ -82,7 +85,11 @@ int main()
 
     platform_set_scroll_value_storage(&input.scroll_delta, window);
 
-    game_code.initialize(&game_state, &game_memory);
+#if HOT_RELOAD
+    game_code.initialize(game_state, &game_memory);
+#else
+    game_initialize(game_state, &game_memory);
+#endif
 
     RenderBatchList render_batches = {0};
 
@@ -95,7 +102,9 @@ int main()
 
         file_watcher_reload_modified_assets(&asset_watcher, &assets, &game_memory.temporary_memory);
 
+#if HOT_RELOAD
         reload_game_code_if_recompiled(&game_code, &game_memory.temporary_memory);
+#endif
 
         platform_update_input(&input, window);
 
@@ -109,7 +118,12 @@ int main()
         };
 
         list_clear(&render_batches);
-        game_code.update_and_render(&game_state, &render_batches, &asset_list, frame_data, &game_memory);
+
+#if HOT_RELOAD
+        game_code.update_and_render(game_state, &render_batches, &asset_list, frame_data, &game_memory);
+#else
+        game_update_and_render(game_state, &render_batches, &asset_list, frame_data, &game_memory);
+#endif
 
         for (RenderBatchNode *node = list_head(&render_batches); node; node = list_next(node)) {
             execute_render_commands(&node->render_batch, &assets, backend, &game_memory.temporary_memory);

@@ -35,5 +35,6 @@
 #define sl_list_tail(list) ((list)->tail)
 #define sl_list_next(node) ((node)->next)
 #define sl_list_is_empty(list) (!(list)->head)
+#define sl_list_clear(list) ((list)->head = (list)->tail = 0)
 
 #endif //SL_LIST_H

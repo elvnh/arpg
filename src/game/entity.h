@@ -41,7 +41,15 @@ static inline b32 entity_id_less_than(EntityID lhs, EntityID rhs)
     return result;
 }
 
-static inline EntityPair collision_pair_create(EntityID a, EntityID b)
+static inline b32 entity_pair_equal(EntityPair lhs, EntityPair rhs)
+{
+    b32 result = entity_id_equal(lhs.entity_a, rhs.entity_a)
+        && entity_id_equal(lhs.entity_b, rhs.entity_b);
+
+    return result;
+}
+
+static inline EntityPair entity_pair_create(EntityID a, EntityID b)
 {
     if (entity_id_less_than(b, a)) {
         EntityID tmp = a;

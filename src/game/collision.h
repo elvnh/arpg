@@ -34,8 +34,14 @@ typedef struct {
     CollisionRuleList  free_node_list;
 } CollisionRuleTable;
 
+typedef enum {
+    COLL_NOT_COLLIDING,
+    COLL_ARE_INTERSECTING,
+    COLL_WILL_COLLIDE_THIS_FRAME,
+} CollisionState; // TODO: better name
+
 typedef struct {
-    b32      are_colliding;
+    CollisionState collision_state;
     Vector2  new_position_a;
     Vector2  new_position_b;
     Vector2  new_velocity_a;

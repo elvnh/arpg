@@ -27,7 +27,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
         .new_velocity_a = velocity_a,
         .new_velocity_b = velocity_b,
         .movement_fraction_left = movement_fraction_left,
-        .are_colliding = false,
+        .collision_state = COLL_NOT_COLLIDING,
         .collision_normal = {0}
     };
 
@@ -52,7 +52,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 	}
 
 	result.new_position_a = v2_add(new_pos, v2_mul_s(collision_normal, COLLISION_MARGIN));
-        result.are_colliding = true;
+        result.collision_state = COLL_ARE_INTERSECTING;
         result.collision_normal = collision_normal;
 
         rect_collision_reset_velocities(&result.new_velocity_a, &result.new_velocity_b, penetration.side);
@@ -86,7 +86,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 
 	    f32 remaining = result.movement_fraction_left - intersection.time_of_impact;
             result.movement_fraction_left = MAX(0.0f, remaining);
-            result.are_colliding = true;
+            result.collision_state = COLL_WILL_COLLIDE_THIS_FRAME;
 
             switch (intersection.side_of_collision) {
                 case RECT_SIDE_TOP: {
@@ -121,7 +121,7 @@ static inline ssize collision_rule_hashed_index(EntityPair pair, const Collision
 
 CollisionRule *collision_rule_find(CollisionRuleTable *table, EntityID a, EntityID b)
 {
-    EntityPair searched_pair = collision_pair_create(a, b);
+    EntityPair searched_pair = entity_pair_create(a, b);
     ssize index = collision_rule_hashed_index(searched_pair, table);
 
     CollisionRuleList *list = &table->table[index];
@@ -150,7 +150,7 @@ void collision_rule_add(CollisionRuleTable *table, EntityID a, EntityID b, b32 s
     }
 
     *rule = (CollisionRule){0};
-    rule->entity_pair = collision_pair_create(a, b);
+    rule->entity_pair = entity_pair_create(a, b);
     rule->should_collide = should_collide;
 
     ASSERT(!collision_rule_find(table, rule->entity_pair.entity_a, rule->entity_pair.entity_b));

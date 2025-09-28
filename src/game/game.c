@@ -20,6 +20,69 @@
 #include "collision.h"
 #include "renderer/render_batch.h"
 
+#define INTERSECTION_TABLE_ARENA_SIZE MB(32)
+#define INTERSECTION_TABLE_SIZE 512
+
+static IntersectionTable intersection_table_create(LinearArena *parent_arena)
+{
+    IntersectionTable result = {0};
+    result.table = la_allocate_array(parent_arena, IntersectionList, INTERSECTION_TABLE_SIZE);
+    result.table_size = INTERSECTION_TABLE_SIZE;
+    result.arena = la_create(la_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
+
+    return result;
+}
+
+static IntersectionNode *intersection_table_find(IntersectionTable *table, EntityID a, EntityID b)
+{
+    EntityPair searched_pair = entity_pair_create(a, b);
+    u64 hash = entity_pair_hash(searched_pair);
+    ssize index = hash_index(hash, table->table_size);
+
+    IntersectionList *list = &table->table[index];
+
+    IntersectionNode *node = 0;
+    for (node = sl_list_head(list); node; node = sl_list_next(node)) {
+        if (entity_pair_equal(searched_pair, node->entity_pair)) {
+            break;
+        }
+    }
+
+    return node;
+}
+
+static void intersection_table_insert(IntersectionTable *table, EntityID a, EntityID b)
+{
+    if (!intersection_table_find(table, a, b)) {
+        EntityPair entity_pair = entity_pair_create(a, b);
+        u64 hash = entity_pair_hash(entity_pair);
+        ssize index = hash_index(hash, table->table_size);
+
+        IntersectionNode *new_node = la_allocate_item(&table->arena, IntersectionNode);
+        new_node->entity_pair = entity_pair;
+
+        IntersectionList *list = &table->table[index];
+        sl_list_push_back(list, new_node);
+    } else {
+        ASSERT(0);
+    }
+}
+
+static void swap_and_reset_intersection_tables(GameWorld *world)
+{
+    IntersectionTable tmp = world->previous_frame_intersections;
+    world->previous_frame_intersections = world->current_frame_intersections;
+    world->current_frame_intersections = tmp;
+
+    la_reset(&world->current_frame_intersections.arena);
+
+    // TODO: this can just be a mem_zero to reset head and tail pointers
+    for (ssize i = 0; i < world->current_frame_intersections.table_size; ++i) {
+        IntersectionList *list = &world->current_frame_intersections.table[i];
+        sl_list_clear(list);
+    }
+}
+
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
     if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ColliderComponent))) {
@@ -65,6 +128,13 @@ static Rectangle get_entity_rect(PhysicsComponent *physics, ColliderComponent *c
     return result;
 }
 
+static b32 entities_intersected_previous_frame(GameWorld *world, EntityID a, EntityID b)
+{
+    b32 result = intersection_table_find(&world->previous_frame_intersections, a, b) != 0;
+
+    return result;
+}
+
 static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a,
     ColliderComponent *collider_a, Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b,
     f32 movement_fraction_left, f32 dt)
@@ -82,24 +152,28 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
         CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
             physics_a->velocity, physics_b->velocity, dt);
 
-        if (!collider_a->non_blocking && !collider_b->non_blocking) {
-            // TODO: allow entities to bounce ofdf eachother too
-            physics_a->position = collision.new_position_a;
-            physics_b->position = collision.new_position_b;
+        if (collision.collision_state != COLL_NOT_COLLIDING) {
+            intersection_table_insert(&world->current_frame_intersections, id_a, id_b);
 
-            physics_a->velocity = collision.new_velocity_a;
-            physics_b->velocity = collision.new_velocity_b;
+            if (!collider_a->non_blocking && !collider_b->non_blocking) {
+                // TODO: allow entities to bounce off eachother too
+                physics_a->position = collision.new_position_a;
+                physics_b->position = collision.new_position_b;
 
-            movement_fraction_left = collision.movement_fraction_left;
-        }
+                physics_a->velocity = collision.new_velocity_a;
+                physics_b->velocity = collision.new_velocity_b;
 
-        if (collision.are_colliding) {
-            if (es_has_component(a, DamageComponent)) {
-                printf("Damage A: %d\n", es_get_component(a, DamageComponent)->damage);
+                movement_fraction_left = collision.movement_fraction_left;
             }
 
-            if (es_has_component(b, DamageComponent)) {
-                printf("Damage B: %d\n", es_get_component(b, DamageComponent)->damage);
+            if (!entities_intersected_previous_frame(world, id_a, id_b)) {
+                if (es_has_component(a, DamageComponent)) {
+                    printf("Damage A: %d\n", es_get_component(a, DamageComponent)->damage);
+                }
+
+                if (es_has_component(b, DamageComponent)) {
+                    printf("Damage B: %d\n", es_get_component(b, DamageComponent)->damage);
+                }
             }
         }
     }
@@ -140,7 +214,7 @@ static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompon
                 CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
 		    tile_rect, physics->velocity, V2_ZERO, dt);
 
-                if (collision.are_colliding) {
+                if (collision.collision_state != COLL_NOT_COLLIDING) {
                     physics->position = collision.new_position_a;
 
 #if 0
@@ -224,7 +298,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 
     PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
     physics->position = pos;
-    physics->velocity = v2(250.f, 100.0f);
+    physics->velocity = v2(250.f, 0.0f);
 
     ColliderComponent *collider = es_add_component(entity, ColliderComponent);
     collider->size = v2(16.0f, 16.0f);
@@ -238,6 +312,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 
     collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
 }
+
 
 static void world_update(GameWorld *world, const Input *input, f32 dt)
 {
@@ -292,6 +367,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
     handle_collision_and_movement(world, dt);
 
     //printf("%zu\n", la_get_memory_usage(&world->world_arena));
+    swap_and_reset_intersection_tables(world);
 }
 
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
@@ -410,11 +486,15 @@ void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const A
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
 }
 
-#define WORLD_ARENA_SIZE MB(2)
+#define WORLD_ARENA_SIZE MB(64)
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
+    // TODO: move to world_initialize
     game_state->world.world_arena = la_create(la_allocator(&game_memory->permanent_memory), WORLD_ARENA_SIZE);
+
+    game_state->world.previous_frame_intersections = intersection_table_create(&game_state->world.world_arena);
+    game_state->world.current_frame_intersections = intersection_table_create(&game_state->world.world_arena);
 
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {

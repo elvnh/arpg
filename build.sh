@@ -78,50 +78,54 @@ FLAGS="
       -Ideps
 "
 
-if [ ! -f libstb_image.a ]; then
-    echo "Compiling stb_image...";
-    ${CC} deps/stb_image.c -O3 -lm -c -o stb_image.o && ar rcs libstb_image.a stb_image.o &&
-        rm stb_image.o;
-fi
-
-if [ ! -f libstb_truetype.a ]; then
-    echo "Compiling stb_truetype...";
-    ${CC} deps/stb_truetype.c -O3 -lm -c -o stb_truetype.o && ar rcs libstb_truetype.a stb_truetype.o &&
-        rm stb_truetype.o;
-fi
-
-rm -r build/** a.out libbase.a libgame.so librenderer.a;
-mkdir -p build/base build/platform build/game build/renderer &&
-
-touch build/lock &&
-
-# Base
-${CC} ${BASE_SOURCES} ${FLAGS} -fPIC -c &&
-mv *.o build/base &&
-ar rcs libbase.a build/base/*.o &&
-
-# Renderer
-${CC} ${RENDERER_SOURCES} ${FLAGS} -fPIC -c &&
-mv *.o build/renderer &&
-ar rcs librenderer.a build/renderer/*.o &&
-
-# Game
-if [ $HOT_RELOAD = 1 ]; then
-    echo "Hot reload"
-    ${CC} ${GAME_SOURCES} ${FLAGS} -L. -lbase -fPIC -shared -o libgame.so;
+if [ "$1" = "clean" ]; then
+    rm -rf build *.o *.so *.a *.out;
 else
-    ${CC} ${GAME_SOURCES} ${FLAGS} -fPIC -c &&
-    mv *.o build/game/ &&
-    ar rcs libgame.a build/game/*.o;
-fi
+    if [ ! -f libstb_image.a ]; then
+        echo "Compiling stb_image...";
+        ${CC} deps/stb_image.c -O3 -lm -c -o stb_image.o && ar rcs libstb_image.a stb_image.o &&
+            rm stb_image.o;
+    fi
 
-## Main
-if [ $HOT_RELOAD = 1 ]; then
-    ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image -lstb_truetype \
-          `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
-else
-    ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lgame -lrenderer -lstb_image -lstb_truetype \
-          `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
-fi
+    if [ ! -f libstb_truetype.a ]; then
+        echo "Compiling stb_truetype...";
+        ${CC} deps/stb_truetype.c -O3 -lm -c -o stb_truetype.o && ar rcs libstb_truetype.a stb_truetype.o &&
+            rm stb_truetype.o;
+    fi
 
-rm build/lock;
+    rm -r build/** a.out libbase.a libgame.so librenderer.a;
+    mkdir -p build/base build/platform build/game build/renderer &&
+
+    touch build/lock &&
+
+    # Base
+    ${CC} ${BASE_SOURCES} ${FLAGS} -fPIC -c &&
+    mv *.o build/base &&
+    ar rcs libbase.a build/base/*.o &&
+
+    # Renderer
+    ${CC} ${RENDERER_SOURCES} ${FLAGS} -fPIC -c &&
+    mv *.o build/renderer &&
+    ar rcs librenderer.a build/renderer/*.o &&
+
+    # Game
+    if [ $HOT_RELOAD = 1 ]; then
+        echo "Hot reload"
+        ${CC} ${GAME_SOURCES} ${FLAGS} -L. -lbase -fPIC -shared -o libgame.so;
+    else
+        ${CC} ${GAME_SOURCES} ${FLAGS} -fPIC -c &&
+        mv *.o build/game/ &&
+        ar rcs libgame.a build/game/*.o;
+    fi
+
+    ## Main
+    if [ $HOT_RELOAD = 1 ]; then
+        ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image -lstb_truetype \
+              `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
+    else
+        ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lgame -lrenderer -lstb_image -lstb_truetype \
+              `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
+    fi
+
+    rm build/lock;
+fi

@@ -26,22 +26,22 @@
 static IntersectionTable intersection_table_create(LinearArena *parent_arena)
 {
     IntersectionTable result = {0};
-    result.table = la_allocate_array(parent_arena, IntersectionList, INTERSECTION_TABLE_SIZE);
+    result.table = la_allocate_array(parent_arena, CollisionList, INTERSECTION_TABLE_SIZE);
     result.table_size = INTERSECTION_TABLE_SIZE;
     result.arena = la_create(la_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
 
     return result;
 }
 
-static IntersectionNode *intersection_table_find(IntersectionTable *table, EntityID a, EntityID b)
+static CollisionEvent *intersection_table_find(IntersectionTable *table, EntityID a, EntityID b)
 {
     EntityPair searched_pair = entity_pair_create(a, b);
     u64 hash = entity_pair_hash(searched_pair);
     ssize index = hash_index(hash, table->table_size);
 
-    IntersectionList *list = &table->table[index];
+    CollisionList *list = &table->table[index];
 
-    IntersectionNode *node = 0;
+    CollisionEvent *node = 0;
     for (node = sl_list_head(list); node; node = sl_list_next(node)) {
         if (entity_pair_equal(searched_pair, node->entity_pair)) {
             break;
@@ -58,10 +58,10 @@ static void intersection_table_insert(IntersectionTable *table, EntityID a, Enti
         u64 hash = entity_pair_hash(entity_pair);
         ssize index = hash_index(hash, table->table_size);
 
-        IntersectionNode *new_node = la_allocate_item(&table->arena, IntersectionNode);
+        CollisionEvent *new_node = la_allocate_item(&table->arena, CollisionEvent);
         new_node->entity_pair = entity_pair;
 
-        IntersectionList *list = &table->table[index];
+        CollisionList *list = &table->table[index];
         sl_list_push_back(list, new_node);
     } else {
         ASSERT(0);
@@ -70,15 +70,15 @@ static void intersection_table_insert(IntersectionTable *table, EntityID a, Enti
 
 static void swap_and_reset_intersection_tables(GameWorld *world)
 {
-    IntersectionTable tmp = world->previous_frame_intersections;
-    world->previous_frame_intersections = world->current_frame_intersections;
-    world->current_frame_intersections = tmp;
+    IntersectionTable tmp = world->previous_frame_collisions;
+    world->previous_frame_collisions = world->current_frame_collisions;
+    world->current_frame_collisions = tmp;
 
-    la_reset(&world->current_frame_intersections.arena);
+    la_reset(&world->current_frame_collisions.arena);
 
     // TODO: this can just be a mem_zero to reset head and tail pointers
-    for (ssize i = 0; i < world->current_frame_intersections.table_size; ++i) {
-        IntersectionList *list = &world->current_frame_intersections.table[i];
+    for (ssize i = 0; i < world->current_frame_collisions.table_size; ++i) {
+        CollisionList *list = &world->current_frame_collisions.table[i];
         sl_list_clear(list);
     }
 }
@@ -130,7 +130,7 @@ static Rectangle get_entity_rect(PhysicsComponent *physics, ColliderComponent *c
 
 static b32 entities_intersected_previous_frame(GameWorld *world, EntityID a, EntityID b)
 {
-    b32 result = intersection_table_find(&world->previous_frame_intersections, a, b) != 0;
+    b32 result = intersection_table_find(&world->previous_frame_collisions, a, b) != 0;
 
     return result;
 }
@@ -153,7 +153,7 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
             physics_a->velocity, physics_b->velocity, dt);
 
         if (collision.collision_state != COLL_NOT_COLLIDING) {
-            intersection_table_insert(&world->current_frame_intersections, id_a, id_b);
+            intersection_table_insert(&world->current_frame_collisions, id_a, id_b);
 
             if (!collider_a->non_blocking && !collider_b->non_blocking) {
                 // TODO: allow entities to bounce off eachother too
@@ -500,8 +500,8 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     // TODO: move to world_initialize
     game_state->world.world_arena = la_create(la_allocator(&game_memory->permanent_memory), WORLD_ARENA_SIZE);
 
-    game_state->world.previous_frame_intersections = intersection_table_create(&game_state->world.world_arena);
-    game_state->world.current_frame_intersections = intersection_table_create(&game_state->world.world_arena);
+    game_state->world.previous_frame_collisions = intersection_table_create(&game_state->world.world_arena);
+    game_state->world.current_frame_collisions = intersection_table_create(&game_state->world.world_arena);
 
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {

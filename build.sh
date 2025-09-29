@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 CC="gcc"
-HOT_RELOAD=0
+HOT_RELOAD=1
 
 BASE_SOURCES="
 src/base/linear_arena.c
@@ -110,7 +110,6 @@ else
 
     # Game
     if [ $HOT_RELOAD = 1 ]; then
-        echo "Hot reload"
         ${CC} ${GAME_SOURCES} ${FLAGS} -L. -lbase -fPIC -shared -o libgame.so;
     else
         ${CC} ${GAME_SOURCES} ${FLAGS} -fPIC -c &&

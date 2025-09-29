@@ -6,18 +6,18 @@
 #include "camera.h"
 #include "collision.h"
 
-typedef struct IntersectionNode {
-    struct IntersectionNode *next;
+typedef struct CollisionEvent {
+    struct CollisionEvent *next;
     EntityPair entity_pair;
-} IntersectionNode;
+} CollisionEvent;
 
 typedef struct {
-    IntersectionNode *head;
-    IntersectionNode *tail;
-} IntersectionList;
+    CollisionEvent *head;
+    CollisionEvent *tail;
+} CollisionList;
 
 typedef struct {
-    IntersectionList *table;
+    CollisionList    *table;
     ssize             table_size;
     LinearArena       arena;
 } IntersectionTable;
@@ -28,8 +28,8 @@ typedef struct {
     Tilemap tilemap;
     EntitySystem entities;
     CollisionRuleTable collision_rules;
-    IntersectionTable  previous_frame_intersections;
-    IntersectionTable  current_frame_intersections;
+    IntersectionTable  previous_frame_collisions;
+    IntersectionTable  current_frame_collisions;
 } GameWorld;
 
 #endif //GAME_WORLD_H

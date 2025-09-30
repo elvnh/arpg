@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
     ComponentBitset active_components;
     RGBA32 color;
+    b32    is_inactive;
 
     #define COMPONENT(type) type ES_IMPL_COMP_FIELD_NAME(type);
         COMPONENT_LIST

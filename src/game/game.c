@@ -84,9 +84,30 @@ static void swap_and_reset_intersection_tables(GameWorld *world)
     }
 }
 
+static b32 entity_should_die(Entity *entity)
+{
+    b32 result = false;
+
+    if (es_has_component(entity, HealthComponent)) {
+        HealthComponent *health = es_get_component(entity, HealthComponent);
+
+        if (health->hitpoints <= 0) {
+            result = true;
+        }
+    }
+
+    return result;
+}
+
 static void entity_update(GameWorld *world, Entity *entity)
 {
+    (void)world;
+    // update
 
+    if (entity_should_die(entity)) {
+        // NOTE: won't be removed until after this frame
+        es_schedule_entity_for_removal(entity);
+    }
 }
 
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
@@ -301,6 +322,7 @@ static b32 entities_should_collide(Entity *a, Entity *b)
 static void handle_collision_and_movement(GameWorld *world, f32 dt)
 {
     // TODO: spatial partition
+    // TODO: don't access alive entity array directly
     for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
         // TODO: this seems bug prone
 
@@ -369,25 +391,11 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
     collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
 }
 
-
-static b32 entity_is_active(Entity *entity)
-{
-    b32 result = true;
-
-    if (es_has_component(entity, HealthComponent)) {
-        HealthComponent *health = es_get_component(entity, HealthComponent);
-
-        if (health->hitpoints <= 0) {
-            result = false;
-        }
-    }
-
-    return result;
-}
-
 static void world_update(GameWorld *world, const Input *input, f32 dt, LinearArena *frame_arena)
 {
-    ASSERT(world->entities.alive_entity_count >= 1);
+    if (world->entities.alive_entity_count < 1) {
+        return;
+    }
 
     EntityID player_id = world->entities.alive_entity_ids[0];
     Entity *player = es_get_entity(&world->entities, player_id);
@@ -437,30 +445,18 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
 
     handle_collision_and_movement(world, dt);
 
-    // TODO: use dynamic array
-    EntityIDList entities_to_remove = {0};
-
+    // TODO: should any newly spawned entities be updated this frame?
     EntityIndex entity_count = world->entities.alive_entity_count;
     for (EntityIndex i = 0; i < entity_count; ++i) {
         EntityID entity_id = world->entities.alive_entity_ids[i];
         Entity *entity = es_get_entity(&world->entities, entity_id);
         ASSERT(entity);
 
-        // TODO: support removing other entities, not only current one.
-        // Looking up entity id in hash set of removed entities?
-        if (entity_is_active(entity)) {
-            entity_update(world, entity);
-        } else {
-            EntityIDNode *node = la_allocate_item(frame_arena, EntityIDNode);
-            node->id = entity_id;
-
-            sl_list_push_back(&entities_to_remove, node);
-        }
+        entity_update(world, entity);
     }
 
-    for (EntityIDNode *node = sl_list_head(&entities_to_remove); node; node = sl_list_next(node)) {
-        es_remove_entity(&world->entities, node->id);
-    }
+    // TODO: should this be done at beginning of each frame to inactive entities are rendered?
+    es_remove_inactive_entities(&world->entities, frame_arena);
 
     swap_and_reset_intersection_tables(world);
 }

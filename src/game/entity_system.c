@@ -1,4 +1,6 @@
 #include "entity_system.h"
+#include "base/linear_arena.h"
+#include "base/sl_list.h"
 
 #define ES_MEMORY_SIZE MB(2)
 
@@ -190,19 +192,33 @@ EntityID es_create_entity(EntitySystem *es)
     return id;
 }
 
+static void es_remove_entity_from_quad_tree(QuadTree *qt, EntitySystem *es, Entity *entity)
+{
+    EntitySlot *slot = es_get_entity_slot(entity);
+    EntityID id = get_entity_id_from_slot(es, slot);
+
+    qt_remove_entity(qt, id, slot->quad_tree_location);
+    slot->quad_tree_location = QT_NULL_LOCATION;
+}
+
 void es_remove_entity(EntitySystem *es, EntityID id)
 {
+    // TODO: clean up this function
     ASSERT(entity_id_is_valid(es, id));
 
-    EntitySlot *slot = es_get_entity_slot_by_id(es, id);
-    ASSERT(slot->alive_entity_array_index < es->alive_entity_count);
+    EntitySlot *removed_slot = es_get_entity_slot_by_id(es, id);
+    ASSERT(removed_slot->alive_entity_array_index < es->alive_entity_count);
 
-    EntityID *removed_id = &es->alive_entity_ids[slot->alive_entity_array_index];
+    EntityID *removed_id = &es->alive_entity_ids[removed_slot->alive_entity_array_index];
     EntityID *last_alive =  &es->alive_entity_ids[es->alive_entity_count - 1];
     ASSERT(removed_id->slot_index == id.slot_index);
     ASSERT(removed_id->generation == id.generation);
+    EntitySlot *last_alive_slot = es_get_entity_slot_by_id(es, *last_alive);
+
     *removed_id = *last_alive;
     es->alive_entity_count--;
+
+    last_alive_slot->alive_entity_array_index = removed_slot->alive_entity_array_index;
 
     EntityGeneration new_generation;
     if (add_overflows_s32(id.generation, 1)) {
@@ -212,12 +228,12 @@ void es_remove_entity(EntitySystem *es, EntityID id)
         new_generation = id.generation + 1;
     }
 
-    slot->generation = new_generation;
+    removed_slot->generation = new_generation;
     id.generation = new_generation;
 
     id_queue_push(&es->free_id_queue, id);
 
-    es_remove_entity_from_quad_tree(&es->quad_tree, es, &slot->entity);
+    es_remove_entity_from_quad_tree(&es->quad_tree, es, &removed_slot->entity);
 }
 
 Entity *es_get_entity(EntitySystem *es, EntityID id)
@@ -243,7 +259,7 @@ void es_set_entity_area(EntitySystem *es, Entity *entity, Rectangle rectangle, L
     EntitySlot *slot = es_get_entity_slot(entity);
     EntityID id = get_entity_id_from_slot(es, slot);
 
-    slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, es, id,
+    slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, id,
 	slot->quad_tree_location, rectangle, arena);
 }
 
@@ -251,16 +267,40 @@ void es_set_entity_position(EntitySystem *es, Entity *entity, Vector2 new_pos, L
 {
     EntitySlot *slot = es_get_entity_slot(entity);
     EntityID id = get_entity_id_from_slot(es, slot);
-    slot->quad_tree_location = qt_move_entity(&es->quad_tree, es, id, slot->quad_tree_location,
+    slot->quad_tree_location = qt_move_entity(&es->quad_tree, id, slot->quad_tree_location,
 	new_pos, arena);
 }
 
-// TODO: should only be called internally?
-void es_remove_entity_from_quad_tree(QuadTree *qt, EntitySystem *es, Entity *entity)
-{
-    EntitySlot *slot = es_get_entity_slot(entity);
-    EntityID id = get_entity_id_from_slot(es, slot);
 
-    qt_remove_entity(qt, es, id, slot->quad_tree_location);
-    slot->quad_tree_location = QT_NULL_LOCATION;
+b32 es_entity_exists(EntitySystem *es, EntityID entity_id)
+{
+    b32 result = es_get_entity(es, entity_id) != 0;
+
+    return result;
+}
+
+void es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch)
+{
+    EntityIDList to_remove = {0};
+
+    for (EntityIndex i = 0; i < es->alive_entity_count; ++i) {
+        EntityID id = es->alive_entity_ids[i];
+        Entity *entity = es_get_entity(es, id);
+
+        if (entity->is_inactive) {
+            EntityIDNode *node = la_allocate_item(scratch, EntityIDNode);
+            node->id = id;
+
+            sl_list_push_back(&to_remove, node);
+        }
+    }
+
+    for (EntityIDNode *node = sl_list_head(&to_remove); node; node = sl_list_next(node)) {
+        es_remove_entity(es, node->id);
+    }
+}
+
+void es_schedule_entity_for_removal(Entity *entity)
+{
+    entity->is_inactive = true;
 }

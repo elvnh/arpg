@@ -34,13 +34,14 @@ typedef struct EntityStorage {
 
 void       es_initialize(EntitySystem *es, Rectangle world_area);
 EntityID   es_create_entity(EntitySystem *es);
-void       es_remove_entity(EntitySystem *es, EntityID id);
 Entity    *es_get_entity(EntitySystem *es, EntityID id);
 void      *es_impl_add_component(Entity *entity, ComponentType type);
 void      *es_impl_get_component(Entity *entity, ComponentType type);
 void	   es_set_entity_area(EntitySystem *es, Entity *entity, Rectangle rectangle, LinearArena *arena);
 void	   es_set_entity_position(EntitySystem *es, Entity *entity, Vector2 new_pos, LinearArena *arena);
-void	   es_remove_entity_from_quad_tree(QuadTree *qt, EntitySystem *es, Entity *entity);
 EntityID   es_get_id_of_entity(EntitySystem *es, Entity *entity);
+b32        es_entity_exists(EntitySystem *es, EntityID entity_id);
+void       es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch);
+void       es_schedule_entity_for_removal(Entity *entity); // TODO: schedule_for_deactivation
 
 #endif //ENTITY_SYSTEM_H

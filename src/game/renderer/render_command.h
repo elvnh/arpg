@@ -14,6 +14,7 @@ typedef enum {
     RENDER_CMD_CIRCLE,
     RENDER_CMD_LINE,
     RENDER_CMD_TEXT,
+    RENDER_CMD_PARTICLES,
 } RenderCmdKind;
 
 typedef enum {
@@ -68,6 +69,13 @@ typedef struct {
     s32 size;
     FontHandle font;
 } TextCmd;
+
+typedef struct {
+    RenderCmdHeader header;
+    struct Particle *particles;
+    ssize particle_count;
+    RGBA32 color;
+} ParticleGroupCmd;
 
 /* Setup command types */
 typedef struct {

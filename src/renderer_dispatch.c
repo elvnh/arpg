@@ -1,7 +1,9 @@
 #include "renderer_dispatch.h"
 #include "base/rectangle.h"
 #include "font.h"
+#include "game/renderer/render_command.h"
 #include "game/renderer/render_key.h"
+#include "game/particle.h"
 #include "renderer/renderer_backend.h"
 
 typedef struct {
@@ -235,6 +237,34 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                         cursor.x = start_position.x;
                         cursor.y -= newline_advance;
                     }
+                }
+            } break;
+
+            case RENDER_CMD_PARTICLES: {
+                ParticleGroupCmd *cmd = (ParticleGroupCmd *)entry->data;
+
+                Particle *particles = cmd->particles;
+                ssize count = cmd->particle_count;
+
+                for (ssize p = 0; p < count; ++p) {
+                    Particle *particle = &particles[p];
+
+                    Rectangle rect = {particle->position, v2(2, 2)};
+                    f32 a = 1.0f - particle->timer / particle->lifetime;
+                    a = MIN(a, 1.0f);
+
+                    RGBA32 color = cmd->color;
+                    color.a = a;
+
+                    RectangleVertices verts = rect_get_vertices(rect, color);
+
+                    renderer_backend_draw_quad(
+                        backend,
+                        verts.top_left,
+                        verts.top_right,
+                        verts.bottom_right,
+                        verts.bottom_left
+                    );
                 }
             } break;
 

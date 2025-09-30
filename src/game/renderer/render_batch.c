@@ -4,6 +4,7 @@
 #include "base/utils.h"
 #include "game/renderer/render_key.h"
 #include "render_command.h"
+#include "game/particle.h"
 
 #include <stdlib.h>
 
@@ -46,6 +47,7 @@ void rb_sort_entries(RenderBatch *rb)
     }
 }
 
+// TODO: can this be automated?
 static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
 {
     void *result = 0;
@@ -69,6 +71,10 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
 
         case RENDER_CMD_TEXT: {
             result = la_allocate_item(arena, TextCmd);
+        } break;
+
+        case RENDER_CMD_PARTICLES: {
+            result = la_allocate_item(arena, ParticleGroupCmd);
         } break;
 
         INVALID_DEFAULT_CASE;
@@ -168,6 +174,20 @@ RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vect
     cmd->size = size;
 
     RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, font, 0);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
+RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, Particle *particles,
+    ssize particle_count, RGBA32 color, ShaderHandle shader, RenderLayer layer)
+{
+    ParticleGroupCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_PARTICLES);
+    cmd->particles = particles;
+    cmd->particle_count = particle_count;
+    cmd->color = color;
+
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;

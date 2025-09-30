@@ -22,6 +22,7 @@ typedef u64 RenderKey;
 typedef enum {
     RENDER_LAYER_TILEMAP,
     RENDER_LAYER_ENTITIES,
+    RENDER_LAYER_PARTICLES,
 } RenderLayer;
 
 inline static RenderKey render_key_extract_shader(RenderKey key)

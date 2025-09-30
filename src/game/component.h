@@ -1,11 +1,14 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+#include "particle.h"
+
 #define COMPONENT_LIST                          \
     COMPONENT(PhysicsComponent)                 \
     COMPONENT(ColliderComponent)                \
-    COMPONENT(DamageFieldComponent)                  \
+    COMPONENT(DamageFieldComponent)             \
     COMPONENT(HealthComponent)                  \
+    COMPONENT(ParticleSpawner)                  \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -40,5 +43,10 @@ typedef struct {
 typedef struct {
     s64 hitpoints;
 } HealthComponent;
+
+typedef struct {
+    Particle particles[1024];
+    ssize particle_count;
+} ParticleSpawner;
 
 #endif //COMPONENT_H

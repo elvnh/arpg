@@ -419,28 +419,43 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
     camera_zoom(&world->camera, (s32)input->scroll_delta);
     camera_update(&world->camera, dt);
 
-    f32 speed = 250.0f;
+    f32 speed = 350.0f;
 
     if (input_is_key_held(input, KEY_LEFT_SHIFT)) {
         speed *= 3.0f;
     }
 
     {
-	Vector2 dir = {0};
+	Vector2 acceleration = {0};
 
 	if (input_is_key_down(input, KEY_W)) {
-	    dir.y = 1.0f;
+	    acceleration.y = 1.0f;
 	} else if (input_is_key_down(input, KEY_S)) {
-	    dir.y = -1.0f;
+	    acceleration.y = -1.0f;
 	}
 
 	if (input_is_key_down(input, KEY_A)) {
-	    dir.x = -1.0f;
+	    acceleration.x = -1.0f;
 	} else if (input_is_key_down(input, KEY_D)) {
-	    dir.x = 1.0f;
+	    acceleration.x = 1.0f;
 	}
 
-        physics->velocity = v2_mul_s(v2_norm(dir), speed);
+        Vector2 v = physics->velocity;
+        Vector2 p = physics->position;
+
+        acceleration = v2_norm(acceleration);
+        acceleration = v2_mul_s(acceleration, speed);
+        acceleration = v2_add(acceleration, v2_mul_s(v, -3.5f));
+
+        Vector2 new_pos = v2_add(
+            v2_add(v2_mul_s(v2_mul_s(acceleration, dt * dt), 0.5f), v2_mul_s(v, dt)),
+            p
+        );
+
+        Vector2 new_velocity = v2_add(v2_mul_s(acceleration, dt), v);
+
+        physics->position = new_pos;
+        physics->velocity = new_velocity;
     }
 
     handle_collision_and_movement(world, dt);

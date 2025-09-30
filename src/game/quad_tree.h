@@ -23,8 +23,6 @@
   - Move children into one struct, allocate all at once
  */
 
-struct EntityStorage;
-
 typedef struct QuadTreeElement {
     EntityID entity_id;
     Rectangle area;
@@ -73,11 +71,11 @@ typedef struct {
 // TODO: the EntityStorage* parameters are only temporary
 
 void qt_initialize(QuadTree *qt, Rectangle area);
-QuadTreeLocation qt_move_entity(QuadTree *qt, struct EntityStorage *es, EntityID id,
+QuadTreeLocation qt_move_entity(QuadTree *qt, EntityID id,
     QuadTreeLocation location, Vector2 new_position, LinearArena *arena);
-QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, EntityID id,
+QuadTreeLocation qt_set_entity_area(QuadTree *qt, EntityID id,
     QuadTreeLocation location, Rectangle area, LinearArena *arena);
-void qt_remove_entity(QuadTree *qt, struct EntityStorage *es, EntityID id, QuadTreeLocation location);
+void qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation location);
 EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *arena);
 
 #endif //QUAD_TREE_H

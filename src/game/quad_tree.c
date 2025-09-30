@@ -4,7 +4,6 @@
 #include "base/rectangle.h"
 #include "base/sl_list.h"
 #include "base/utils.h"
-#include "entity.h"
 
 static void qt_initialize_node(QuadTreeNode *node, Rectangle area)
 {
@@ -107,22 +106,22 @@ static QuadTreeLocation qt_insert(QuadTree *qt, QuadTreeNode *node, EntityID id,
     return result;
 }
 
-QuadTreeLocation qt_move_entity(QuadTree *qt, struct EntityStorage *es, EntityID id,
+QuadTreeLocation qt_move_entity(QuadTree *qt, EntityID id,
     QuadTreeLocation location, Vector2 new_position, LinearArena *arena)
 {
     ASSERT(!qt_location_is_null(location));
     Rectangle new_area = {new_position, location.element->area.size};
 
-    QuadTreeLocation result = qt_set_entity_area(qt, es, id, location, new_area, arena);
+    QuadTreeLocation result = qt_set_entity_area(qt, id, location, new_area, arena);
 
     return result;
 }
 
-QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, EntityID id,
+QuadTreeLocation qt_set_entity_area(QuadTree *qt, EntityID id,
     QuadTreeLocation location, Rectangle area, LinearArena *arena)
 {
     if (!qt_location_is_null(location)) {
-        qt_remove_entity(qt, es, id, location);
+        qt_remove_entity(qt, id, location);
     }
 
     QuadTreeLocation result = qt_insert(qt, &qt->root, id, area, 0, arena);
@@ -130,7 +129,7 @@ QuadTreeLocation qt_set_entity_area(QuadTree *qt, struct EntityStorage *es, Enti
     return result;
 }
 
-void qt_remove_entity(QuadTree *qt, struct EntityStorage *es, EntityID id, QuadTreeLocation location)
+void qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation location)
 {
     ASSERT(!qt_location_is_null(location));
     ASSERT(location.element->entity_id.slot_index == id.slot_index);

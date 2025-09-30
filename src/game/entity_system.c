@@ -72,7 +72,7 @@ void *es_impl_add_component(Entity *entity, ComponentType type)
 
 void *es_impl_get_component(Entity *entity, ComponentType type)
 {
-    if (!es_has_components(entity, type)) {
+    if (!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type))) {
         return 0;
     }
 
@@ -216,6 +216,8 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     id.generation = new_generation;
 
     id_queue_push(&es->free_id_queue, id);
+
+    es_remove_entity_from_quad_tree(&es->quad_tree, es, &slot->entity);
 }
 
 Entity *es_get_entity(EntitySystem *es, EntityID id)

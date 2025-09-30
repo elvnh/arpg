@@ -13,6 +13,7 @@
 #include "base/line.h"
 #include "game/component.h"
 #include "game/entity.h"
+#include "game/entity_system.h"
 #include "game/game_world.h"
 #include "game/quad_tree.h"
 #include "game/tilemap.h"
@@ -83,6 +84,11 @@ static void swap_and_reset_intersection_tables(GameWorld *world)
     }
 }
 
+static void entity_update(GameWorld *world, Entity *entity)
+{
+
+}
+
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
     if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ColliderComponent))) {
@@ -128,11 +134,56 @@ static Rectangle get_entity_rect(PhysicsComponent *physics, ColliderComponent *c
     return result;
 }
 
+static b32 entities_intersected_this_frame(GameWorld *world, EntityID a, EntityID b)
+{
+    b32 result = intersection_table_find(&world->current_frame_collisions, a, b) != 0;
+
+    return result;
+}
+
+
 static b32 entities_intersected_previous_frame(GameWorld *world, EntityID a, EntityID b)
 {
     b32 result = intersection_table_find(&world->previous_frame_collisions, a, b) != 0;
 
     return result;
+}
+
+// TODO: only try_get_component and try_get_entity can retur null
+
+static void deal_damage(Entity *a, DamageFieldComponent *dmg_field, Entity *b, HealthComponent *health)
+{
+    (void)a;
+    (void)b;
+
+    health->hitpoints -= dmg_field->damage;
+}
+
+static void try_deal_damage(Entity *a, Entity *b)
+{
+    DamageFieldComponent *damage = es_get_component(a, DamageFieldComponent);
+    HealthComponent *health = es_get_component(b, HealthComponent);
+
+    if (damage && health) {
+        deal_damage(a, damage, b, health);
+    }
+}
+
+static void handle_collision_side_effects(Entity *a, Entity *b)
+{
+    ASSERT(a);
+    ASSERT(b);
+
+    try_deal_damage(a, b);
+    try_deal_damage(b, a);
+
+    if (es_has_component(a, DamageFieldComponent)) {
+        printf("Damage A: %d\n", es_get_component(a, DamageFieldComponent)->damage);
+    }
+
+    if (es_has_component(b, DamageFieldComponent)) {
+        printf("Damage B: %d\n", es_get_component(b, DamageFieldComponent)->damage);
+    }
 }
 
 static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a,
@@ -153,6 +204,11 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
             physics_a->velocity, physics_b->velocity, dt);
 
         if (collision.collision_state != COLL_NOT_COLLIDING) {
+            if (!entities_intersected_this_frame(world, id_a, id_b)
+             && !entities_intersected_previous_frame(world, id_a, id_b)) {
+                handle_collision_side_effects(a, b);
+            }
+
             intersection_table_insert(&world->current_frame_collisions, id_a, id_b);
 
             if (!collider_a->non_blocking && !collider_b->non_blocking) {
@@ -166,15 +222,7 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
                 movement_fraction_left = collision.movement_fraction_left;
             }
 
-            if (!entities_intersected_previous_frame(world, id_a, id_b)) {
-                if (es_has_component(a, DamageComponent)) {
-                    printf("Damage A: %d\n", es_get_component(a, DamageComponent)->damage);
-                }
 
-                if (es_has_component(b, DamageComponent)) {
-                    printf("Damage B: %d\n", es_get_component(b, DamageComponent)->damage);
-                }
-            }
         }
     }
 
@@ -252,6 +300,7 @@ static b32 entities_should_collide(Entity *a, Entity *b)
 
 static void handle_collision_and_movement(GameWorld *world, f32 dt)
 {
+    // TODO: spatial partition
     for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
         // TODO: this seems bug prone
 
@@ -311,8 +360,8 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
     collider->size = v2(16.0f, 16.0f);
     collider->non_blocking = true;
 
-    DamageComponent *damage = es_add_component(entity, DamageComponent);
-    damage->damage = 10;
+    DamageFieldComponent *damage = es_add_component(entity, DamageFieldComponent);
+    damage->damage = 3;
 
     es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size},
 	&world->world_arena);
@@ -321,7 +370,22 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 }
 
 
-static void world_update(GameWorld *world, const Input *input, f32 dt)
+static b32 entity_is_active(Entity *entity)
+{
+    b32 result = true;
+
+    if (es_has_component(entity, HealthComponent)) {
+        HealthComponent *health = es_get_component(entity, HealthComponent);
+
+        if (health->hitpoints <= 0) {
+            result = false;
+        }
+    }
+
+    return result;
+}
+
+static void world_update(GameWorld *world, const Input *input, f32 dt, LinearArena *frame_arena)
 {
     ASSERT(world->entities.alive_entity_count >= 1);
 
@@ -373,7 +437,31 @@ static void world_update(GameWorld *world, const Input *input, f32 dt)
 
     handle_collision_and_movement(world, dt);
 
-    //printf("%zu\n", la_get_memory_usage(&world->world_arena));
+    // TODO: use dynamic array
+    EntityIDList entities_to_remove = {0};
+
+    EntityIndex entity_count = world->entities.alive_entity_count;
+    for (EntityIndex i = 0; i < entity_count; ++i) {
+        EntityID entity_id = world->entities.alive_entity_ids[i];
+        Entity *entity = es_get_entity(&world->entities, entity_id);
+        ASSERT(entity);
+
+        // TODO: support removing other entities, not only current one.
+        // Looking up entity id in hash set of removed entities?
+        if (entity_is_active(entity)) {
+            entity_update(world, entity);
+        } else {
+            EntityIDNode *node = la_allocate_item(frame_arena, EntityIDNode);
+            node->id = entity_id;
+
+            sl_list_push_back(&entities_to_remove, node);
+        }
+    }
+
+    for (EntityIDNode *node = sl_list_head(&entities_to_remove); node; node = sl_list_next(node)) {
+        es_remove_entity(&world->entities, node->id);
+    }
+
     swap_and_reset_intersection_tables(world);
 }
 
@@ -440,7 +528,7 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
         DEBUG_BREAK;
     }
 
-    world_update(&game_state->world, input, dt);
+    world_update(&game_state->world, input, dt, frame_arena);
 }
 
 static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
@@ -526,6 +614,9 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
         ColliderComponent *collider = es_add_component(player, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
+
+        HealthComponent *hp = es_add_component(player, HealthComponent);
+        hp->hitpoints = 10;
 
         ASSERT(es_has_component(player, PhysicsComponent));
         ASSERT(es_has_component(player, ColliderComponent));

@@ -4,7 +4,8 @@
 #define COMPONENT_LIST                          \
     COMPONENT(PhysicsComponent)                 \
     COMPONENT(ColliderComponent)                \
-    COMPONENT(DamageComponent)                  \
+    COMPONENT(DamageFieldComponent)                  \
+    COMPONENT(HealthComponent)                  \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -34,6 +35,10 @@ typedef struct {
 
 typedef struct {
     s32 damage;
-} DamageComponent;
+} DamageFieldComponent;
+
+typedef struct {
+    s64 hitpoints;
+} HealthComponent;
 
 #endif //COMPONENT_H

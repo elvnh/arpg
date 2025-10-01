@@ -45,6 +45,13 @@ typedef struct {
     s64 hitpoints;
 } HealthComponent;
 
+// TODO: can be generalized
+typedef enum {
+    PS_WHEN_DONE_DO_NOTHING = 0,
+    PS_WHEN_DONE_REMOVE_COMPONENT, // TODO: should this be default?
+    PS_WHEN_DONE_REMOVE_ENTITY,
+} ParticleSpawnerWhenDone;
+
 typedef struct {
     // TODO: make into proper ring buffer
     Particle particle_array[1024];
@@ -59,6 +66,7 @@ typedef struct {
 
     // TODO: allow infinite number of particles
     f32 particles_to_spawn;
+    ParticleSpawnerWhenDone action_when_done;
 } ParticleSpawner;
 
 #endif //COMPONENT_H

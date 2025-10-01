@@ -7,6 +7,7 @@
 #define MAX_ENTITIES 32
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
+#define es_remove_component(entity, type)      es_impl_remove_component(entity, ES_IMPL_COMP_ENUM_NAME(type))
 #define es_get_component(entity, type) ((type *)es_impl_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_has_component(entity, type)          es_has_components((entity), component_flag(type))
 #define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
@@ -37,6 +38,7 @@ EntityID   es_create_entity(EntitySystem *es);
 Entity    *es_get_entity(EntitySystem *es, EntityID id);
 void      *es_impl_add_component(Entity *entity, ComponentType type);
 void      *es_impl_get_component(Entity *entity, ComponentType type);
+void       es_impl_remove_component(Entity *entity, ComponentType type);
 void	   es_set_entity_area(EntitySystem *es, Entity *entity, Rectangle rectangle, LinearArena *arena);
 void	   es_set_entity_position(EntitySystem *es, Entity *entity, Vector2 new_pos, LinearArena *arena);
 EntityID   es_get_id_of_entity(EntitySystem *es, Entity *entity);

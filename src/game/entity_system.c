@@ -84,6 +84,14 @@ void *es_impl_get_component(Entity *entity, ComponentType type)
     return result;
 }
 
+void es_impl_remove_component(Entity *entity, ComponentType type)
+{
+    u64 bit_value = ES_IMPL_COMP_ENUM_BIT_VALUE(type);
+    ASSERT(es_has_components(entity, bit_value));
+
+    entity->active_components &= ~(bit_value);
+}
+
 static void id_queue_set_to_empty(EntityIDQueue *queue)
 {
     queue->head = S_SIZE_MAX;

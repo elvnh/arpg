@@ -85,23 +85,39 @@ static void swap_and_reset_collision_tables(GameWorld *world)
     }
 }
 
-static b32 entity_should_die(Entity *entity)
+static b32 particle_spawner_is_finished(ParticleSpawner *ps)
 {
-    b32 result = false;
-
-    if (es_has_component(entity, HealthComponent)) {
-        HealthComponent *health = es_get_component(entity, HealthComponent);
-
-        if (health->hitpoints <= 0) {
-            result = true;
-        }
-    }
+    b32 result = (ps->particle_array_count == 0)
+        && (ps->particles_to_spawn <= 0.0f);
 
     return result;
 }
 
+static b32 entity_should_die(Entity *entity)
+{
+    if (es_has_component(entity, HealthComponent)) {
+        HealthComponent *health = es_get_component(entity, HealthComponent);
+
+        if (health->hitpoints <= 0) {
+            return true;
+        }
+    }
+
+    if (es_has_component(entity, ParticleSpawner)) {
+        ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
+
+        if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_ENTITY)
+            && particle_spawner_is_finished(ps)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 // TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
-static void component_update_particle_spawner(ParticleSpawner *ps, Vector2 position, f32 dt)
+static void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vector2 position, f32 dt)
 {
     ps->particle_timer += ps->particles_per_second * dt;
 
@@ -143,6 +159,11 @@ static void component_update_particle_spawner(ParticleSpawner *ps, Vector2 posit
         p->velocity = v2_add(p->velocity, v2(0, -1.0f));
         p->velocity = v2_add(p->velocity, v2_mul_s(p->velocity, -0.009f));
     }
+
+
+    if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_COMPONENT) && particle_spawner_is_finished(ps)) {
+        es_remove_component(entity, ParticleSpawner);
+    }
 }
 
 static void entity_update(GameWorld *world, Entity *entity, f32 dt)
@@ -153,7 +174,7 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
 
-        component_update_particle_spawner(particle_spawner, physics->position, dt);
+        component_update_particle_spawner(entity, particle_spawner, physics->position, dt);
     }
 
 
@@ -718,8 +739,9 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.5f};
         spawner->particle_size = 4.0f;
         spawner->particles_per_second = 500.0f;
-        spawner->particles_to_spawn = 500000.0f;
+        spawner->particles_to_spawn = 1000.0f;
         spawner->particle_lifetime = 1.0f;
+        spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 
         // TODO: do this automatically
 	es_set_entity_area(&game_state->world.entities, player, rect, &game_state->world.world_arena);

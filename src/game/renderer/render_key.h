@@ -5,8 +5,7 @@
 #include "base/maths.h"
 #include "asset.h"
 
-#define NULL_TEXTURE         ((TextureHandle){(1 << TEXTURE_KEY_BITS) - 1})
-#define NULL_FONT            ((FontHandle){(1 << FONT_KEY_BITS) - 1})
+
 
 #define LAYER_KEY_POSITION   (64u - LAYER_KEY_BITS)
 #define LAYER_KEY_BITS       8u

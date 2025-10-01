@@ -1,4 +1,5 @@
 #include "asset_manager.h"
+#include "asset.h"
 #include "base/linear_arena.h"
 #include "base/string8.h"
 #include "base/utils.h"
@@ -7,19 +8,30 @@
 #include "base/image.h"
 #include "platform.h"
 
-#define ASSET_ARENA_SIZE MB(8)
+#define ASSET_ARENA_SIZE      MB(8)
+#define FIRST_VALID_ASSET_ID (NULL_ASSET_ID + 1)
 
 typedef struct {
     AssetID    id;
     AssetSlot *slot;
 } AssetSlotWithID;
 
-static AssetSlotWithID acquire_asset_slot(AssetManager *assets, String asset_path)
+static AssetSlot *get_asset_slot(AssetManager *mgr, AssetID id)
+{
+    ASSERT(id >= FIRST_VALID_ASSET_ID);
+    ASSERT(id < MAX_REGISTERED_ASSETS);
+
+    AssetSlot *result = &mgr->registered_assets[id - FIRST_VALID_ASSET_ID];
+
+    return result;
+}
+
+static AssetSlotWithID allocate_asset_slot(AssetManager *assets, String asset_path)
 {
     AssetID id = assets->next_asset_id++;
     ASSERT(id < MAX_REGISTERED_ASSETS);
 
-    AssetSlot *slot = &assets->registered_assets[id];
+    AssetSlot *slot = get_asset_slot(assets, id);
 
     if (asset_path.data) {
         slot->absolute_asset_path = str_copy(asset_path, fl_allocator(&assets->asset_arena));
@@ -59,7 +71,7 @@ static void *get_asset_data(AssetManager *assets, AssetID id, AssetKind kind)
 {
     ASSERT(id < assets->next_asset_id);
 
-    AssetSlot *asset = &assets->registered_assets[id];
+    AssetSlot *asset = get_asset_slot(assets, id);
     ASSERT(asset->kind == kind);
 
     switch (kind) {
@@ -77,6 +89,7 @@ AssetManager assets_initialize(Allocator parent_allocator)
 {
     AssetManager result = {0};
     result.asset_arena = fl_create(parent_allocator, ASSET_ARENA_SIZE);
+    result.next_asset_id = FIRST_VALID_ASSET_ID;
 
     return result;
 }
@@ -142,7 +155,7 @@ ShaderHandle assets_register_shader(AssetManager *assets, String name, LinearAre
 {
     String path = get_absolute_asset_path(name, ASSET_KIND_SHADER, scratch);
 
-    AssetSlotWithID slot_and_id = acquire_asset_slot(assets, path);
+    AssetSlotWithID slot_and_id = allocate_asset_slot(assets, path);
     ShaderAsset *shader = load_asset_data_shader(assets, path, scratch);
     ASSERT(shader);
 
@@ -173,7 +186,7 @@ TextureHandle assets_register_texture(AssetManager *assets, String name, LinearA
 {
     String path = get_absolute_asset_path(name, ASSET_KIND_TEXTURE, scratch);
 
-    AssetSlotWithID slot_and_id = acquire_asset_slot(assets, path);
+    AssetSlotWithID slot_and_id = allocate_asset_slot(assets, path);
     TextureAsset *texture = load_asset_data_texture(assets, path, scratch);
     ASSERT(texture);
 
@@ -199,7 +212,7 @@ FontHandle assets_register_font(AssetManager *assets, String name, LinearArena *
     // TODO: reduce code duplication in assets_register functions
     String path = get_absolute_asset_path(name, ASSET_KIND_FONT, scratch);
 
-    AssetSlotWithID slot_and_id = acquire_asset_slot(assets, path);
+    AssetSlotWithID slot_and_id = allocate_asset_slot(assets, path);
     FontAsset *font = load_asset_data_font(assets, path, scratch);
     ASSERT(font);
 
@@ -288,7 +301,7 @@ TextureHandle assets_create_texture_from_memory(AssetManager *assets, Image imag
     // TODO: ensure that this doesn't get unloaded since it's not tied to a path and
     // can't be reloaded
     TextureAsset *texture = renderer_backend_create_texture(image, fl_allocator(&assets->asset_arena));
-    AssetSlotWithID slot_and_id = acquire_asset_slot(assets, null_string);
+    AssetSlotWithID slot_and_id = allocate_asset_slot(assets, null_string);
     assign_asset_slot_data(slot_and_id.slot, ASSET_KIND_TEXTURE, texture);
 
     TextureHandle result = {slot_and_id.id};

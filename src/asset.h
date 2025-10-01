@@ -3,6 +3,10 @@
 
 #include "base/typedefs.h"
 
+#define NULL_ASSET_ID  0
+#define NULL_TEXTURE   ((TextureHandle) {NULL_ASSET_ID})
+#define NULL_FONT      ((FontHandle)    {NULL_ASSET_ID})
+
 typedef u32 AssetID;
 
 typedef struct {

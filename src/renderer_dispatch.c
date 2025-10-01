@@ -245,11 +245,12 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
                 Particle *particles = cmd->particles;
                 ssize count = cmd->particle_count;
+                Vector2 particle_dims = v2(cmd->particle_size, cmd->particle_size);
 
                 for (ssize p = 0; p < count; ++p) {
                     Particle *particle = &particles[p];
 
-                    Rectangle rect = {particle->position, v2(2, 2)};
+                    Rectangle rect = {particle->position, particle_dims};
                     f32 a = 1.0f - particle->timer / particle->lifetime;
                     a = MIN(a, 1.0f);
 

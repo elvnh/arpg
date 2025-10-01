@@ -2,6 +2,7 @@
 #define COMPONENT_H
 
 #include "particle.h"
+#include "asset.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(PhysicsComponent)                 \
@@ -47,6 +48,9 @@ typedef struct {
 typedef struct {
     Particle particles[1024];
     ssize particle_count;
+    TextureHandle texture;
+    RGBA32 particle_color;
+    f32 particle_size;
 } ParticleSpawner;
 
 #endif //COMPONENT_H

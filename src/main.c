@@ -85,6 +85,8 @@ int main()
 
     platform_set_scroll_value_storage(&input.scroll_delta, window);
 
+    game_state->texture = asset_list.texture;
+
 #if HOT_RELOAD
     game_code.initialize(game_state, &game_memory);
 #else

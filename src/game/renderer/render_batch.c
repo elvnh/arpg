@@ -180,17 +180,30 @@ RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vect
 }
 
 RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, Particle *particles,
-    ssize particle_count, RGBA32 color, ShaderHandle shader, RenderLayer layer)
+    ssize particle_count, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {
     ParticleGroupCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_PARTICLES);
     cmd->particles = particles;
     cmd->particle_count = particle_count;
     cmd->color = color;
+    cmd->particle_size = particle_size;
+
+    ASSERT(particle_size > 0.0f);
 
     RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
+}
+
+RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, struct Particle *particles,
+    ssize particle_count, TextureHandle texture, RGBA32 color, f32 particle_size,
+    ShaderHandle shader, RenderLayer layer)
+{
+    RenderEntry *entry = rb_push_particles(rb, arena, particles, particle_count, color, particle_size, shader, layer);
+    entry->key = render_key_create(layer, shader, texture, NULL_FONT, 0);
+
+    return entry;
 }
 
 void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)

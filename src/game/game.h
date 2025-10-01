@@ -14,6 +14,7 @@
 
 typedef struct {
     GameWorld world;
+    TextureHandle texture;
 } GameState;
 
 typedef struct {

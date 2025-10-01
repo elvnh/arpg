@@ -46,7 +46,9 @@ RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Ve
 RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer);
 RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, struct Particle *particles,
-    ssize particle_count, RGBA32 color, ShaderHandle shader, RenderLayer layer);
+    ssize particle_count, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer);
+RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, struct Particle *particles,
+    ssize particle_count, TextureHandle texture, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer);
 
 void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec);
 

@@ -166,10 +166,19 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
 
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
 
-        // TODO: Set color in particle spawner
-        // TODO: allow textured particles
+        ASSERT(ps->particle_color.a != 0.0f);
+
+        // TODO: particle size
         rb_push_rect(rb, scratch, rect, color, assets->shader2, RENDER_LAYER_ENTITIES);
-        rb_push_particles(rb, scratch, ps->particles, ps->particle_count, RGBA32_BLUE, assets->shader2, RENDER_LAYER_PARTICLES);
+
+        if (ps->texture.id == NULL_TEXTURE.id) {
+            rb_push_particles(rb, scratch, ps->particles, ps->particle_count,
+                ps->particle_color, ps->particle_size, assets->shader2, RENDER_LAYER_PARTICLES);
+        } else {
+            rb_push_particles_textured(rb, scratch, ps->particles, ps->particle_count,
+                assets->texture, ps->particle_color, ps->particle_size, assets->shader, RENDER_LAYER_PARTICLES);
+        }
+
     }
 }
 
@@ -688,7 +697,11 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
     EntityID p = es_create_entity(&game_state->world.entities);
     Entity *ps = es_get_entity(&game_state->world.entities, p);
-    /*ParticleSpawner *spawner = */es_add_component(ps, ParticleSpawner);
+    ParticleSpawner *spawner = es_add_component(ps, ParticleSpawner);
+    //spawner->texture = game_state->texture;
+    spawner->particle_color = RGBA32_GREEN;
+    spawner->particle_size = 3.0f;
+
     PhysicsComponent *pos = es_add_component(ps, PhysicsComponent);
     pos->position = v2(100, 100);
 

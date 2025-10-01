@@ -95,7 +95,11 @@ void platform_update_input(Input *input, WindowHandle *window)
 
     double x, y;
     glfwGetCursorPos(window->window, &x, &y);
-    input->mouse_position = v2((f32)x, (f32)y);
+
+    s32 w, h;
+    glfwGetWindowSize(window->window, &w, &h); // TODO: create function for this
+
+    input->mouse_position = v2((f32)x, (f32)h - (f32)y);
 
     for (Key key = 0; key < KEY_COUNT; ++key) {
         Keystate current = get_current_keystate(key, window);

@@ -4,6 +4,7 @@
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
 #include "base/list.h"
+#include "base/matrix.h"
 #include "base/rectangle.h"
 #include "base/sl_list.h"
 #include "base/rgba.h"
@@ -17,6 +18,7 @@
 #include "game/game_world.h"
 #include "game/quad_tree.h"
 #include "game/tilemap.h"
+#include "game/ui.h"
 #include "input.h"
 #include "collision.h"
 #include "renderer/render_batch.h"
@@ -629,8 +631,8 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
 
     rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shader2, 3);
 
-    rb_push_text(rb, frame_arena, str_lit("Hej"), v2(0, 0), RGBA32_WHITE, 64, assets->shader,
-        assets->default_font, 3);
+    /* rb_push_text(rb, frame_arena, str_lit("Hej"), v2(0, 0), RGBA32_WHITE, 64, assets->shader, */
+    /*     assets->default_font, 3); */
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
@@ -642,6 +644,11 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
     }
 
     world_update(&game_state->world, input, dt, frame_arena);
+
+    if (ui_button(&game_state->ui, str_lit("ABC"), V2_ZERO).clicked) {
+        printf("Clicked\n");
+    }
+
 }
 
 static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
@@ -690,8 +697,15 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
 void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
     FrameData frame_data, GameMemory *game_memory)
 {
+    ui_begin_frame(&game_state->ui);
+
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
+
+    Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_UP);
+    RenderBatch *ui_rb = rb_list_push_new(rbs, proj, &game_memory->temporary_memory);
+
+    ui_end_frame(&game_state->ui, frame_data.input, ui_rb, assets);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
@@ -701,6 +715,8 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
     game_state->world.previous_frame_collisions = collision_table_create(&game_state->world.world_arena);
     game_state->world.current_frame_collisions = collision_table_create(&game_state->world.world_arena);
+
+    ui_initialize(&game_state->ui, &game_memory->permanent_memory);
 
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {
@@ -741,7 +757,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         spawner->particles_per_second = 500.0f;
         spawner->particles_to_spawn = 1000.0f;
         spawner->particle_lifetime = 1.0f;
-        spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+        //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 
         // TODO: do this automatically
 	es_set_entity_area(&game_state->world.entities, player, rect, &game_state->world.world_arena);

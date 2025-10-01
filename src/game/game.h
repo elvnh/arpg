@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "base/matrix.h"
+#include "game/ui.h"
 #include "renderer/render_batch.h"
 #include "game_world.h"
 #include "input.h"
@@ -15,6 +16,7 @@
 typedef struct {
     GameWorld world;
     TextureHandle texture;
+    UIState ui;
 } GameState;
 
 typedef struct {

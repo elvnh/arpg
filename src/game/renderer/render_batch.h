@@ -13,7 +13,7 @@ typedef struct {
     RenderCmdHeader  *data;
 } RenderEntry;
 
-typedef struct {
+typedef struct RenderBatch {
     RenderEntry  entries[512];
     ssize        entry_count;
     Matrix4      projection;

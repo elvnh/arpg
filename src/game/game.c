@@ -103,8 +103,10 @@ static void component_update_particle_spawner(ParticleSpawner *ps, Vector2 posit
 {
     ps->particle_timer += ps->particles_per_second * dt;
 
-    s32 particles_to_spawn = (s32)ps->particle_timer;
+    s32 particles_to_spawn = MIN((s32)ps->particle_timer, (s32)ps->particles_to_spawn);
     ps->particle_timer -= (f32)particles_to_spawn;
+    ps->particles_to_spawn -= (f32)particles_to_spawn;
+    // TODO: remove spawner once time runs out
 
     for (s32 i = 0; i < particles_to_spawn; ++i) {
         f32 x = (f32)cos(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
@@ -114,7 +116,7 @@ static void component_update_particle_spawner(ParticleSpawner *ps, Vector2 posit
         // TODO: color variance
         ps->particle_array[ps->particle_array_count] = (Particle){
             .timer = 0.0f,
-            .lifetime = 1.0f,
+            .lifetime = ps->particle_lifetime,
             .position = position,
             .velocity = v2_mul_s(v2(x, y), speed)
         };
@@ -705,20 +707,15 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
 	Rectangle rect = get_entity_rect(physics, collider);
 
+        ParticleSpawner *spawner = es_add_component(player, ParticleSpawner);
+        //spawner->texture = game_state->texture;
+        spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.5f};
+        spawner->particle_size = 4.0f;
+        spawner->particles_per_second = 500.0f;
+        spawner->particles_to_spawn = 500000.0f;
+        spawner->particle_lifetime = 1.0f;
+
         // TODO: do this automatically
 	es_set_entity_area(&game_state->world.entities, player, rect, &game_state->world.world_arena);
     }
-
-    EntityID p = es_create_entity(&game_state->world.entities);
-    Entity *ps = es_get_entity(&game_state->world.entities, p);
-    ParticleSpawner *spawner = es_add_component(ps, ParticleSpawner);
-    //spawner->texture = game_state->texture;
-    spawner->particle_color = RGBA32_BLUE;
-    spawner->particle_size = 3.0f;
-    spawner->particles_per_second = 1000.0f;
-
-    PhysicsComponent *pos = es_add_component(ps, PhysicsComponent);
-    pos->position = v2(100, 100);
-
-    es_set_entity_area(&game_state->world.entities, ps, (Rectangle){pos->position, {1, 1}}, &game_state->world.world_arena);
 }

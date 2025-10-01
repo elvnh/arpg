@@ -54,6 +54,10 @@ typedef struct {
     TextureHandle texture;
     RGBA32 particle_color;
     f32 particle_size;
+    f32 particle_lifetime;
+
+    // TODO: allow infinite number of particles
+    f32 particles_to_spawn;
 } ParticleSpawner;
 
 #endif //COMPONENT_H

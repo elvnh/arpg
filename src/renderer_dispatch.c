@@ -246,16 +246,18 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 Particle *particles = cmd->particles;
                 ssize count = cmd->particle_count;
                 Vector2 particle_dims = v2(cmd->particle_size, cmd->particle_size);
+                RGBA32 base_color = cmd->color;
 
                 for (ssize p = 0; p < count; ++p) {
                     Particle *particle = &particles[p];
 
                     Rectangle rect = {particle->position, particle_dims};
-                    f32 a = 1.0f - particle->timer / particle->lifetime;
+                    f32 a = base_color.a - (particle->timer / particle->lifetime) * base_color.a;
+                    ASSERT(a >= 0.0f);
+
                     a = MIN(a, 1.0f);
 
-                    RGBA32 color = cmd->color;
-                    color.a = a;
+                    RGBA32 color = {base_color.r, base_color.g, base_color.b, a};
 
                     RectangleVertices verts = rect_get_vertices(rect, color);
 

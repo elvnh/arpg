@@ -99,43 +99,57 @@ static b32 entity_should_die(Entity *entity)
     return result;
 }
 
+static void component_update_particle_spawner(ParticleSpawner *ps, Vector2 position, f32 dt)
+{
+    ps->particle_timer += ps->particles_per_second * dt;
+
+    s32 particles_to_spawn = (s32)ps->particle_timer;
+    ps->particle_timer -= (f32)particles_to_spawn;
+
+    for (s32 i = 0; i < particles_to_spawn; ++i) {
+        f32 x = (f32)cos(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
+        f32 y = (f32)sin(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
+        f32 speed = 15.0f + ((f32)rand() / (f32)RAND_MAX) * 100.0f;
+
+        // TODO: color variance
+        ps->particle_array[ps->particle_array_count] = (Particle){
+            .timer = 0.0f,
+            .lifetime = 1.0f,
+            .position = position,
+            .velocity = v2_mul_s(v2(x, y), speed)
+        };
+
+        ssize new_size = (ps->particle_array_count + 1) % ARRAY_COUNT(ps->particle_array);
+        ps->particle_array_count = new_size;
+
+    }
+
+    for (ssize i = 0; i < ps->particle_array_count; ++i) {
+        Particle *p = &ps->particle_array[i];
+        p->timer += dt;
+
+        if (p->timer > p->lifetime) {
+            *p = ps->particle_array[ps->particle_array_count - 1];
+            --i;
+            --ps->particle_array_count;
+            continue;
+        }
+
+        p->position = v2_add(p->position, v2_mul_s(p->velocity, dt));
+        p->velocity = v2_add(p->velocity, v2(0, -1.0f));
+        p->velocity = v2_add(p->velocity, v2_mul_s(p->velocity, -0.009f));
+    }
+}
+
 static void entity_update(GameWorld *world, Entity *entity, f32 dt)
 {
     (void)world;
 
     if (es_has_components(entity, component_flag(ParticleSpawner) | component_flag(PhysicsComponent))) {
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-        ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
+        ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
 
-        for (s32 i = 0; i < 10; ++i) {
-            f32 x = (f32)cos(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
-            f32 y = (f32)sin(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
-            f32 speed = 15.0f + ((f32)rand() / (f32)RAND_MAX) * 100.0f;
-
-            // TODO: color variance
-            ps->particles[ps->particle_count++] = (Particle){
-                .timer = 0.0f,
-                .lifetime = 1.0f,
-                .position = physics->position,
-                .velocity = v2_mul_s(v2(x, y), speed)
-            };
-        }
-
-        for (ssize i = 0; i < ps->particle_count; ++i) {
-            Particle *p = &ps->particles[i];
-            p->timer += dt;
-
-            if (p->timer > p->lifetime) {
-                *p = ps->particles[ps->particle_count - 1];
-                --i;
-                --ps->particle_count;
-                continue;
-            }
-
-            p->position = v2_add(p->position, v2_mul_s(p->velocity, dt));
-            p->velocity = v2_add(p->velocity, v2(0, -1.0f));
-            p->velocity = v2_add(p->velocity, v2_mul_s(p->velocity, -0.009f));
-        }
+        component_update_particle_spawner(particle_spawner, physics->position, dt);
     }
 
 
@@ -172,10 +186,10 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
         rb_push_rect(rb, scratch, rect, color, assets->shader2, RENDER_LAYER_ENTITIES);
 
         if (ps->texture.id == NULL_TEXTURE.id) {
-            rb_push_particles(rb, scratch, ps->particles, ps->particle_count,
+            rb_push_particles(rb, scratch, ps->particle_array, ps->particle_array_count,
                 ps->particle_color, ps->particle_size, assets->shader2, RENDER_LAYER_PARTICLES);
         } else {
-            rb_push_particles_textured(rb, scratch, ps->particles, ps->particle_count,
+            rb_push_particles_textured(rb, scratch, ps->particle_array, ps->particle_array_count,
                 assets->texture, ps->particle_color, ps->particle_size, assets->shader, RENDER_LAYER_PARTICLES);
         }
 
@@ -699,8 +713,9 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     Entity *ps = es_get_entity(&game_state->world.entities, p);
     ParticleSpawner *spawner = es_add_component(ps, ParticleSpawner);
     //spawner->texture = game_state->texture;
-    spawner->particle_color = RGBA32_GREEN;
+    spawner->particle_color = RGBA32_BLUE;
     spawner->particle_size = 3.0f;
+    spawner->particles_per_second = 1000.0f;
 
     PhysicsComponent *pos = es_add_component(ps, PhysicsComponent);
     pos->position = v2(100, 100);

@@ -46,8 +46,11 @@ typedef struct {
 } HealthComponent;
 
 typedef struct {
-    Particle particles[1024];
-    ssize particle_count;
+    Particle particle_array[1024];
+    ssize particle_array_count;
+
+    f32 particle_timer;
+    f32 particles_per_second;
     TextureHandle texture;
     RGBA32 particle_color;
     f32 particle_size;

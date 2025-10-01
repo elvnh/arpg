@@ -46,6 +46,7 @@ typedef struct {
 } HealthComponent;
 
 typedef struct {
+    // TODO: make into proper ring buffer
     Particle particle_array[1024];
     ssize particle_array_count;
 

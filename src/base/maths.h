@@ -26,6 +26,13 @@ static inline f32 sin_f32(f32 n)
     return result;
 }
 
+static inline f32 cos_f32(f32 n)
+{
+    f32 result = (f32)cos((f64)n);
+
+    return result;
+}
+
 static inline f32 interpolate(f32 a, f32 b, f32 t)
 {
     // TODO: watch out for if result is too small to store in float,

@@ -21,12 +21,13 @@
 #include "collision.h"
 #include "renderer/render_batch.h"
 
-#define INTERSECTION_TABLE_ARENA_SIZE MB(32)
+#define WORLD_ARENA_SIZE MB(64)
+#define INTERSECTION_TABLE_ARENA_SIZE (128 * SIZEOF(CollisionEvent))
 #define INTERSECTION_TABLE_SIZE 512
 
-static IntersectionTable intersection_table_create(LinearArena *parent_arena)
+static CollisionTable collision_table_create(LinearArena *parent_arena)
 {
-    IntersectionTable result = {0};
+    CollisionTable result = {0};
     result.table = la_allocate_array(parent_arena, CollisionList, INTERSECTION_TABLE_SIZE);
     result.table_size = INTERSECTION_TABLE_SIZE;
     result.arena = la_create(la_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
@@ -34,7 +35,7 @@ static IntersectionTable intersection_table_create(LinearArena *parent_arena)
     return result;
 }
 
-static CollisionEvent *intersection_table_find(IntersectionTable *table, EntityID a, EntityID b)
+static CollisionEvent *collision_table_find(CollisionTable *table, EntityID a, EntityID b)
 {
     EntityPair searched_pair = entity_pair_create(a, b);
     u64 hash = entity_pair_hash(searched_pair);
@@ -52,9 +53,9 @@ static CollisionEvent *intersection_table_find(IntersectionTable *table, EntityI
     return node;
 }
 
-static void intersection_table_insert(IntersectionTable *table, EntityID a, EntityID b)
+static void collision_table_insert(CollisionTable *table, EntityID a, EntityID b)
 {
-    if (!intersection_table_find(table, a, b)) {
+    if (!collision_table_find(table, a, b)) {
         EntityPair entity_pair = entity_pair_create(a, b);
         u64 hash = entity_pair_hash(entity_pair);
         ssize index = hash_index(hash, table->table_size);
@@ -69,9 +70,9 @@ static void intersection_table_insert(IntersectionTable *table, EntityID a, Enti
     }
 }
 
-static void swap_and_reset_intersection_tables(GameWorld *world)
+static void swap_and_reset_collision_tables(GameWorld *world)
 {
-    IntersectionTable tmp = world->previous_frame_collisions;
+    CollisionTable tmp = world->previous_frame_collisions;
     world->previous_frame_collisions = world->current_frame_collisions;
     world->current_frame_collisions = tmp;
 
@@ -99,6 +100,7 @@ static b32 entity_should_die(Entity *entity)
     return result;
 }
 
+// TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
 static void component_update_particle_spawner(ParticleSpawner *ps, Vector2 position, f32 dt)
 {
     ps->particle_timer += ps->particles_per_second * dt;
@@ -109,8 +111,8 @@ static void component_update_particle_spawner(ParticleSpawner *ps, Vector2 posit
     // TODO: remove spawner once time runs out
 
     for (s32 i = 0; i < particles_to_spawn; ++i) {
-        f32 x = (f32)cos(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
-        f32 y = (f32)sin(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
+        f32 x = cos_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
+        f32 y = sin_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
         f32 speed = 15.0f + ((f32)rand() / (f32)RAND_MAX) * 100.0f;
 
         // TODO: color variance
@@ -182,19 +184,25 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
 
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
 
-        ASSERT(ps->particle_color.a != 0.0f);
 
         // TODO: particle size
         rb_push_rect(rb, scratch, rect, color, assets->shader2, RENDER_LAYER_ENTITIES);
 
         if (ps->texture.id == NULL_TEXTURE.id) {
+            ASSERT(ps->particle_color.a != 0.0f);
+
             rb_push_particles(rb, scratch, ps->particle_array, ps->particle_array_count,
                 ps->particle_color, ps->particle_size, assets->shader2, RENDER_LAYER_PARTICLES);
         } else {
-            rb_push_particles_textured(rb, scratch, ps->particle_array, ps->particle_array_count,
-                assets->texture, ps->particle_color, ps->particle_size, assets->shader, RENDER_LAYER_PARTICLES);
-        }
+            // If color isn't set, assume it to be white
+            RGBA32 particle_color = ps->particle_color;
+            if (particle_color.a == 0.0f) {
+                particle_color = RGBA32_WHITE;
+            }
 
+            rb_push_particles_textured(rb, scratch, ps->particle_array, ps->particle_array_count,
+                assets->texture, particle_color, ps->particle_size, assets->shader, RENDER_LAYER_PARTICLES);
+        }
     }
 }
 
@@ -230,7 +238,7 @@ static Rectangle get_entity_rect(PhysicsComponent *physics, ColliderComponent *c
 
 static b32 entities_intersected_this_frame(GameWorld *world, EntityID a, EntityID b)
 {
-    b32 result = intersection_table_find(&world->current_frame_collisions, a, b) != 0;
+    b32 result = collision_table_find(&world->current_frame_collisions, a, b) != 0;
 
     return result;
 }
@@ -238,7 +246,7 @@ static b32 entities_intersected_this_frame(GameWorld *world, EntityID a, EntityI
 
 static b32 entities_intersected_previous_frame(GameWorld *world, EntityID a, EntityID b)
 {
-    b32 result = intersection_table_find(&world->previous_frame_collisions, a, b) != 0;
+    b32 result = collision_table_find(&world->previous_frame_collisions, a, b) != 0;
 
     return result;
 }
@@ -303,7 +311,7 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
                 handle_collision_side_effects(a, b);
             }
 
-            intersection_table_insert(&world->current_frame_collisions, id_a, id_b);
+            collision_table_insert(&world->current_frame_collisions, id_a, id_b);
 
             if (!collider_a->non_blocking && !collider_b->non_blocking) {
                 // TODO: allow entities to bounce off eachother too
@@ -546,7 +554,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
     // TODO: should this be done at beginning of each frame to inactive entities are rendered?
     es_remove_inactive_entities(&world->entities, frame_arena);
 
-    swap_and_reset_intersection_tables(world);
+    swap_and_reset_collision_tables(world);
 }
 
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
@@ -665,15 +673,13 @@ void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const A
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
 }
 
-#define WORLD_ARENA_SIZE MB(64)
-
 void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
     // TODO: move to world_initialize
     game_state->world.world_arena = la_create(la_allocator(&game_memory->permanent_memory), WORLD_ARENA_SIZE);
 
-    game_state->world.previous_frame_collisions = intersection_table_create(&game_state->world.world_arena);
-    game_state->world.current_frame_collisions = intersection_table_create(&game_state->world.world_arena);
+    game_state->world.previous_frame_collisions = collision_table_create(&game_state->world.world_arena);
+    game_state->world.current_frame_collisions = collision_table_create(&game_state->world.world_arena);
 
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {

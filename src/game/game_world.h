@@ -20,7 +20,7 @@ typedef struct {
     CollisionList    *table;
     ssize             table_size;
     LinearArena       arena;
-} IntersectionTable;
+} CollisionTable;
 
 typedef struct {
     LinearArena world_arena;
@@ -28,8 +28,8 @@ typedef struct {
     Tilemap tilemap;
     EntitySystem entities;
     CollisionRuleTable collision_rules;
-    IntersectionTable  previous_frame_collisions;
-    IntersectionTable  current_frame_collisions;
+    CollisionTable  previous_frame_collisions;
+    CollisionTable  current_frame_collisions;
 } GameWorld;
 
 #endif //GAME_WORLD_H

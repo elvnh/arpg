@@ -11,6 +11,8 @@
 
 #define FRAME_WIDGET_TABLE_SIZE 1024
 
+static WidgetID debug_id_counter = 0;
+
 WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 {
     WidgetFrameTable result = {0};
@@ -24,7 +26,7 @@ WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 static void widget_frame_table_push(WidgetFrameTable *table, Widget *widget)
 {
     ssize index = hash_index(widget->id, table->entry_table_size);
-    sl_list_push_back(&table->entries[index], widget);
+    sl_list_push_back_x(&table->entries[index], widget, next_in_hash);
 }
 
 static Widget *widget_frame_table_find(WidgetFrameTable *table, WidgetID id)
@@ -34,7 +36,7 @@ static Widget *widget_frame_table_find(WidgetFrameTable *table, WidgetID id)
     WidgetList *list = &table->entries[index];
 
     Widget *result = 0;
-    for (Widget *widget = sl_list_head(list); widget; widget = sl_list_next(widget)) {
+    for (Widget *widget = sl_list_head(list); widget; widget = widget->next_in_hash) {
         if (widget->id == id) {
             result = widget;
             break;
@@ -60,8 +62,23 @@ void ui_begin_frame(UIState *ui)
         zero_array(ui->current_frame_widgets.entries, ui->current_frame_widgets.entry_table_size);
         la_reset(&ui->current_frame_widgets.arena);
     }
-
+    debug_id_counter = 0;
     ui->root_widget = 0;
+}
+
+static Vector2 get_next_child_position(LayoutKind layout, Vector2 current_pos, Widget *child)
+{
+    Vector2 result = current_pos;
+
+    if (layout == UI_LAYOUT_VERTICAL) {
+        result.y += child->final_size.y + child->offset_from_parent.y;
+    } else if (layout == UI_LAYOUT_HORIZONTAL) {
+        result.x += child->final_size.x + child->offset_from_parent.x;
+    } else {
+        ASSERT(0);
+    }
+
+    return result;
 }
 
 static void calculate_widget_layout(Widget *widget, Vector2 offset)
@@ -70,9 +87,12 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset)
     widget->final_size = widget->preliminary_size;
     widget->final_position = final_position;
 
-    for (Widget *child = sl_list_head(&widget->children); child; child = sl_list_next(child)) {
-        // TODO: layout in row
-        calculate_widget_layout(child, final_position);
+    Vector2 next_position = final_position; // TODO: padding
+
+    for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
+        calculate_widget_layout(child, next_position);
+
+        next_position = get_next_child_position(widget->layout_kind, next_position, child);
     }
 }
 
@@ -97,7 +117,7 @@ static void widget_add_flag(Widget *widget, WidgetFlag flag)
 
 static void calculate_widget_interactions(Widget *widget, const Input *input)
 {
-    for (Widget *child = sl_list_head(&widget->children); child; child = sl_list_next(child)) {
+    for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
         calculate_widget_interactions(child, input);
     }
 
@@ -125,7 +145,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     Rectangle rect = get_widget_bounding_box(widget);
     rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, color, assets->shader2, depth);
 
-    for (Widget *child = sl_list_head(&widget->children); child; child = sl_list_next(child)) {
+    for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
         render_widget(ui, child, rb, assets, depth + 1);
     }
 }
@@ -150,14 +170,19 @@ static LinearArena *get_frame_arena(UIState *ui)
 
 static Widget *get_top_container(UIState *ui)
 {
-    Widget *result = sl_list_head(&ui->container_stack);
+    WidgetContainer *container = sl_list_head(&ui->container_stack);
+
+    Widget *result = 0;
+    if (container) {
+        result = container->widget;
+    }
 
     return result;
 }
 
 static void widget_add_to_children(Widget *widget, Widget *child)
 {
-    sl_list_push_front(&widget->children, child);
+    sl_list_push_back_x(&widget->children, child, next_sibling);
 }
 
 static Widget *widget_create(UIState *ui, Vector2 offset, Vector2 size, WidgetID id)
@@ -195,11 +220,13 @@ WidgetInteraction get_previous_frame_interaction(UIState *ui, WidgetID id)
 
 void ui_begin_container(UIState *ui, Vector2 offset, Vector2 size, LayoutKind layout)
 {
-    ASSERT(layout == UI_LAYOUT_VERTICAL);
-    Widget *widget = widget_create(ui, offset, size, 1234);
+    Widget *widget = widget_create(ui, offset, size, debug_id_counter++);
     widget->layout_kind = layout;
 
-    sl_list_push_front(&ui->container_stack, widget);
+    WidgetContainer *container = la_allocate_item(get_frame_arena(ui), WidgetContainer);
+    container->widget = widget;
+
+    sl_list_push_front(&ui->container_stack, container);
 }
 
 void ui_end_container(UIState *ui)
@@ -212,7 +239,7 @@ WidgetInteraction ui_button(UIState *ui, String text, Vector2 position)
 {
     (void)text;
 
-    Widget *widget = widget_create(ui, position, v2(128, 64), 0); // TODO: size based on text dims
+    Widget *widget = widget_create(ui, position, v2(64, 32), debug_id_counter++); // TODO: size based on text dims
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_COLORED);
 

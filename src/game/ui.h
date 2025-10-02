@@ -35,6 +35,7 @@ typedef enum {
 
 typedef enum {
     UI_LAYOUT_VERTICAL,
+    UI_LAYOUT_HORIZONTAL,
 } LayoutKind;
 
 typedef struct Widget {
@@ -49,8 +50,10 @@ typedef struct Widget {
     Vector2 final_size;
 
     LayoutKind layout_kind;
+
     WidgetList    children;
-    struct Widget *next; // TODO: rename
+    struct Widget *next_in_hash;
+    struct Widget *next_sibling;
 } Widget;
 
 typedef struct {
@@ -59,10 +62,20 @@ typedef struct {
     LinearArena arena;
 } WidgetFrameTable;
 
+typedef struct WidgetContainer {
+    Widget *widget;
+    struct WidgetContainer *next;
+} WidgetContainer;
+
+typedef struct {
+    WidgetContainer *head;
+    WidgetContainer *tail;
+} WidgetContainerStack;
+
 typedef struct {
     WidgetFrameTable previous_frame_widgets;
     WidgetFrameTable current_frame_widgets;
-    WidgetList container_stack;
+    WidgetContainerStack container_stack;
 
     Widget *root_widget; // TODO: push container that contains entire viewport on beginning of each frame
 } UIState;

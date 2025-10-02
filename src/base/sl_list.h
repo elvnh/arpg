@@ -1,9 +1,10 @@
 #ifndef SL_LIST_H
 #define SL_LIST_H
 
-#define sl_list_push_front(list, node)          \
+
+#define sl_list_push_front_x(list, node, name)  \
     do {                                        \
-        (node)->next = (list)->head;            \
+        (node)->name = (list)->head;            \
         (list)->head = (node);                  \
                                                 \
         if (!(list)->tail) {                    \
@@ -11,10 +12,10 @@
         }                                       \
     } while (0)
 
-#define sl_list_push_back(list, node)           \
+#define sl_list_push_back_x(list, node, name)   \
     do {                                        \
         if ((list)->tail) {                     \
-            (list)->tail->next = (node);        \
+            (list)->tail->name = (node);        \
         } else {                                \
             (list)->head = (node);              \
         }                                       \
@@ -30,6 +31,9 @@
             (list)->tail = 0;                   \
         }                                       \
     } while (0);
+
+#define sl_list_push_front(list, node) sl_list_push_front_x(list, node, next)
+#define sl_list_push_back(list, node) sl_list_push_back_x(list, node, next)
 
 #define sl_list_head(list) ((list)->head)
 #define sl_list_tail(list) ((list)->tail)

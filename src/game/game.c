@@ -645,11 +645,27 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
 
     world_update(&game_state->world, input, dt, frame_arena);
 
-    ui_begin_container(&game_state->ui, v2(0, 0), v2(256, 256), UI_LAYOUT_VERTICAL);
+    ui_begin_container(&game_state->ui, v2(0, 0), v2(512, 512), UI_LAYOUT_HORIZONTAL);
 
     if (ui_button(&game_state->ui, str_lit("ABC"), v2(10, 10)).clicked) {
-        printf("Clicked\n");
+        printf("Clicked A\n");
     }
+
+    if (ui_button(&game_state->ui, str_lit("ABC"), v2(10, 10)).clicked) {
+        printf("Clicked B\n");
+    }
+
+    ui_begin_container(&game_state->ui, v2(10, 0), v2(128, 128), UI_LAYOUT_VERTICAL);
+
+    if (ui_button(&game_state->ui, str_lit("ABC"), v2(0, 0)).clicked) {
+        printf("Clicked C\n");
+    }
+
+    if (ui_button(&game_state->ui, str_lit("ABC"), v2(0, 10)).clicked) {
+        printf("Clicked D\n");
+    }
+
+    ui_end_container(&game_state->ui);
 
     ui_end_container(&game_state->ui);
 }
@@ -758,7 +774,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.5f};
         spawner->particle_size = 4.0f;
         spawner->particles_per_second = 500.0f;
-        spawner->particles_to_spawn = 1000.0f;
+        spawner->particles_to_spawn = 100000.0f;
         spawner->particle_lifetime = 1.0f;
         //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 

@@ -645,9 +645,9 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
 
     world_update(&game_state->world, input, dt, frame_arena);
 
-    ui_begin_container(&game_state->ui, v2(10, 10), v2(256, 256), UI_LAYOUT_VERTICAL);
+    ui_begin_container(&game_state->ui, v2(0, 0), v2(256, 256), UI_LAYOUT_VERTICAL);
 
-    if (ui_button(&game_state->ui, str_lit("ABC"), v2(100, 100)).clicked) {
+    if (ui_button(&game_state->ui, str_lit("ABC"), v2(10, 10)).clicked) {
         printf("Clicked\n");
     }
 
@@ -687,7 +687,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
 {
     Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_width,
 	frame_data.window_height);
-    RenderBatch *rb = rb_list_push_new(rbs, proj, frame_arena);
+    RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_UP, frame_arena);
 
     world_render(&game_state->world, rb, assets, frame_data, frame_arena);
     render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, assets, 0);
@@ -705,8 +705,8 @@ void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const A
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
 
-    Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_UP);
-    RenderBatch *ui_rb = rb_list_push_new(rbs, proj, &game_memory->temporary_memory);
+    Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
+    RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
 
     ui_end_frame(&game_state->ui, frame_data.input, ui_rb, assets);
 }

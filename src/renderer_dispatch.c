@@ -142,7 +142,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
         switch (entry->data->kind) {
             case RENDER_CMD_RECTANGLE: {
                 RectangleCmd *cmd = (RectangleCmd *)entry->data;
-                RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color);
+                RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color, rb->y_direction);
 
 		renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
 		    verts.bottom_right, verts.bottom_left);
@@ -259,7 +259,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
                     RGBA32 color = {base_color.r, base_color.g, base_color.b, a};
 
-                    RectangleVertices verts = rect_get_vertices(rect, color);
+                    RectangleVertices verts = rect_get_vertices(rect, color, Y_IS_UP);
 
                     renderer_backend_draw_quad(
                         backend,

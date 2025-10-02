@@ -1,6 +1,7 @@
 #ifndef RECTANGLE_H
 #define RECTANGLE_H
 
+#include "base/matrix.h"
 #include "base/vector.h"
 #include "base/vertex.h"
 #include "base/line.h"
@@ -65,30 +66,30 @@ static inline Vector2 rect_bottom_left(Rectangle rect)
     return result;
 }
 
-static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color)
+static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color, YDirection y_direction)
 {
     Vertex tl = {
         .position = rect_top_left(rect),
         .color = color,
-        .uv = {0, 0}
+        .uv = {0, (y_direction == Y_IS_UP) ? 0 : 1}
     };
 
     Vertex tr = {
         .position = rect_top_right(rect),
         .color = color,
-        .uv = {1, 0}
+        .uv = {1, (y_direction == Y_IS_UP) ? 0 : 1}
     };
 
     Vertex br = {
         .position = rect_bottom_right(rect),
         .color = color,
-        .uv = {1, 1}
+        .uv = {1, (y_direction == Y_IS_UP) ? 1 : 0}
     };
 
     Vertex bl = {
         .position = rect_bottom_left(rect),
         .color = color,
-        .uv = {0, 1}
+        .uv = {0, (y_direction == Y_IS_UP) ? 1 : 0}
     };
 
     RectangleVertices result = {

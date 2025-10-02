@@ -10,12 +10,13 @@
 
 #define allocate_render_cmd(arena, kind) init_render_cmd(arena, kind)
 
-RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, LinearArena *arena)
+RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, YDirection y_dir, LinearArena *arena)
 {
     RenderBatchNode *node = la_allocate_item(arena, RenderBatchNode);
     list_push_back(list, node);
 
     node->render_batch.projection = projection;
+    node->render_batch.y_direction = y_dir;
 
     return &node->render_batch;
 }

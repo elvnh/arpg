@@ -13,6 +13,7 @@ typedef enum {
     WIDGET_CLICKABLE = (1u << 0),
     WIDGET_COLORED   = (1u << 1),
     WIDGET_TEXT      = (1u << 2),
+    WIDGET_TOGGLED   = (1u << 3),
 } WidgetFlag;
 
 typedef enum {

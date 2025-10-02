@@ -215,6 +215,10 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
         color = RGBA32_BLUE;
     }
 
+    if (widget_has_flag(widget, WIDGET_TOGGLED)) {
+        color = RGBA32_RED;
+    }
+
     Rectangle rect = widget_get_bounding_box(widget);
     rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, color, assets->shader2, depth);
 

@@ -1,5 +1,6 @@
 #include "ui_builder.h"
 #include "game/ui/ui_core.h"
+#include "game/ui/widget.h"
 
 WidgetInteraction ui_label(UIState *ui, String text)
 {
@@ -29,5 +30,25 @@ WidgetInteraction ui_button(UIState *ui, String text)
     ui_core_end_container(ui);
 
     WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
+    return prev_interaction;
+}
+
+WidgetInteraction ui_checkbox(UIState *ui, b32 *b)
+{
+    ASSERT(b);
+    Widget *widget = ui_core_create_widget(ui, v2(12, 12), debug_id_counter++);
+    widget_add_flag(widget, WIDGET_COLORED);
+    widget_add_flag(widget, WIDGET_CLICKABLE);
+
+    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
+
+    if (prev_interaction.clicked) {
+        *b = !(*b);
+    }
+
+    if (*b) {
+        widget_add_flag(widget, WIDGET_TOGGLED);
+    }
+
     return prev_interaction;
 }

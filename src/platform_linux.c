@@ -69,6 +69,10 @@ static s32 get_glfw_key_equivalent(Key key)
 #define INPUT_KEY(key) case key: return GLFW_##key;
         INPUT_KEY_LIST
 #undef INPUT_KEY
+
+        case MOUSE_LEFT:  return GLFW_MOUSE_BUTTON_LEFT;
+        case MOUSE_RIGHT: return GLFW_MOUSE_BUTTON_RIGHT;
+
         INVALID_DEFAULT_CASE;
     }
 
@@ -80,7 +84,13 @@ static s32 get_glfw_key_equivalent(Key key)
 static Keystate get_current_keystate(Key key, WindowHandle *window)
 {
     s32 glfw_key = get_glfw_key_equivalent(key);
-    s32 state = glfwGetKey(window->window, glfw_key);
+    s32 state = 0;
+
+    if ((key == MOUSE_LEFT) || (key == MOUSE_RIGHT)) {
+        state = glfwGetMouseButton(window->window, glfw_key);
+    } else {
+        state = glfwGetKey(window->window, glfw_key);
+    }
 
     if (state == GLFW_PRESS) {
         return KEYSTATE_PRESSED;

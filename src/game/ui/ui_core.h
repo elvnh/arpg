@@ -55,7 +55,7 @@ void ui_core_begin_frame(UIState *ui);
 void ui_core_end_frame(UIState *ui, const struct Input *input, struct RenderBatch *rb, const struct AssetList *assets,
     PlatformCode platform_code);
 void ui_core_set_style(UIState *ui, UIStyle style);
-void ui_core_begin_container(UIState *ui, Vector2 size, UILayoutKind layout, f32 padding);
+void ui_core_begin_container(UIState *ui, Vector2 size, UILayoutKind layout, UISizeKind size_kind, f32 padding);
 void ui_core_end_container(UIState *ui);
 void ui_core_push_as_container(UIState *ui, Widget *widget);
 Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id);

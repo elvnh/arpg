@@ -19,6 +19,8 @@
 #include "game/quad_tree.h"
 #include "game/tilemap.h"
 #include "game/ui/ui_builder.h"
+#include "game/ui/ui_core.h"
+#include "game/ui/widget.h"
 #include "input.h"
 #include "collision.h"
 #include "renderer/render_batch.h"
@@ -692,9 +694,12 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
 
 static void game_update_and_render_ui(UIState *ui)
 {
-    ui_core_begin_container(ui, v2(512, 512), UI_LAYOUT_HORIZONTAL, 8.0f);
+    ui_core_begin_container(ui, v2(256, 256), UI_LAYOUT_HORIZONTAL, UI_SIZE_KIND_ABSOLUTE, 8.0f);
 
-#if 1
+    ui_core_begin_container(ui, v2(1.0f, 0.25f), UI_LAYOUT_HORIZONTAL, UI_SIZE_KIND_PERCENT_OF_PARENT, 0.0f);
+
+    ui_core_end_container(ui);
+#if 0
     if (ui_button(ui, str_lit("ABC")).clicked) {
         printf("Clicked A\n");
     }

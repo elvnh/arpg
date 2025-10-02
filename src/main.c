@@ -41,6 +41,7 @@ static Vector2 get_text_dimensions(FontHandle font_handle, String text, s32 text
 {
     FontAsset *asset = assets_get_font(&asset_mgr, font_handle);
     Vector2 result = font_get_text_dimensions(asset, text, text_size);
+    //printf("%.2f, %.2f\n", (f64)result.x, (f64)result.y);
 
     return result;
 }

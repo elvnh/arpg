@@ -30,6 +30,7 @@ typedef struct {
 
 typedef enum {
     WIDGET_CLICKABLE = (1u << 0),
+    WIDGET_COLORED = (1u << 1),
 } WidgetFlag;
 
 typedef struct Widget {
@@ -37,10 +38,11 @@ typedef struct Widget {
     WidgetInteraction interaction_state; // TODO: should this be in separate struct?
     WidgetFlag flags;
 
-    Vector2   offset;
-    Vector2   size; // TODO: can be changed, create final_size
+    Vector2   offset_from_parent;
+    Vector2   preliminary_size; // TODO: can be changed, create final_size
 
     Vector2 final_position;
+    Vector2 final_size;
 
     WidgetList    children;
     struct Widget *next; // TODO: rename
@@ -50,11 +52,11 @@ typedef struct {
     WidgetList *entries;
     ssize entry_table_size;
     LinearArena arena;
-} FrameWidgetTable;
+} WidgetFrameTable;
 
 typedef struct {
-    FrameWidgetTable previous_frame_widgets;
-    FrameWidgetTable current_frame_widgets;
+    WidgetFrameTable previous_frame_widgets;
+    WidgetFrameTable current_frame_widgets;
 
     Widget *root_widget; // TODO: push container that contains entire viewport on beginning of each frame
 } UIState;

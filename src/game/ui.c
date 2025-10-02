@@ -11,9 +11,9 @@
 
 #define FRAME_WIDGET_TABLE_SIZE 1024
 
-FrameWidgetTable frame_widget_table_create(LinearArena *arena)
+WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 {
-    FrameWidgetTable result = {0};
+    WidgetFrameTable result = {0};
     result.entry_table_size = FRAME_WIDGET_TABLE_SIZE;
     result.entries = la_allocate_array(arena, WidgetList, result.entry_table_size);
     result.arena = la_create(la_allocator(arena), FRAME_WIDGET_TABLE_SIZE * SIZEOF(*result.entries));
@@ -21,13 +21,13 @@ FrameWidgetTable frame_widget_table_create(LinearArena *arena)
     return result;
 }
 
-static void frame_widget_table_push(FrameWidgetTable *table, Widget *widget)
+static void widget_frame_table_push(WidgetFrameTable *table, Widget *widget)
 {
     ssize index = hash_index(widget->id, table->entry_table_size);
     sl_list_push_back(&table->entries[index], widget);
 }
 
-static Widget *frame_widget_table_find(FrameWidgetTable *table, WidgetID id)
+static Widget *widget_frame_table_find(WidgetFrameTable *table, WidgetID id)
 {
     ssize index = hash_index(id, table->entry_table_size);
 
@@ -46,14 +46,14 @@ static Widget *frame_widget_table_find(FrameWidgetTable *table, WidgetID id)
 
 void ui_initialize(UIState *ui, LinearArena *arena)
 {
-    ui->previous_frame_widgets = frame_widget_table_create(arena);
-    ui->current_frame_widgets = frame_widget_table_create(arena);
+    ui->previous_frame_widgets = widget_frame_table_create(arena);
+    ui->current_frame_widgets = widget_frame_table_create(arena);
 }
 
 void ui_begin_frame(UIState *ui)
 {
     {
-        FrameWidgetTable tmp = ui->previous_frame_widgets;
+        WidgetFrameTable tmp = ui->previous_frame_widgets;
         ui->previous_frame_widgets = ui->current_frame_widgets;
         ui->current_frame_widgets = tmp;
 
@@ -66,21 +66,33 @@ void ui_begin_frame(UIState *ui)
 static void calculate_widget_layout(Widget *widget, Vector2 offset)
 {
     (void)widget;
-    widget->final_position = offset;
+    widget->final_position = v2_add(widget->offset_from_parent, offset);
+    widget->final_size = widget->preliminary_size;
 }
 
 static Rectangle get_widget_bounding_box(Widget *widget)
 {
-    Rectangle result = {widget->final_position, widget->size};
+    Rectangle result = {widget->final_position, widget->final_size};
 
     return result;
 }
 
+static b32 widget_has_flag(const Widget *widget, WidgetFlag flag)
+{
+    b32 result = (widget->flags & flag) != 0;
+    return result;
+}
+
+static void widget_add_flag(Widget *widget, WidgetFlag flag)
+{
+    widget->flags |= flag;
+}
+
 static void calculate_widget_interactions(Widget *widget, const Input *input)
 {
-    if (widget->flags & WIDGET_CLICKABLE) {
-        ASSERT(widget->size.x);
-        ASSERT(widget->size.y);
+    if (widget_has_flag(widget, WIDGET_CLICKABLE)) {
+        ASSERT(widget->final_size.x);
+        ASSERT(widget->final_size.y);
 
         Rectangle rect = get_widget_bounding_box(widget);
         if (rect_contains_point(rect, input->mouse_position) && input_is_key_released(input, KEY_W)) {
@@ -95,8 +107,10 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     (void)rb;
 
     // TODO: render differently if clicked
-    Rectangle rect = {widget->final_position, widget->size};
-    rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, RGBA32_BLUE, assets->shader2, depth);
+    if (widget_has_flag(widget, WIDGET_COLORED)) {
+        Rectangle rect = get_widget_bounding_box(widget);
+        rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, RGBA32_BLUE, assets->shader2, depth);
+    }
 }
 
 void ui_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets)
@@ -108,12 +122,14 @@ void ui_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const
     }
 }
 
-static Widget *widget_create(UIState *ui, WidgetID id)
+static Widget *widget_create(UIState *ui, Vector2 offset, Vector2 size, WidgetID id)
 {
     Widget *widget = la_allocate_item(&ui->current_frame_widgets.arena, Widget);
     widget->id = id;
+    widget->offset_from_parent = offset;
+    widget->preliminary_size = size;
 
-    frame_widget_table_push(&ui->current_frame_widgets, widget);
+    widget_frame_table_push(&ui->current_frame_widgets, widget);
 
     if (!ui->root_widget) {
         ui->root_widget = widget;
@@ -125,7 +141,7 @@ static Widget *widget_create(UIState *ui, WidgetID id)
 WidgetInteraction get_previous_frame_interaction(UIState *ui, WidgetID id)
 {
     WidgetInteraction result = {0};
-    Widget *widget = frame_widget_table_find(&ui->previous_frame_widgets, id);
+    Widget *widget = widget_frame_table_find(&ui->previous_frame_widgets, id);
 
     if (widget) {
         result = widget->interaction_state;
@@ -138,17 +154,9 @@ WidgetInteraction ui_button(UIState *ui, String text, Vector2 position)
 {
     (void)text;
 
-    Widget *widget = widget_create(ui, 0);
-    widget->flags |= WIDGET_CLICKABLE;
-    widget->offset = position;
-    widget->size = v2(128, 64); // TODO: size based on text dims
-
-    // TODO: anonymous widgets for widgets that don't need state?
-#if 0
-    Widget *text_widget = widget_create(ui, 1);
-    text_widget->flags |=
-    sl_list_push_back(&widget->children, );
-#endif
+    Widget *widget = widget_create(ui, position, v2(128, 64), 0); // TODO: size based on text dims
+    widget_add_flag(widget, WIDGET_CLICKABLE);
+    widget_add_flag(widget, WIDGET_COLORED);
 
     WidgetInteraction prev_interaction = get_previous_frame_interaction(ui, widget->id);
 

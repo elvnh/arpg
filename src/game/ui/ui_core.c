@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "ui.h"
+#include "ui_core.h"
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
@@ -11,7 +11,7 @@
 
 #define FRAME_WIDGET_TABLE_SIZE 1024
 
-static WidgetID debug_id_counter = 0;
+WidgetID debug_id_counter = 0;
 
 WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 {
@@ -49,20 +49,20 @@ static void widget_frame_table_push(WidgetFrameTable *table, Widget *widget)
 }
 
 
-void ui_set_style(UIState *ui, UIStyle style)
+void ui_core_set_style(UIState *ui, UIStyle style)
 {
     ui->current_style = style;
 }
 
-void ui_initialize(UIState *ui, UIStyle style, LinearArena *arena)
+void ui_core_initialize(UIState *ui, UIStyle style, LinearArena *arena)
 {
     ui->previous_frame_widgets = widget_frame_table_create(arena);
     ui->current_frame_widgets = widget_frame_table_create(arena);
 
-    ui_set_style(ui, style);
+    ui_core_set_style(ui, style);
 }
 
-void ui_begin_frame(UIState *ui)
+void ui_core_begin_frame(UIState *ui)
 {
     {
         WidgetFrameTable tmp = ui->previous_frame_widgets;
@@ -72,6 +72,7 @@ void ui_begin_frame(UIState *ui)
         zero_array(ui->current_frame_widgets.entries, ui->current_frame_widgets.entry_table_size);
         la_reset(&ui->current_frame_widgets.arena);
     }
+
     debug_id_counter = 0;
     ui->root_widget = 0;
 }
@@ -89,19 +90,6 @@ static Vector2 get_next_child_position(LayoutKind layout, Vector2 current_pos, f
     }
 
     return result;
-}
-
-
-static b32 widget_has_flag(const Widget *widget, WidgetFlag flag)
-{
-    b32 result = (widget->flags & flag) != 0;
-
-    return result;
-}
-
-static void widget_add_flag(Widget *widget, WidgetFlag flag)
-{
-    widget->flags |= flag;
 }
 
 static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code)
@@ -126,13 +114,6 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
     }
 }
 
-static Rectangle get_widget_bounding_box(Widget *widget)
-{
-    Rectangle result = {widget->final_position, widget->final_size};
-
-    return result;
-}
-
 static void calculate_widget_interactions(Widget *widget, const Input *input)
 {
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
@@ -143,7 +124,7 @@ static void calculate_widget_interactions(Widget *widget, const Input *input)
         ASSERT(widget->final_size.x);
         ASSERT(widget->final_size.y);
 
-        Rectangle rect = get_widget_bounding_box(widget);
+        Rectangle rect = widget_get_bounding_box(widget);
         if (rect_contains_point(rect, input->mouse_position) && input_is_key_released(input, MOUSE_LEFT)) {
             widget->interaction_state.clicked = true;
         }
@@ -168,7 +149,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
         color = RGBA32_BLUE;
     }
 
-    Rectangle rect = get_widget_bounding_box(widget);
+    Rectangle rect = widget_get_bounding_box(widget);
     rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, color, assets->shader2, depth);
 
     if (widget_has_flag(widget, WIDGET_TEXT)) {
@@ -182,7 +163,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     }
 }
 
-void ui_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets,
+void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets,
     PlatformCode platform_code)
 {
     ASSERT(sl_list_is_empty(&ui->container_stack));
@@ -193,7 +174,6 @@ void ui_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const
         render_widget(ui, ui->root_widget, rb, assets, 0);
     }
 }
-
 
 static Widget *get_top_container(UIState *ui)
 {
@@ -212,16 +192,7 @@ static void widget_add_to_children(Widget *widget, Widget *child)
     sl_list_push_back_x(&widget->children, child, next_sibling);
 }
 
-static Widget *widget_allocate(UIState *ui, Vector2 size, WidgetID id)
-{
-    Widget *widget = la_allocate_item(get_frame_arena(ui), Widget);
-    widget->id = id;
-    widget->preliminary_size = size;
-
-    return widget;
-}
-
-static void push_widget(UIState *ui, Widget *widget)
+void ui_core_push_widget(UIState *ui, Widget *widget)
 {
     widget_frame_table_push(&ui->current_frame_widgets, widget);
 
@@ -235,27 +206,18 @@ static void push_widget(UIState *ui, Widget *widget)
     }
 }
 
-static Widget *widget_create(UIState *ui, Vector2 size, WidgetID id)
+Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id)
 {
-    Widget *widget = widget_allocate(ui, size, id);
-    push_widget(ui, widget);
+    Widget *widget = la_allocate_item(get_frame_arena(ui), Widget);
+    widget->id = id;
+    widget->preliminary_size = size;
+
+    ui_core_push_widget(ui, widget);
 
     return widget;
 }
 
-WidgetInteraction get_previous_frame_interaction(UIState *ui, WidgetID id)
-{
-    WidgetInteraction result = {0};
-    Widget *widget = widget_frame_table_find(&ui->previous_frame_widgets, id);
-
-    if (widget) {
-        result = widget->interaction_state;
-    }
-
-    return result;
-}
-
-static void ui_push_container(UIState *ui, Widget *widget)
+void ui_core_push_as_container(UIState *ui, Widget *widget)
 {
     WidgetContainer *container = la_allocate_item(get_frame_arena(ui), WidgetContainer);
     container->widget = widget;
@@ -263,44 +225,29 @@ static void ui_push_container(UIState *ui, Widget *widget)
     sl_list_push_front(&ui->container_stack, container);
 }
 
-void ui_begin_container(UIState *ui, Vector2 size, LayoutKind layout, f32 padding)
+void ui_core_begin_container(UIState *ui, Vector2 size, LayoutKind layout, f32 padding)
 {
-    Widget *widget = widget_create(ui, size, debug_id_counter++);
+    Widget *widget = ui_core_create_widget(ui, size, debug_id_counter++);
     widget->layout_kind = layout;
     widget->child_padding = padding;
 
-    ui_push_container(ui, widget);
+    ui_core_push_as_container(ui, widget);
 }
 
-void ui_end_container(UIState *ui)
+void ui_core_end_container(UIState *ui)
 {
     ASSERT(!sl_list_is_empty(&ui->container_stack));
     sl_list_pop(&ui->container_stack);
 }
 
-Widget *ui_label(UIState *ui, String text)
+WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widget)
 {
-    Widget *widget = widget_create(ui, V2_ZERO, debug_id_counter++);
+    WidgetInteraction result = {0};
+    Widget *found = widget_frame_table_find(&ui->previous_frame_widgets, widget->id);
 
-    widget_add_flag(widget, WIDGET_TEXT);
-    widget->text.string = text;
-    widget->text.font = ui->current_style.font;
-    widget->text.size = 12; // TODO: allow changing text size
+    if (found) {
+        result = found->interaction_state;
+    }
 
-    return widget;
-}
-
-WidgetInteraction ui_button(UIState *ui, String text)
-{
-    Widget *widget = widget_create(ui, v2(64, 32), debug_id_counter++); // TODO: size based on text dims
-    widget_add_flag(widget, WIDGET_CLICKABLE);
-    widget_add_flag(widget, WIDGET_COLORED);
-
-    ui_push_container(ui, widget);
-    ui_label(ui, text);
-    ui_end_container(ui);
-
-    WidgetInteraction prev_interaction = get_previous_frame_interaction(ui, widget->id);
-
-    return prev_interaction;
+    return result;
 }

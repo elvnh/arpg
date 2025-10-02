@@ -18,7 +18,7 @@
 #include "game/game_world.h"
 #include "game/quad_tree.h"
 #include "game/tilemap.h"
-#include "game/ui.h"
+#include "game/ui/ui_builder.h"
 #include "input.h"
 #include "collision.h"
 #include "renderer/render_batch.h"
@@ -692,7 +692,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
 
 static void game_update_and_render_ui(UIState *ui, PlatformCode platform_code)
 {
-    ui_begin_container(ui, v2(512, 512), UI_LAYOUT_HORIZONTAL, 8.0f);
+    ui_core_begin_container(ui, v2(512, 512), UI_LAYOUT_HORIZONTAL, 8.0f);
 
     if (ui_button(ui, str_lit("ABC")).clicked) {
         printf("Clicked A\n");
@@ -702,7 +702,7 @@ static void game_update_and_render_ui(UIState *ui, PlatformCode platform_code)
         printf("Clicked B\n");
     }
 
-    ui_end_container(ui);
+    ui_core_end_container(ui);
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
@@ -712,13 +712,13 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
 
-    ui_begin_frame(&game_state->ui);
+    ui_core_begin_frame(&game_state->ui);
+
     game_update_and_render_ui(&game_state->ui, platform_code);
 
     Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
     RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
-    ui_end_frame(&game_state->ui, frame_data.input, ui_rb, assets, platform_code);
-
+    ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, assets, platform_code);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
@@ -733,7 +733,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         .font = game_state->font
     };
 
-    ui_initialize(&game_state->ui, default_ui_style, &game_memory->permanent_memory);
+    ui_core_initialize(&game_state->ui, default_ui_style, &game_memory->permanent_memory);
 
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {

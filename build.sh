@@ -30,7 +30,8 @@ src/game/quad_tree.c
 src/game/entity_system.c
 src/game/tilemap.c
 src/game/renderer/render_batch.c
-src/game/ui.c
+src/game/ui/ui_core.c
+src/game/ui/ui_builder.c
 "
 
 RENDERER_SOURCES="

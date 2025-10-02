@@ -2,7 +2,7 @@
 #define GAME_H
 
 #include "base/matrix.h"
-#include "game/ui.h"
+#include "ui/ui_core.h"
 #include "platform.h"
 #include "renderer/render_batch.h"
 #include "game_world.h"

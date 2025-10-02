@@ -91,27 +91,6 @@ static Vector2 get_next_child_position(LayoutKind layout, Vector2 current_pos, f
     return result;
 }
 
-static void calculate_widget_layout(Widget *widget, Vector2 offset)
-{
-    Vector2 final_position =  offset;
-    widget->final_size = widget->preliminary_size;
-    widget->final_position = final_position;
-
-    Vector2 next_child_pos = v2_add(final_position, v2(widget->child_padding, widget->child_padding));
-
-    for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
-        calculate_widget_layout(child, next_child_pos);
-
-        next_child_pos = get_next_child_position(widget->layout_kind, next_child_pos, widget->child_padding, child);
-    }
-}
-
-static Rectangle get_widget_bounding_box(Widget *widget)
-{
-    Rectangle result = {widget->final_position, widget->final_size};
-
-    return result;
-}
 
 static b32 widget_has_flag(const Widget *widget, WidgetFlag flag)
 {
@@ -123,6 +102,35 @@ static b32 widget_has_flag(const Widget *widget, WidgetFlag flag)
 static void widget_add_flag(Widget *widget, WidgetFlag flag)
 {
     widget->flags |= flag;
+}
+
+static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code)
+{
+    Vector2 final_position =  offset;
+
+    if (widget_has_flag(widget, WIDGET_TEXT)) {
+        widget->final_size = platform_code.get_text_dimensions(widget->text.font,
+            widget->text.string, widget->text.size);
+    } else {
+        widget->final_size = widget->preliminary_size;
+    }
+
+    widget->final_position = final_position;
+
+    Vector2 next_child_pos = v2_add(final_position, v2(widget->child_padding, widget->child_padding));
+
+    for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
+        calculate_widget_layout(child, next_child_pos, platform_code);
+
+        next_child_pos = get_next_child_position(widget->layout_kind, next_child_pos, widget->child_padding, child);
+    }
+}
+
+static Rectangle get_widget_bounding_box(Widget *widget)
+{
+    Rectangle result = {widget->final_position, widget->final_size};
+
+    return result;
 }
 
 static void calculate_widget_interactions(Widget *widget, const Input *input)
@@ -174,12 +182,13 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     }
 }
 
-void ui_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets)
+void ui_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets,
+    PlatformCode platform_code)
 {
     ASSERT(sl_list_is_empty(&ui->container_stack));
 
     if (ui->root_widget) {
-        calculate_widget_layout(ui->root_widget, V2_ZERO);
+        calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code);
         calculate_widget_interactions(ui->root_widget, input);
         render_widget(ui, ui->root_widget, rb, assets, 0);
     }
@@ -271,13 +280,12 @@ void ui_end_container(UIState *ui)
 
 Widget *ui_label(UIState *ui, String text)
 {
-    // TODO: how to get text dimensions without access to asset?
-    Vector2 text_dims = v2(128, 64);
-    Widget *widget = widget_create(ui, text_dims, debug_id_counter++);
+    Widget *widget = widget_create(ui, V2_ZERO, debug_id_counter++);
 
     widget_add_flag(widget, WIDGET_TEXT);
     widget->text.string = text;
     widget->text.font = ui->current_style.font;
+    widget->text.size = 12; // TODO: allow changing text size
 
     return widget;
 }

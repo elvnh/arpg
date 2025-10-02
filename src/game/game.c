@@ -645,17 +645,6 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
 
     world_update(&game_state->world, input, dt, frame_arena);
 
-    ui_begin_container(&game_state->ui, v2(512, 512), UI_LAYOUT_HORIZONTAL, 8.0f);
-
-    if (ui_button(&game_state->ui, str_lit("ABC")).clicked) {
-        printf("Clicked A\n");
-    }
-
-    if (ui_button(&game_state->ui, str_lit("DEF")).clicked) {
-        printf("Clicked B\n");
-    }
-
-    ui_end_container(&game_state->ui);
 }
 
 static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
@@ -701,18 +690,35 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
     rb_sort_entries(rb);
 }
 
-void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
-    FrameData frame_data, GameMemory *game_memory)
+static void game_update_and_render_ui(UIState *ui, PlatformCode platform_code)
 {
-    ui_begin_frame(&game_state->ui);
+    ui_begin_container(ui, v2(512, 512), UI_LAYOUT_HORIZONTAL, 8.0f);
+
+    if (ui_button(ui, str_lit("ABC")).clicked) {
+        printf("Clicked A\n");
+    }
+
+    if (ui_button(ui, str_lit("DEF")).clicked) {
+        printf("Clicked B\n");
+    }
+
+    ui_end_container(ui);
+}
+
+void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
+    const AssetList *assets, FrameData frame_data, GameMemory *game_memory)
+{
 
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
 
+    ui_begin_frame(&game_state->ui);
+    game_update_and_render_ui(&game_state->ui, platform_code);
+
     Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
     RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
+    ui_end_frame(&game_state->ui, frame_data.input, ui_rb, assets, platform_code);
 
-    ui_end_frame(&game_state->ui, frame_data.input, ui_rb, assets);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)

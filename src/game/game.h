@@ -3,6 +3,7 @@
 
 #include "base/matrix.h"
 #include "game/ui.h"
+#include "platform.h"
 #include "renderer/render_batch.h"
 #include "game_world.h"
 #include "input.h"
@@ -33,8 +34,8 @@ typedef struct {
     LinearArena temporary_memory;
 } GameMemory;
 
-void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
-    FrameData frame_data, GameMemory *game_memory);
+void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
+    const AssetList *assets, FrameData frame_data, GameMemory *game_memory);
 void game_initialize(GameState *game_state, GameMemory *game_memory);
 
 #endif //GAME_H

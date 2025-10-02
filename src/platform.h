@@ -1,13 +1,21 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
+#include "asset.h"
 #include "base/linear_arena.h"
 #include "base/string8.h"
+#include "base/vector.h"
 #include "base/span.h"
 #include "base/timestamp.h"
 
 /* Window */
 typedef struct WindowHandle WindowHandle;
+
+typedef Vector2 (PlatformGetTextDimensions)(FontHandle, String, s32);
+
+typedef struct {
+    PlatformGetTextDimensions *get_text_dimensions;
+} PlatformCode;
 
 enum {
     WINDOW_FLAG_NON_RESIZABLE = (1 << 0),
@@ -17,6 +25,7 @@ WindowHandle  *platform_create_window(s32 width, s32 height, const char *title, 
 void           platform_destroy_window(WindowHandle *handle);
 bool           platform_window_should_close(WindowHandle *handle);
 void           platform_poll_events(WindowHandle *window);
+Vector2i       platform_get_window_size(WindowHandle *window);
 
 /* Input */
 struct Input;

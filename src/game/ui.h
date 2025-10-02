@@ -6,6 +6,7 @@
 #include "base/vector.h"
 #include "base/rectangle.h"
 #include "asset.h"
+#include "platform.h"
 
 /*
   TODO:
@@ -57,6 +58,7 @@ typedef struct Widget {
     struct {
         String string;
         FontHandle font;
+        s32 size;
     } text;
 } Widget;
 
@@ -92,8 +94,9 @@ typedef struct {
 
 void ui_initialize(UIState *ui, UIStyle style, LinearArena *arena);
 void ui_begin_frame(UIState *ui);
+void ui_end_frame(UIState *ui, const struct Input *input, struct RenderBatch *rb, const struct AssetList *assets,
+    PlatformCode platform_code);
 void ui_set_style(UIState *ui, UIStyle style);
-void ui_end_frame(UIState *ui, const struct Input *input, struct RenderBatch *rb, const struct AssetList *assets);
 void ui_begin_container(UIState *ui, Vector2 size, LayoutKind layout, f32 padding);
 void ui_end_container(UIState *ui);
 

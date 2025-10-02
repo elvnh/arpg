@@ -5,7 +5,7 @@
 #include "platform.h"
 
 typedef void (GameInitialize)(GameState *, GameMemory *);
-typedef void (GameUpdateAndRender)(GameState *, RenderBatchList *, const AssetList *, FrameData, GameMemory *);
+typedef void (GameUpdateAndRender)(GameState *, PlatformCode, RenderBatchList *, const AssetList *, FrameData, GameMemory *);
 
 typedef struct {
     void *handle;

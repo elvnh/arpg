@@ -62,6 +62,14 @@ void platform_poll_events(WindowHandle *window)
     glfwPollEvents();
 }
 
+Vector2i platform_get_window_size(WindowHandle *window)
+{
+    Vector2i result = {0};
+    glfwGetWindowSize(window->window, &result.x, &result.y);
+
+    return result;
+}
+
 /* Input */
 static s32 get_glfw_key_equivalent(Key key)
 {

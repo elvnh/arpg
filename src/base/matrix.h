@@ -4,6 +4,7 @@
 #include "base/typedefs.h"
 #include "base/vector.h"
 
+// TODO: move elsewhere
 typedef enum {
     Y_IS_UP,
     Y_IS_DOWN

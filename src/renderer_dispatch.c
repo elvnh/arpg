@@ -227,7 +227,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
                     if (glyph != '\n') {
                         GlyphVertices verts = font_get_glyph_vertices(font_asset, glyph, cursor,
-                            text_size, color);
+                            text_size, color, rb->y_direction);
 
                         renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
                             verts.bottom_right, verts.bottom_left);

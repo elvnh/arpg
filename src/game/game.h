@@ -10,13 +10,15 @@
 /*
   TODO:
   - Manually controlling dt to slow down/speed up time
-  - Entity acceleration
  */
 
 typedef struct {
     GameWorld world;
-    TextureHandle texture;
     UIState ui;
+
+    // TODO: these shouldn't be here
+    TextureHandle texture;
+    FontHandle font;
 } GameState;
 
 typedef struct {

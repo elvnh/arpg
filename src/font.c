@@ -124,12 +124,15 @@ f32 font_get_newline_advance(FontAsset *asset, s32 text_size)
     return result;
 }
 
-GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 font_size, RGBA32 color)
+GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 font_size, RGBA32 color,
+    YDirection y_dir)
 {
     stbtt_packedchar char_info = asset->glyph_metrics[char_index(ch)];
     stbtt_aligned_quad quad = asset->glyph_quads[char_index(ch)];
 
     f32 scale = get_text_scale(font_size);
+
+    // TODO: fix glyph offsets when y dir is down
 
     Vector2 glyph_size = {
         (quad.x1 - quad.x0) * scale,
@@ -143,25 +146,25 @@ GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 positio
 
     Vertex tl = {
         v2_add(glyph_bottom_left, v2(0.0f, glyph_size.y)),
-        {quad.s0, quad.t0},
+        {quad.s0, (y_dir == Y_IS_UP) ? quad.t0 : quad.t1},
         color
     };
 
     Vertex tr = {
         v2_add(glyph_bottom_left, glyph_size),
-        {quad.s1, quad.t0},
+        {quad.s1, (y_dir == Y_IS_UP) ? quad.t0 : quad.t1},
         color
     };
 
     Vertex br = {
         v2_add(glyph_bottom_left, v2(glyph_size.x, 0.0f)),
-        {quad.s1, quad.t1},
+        {quad.s1, (y_dir == Y_IS_UP) ? quad.t1 : quad.t0},
         color
     };
 
     Vertex bl = {
         glyph_bottom_left,
-        {quad.s0, quad.t1},
+        {quad.s0, (y_dir == Y_IS_UP) ? quad.t1 : quad.t0},
         color
     };
 

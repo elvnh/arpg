@@ -651,21 +651,9 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
         printf("Clicked A\n");
     }
 
-    if (ui_button(&game_state->ui, str_lit("ABC"), v2(10, 10)).clicked) {
+    if (ui_button(&game_state->ui, str_lit("DEF"), v2(20, 10)).clicked) {
         printf("Clicked B\n");
     }
-
-    ui_begin_container(&game_state->ui, v2(10, 0), v2(128, 128), UI_LAYOUT_VERTICAL);
-
-    if (ui_button(&game_state->ui, str_lit("ABC"), v2(0, 0)).clicked) {
-        printf("Clicked C\n");
-    }
-
-    if (ui_button(&game_state->ui, str_lit("ABC"), v2(0, 10)).clicked) {
-        printf("Clicked D\n");
-    }
-
-    ui_end_container(&game_state->ui);
 
     ui_end_container(&game_state->ui);
 }
@@ -735,7 +723,11 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     game_state->world.previous_frame_collisions = collision_table_create(&game_state->world.world_arena);
     game_state->world.current_frame_collisions = collision_table_create(&game_state->world.world_arena);
 
-    ui_initialize(&game_state->ui, &game_memory->permanent_memory);
+    UIStyle default_ui_style = {
+        .font = game_state->font
+    };
+
+    ui_initialize(&game_state->ui, default_ui_style, &game_memory->permanent_memory);
 
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {

@@ -645,10 +645,13 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
 
     world_update(&game_state->world, input, dt, frame_arena);
 
-    if (ui_button(&game_state->ui, str_lit("ABC"), V2_ZERO).clicked) {
+    ui_begin_container(&game_state->ui, v2(10, 10), v2(256, 256), UI_LAYOUT_VERTICAL);
+
+    if (ui_button(&game_state->ui, str_lit("ABC"), v2(100, 100)).clicked) {
         printf("Clicked\n");
     }
 
+    ui_end_container(&game_state->ui);
 }
 
 static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,

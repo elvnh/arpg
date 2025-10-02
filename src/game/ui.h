@@ -33,6 +33,10 @@ typedef enum {
     WIDGET_COLORED = (1u << 1),
 } WidgetFlag;
 
+typedef enum {
+    UI_LAYOUT_VERTICAL,
+} LayoutKind;
+
 typedef struct Widget {
     WidgetID id;
     WidgetInteraction interaction_state; // TODO: should this be in separate struct?
@@ -44,6 +48,7 @@ typedef struct Widget {
     Vector2 final_position;
     Vector2 final_size;
 
+    LayoutKind layout_kind;
     WidgetList    children;
     struct Widget *next; // TODO: rename
 } Widget;
@@ -57,6 +62,7 @@ typedef struct {
 typedef struct {
     WidgetFrameTable previous_frame_widgets;
     WidgetFrameTable current_frame_widgets;
+    WidgetList container_stack;
 
     Widget *root_widget; // TODO: push container that contains entire viewport on beginning of each frame
 } UIState;
@@ -64,6 +70,8 @@ typedef struct {
 void ui_initialize(UIState *ui, LinearArena *arena);
 void ui_begin_frame(UIState *ui);
 void ui_end_frame(UIState *ui, const struct Input *input, struct RenderBatch *rb, const struct AssetList *assets);
+void ui_begin_container(UIState *ui, Vector2 offset, Vector2 size, LayoutKind layout);
+void ui_end_container(UIState *ui);
 
 // TODO: move these to separate file
 WidgetInteraction ui_button(UIState *ui, String text, Vector2 position);

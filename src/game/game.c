@@ -645,13 +645,13 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
 
     world_update(&game_state->world, input, dt, frame_arena);
 
-    ui_begin_container(&game_state->ui, v2(0, 0), v2(512, 512), UI_LAYOUT_HORIZONTAL);
+    ui_begin_container(&game_state->ui, v2(512, 512), UI_LAYOUT_HORIZONTAL, 8.0f);
 
-    if (ui_button(&game_state->ui, str_lit("ABC"), v2(10, 10)).clicked) {
+    if (ui_button(&game_state->ui, str_lit("ABC")).clicked) {
         printf("Clicked A\n");
     }
 
-    if (ui_button(&game_state->ui, str_lit("DEF"), v2(20, 10)).clicked) {
+    if (ui_button(&game_state->ui, str_lit("DEF")).clicked) {
         printf("Clicked B\n");
     }
 

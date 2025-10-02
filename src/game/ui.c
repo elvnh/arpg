@@ -76,14 +76,14 @@ void ui_begin_frame(UIState *ui)
     ui->root_widget = 0;
 }
 
-static Vector2 get_next_child_position(LayoutKind layout, Vector2 current_pos, Widget *child)
+static Vector2 get_next_child_position(LayoutKind layout, Vector2 current_pos, f32 padding, Widget *child)
 {
     Vector2 result = current_pos;
 
     if (layout == UI_LAYOUT_VERTICAL) {
-        result.y += child->final_size.y + child->offset_from_parent.y;
+        result.y += child->final_size.y + padding;
     } else if (layout == UI_LAYOUT_HORIZONTAL) {
-        result.x += child->final_size.x + child->offset_from_parent.x;
+        result.x += child->final_size.x + padding;
     } else {
         ASSERT(0);
     }
@@ -93,16 +93,16 @@ static Vector2 get_next_child_position(LayoutKind layout, Vector2 current_pos, W
 
 static void calculate_widget_layout(Widget *widget, Vector2 offset)
 {
-    Vector2 final_position =  v2_add(widget->offset_from_parent, offset);
+    Vector2 final_position =  offset;
     widget->final_size = widget->preliminary_size;
     widget->final_position = final_position;
 
-    Vector2 next_position = final_position; // TODO: padding
+    Vector2 next_child_pos = v2_add(final_position, v2(widget->child_padding, widget->child_padding));
 
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
-        calculate_widget_layout(child, next_position);
+        calculate_widget_layout(child, next_child_pos);
 
-        next_position = get_next_child_position(widget->layout_kind, next_position, child);
+        next_child_pos = get_next_child_position(widget->layout_kind, next_child_pos, widget->child_padding, child);
     }
 }
 
@@ -165,8 +165,8 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
 
     if (widget_has_flag(widget, WIDGET_TEXT)) {
         // TODO: allow changing font size
-        rb_push_text(rb, arena, widget->text, widget->final_position, RGBA32_WHITE, 12,
-            assets->shader, widget->font, depth);
+        rb_push_text(rb, arena, widget->text.string, widget->final_position, RGBA32_WHITE, 12,
+            assets->shader, widget->text.font, depth);
     }
 
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
@@ -203,11 +203,10 @@ static void widget_add_to_children(Widget *widget, Widget *child)
     sl_list_push_back_x(&widget->children, child, next_sibling);
 }
 
-static Widget *widget_allocate(UIState *ui, Vector2 offset, Vector2 size, WidgetID id)
+static Widget *widget_allocate(UIState *ui, Vector2 size, WidgetID id)
 {
     Widget *widget = la_allocate_item(get_frame_arena(ui), Widget);
     widget->id = id;
-    widget->offset_from_parent = offset;
     widget->preliminary_size = size;
 
     return widget;
@@ -227,9 +226,9 @@ static void push_widget(UIState *ui, Widget *widget)
     }
 }
 
-static Widget *widget_create(UIState *ui, Vector2 offset, Vector2 size, WidgetID id)
+static Widget *widget_create(UIState *ui, Vector2 size, WidgetID id)
 {
-    Widget *widget = widget_allocate(ui, offset, size, id);
+    Widget *widget = widget_allocate(ui, size, id);
     push_widget(ui, widget);
 
     return widget;
@@ -255,10 +254,11 @@ static void ui_push_container(UIState *ui, Widget *widget)
     sl_list_push_front(&ui->container_stack, container);
 }
 
-void ui_begin_container(UIState *ui, Vector2 offset, Vector2 size, LayoutKind layout)
+void ui_begin_container(UIState *ui, Vector2 size, LayoutKind layout, f32 padding)
 {
-    Widget *widget = widget_create(ui, offset, size, debug_id_counter++);
+    Widget *widget = widget_create(ui, size, debug_id_counter++);
     widget->layout_kind = layout;
+    widget->child_padding = padding;
 
     ui_push_container(ui, widget);
 }
@@ -273,18 +273,18 @@ Widget *ui_label(UIState *ui, String text)
 {
     // TODO: how to get text dimensions without access to asset?
     Vector2 text_dims = v2(128, 64);
-    Widget *widget = widget_create(ui, V2_ZERO, text_dims, debug_id_counter++);
+    Widget *widget = widget_create(ui, text_dims, debug_id_counter++);
 
     widget_add_flag(widget, WIDGET_TEXT);
-    widget->text = text;
-    widget->font = ui->current_style.font;
+    widget->text.string = text;
+    widget->text.font = ui->current_style.font;
 
     return widget;
 }
 
-WidgetInteraction ui_button(UIState *ui, String text, Vector2 position)
+WidgetInteraction ui_button(UIState *ui, String text)
 {
-    Widget *widget = widget_create(ui, position, v2(64, 32), debug_id_counter++); // TODO: size based on text dims
+    Widget *widget = widget_create(ui, v2(64, 32), debug_id_counter++); // TODO: size based on text dims
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_COLORED);
 

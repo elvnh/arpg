@@ -9,9 +9,7 @@
 
 /*
   TODO:
-  - Layout kinds
   - Layout stack, keep track of next position etc
-
  */
 
 typedef u32 WidgetID;
@@ -31,8 +29,8 @@ typedef struct {
 
 typedef enum {
     WIDGET_CLICKABLE = (1u << 0),
-    WIDGET_COLORED = (1u << 1),
-    WIDGET_TEXT = (1u << 2),
+    WIDGET_COLORED   = (1u << 1),
+    WIDGET_TEXT      = (1u << 2),
 } WidgetFlag;
 
 typedef enum {
@@ -46,17 +44,20 @@ typedef struct Widget {
     WidgetFlag flags;
 
     Vector2   offset_from_parent;
-    Vector2   preliminary_size; // TODO: can be changed, create final_size
+    Vector2   preliminary_size;
     Vector2   final_position;
     Vector2   final_size;
 
-    String text;
-    FontHandle font;
-
-    LayoutKind layout_kind;
-    WidgetList    children;
+    LayoutKind     layout_kind;
+    f32            child_padding;
+    WidgetList     children;
     struct Widget *next_in_hash;
     struct Widget *next_sibling;
+
+    struct {
+        String string;
+        FontHandle font;
+    } text;
 } Widget;
 
 typedef struct {
@@ -93,11 +94,11 @@ void ui_initialize(UIState *ui, UIStyle style, LinearArena *arena);
 void ui_begin_frame(UIState *ui);
 void ui_set_style(UIState *ui, UIStyle style);
 void ui_end_frame(UIState *ui, const struct Input *input, struct RenderBatch *rb, const struct AssetList *assets);
-void ui_begin_container(UIState *ui, Vector2 offset, Vector2 size, LayoutKind layout);
+void ui_begin_container(UIState *ui, Vector2 size, LayoutKind layout, f32 padding);
 void ui_end_container(UIState *ui);
 
 // TODO: move these to separate file
-WidgetInteraction ui_button(UIState *ui, String text, Vector2 position);
+WidgetInteraction ui_button(UIState *ui, String text);
 Widget *ui_label(UIState *ui, String text);
 
 #endif //UI_H

@@ -1,7 +1,11 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
-#include "base/typedefs.h"
+#include "base/vector.h"
+#include "base/sl_list.h"
+#include "base/string8.h"
+#include "base/rectangle.h"
+#include "asset.h"
 
 typedef u32 WidgetID;
 
@@ -14,7 +18,13 @@ typedef enum {
 typedef enum {
     UI_LAYOUT_VERTICAL,
     UI_LAYOUT_HORIZONTAL,
-} LayoutKind;
+} UILayoutKind;
+
+typedef enum {
+    UI_SIZE_KIND_ABSOLUTE,
+    UI_SIZE_KIND_SUM_OF_CHILDREN,
+    UI_SIZE_KIND_PERCENT_OF_PARENT,
+} UISizeKind;
 
 typedef struct {
     b32 clicked;
@@ -30,12 +40,14 @@ typedef struct Widget {
     WidgetInteraction interaction_state; // TODO: should this be in separate struct?
     WidgetFlag flags;
 
-    Vector2   offset_from_parent;
-    Vector2   preliminary_size;
-    Vector2   final_position;
-    Vector2   final_size;
+    UISizeKind size_kind;
+    Vector2    preliminary_size;
+    Vector2    offset_from_parent;
 
-    LayoutKind     layout_kind;
+    Vector2    final_size; // NOTE: is always absolute
+    Vector2    final_position;
+
+    UILayoutKind     layout_kind;
     f32            child_padding;
     WidgetList     children;
     struct Widget *next_in_hash;
@@ -65,6 +77,11 @@ static inline Rectangle widget_get_bounding_box(Widget *widget)
     Rectangle result = {widget->final_position, widget->final_size};
 
     return result;
+}
+
+static inline void widget_add_to_children(Widget *widget, Widget *child)
+{
+    sl_list_push_back_x(&widget->children, child, next_sibling);
 }
 
 #endif //WIDGET_H

@@ -16,9 +16,13 @@ WidgetInteraction ui_label(UIState *ui, String text)
 
 WidgetInteraction ui_button(UIState *ui, String text)
 {
-    Widget *widget = ui_core_create_widget(ui, v2(64, 32), debug_id_counter++); // TODO: size based on text dims
+    Widget *widget = ui_core_create_widget(ui, v2(64, 32), debug_id_counter++);
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_COLORED);
+
+    // TODO: allow changing
+    widget->size_kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+    widget->child_padding = 12.0f;
 
     ui_core_push_as_container(ui, widget);
     ui_label(ui, text);

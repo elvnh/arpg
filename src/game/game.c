@@ -690,10 +690,11 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
     rb_sort_entries(rb);
 }
 
-static void game_update_and_render_ui(UIState *ui, PlatformCode platform_code)
+static void game_update_and_render_ui(UIState *ui)
 {
     ui_core_begin_container(ui, v2(512, 512), UI_LAYOUT_HORIZONTAL, 8.0f);
 
+#if 1
     if (ui_button(ui, str_lit("ABC")).clicked) {
         printf("Clicked A\n");
     }
@@ -701,20 +702,19 @@ static void game_update_and_render_ui(UIState *ui, PlatformCode platform_code)
     if (ui_button(ui, str_lit("DEF")).clicked) {
         printf("Clicked B\n");
     }
-
+#endif
     ui_core_end_container(ui);
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
     const AssetList *assets, FrameData frame_data, GameMemory *game_memory)
 {
-
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
 
     ui_core_begin_frame(&game_state->ui);
 
-    game_update_and_render_ui(&game_state->ui, platform_code);
+    game_update_and_render_ui(&game_state->ui);
 
     Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
     RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);

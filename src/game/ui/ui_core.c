@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "game/ui/widget.h"
 #include "ui_core.h"
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
@@ -11,6 +12,7 @@
 
 #define FRAME_WIDGET_TABLE_SIZE 1024
 
+// TODO: get rid of this
 WidgetID debug_id_counter = 0;
 
 WidgetFrameTable widget_frame_table_create(LinearArena *arena)
@@ -77,7 +79,7 @@ void ui_core_begin_frame(UIState *ui)
     ui->root_widget = 0;
 }
 
-static Vector2 get_next_child_position(LayoutKind layout, Vector2 current_pos, f32 padding, Widget *child)
+static Vector2 get_next_child_position(UILayoutKind layout, Vector2 current_pos, f32 padding, Widget *child)
 {
     Vector2 result = current_pos;
 
@@ -92,26 +94,77 @@ static Vector2 get_next_child_position(LayoutKind layout, Vector2 current_pos, f
     return result;
 }
 
-static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code)
-{
-    Vector2 final_position =  offset;
+typedef enum {
+    TRAVERSAL_ORDER_PREORDER,
+    TRAVERSAL_ORDER_POSTORDER,
+} TraversalOrder;
 
-    if (widget_has_flag(widget, WIDGET_TEXT)) {
-        widget->final_size = platform_code.get_text_dimensions(widget->text.font,
-            widget->text.string, widget->text.size);
-    } else {
-        widget->final_size = widget->preliminary_size;
+static TraversalOrder get_layout_traversal_order(UISizeKind size_kind)
+{
+    switch (size_kind) {
+        case UI_SIZE_KIND_ABSOLUTE:          return TRAVERSAL_ORDER_PREORDER;
+        case UI_SIZE_KIND_PERCENT_OF_PARENT: return TRAVERSAL_ORDER_PREORDER;
+        case UI_SIZE_KIND_SUM_OF_CHILDREN:   return TRAVERSAL_ORDER_POSTORDER;
+        INVALID_DEFAULT_CASE;
     }
 
-    widget->final_position = final_position;
+    ASSERT(0);
+    return 0;
+}
 
-    Vector2 next_child_pos = v2_add(final_position, v2(widget->child_padding, widget->child_padding));
+static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code);
+
+static void calculate_layout_of_children(Widget *widget, PlatformCode platform_code)
+{
+    Vector2 next_child_pos = v2_add(widget->final_position, v2(widget->child_padding, widget->child_padding));
 
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
         calculate_widget_layout(child, next_child_pos, platform_code);
 
-        next_child_pos = get_next_child_position(widget->layout_kind, next_child_pos, widget->child_padding, child);
+        next_child_pos = get_next_child_position(widget->layout_kind, next_child_pos,
+            widget->child_padding, child);
     }
+}
+
+static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code)
+{
+    widget->final_position = offset;
+
+    TraversalOrder order = get_layout_traversal_order(widget->size_kind);
+
+    if (order == TRAVERSAL_ORDER_POSTORDER) {
+        calculate_layout_of_children(widget, platform_code);
+    }
+
+    if (widget->size_kind == UI_SIZE_KIND_ABSOLUTE) {
+        widget->final_size = widget->preliminary_size;
+    } else if (widget->size_kind == UI_SIZE_KIND_SUM_OF_CHILDREN) {
+        f32 max_x = 0.0f;
+        f32 max_y = 0.0f;
+
+        for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
+            max_x = MAX(max_x, child->final_position.x + child->final_size.x - offset.x);
+            max_y = MAX(max_y, child->final_position.y + child->final_size.y - offset.y);
+        }
+
+        widget->final_size = v2(max_x + widget->child_padding, max_y + widget->child_padding);
+    } else {
+        UNIMPLEMENTED;
+    }
+
+    if (order == TRAVERSAL_ORDER_PREORDER) {
+        calculate_layout_of_children(widget, platform_code);
+    }
+
+    // soc: traverse children first
+    // abs: whenever
+    // pop: traverse children last
+
+    if (widget_has_flag(widget, WIDGET_TEXT)) {
+        widget->final_size = platform_code.get_text_dimensions(widget->text.font,
+            widget->text.string, widget->text.size);
+    }
+
 }
 
 static void calculate_widget_interactions(Widget *widget, const Input *input)
@@ -187,12 +240,7 @@ static Widget *get_top_container(UIState *ui)
     return result;
 }
 
-static void widget_add_to_children(Widget *widget, Widget *child)
-{
-    sl_list_push_back_x(&widget->children, child, next_sibling);
-}
-
-void ui_core_push_widget(UIState *ui, Widget *widget)
+static void ui_core_push_widget(UIState *ui, Widget *widget)
 {
     widget_frame_table_push(&ui->current_frame_widgets, widget);
 
@@ -225,11 +273,14 @@ void ui_core_push_as_container(UIState *ui, Widget *widget)
     sl_list_push_front(&ui->container_stack, container);
 }
 
-void ui_core_begin_container(UIState *ui, Vector2 size, LayoutKind layout, f32 padding)
+void ui_core_begin_container(UIState *ui, Vector2 size, UILayoutKind layout, f32 padding)
 {
     Widget *widget = ui_core_create_widget(ui, size, debug_id_counter++);
     widget->layout_kind = layout;
     widget->child_padding = padding;
+
+    // TODO: parameterize
+    widget->size_kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
 
     ui_core_push_as_container(ui, widget);
 }

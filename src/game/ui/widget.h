@@ -45,14 +45,16 @@ typedef struct Widget {
     Vector2    preliminary_size;
     Vector2    offset_from_parent;
 
-    Vector2    final_size; // NOTE: is always absolute
+    // NOTE: these are always absolute
+    Vector2    final_size;
     Vector2    final_position;
 
-    UILayoutKind     layout_kind;
-    f32            child_padding;
-    WidgetList     children;
-    struct Widget *next_in_hash;
-    struct Widget *next_sibling;
+    UILayoutKind     parent_layout_kind;
+
+    f32              child_padding;
+    WidgetList       children;
+    struct Widget   *next_in_hash;
+    struct Widget   *next_sibling;
 
     struct {
         String string;

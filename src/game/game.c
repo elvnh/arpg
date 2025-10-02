@@ -694,10 +694,19 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
 
 static void game_update_and_render_ui(UIState *ui)
 {
-    ui_core_begin_container(ui, v2(256, 256), UI_LAYOUT_HORIZONTAL, UI_SIZE_KIND_ABSOLUTE, 8.0f);
+    ui_core_begin_container(ui, v2(256, 256), UI_SIZE_KIND_ABSOLUTE, 8.0f);
+
+    static b32 a = false;
+    ui_checkbox(ui, &a);
+    ui_core_same_line(ui);
+    ui_label(ui, str_lit("Check A"));
 
     static b32 b = false;
     ui_checkbox(ui, &b);
+    ui_core_same_line(ui);
+    ui_label(ui, str_lit("Check B"));
+    //ui_checkbox(ui, &b);
+    //ui_checkbox(ui, &b);
 
     /* ui_core_begin_container(ui, v2(1.0f, 0.25f), UI_LAYOUT_HORIZONTAL, UI_SIZE_KIND_PERCENT_OF_PARENT, 0.0f); */
 

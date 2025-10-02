@@ -116,13 +116,33 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 
 static void calculate_layout_of_children(Widget *widget, PlatformCode platform_code)
 {
-    Vector2 next_child_pos = v2_add(widget->final_position, v2(widget->child_padding, widget->child_padding));
+    // TODO: these calculations are kind of hacky
+    Vector2 next_child_pos = widget->final_position;
+    UILayoutKind prev_layout_dir = 0;
+
+    if (!sl_list_is_empty(&widget->children)) {
+        if (sl_list_head(&widget->children)->parent_layout_kind == UI_LAYOUT_VERTICAL) {
+            next_child_pos.x += widget->child_padding;
+        } else {
+            next_child_pos.y += widget->child_padding;
+        }
+    }
 
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
+        next_child_pos = get_next_child_position(child->parent_layout_kind, next_child_pos,
+            widget->child_padding, child);
+
         calculate_widget_layout(child, next_child_pos, platform_code, widget);
 
-        next_child_pos = get_next_child_position(widget->layout_kind, next_child_pos,
-            widget->child_padding, child);
+        if (child->parent_layout_kind == UI_LAYOUT_HORIZONTAL && prev_layout_dir != child->parent_layout_kind) {
+            next_child_pos.x = widget->final_position.x + widget->child_padding;
+        }
+
+        if (child->parent_layout_kind == UI_LAYOUT_HORIZONTAL) {
+            next_child_pos.y += widget->child_padding;
+        } else {
+            next_child_pos.x += widget->child_padding;
+        }
     }
 }
 
@@ -257,6 +277,8 @@ static Widget *get_top_container(UIState *ui)
     return result;
 }
 
+#define DEFAULT_LAYOUT_AXIS UI_LAYOUT_VERTICAL
+
 static void ui_core_push_widget(UIState *ui, Widget *widget)
 {
     widget_frame_table_push(&ui->current_frame_widgets, widget);
@@ -266,8 +288,12 @@ static void ui_core_push_widget(UIState *ui, Widget *widget)
     }
 
     Widget *top_container = get_top_container(ui);
+
     if (top_container) {
         widget_add_to_children(top_container, widget);
+        widget->parent_layout_kind = ui->current_layout_axis;
+
+        ui->current_layout_axis = DEFAULT_LAYOUT_AXIS;
     }
 }
 
@@ -286,14 +312,12 @@ void ui_core_push_as_container(UIState *ui, Widget *widget)
 {
     WidgetContainer *container = la_allocate_item(get_frame_arena(ui), WidgetContainer);
     container->widget = widget;
-
     sl_list_push_front(&ui->container_stack, container);
 }
 
-void ui_core_begin_container(UIState *ui, Vector2 size, UILayoutKind layout, UISizeKind size_kind, f32 padding)
+void ui_core_begin_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 padding)
 {
     Widget *widget = ui_core_create_widget(ui, size, debug_id_counter++);
-    widget->layout_kind = layout;
     widget->child_padding = padding;
     widget->size_kind = size_kind;
 
@@ -316,4 +340,9 @@ WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widg
     }
 
     return result;
+}
+
+void ui_core_same_line(UIState *ui)
+{
+    ui->current_layout_axis = UI_LAYOUT_HORIZONTAL;
 }

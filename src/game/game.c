@@ -175,11 +175,10 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
 {
     (void)world;
 
-    if (es_has_components(entity, component_flag(ParticleSpawner) | component_flag(PhysicsComponent))) {
-        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
 
-        component_update_particle_spawner(entity, particle_spawner, physics->position, dt);
+        component_update_particle_spawner(entity, particle_spawner, entity->position, dt);
     }
 
 
@@ -192,14 +191,10 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
                          DebugState *debug_state)
 {
-    // TODO: Make this part of the entity rather than component
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-    ASSERT(physics);
-
     if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
 
-        Rectangle sprite_rect = { physics->position, sprite->size };
+        Rectangle sprite_rect = { entity->position, sprite->size };
         rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
     }
 
@@ -207,11 +202,11 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
         Rectangle rect = {
-            .position = physics->position,
+            .position = entity->position,
             .size = collider->size
         };
 
-        rb_push_rect(rb, scratch, rect, entity->color, assets->shape_shader, RENDER_LAYER_ENTITIES);
+        rb_push_rect(rb, scratch, rect, RGBA32_GREEN, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ParticleSpawner)) {
@@ -255,10 +250,10 @@ static Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
-static Rectangle get_entity_rect(PhysicsComponent *physics, ColliderComponent *collider)
+static Rectangle get_entity_rect(Entity *entity, ColliderComponent *collider)
 {
     Rectangle result = {
-        physics->position,
+        entity->position,
         collider->size
     };
 
@@ -317,8 +312,8 @@ static void handle_collision_side_effects(Entity *a, Entity *b)
     }
 }
 
-static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsComponent *physics_a,
-    ColliderComponent *collider_a, Entity *b, PhysicsComponent *physics_b, ColliderComponent *collider_b,
+static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
+    ColliderComponent *collider_a, Entity *b, ColliderComponent *collider_b,
     f32 movement_fraction_left, f32 dt)
 {
     EntityID id_a = es_get_id_of_entity(&world->entities, a);
@@ -328,11 +323,11 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
     b32 should_collide = !rule_for_entities || rule_for_entities->should_collide;
 
     if (should_collide) {
-        Rectangle rect_a = get_entity_rect(physics_a, collider_a);
-        Rectangle rect_b = get_entity_rect(physics_b, collider_b);
+        Rectangle rect_a = get_entity_rect(a, collider_a);
+        Rectangle rect_b = get_entity_rect(b, collider_b);
 
         CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
-            physics_a->velocity, physics_b->velocity, dt);
+            a->velocity, b->velocity, dt);
 
         if (collision.collision_state != COLL_NOT_COLLIDING) {
             if (!entities_intersected_this_frame(world, id_a, id_b)
@@ -344,27 +339,25 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a, PhysicsCompon
 
             if (!collider_a->non_blocking && !collider_b->non_blocking) {
                 // TODO: allow entities to bounce off eachother too
-                physics_a->position = collision.new_position_a;
-                physics_b->position = collision.new_position_b;
+                a->position = collision.new_position_a;
+                b->position = collision.new_position_b;
 
-                physics_a->velocity = collision.new_velocity_a;
-                physics_b->velocity = collision.new_velocity_b;
+                a->velocity = collision.new_velocity_a;
+                b->velocity = collision.new_velocity_b;
 
                 movement_fraction_left = collision.movement_fraction_left;
             }
-
-
         }
     }
 
     return movement_fraction_left;
 }
 
-static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderComponent *collider,
+static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collider,
     GameWorld *world, f32 movement_fraction_left, f32 dt)
 {
-    Vector2 old_entity_pos = physics->position;
-    Vector2 new_entity_pos = v2_add(physics->position, v2_mul_s(physics->velocity, dt));
+    Vector2 old_entity_pos = entity->position;
+    Vector2 new_entity_pos = v2_add(entity->position, v2_mul_s(entity->velocity, dt));
     f32 entity_width = collider->size.x;
     f32 entity_height = collider->size.y;
 
@@ -390,7 +383,7 @@ static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompon
             Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
             if (!tile || (tile->type == TILE_WALL)) {
-                Rectangle entity_rect = get_entity_rect(physics, collider);
+                Rectangle entity_rect = get_entity_rect(entity, collider);
                 Rectangle tile_rect = {
                     tile_to_world_coords(tile_coords),
                     {(f32)TILE_SIZE, (f32)TILE_SIZE },
@@ -398,15 +391,15 @@ static f32 entity_vs_tilemap_collision(PhysicsComponent *physics, ColliderCompon
 
                 // TODO: only handle the closest collision
                 CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
-		    tile_rect, physics->velocity, V2_ZERO, dt);
+		    tile_rect, entity->velocity, V2_ZERO, dt);
 
                 if (collision.collision_state != COLL_NOT_COLLIDING) {
-                    physics->position = collision.new_position_a;
+                    entity->position = collision.new_position_a;
 
 #if 0
-                    physics->velocity = collision.new_velocity_a;
+                    entity->velocity = collision.new_velocity_a;
 #else
-                    physics->velocity = v2_reflect(physics->velocity, collision.collision_normal);
+                    entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
 #endif
 
                     movement_fraction_left = collision.movement_fraction_left;
@@ -438,41 +431,37 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
 
         EntityID id_a = world->entities.alive_entity_ids[i];
         Entity *a = es_get_entity(&world->entities,id_a);
-        PhysicsComponent *physics_a = es_get_component(a, PhysicsComponent);
 
-        if (physics_a) {
-            ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
-            f32 movement_fraction_left = 1.0f;
+        ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
+        f32 movement_fraction_left = 1.0f;
 
-            if (collider_a) {
-                movement_fraction_left = entity_vs_tilemap_collision(physics_a,
-		    collider_a, world, movement_fraction_left, dt);
+        if (collider_a) {
+            movement_fraction_left = entity_vs_tilemap_collision(a,
+                collider_a, world, movement_fraction_left, dt);
 
-                for (EntityIndex j = i + 1; j < world->entities.alive_entity_count; ++j) {
-                    EntityID id_b = world->entities.alive_entity_ids[j];
-                    Entity *b = es_get_entity(&world->entities, id_b);
+            for (EntityIndex j = i + 1; j < world->entities.alive_entity_count; ++j) {
+                EntityID id_b = world->entities.alive_entity_ids[j];
+                Entity *b = es_get_entity(&world->entities, id_b);
 
-                    PhysicsComponent *physics_b = es_get_component(b, PhysicsComponent);
-                    ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
+                ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
 
-                    if (!physics_b || !collider_b) {
-                        continue;
-                    }
+                if (!collider_b) {
+                    continue;
+                }
 
-                    if (entities_should_collide(a, b)) {
-                        movement_fraction_left = entity_vs_entity_collision(world, a, physics_a,
-			    collider_a, b, physics_b, collider_b, movement_fraction_left, dt);
-                    }
+                if (entities_should_collide(a, b)) {
+                    movement_fraction_left = entity_vs_entity_collision(world, a, collider_a,
+                        b, collider_b, movement_fraction_left, dt);
                 }
             }
 
             ASSERT(movement_fraction_left >= 0.0f);
             ASSERT(movement_fraction_left <= 1.0f);
 
-            Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(physics_a->velocity, movement_fraction_left), dt);
-            physics_a->position = v2_add(physics_a->position, to_move_this_frame);
+            Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(a->velocity, movement_fraction_left), dt);
+            a->position = v2_add(a->position, to_move_this_frame);
 
-            es_set_entity_position(&world->entities, a, physics_a->position, &world->world_arena);
+            es_set_entity_position(&world->entities, a, a->position, &world->world_arena);
         }
     }
 }
@@ -482,11 +471,9 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
     // TODO: return id and entity pointer when creating
     EntityID id = es_create_entity(&world->entities);
     Entity *entity = es_get_entity(&world->entities, id);
-    entity->color = RGBA32_RED;
 
-    PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
-    physics->position = pos;
-    physics->velocity = v2(250.f, 0.0f);
+    entity->position = pos;
+    entity->velocity = v2(250.f, 0.0f);
 
     ColliderComponent *collider = es_add_component(entity, ColliderComponent);
     collider->size = v2(16.0f, 16.0f);
@@ -495,7 +482,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
     DamageFieldComponent *damage = es_add_component(entity, DamageFieldComponent);
     damage->damage = 3;
 
-    es_set_entity_area(&world->entities, entity, (Rectangle){physics->position, collider->size},
+    es_set_entity_area(&world->entities, entity, (Rectangle){entity->position, collider->size},
 	&world->world_arena);
 
     collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
@@ -509,10 +496,10 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
 
     EntityID player_id = world->entities.alive_entity_ids[0];
     Entity *player = es_get_entity(&world->entities, player_id);
-    PhysicsComponent *physics = es_get_component(player, PhysicsComponent);
+    ASSERT(player);
 
-    if (physics) {
-        Vector2 target = physics->position;
+    {
+        Vector2 target = player->position;
 
         if (es_has_component(player, ColliderComponent)) {
             ColliderComponent *collider = es_get_component(player, ColliderComponent);
@@ -520,7 +507,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
         }
 
         if (input_is_key_pressed(input, KEY_G)) {
-            spawn_projectile(world, physics->position, player_id);
+            spawn_projectile(world, player->position, player_id);
         }
 
         camera_set_target(&world->camera, target);
@@ -550,8 +537,8 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
 	    acceleration.x = 1.0f;
 	}
 
-        Vector2 v = physics->velocity;
-        Vector2 p = physics->position;
+        Vector2 v = player->velocity;
+        Vector2 p = player->position;
 
         acceleration = v2_norm(acceleration);
         acceleration = v2_mul_s(acceleration, speed);
@@ -564,8 +551,8 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
 
         Vector2 new_velocity = v2_add(v2_mul_s(acceleration, dt), v);
 
-        physics->position = new_pos;
-        physics->velocity = new_velocity;
+        player->position = new_pos;
+        player->velocity = new_velocity;
     }
 
     handle_collision_and_movement(world, dt);
@@ -766,13 +753,9 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     for (s32 i = 0; i < 2; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);
         Entity *entity = es_get_entity(&game_state->world.entities, id);
+        entity->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
 
-        ASSERT(!es_has_component(entity, PhysicsComponent));
         ASSERT(!es_has_component(entity, ColliderComponent));
-
-        entity->color = RGBA32_BLUE;
-        PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
-        physics->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
 
         ColliderComponent *collider = es_add_component(entity, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
@@ -780,10 +763,10 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->hitpoints = 10;
 
-        ASSERT(es_has_component(entity, PhysicsComponent));
         ASSERT(es_has_component(entity, ColliderComponent));
+        ASSERT(es_has_component(entity, HealthComponent));
 
-	Rectangle rect = get_entity_rect(physics, collider);
+	Rectangle rect = get_entity_rect(entity, collider);
 
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
         //spawner->texture = game_state->texture;

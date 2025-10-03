@@ -47,20 +47,6 @@ EntityID es_get_id_of_entity(EntitySystem *es, Entity *entity)
     return id;
 }
 
-static inline Rectangle es_get_entity_quad_tree_area(Entity *entity)
-{
-    // TODO: don't assume it has these components
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-    ColliderComponent *collider = es_get_component(entity, ColliderComponent);
-
-    Rectangle result = {
-        physics->position,
-        collider->size
-    };
-
-    return result;
-}
-
 void *es_impl_add_component(Entity *entity, ComponentType type)
 {
     ASSERT(!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));

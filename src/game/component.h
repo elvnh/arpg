@@ -5,7 +5,6 @@
 #include "asset.h"
 
 #define COMPONENT_LIST                          \
-    COMPONENT(PhysicsComponent)                 \
     COMPONENT(ColliderComponent)                \
     COMPONENT(DamageFieldComponent)             \
     COMPONENT(HealthComponent)                  \
@@ -26,11 +25,6 @@ typedef enum {
         COMPONENT_COUNT,
     #undef COMPONENT
 } ComponentType;
-
-typedef struct {
-    Vector2 position;
-    Vector2 velocity;
-} PhysicsComponent;
 
 typedef struct {
     Vector2 size;

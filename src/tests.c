@@ -13,6 +13,7 @@
 #include "base/list.h"
 #include "base/utils.h"
 #include "base/maths.h"
+#include "base/format.h"
 #include "platform.h"
 
 static void tests_arena()
@@ -1204,6 +1205,86 @@ static void tests_sl_list()
     la_destroy(&arena);
 }
 
+static void tests_format()
+{
+    LinearArena arena = la_create(default_allocator, MB(2));
+    Allocator allocator = la_allocator(&arena);
+
+    {
+        s32 n = 0;
+        String str = s32_to_string(n, allocator);
+        ASSERT(str_equal(str, str_lit("0")));
+    }
+
+    {
+        s32 n = 10;
+        String str = s32_to_string(n, allocator);
+        ASSERT(str_equal(str, str_lit("10")));
+    }
+
+    {
+        s32 n = 12345;
+        String str = s32_to_string(n, allocator);
+        ASSERT(str_equal(str, str_lit("12345")));
+    }
+
+    {
+        s32 n = -1;
+        String str = s32_to_string(n, allocator);
+        ASSERT(str_equal(str, str_lit("-1")));
+    }
+
+    {
+        s32 n = -12345;
+        String str = s32_to_string(n, allocator);
+        ASSERT(str_equal(str, str_lit("-12345")));
+    }
+
+    {
+        f32 n = 0.0f;
+        s32 prec = 1;
+        String str = f32_to_string(n, prec, allocator);
+        ASSERT(str_equal(str, str_lit("0.0")));
+    }
+
+    {
+        f32 n = 0.0f;
+        s32 prec = 2;
+        String str = f32_to_string(n, prec, allocator);
+        ASSERT(str_equal(str, str_lit("0.00")));
+    }
+
+    {
+        f32 n = 0.001f;
+        s32 prec = 2;
+        String str = f32_to_string(n, prec, allocator);
+        ASSERT(str_equal(str, str_lit("0.00")));
+    }
+
+    {
+        f32 n = 0.001f;
+        s32 prec = 3;
+        String str = f32_to_string(n, prec, allocator);
+        ASSERT(str_equal(str, str_lit("0.001")));
+    }
+
+    {
+        f32 n = 3.14159f;
+        s32 prec = 5;
+        String str = f32_to_string(n, prec, allocator);
+        ASSERT(str_equal(str, str_lit("3.14159")));
+    }
+
+    {
+        f32 n = -3.14159f;
+        s32 prec = 5;
+        String str = f32_to_string(n, prec, allocator);
+        ASSERT(str_equal(str, str_lit("-3.14159")));
+    }
+
+    la_destroy(&arena);
+}
+
 static void run_tests()
 {
     tests_arena();
@@ -1214,4 +1295,5 @@ static void run_tests()
     tests_path();
     tests_free_list();
     tests_sl_list();
+    tests_format();
 }

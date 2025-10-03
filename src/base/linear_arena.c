@@ -89,6 +89,8 @@ static void *try_allocate_in_top_block(LinearArena *arena, ssize byte_count, ssi
 
 void *alloc_bytes(LinearArena *arena, ssize byte_count, ssize alignment)
 {
+    ASSERT(byte_count > 0);
+
     void *result = try_allocate_in_top_block(arena, byte_count, alignment);
 
     while (!result && arena->top_block->next_block) {

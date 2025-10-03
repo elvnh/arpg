@@ -132,24 +132,21 @@ GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 positio
 
     f32 scale = get_text_scale(font_size);
 
-    // TODO: fix glyph offsets when y dir is down
-
+    // TODO: Properly fix glyph offsets when y dir is down
     Vector2 glyph_size = {
         (quad.x1 - quad.x0) * scale,
         (quad.y1 - quad.y0) * scale,
     };
 
-#if 1
+#if 0
     Vector2 glyph_bottom_left = {
         position.x + char_info.xoff * scale,
         position.y - char_info.yoff2 * scale
     };
 #else
-
-    f32 s = font_get_newline_advance(asset, font_size) * 0.5f;
     Vector2 glyph_bottom_left = {
         position.x + char_info.xoff * scale,
-        position.y + char_info.yoff * scale + s
+        position.y + char_info.yoff * scale + font_get_newline_advance(asset, font_size) * 0.60f
     };
 #endif
 

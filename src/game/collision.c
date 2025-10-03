@@ -114,7 +114,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 static inline ssize collision_rule_hashed_index(EntityPair pair, const CollisionRuleTable *table)
 {
     u64 hash = entity_pair_hash(pair);
-    ssize result = hash_index(hash, ARRAY_COUNT(table->table));
+    ssize result = mod_index(hash, ARRAY_COUNT(table->table));
 
     return result;
 }

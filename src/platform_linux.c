@@ -62,6 +62,14 @@ void platform_poll_events(WindowHandle *window)
     glfwPollEvents();
 }
 
+Vector2i platform_get_window_size(WindowHandle *window)
+{
+    Vector2i result = {0};
+    glfwGetWindowSize(window->window, &result.x, &result.y);
+
+    return result;
+}
+
 /* Input */
 static s32 get_glfw_key_equivalent(Key key)
 {
@@ -69,6 +77,10 @@ static s32 get_glfw_key_equivalent(Key key)
 #define INPUT_KEY(key) case key: return GLFW_##key;
         INPUT_KEY_LIST
 #undef INPUT_KEY
+
+        case MOUSE_LEFT:  return GLFW_MOUSE_BUTTON_LEFT;
+        case MOUSE_RIGHT: return GLFW_MOUSE_BUTTON_RIGHT;
+
         INVALID_DEFAULT_CASE;
     }
 
@@ -80,7 +92,13 @@ static s32 get_glfw_key_equivalent(Key key)
 static Keystate get_current_keystate(Key key, WindowHandle *window)
 {
     s32 glfw_key = get_glfw_key_equivalent(key);
-    s32 state = glfwGetKey(window->window, glfw_key);
+    s32 state = 0;
+
+    if ((key == MOUSE_LEFT) || (key == MOUSE_RIGHT)) {
+        state = glfwGetMouseButton(window->window, glfw_key);
+    } else {
+        state = glfwGetKey(window->window, glfw_key);
+    }
 
     if (state == GLFW_PRESS) {
         return KEYSTATE_PRESSED;
@@ -95,6 +113,7 @@ void platform_update_input(Input *input, WindowHandle *window)
 
     double x, y;
     glfwGetCursorPos(window->window, &x, &y);
+
     input->mouse_position = v2((f32)x, (f32)y);
 
     for (Key key = 0; key < KEY_COUNT; ++key) {
@@ -106,6 +125,11 @@ void platform_update_input(Input *input, WindowHandle *window)
             result = KEYSTATE_HELD;
         } else if ((current == KEYSTATE_UP) && ((previous == KEYSTATE_PRESSED) || (previous == KEYSTATE_HELD))) {
             result = KEYSTATE_RELEASED;
+        }
+
+        if ((key == MOUSE_LEFT) && (result == KEYSTATE_PRESSED)) {
+            // TODO: should this be initialized to -1 before first click?
+            input->mouse_click_position = input->mouse_position;
         }
 
         input->keystates[key] = result;

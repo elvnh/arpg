@@ -17,6 +17,7 @@
 #define CLAMP(n, low, high) ((n) < (low) ? (low) : ((n) > (high) ? (high) : (n)))
 #define DEBUG_BREAK __asm volatile("int3")
 #define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
+#define zero_array(ptr, count) (mem_zero(ptr, count * SIZEOF(*ptr)))
 
 #define UNIMPLEMENTED                                                                     \
     fprintf(stderr, "\n*** UNIMPLEMENTED ***\n%s:\n%s:%d:\n", __func__, FILE_NAME, LINE); \
@@ -152,7 +153,7 @@ static inline b32 f32_in_range(f32 val, f32 low, f32 high, f32 epsilon)
     return result;
 }
 
-static inline ssize hash_index(u64 hash, ssize array_size)
+static inline ssize mod_index(u64 hash, ssize array_size)
 {
     ASSERT(is_pow2(array_size));
 

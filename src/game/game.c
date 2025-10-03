@@ -4,6 +4,7 @@
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
 #include "base/list.h"
+#include "base/matrix.h"
 #include "base/rectangle.h"
 #include "base/sl_list.h"
 #include "base/rgba.h"
@@ -17,6 +18,9 @@
 #include "game/game_world.h"
 #include "game/quad_tree.h"
 #include "game/tilemap.h"
+#include "game/ui/ui_builder.h"
+#include "game/ui/ui_core.h"
+#include "game/ui/widget.h"
 #include "input.h"
 #include "collision.h"
 #include "renderer/render_batch.h"
@@ -39,7 +43,7 @@ static CollisionEvent *collision_table_find(CollisionTable *table, EntityID a, E
 {
     EntityPair searched_pair = entity_pair_create(a, b);
     u64 hash = entity_pair_hash(searched_pair);
-    ssize index = hash_index(hash, table->table_size);
+    ssize index = mod_index(hash, table->table_size);
 
     CollisionList *list = &table->table[index];
 
@@ -58,7 +62,7 @@ static void collision_table_insert(CollisionTable *table, EntityID a, EntityID b
     if (!collision_table_find(table, a, b)) {
         EntityPair entity_pair = entity_pair_create(a, b);
         u64 hash = entity_pair_hash(entity_pair);
-        ssize index = hash_index(hash, table->table_size);
+        ssize index = mod_index(hash, table->table_size);
 
         CollisionEvent *new_node = la_allocate_item(&table->arena, CollisionEvent);
         new_node->entity_pair = entity_pair;
@@ -629,8 +633,8 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
 
     rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shader2, 3);
 
-    rb_push_text(rb, frame_arena, str_lit("Hej"), v2(0, 0), RGBA32_WHITE, 64, assets->shader,
-        assets->default_font, 3);
+    /* rb_push_text(rb, frame_arena, str_lit("Hej"), v2(0, 0), RGBA32_WHITE, 64, assets->shader, */
+    /*     assets->default_font, 3); */
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
@@ -642,6 +646,7 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
     }
 
     world_update(&game_state->world, input, dt, frame_arena);
+
 }
 
 static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
@@ -677,7 +682,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
 {
     Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_width,
 	frame_data.window_height);
-    RenderBatch *rb = rb_list_push_new(rbs, proj, frame_arena);
+    RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_UP, frame_arena);
 
     world_render(&game_state->world, rb, assets, frame_data, frame_arena);
     render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, assets, 0);
@@ -687,11 +692,38 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
     rb_sort_entries(rb);
 }
 
-void game_update_and_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
-    FrameData frame_data, GameMemory *game_memory)
+static void game_update_and_render_ui(UIState *ui)
+{
+    ui_begin_container(ui, str_lit("root"), v2(256, 256), UI_SIZE_KIND_ABSOLUTE, 8.0f);
+
+    static b32 a = true;
+    ui_checkbox(ui, str_lit("Check A"), &a);
+
+    static b32 b = false;
+    ui_checkbox(ui, str_lit("Check B"), &b);
+
+    ui_text(ui, str_lit("Check B"));
+
+    if (ui_button(ui, str_lit("Hello world")).clicked) {
+        printf("Clicked\n");
+    }
+
+    ui_pop_container(ui);
+}
+
+void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
+    const AssetList *assets, FrameData frame_data, GameMemory *game_memory)
 {
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
+
+    ui_core_begin_frame(&game_state->ui);
+
+    game_update_and_render_ui(&game_state->ui);
+
+    Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
+    RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
+    ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, assets, platform_code);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
@@ -701,6 +733,12 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
     game_state->world.previous_frame_collisions = collision_table_create(&game_state->world.world_arena);
     game_state->world.current_frame_collisions = collision_table_create(&game_state->world.world_arena);
+
+    UIStyle default_ui_style = {
+        .font = game_state->font
+    };
+
+    ui_core_initialize(&game_state->ui, default_ui_style, &game_memory->permanent_memory);
 
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {
@@ -739,9 +777,9 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.5f};
         spawner->particle_size = 4.0f;
         spawner->particles_per_second = 500.0f;
-        spawner->particles_to_spawn = 1000.0f;
+        spawner->particles_to_spawn = 100000.0f;
         spawner->particle_lifetime = 1.0f;
-        spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+        //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 
         // TODO: do this automatically
 	es_set_entity_area(&game_state->world.entities, player, rect, &game_state->world.world_arena);

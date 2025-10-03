@@ -85,13 +85,10 @@ static void *get_asset_data(AssetManager *assets, AssetID id, AssetKind kind)
     return 0;
 }
 
-AssetManager assets_initialize(Allocator parent_allocator)
+void assets_initialize(AssetManager *asset_mgr, Allocator parent_allocator)
 {
-    AssetManager result = {0};
-    result.asset_arena = fl_create(parent_allocator, ASSET_ARENA_SIZE);
-    result.next_asset_id = FIRST_VALID_ASSET_ID;
-
-    return result;
+    asset_mgr->asset_arena = fl_create(parent_allocator, ASSET_ARENA_SIZE);
+    asset_mgr->next_asset_id = FIRST_VALID_ASSET_ID;
 }
 
 AssetSlot *assets_get_asset_by_path(AssetManager *assets, String path, LinearArena *scratch)

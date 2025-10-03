@@ -21,7 +21,7 @@ typedef struct {
     AssetID id;
 } FontHandle;
 
-typedef struct {
+typedef struct AssetList {
     ShaderHandle shader;
     ShaderHandle shader2;
     TextureHandle texture;

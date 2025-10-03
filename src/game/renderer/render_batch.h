@@ -13,10 +13,11 @@ typedef struct {
     RenderCmdHeader  *data;
 } RenderEntry;
 
-typedef struct {
+typedef struct RenderBatch {
     RenderEntry  entries[512];
     ssize        entry_count;
     Matrix4      projection;
+    YDirection   y_direction; // TODO: get this from projection matrix instead of storing
 } RenderBatch;
 
 typedef struct RenderBatchNode {
@@ -29,7 +30,7 @@ DEFINE_LIST(RenderBatchNode, RenderBatchList);
 
 struct Particle;
 
-RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, LinearArena *arena);
+RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, YDirection y_dir, LinearArena *arena);
 void         rb_sort_entries(RenderBatch *rb);
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer);

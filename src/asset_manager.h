@@ -40,7 +40,7 @@ typedef struct AssetManager {
     FreeListArena asset_arena;
 } AssetManager;
 
-AssetManager      assets_initialize(Allocator parent_allocator);
+void              assets_initialize(AssetManager *asset_mgr, Allocator parent_allocator);
 AssetSlot        *assets_get_asset_by_path(AssetManager *assets, String path, LinearArena *scratch);
 ShaderHandle      assets_register_shader(AssetManager *assets, String name, LinearArena *scratch);
 TextureHandle     assets_register_texture(AssetManager *assets, String name, LinearArena *scratch);

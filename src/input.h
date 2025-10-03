@@ -27,6 +27,10 @@ typedef enum {
 #define INPUT_KEY(key) key,
 typedef enum {
     INPUT_KEY_LIST
+
+    MOUSE_LEFT,
+    MOUSE_RIGHT,
+
     KEY_COUNT
 } Key;
 #undef INPUT_KEY
@@ -36,7 +40,13 @@ typedef struct Input {
     Keystate previous_keystates[KEY_COUNT];
     f32 scroll_delta;
     Vector2 mouse_position;
+    Vector2 mouse_click_position;
 } Input;
+
+static inline void input_initialize(Input *input)
+{
+    input->mouse_click_position = v2(-1.0f, -1.0f);
+}
 
 static inline Keystate input_get_key(const Input *input, Key key)
 {
@@ -78,6 +88,5 @@ static inline b32 input_is_key_down(const Input *input, Key key)
 
     return result;
 }
-
 
 #endif //INPUT_H

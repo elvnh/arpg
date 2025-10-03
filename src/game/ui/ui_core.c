@@ -209,7 +209,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
         RGBA32 color = {0, 1.0f, 0.1f, 0.3f};
 
         if (widget_has_flag(widget, WIDGET_COLORED)) {
-            color = (RGBA32){0, 0, 1, 0.5f};
+            color = widget->color;
         }
 
         Rectangle rect = widget_get_bounding_box(widget);
@@ -281,6 +281,15 @@ Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id)
     return widget;
 }
 
+Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id)
+{
+    Widget *widget = ui_core_create_widget(ui, size, id);
+    widget_add_flag(widget, WIDGET_COLORED);
+    widget->color = color;
+
+    return widget;
+}
+
 void ui_core_push_as_container(UIState *ui, Widget *widget)
 {
     WidgetContainer *container = la_allocate_item(get_frame_arena(ui), WidgetContainer);
@@ -288,7 +297,7 @@ void ui_core_push_as_container(UIState *ui, Widget *widget)
     sl_list_push_front(&ui->container_stack, container);
 }
 
-// TODO: not needed implement, in terms of ui_core_push_as_container
+// TODO: not needed, implement in builder code that creates windows, groups etc
 void ui_core_begin_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 padding)
 {
     Widget *widget = ui_core_create_widget(ui, size, debug_id_counter++);

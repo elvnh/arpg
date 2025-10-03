@@ -56,11 +56,14 @@ typedef struct Widget {
     struct Widget   *next_in_hash;
     struct Widget   *next_sibling;
 
+    /* Flag specific variables */
     struct {
         String string;
         FontHandle font;
         s32 size;
     } text;
+
+    RGBA32 color;
 } Widget;
 
 static inline b32 widget_has_flag(const Widget *widget, WidgetFlag flag)

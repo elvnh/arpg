@@ -699,12 +699,12 @@ static void game_update_and_render_ui(UIState *ui)
     static b32 a = true;
     ui_checkbox(ui, &a);
     ui_core_same_line(ui);
-    ui_label(ui, str_lit("Check A"));
+    ui_text(ui, str_lit("Check A"));
 
     static b32 b = false;
     ui_checkbox(ui, &b);
     ui_core_same_line(ui);
-    ui_label(ui, str_lit("Check B"));
+    ui_text(ui, str_lit("Check B"));
 
     ui_core_end_container(ui);
 }

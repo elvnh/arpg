@@ -199,7 +199,7 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
             .size = collider->size
         };
 
-        rb_push_rect(rb, scratch, rect, entity->color, assets->shader2, RENDER_LAYER_ENTITIES);
+        rb_push_rect(rb, scratch, rect, entity->color, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ParticleSpawner))) {
@@ -211,13 +211,13 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
 
 
         // TODO: particle size
-        rb_push_rect(rb, scratch, rect, color, assets->shader2, RENDER_LAYER_ENTITIES);
+        rb_push_rect(rb, scratch, rect, color, assets->shape_shader, RENDER_LAYER_ENTITIES);
 
         if (ps->texture.id == NULL_TEXTURE.id) {
             ASSERT(ps->particle_color.a != 0.0f);
 
             rb_push_particles(rb, scratch, ps->particle_array, ps->particle_array_count,
-                ps->particle_color, ps->particle_size, assets->shader2, RENDER_LAYER_PARTICLES);
+                ps->particle_color, ps->particle_size, assets->shape_shader, RENDER_LAYER_PARTICLES);
         } else {
             // If color isn't set, assume it to be white
             RGBA32 particle_color = ps->particle_color;
@@ -226,7 +226,7 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
             }
 
             rb_push_particles_textured(rb, scratch, ps->particle_array, ps->particle_array_count,
-                assets->texture, particle_color, ps->particle_size, assets->shader, RENDER_LAYER_PARTICLES);
+                assets->default_texture, particle_color, ps->particle_size, assets->texture_shader, RENDER_LAYER_PARTICLES);
         }
     }
 }
@@ -582,6 +582,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
     swap_and_reset_collision_tables(world);
 }
 
+// TODO: this shouldn't need AssetList parameter?
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena)
 {
@@ -618,7 +619,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
                 .size = { (f32)TILE_SIZE, (f32)TILE_SIZE }
             };
 
-            rb_push_rect(rb, frame_arena, tile_rect, color, assets->shader2, RENDER_LAYER_TILEMAP);
+            rb_push_rect(rb, frame_arena, tile_rect, color, assets->shape_shader, RENDER_LAYER_TILEMAP);
         }
     }
 
@@ -631,7 +632,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         entity_render(entity, rb, assets, frame_arena);
     }
 
-    rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shader2, 3);
+    rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shape_shader, 3);
 
     /* rb_push_text(rb, frame_arena, str_lit("Hej"), v2(0, 0), RGBA32_WHITE, 64, assets->shader, */
     /*     assets->default_font, 3); */
@@ -672,22 +673,21 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
 	ASSERT(depth < ARRAY_COUNT(colors));
 
 	RGBA32 color = colors[depth];
-	rb_push_outlined_rect(rb, arena, tree->area, color, 4.0f, assets->shader2, 2);
+	rb_push_outlined_rect(rb, arena, tree->area, color, 4.0f, assets->shape_shader, 2);
 
     }
 }
 
-static void game_render(GameState *game_state, RenderBatchList *rbs, const AssetList *assets,
-    FrameData frame_data, LinearArena *frame_arena)
+static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData frame_data, LinearArena *frame_arena)
 {
     Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_width,
 	frame_data.window_height);
     RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_UP, frame_arena);
 
-    world_render(&game_state->world, rb, assets, frame_data, frame_arena);
-    render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, assets, 0);
+    world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena);
+    render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
 
-    rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, assets->shader2, 3);
+    rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, game_state->asset_list.shape_shader, 3);
 
     rb_sort_entries(rb);
 }
@@ -712,10 +712,10 @@ static void game_update_and_render_ui(UIState *ui)
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
-    const AssetList *assets, FrameData frame_data, GameMemory *game_memory)
+    FrameData frame_data, GameMemory *game_memory)
 {
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
-    game_render(game_state, rbs, assets, frame_data, &game_memory->temporary_memory);
+    game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);
 
     ui_core_begin_frame(&game_state->ui);
 
@@ -723,7 +723,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
     Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
     RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
-    ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, assets, platform_code);
+    ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, &game_state->asset_list, platform_code);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
@@ -735,7 +735,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     game_state->world.current_frame_collisions = collision_table_create(&game_state->world.world_arena);
 
     UIStyle default_ui_style = {
-        .font = game_state->font
+        .font = game_state->asset_list.default_font
     };
 
     ui_core_initialize(&game_state->ui, default_ui_style, &game_memory->permanent_memory);

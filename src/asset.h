@@ -22,10 +22,9 @@ typedef struct {
 } FontHandle;
 
 typedef struct AssetList {
-    ShaderHandle shader;
-    ShaderHandle shader2;
-    TextureHandle texture;
-    TextureHandle white_texture;
+    ShaderHandle texture_shader;
+    ShaderHandle shape_shader;
+    TextureHandle default_texture;
     FontHandle default_font;
 } AssetList;
 

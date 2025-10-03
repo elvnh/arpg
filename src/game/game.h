@@ -16,10 +16,7 @@
 typedef struct {
     GameWorld world;
     UIState ui;
-
-    // TODO: these shouldn't be here
-    TextureHandle texture;
-    FontHandle font;
+    AssetList asset_list;
 } GameState;
 
 typedef struct {
@@ -35,7 +32,7 @@ typedef struct {
 } GameMemory;
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
-    const AssetList *assets, FrameData frame_data, GameMemory *game_memory);
+    FrameData frame_data, GameMemory *game_memory);
 void game_initialize(GameState *game_state, GameMemory *game_memory);
 
 #endif //GAME_H

@@ -213,12 +213,12 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
         }
 
         Rectangle rect = widget_get_bounding_box(widget);
-        rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, color, assets->shader2, depth);
+        rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, color, assets->shape_shader, depth);
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
             // TODO: allow changing font size
             rb_push_text(rb, arena, widget->text.string, widget->final_position, RGBA32_WHITE, 12,
-                assets->shader, widget->text.font, depth);
+                assets->texture_shader, widget->text.font, depth);
         }
     }
 

@@ -65,11 +65,10 @@ int main()
 
     assets_initialize(&asset_mgr, la_allocator(&game_memory.permanent_memory));
 
-    AssetList asset_list = {
-        .shader = assets_register_shader(&asset_mgr, str_lit("shader.glsl"), &game_memory.temporary_memory),
-        .shader2 = assets_register_shader(&asset_mgr, str_lit("shader2.glsl"), &game_memory.temporary_memory),
-        .texture = assets_register_texture(&asset_mgr, str_lit("test.png"), &game_memory.temporary_memory),
-        .white_texture = assets_register_texture(&asset_mgr, str_lit("white.png"), &game_memory.temporary_memory),
+    game_state->asset_list = (AssetList){
+        .texture_shader = assets_register_shader(&asset_mgr, str_lit("shader.glsl"), &game_memory.temporary_memory),
+        .shape_shader = assets_register_shader(&asset_mgr, str_lit("shader2.glsl"), &game_memory.temporary_memory),
+        .default_texture = assets_register_texture(&asset_mgr, str_lit("test.png"), &game_memory.temporary_memory),
         .default_font = assets_register_font(&asset_mgr, str_lit("Ubuntu-M.ttf"), &game_memory.temporary_memory)
     };
 
@@ -90,10 +89,8 @@ int main()
     f32 time_point_last = platform_get_seconds_since_launch();
     f32 time_point_new = time_point_last;
 
+    // TODO: do this some other way
     platform_set_scroll_value_storage(&input.scroll_delta, window);
-
-    game_state->texture = asset_list.texture;
-    game_state->font = asset_list.default_font;
 
 #if HOT_RELOAD
     game_code.initialize(game_state, &game_memory);
@@ -130,7 +127,7 @@ int main()
         list_clear(&render_batches);
 
 #if HOT_RELOAD
-        game_code.update_and_render(game_state, platform_code, &render_batches, &asset_list, frame_data, &game_memory);
+        game_code.update_and_render(game_state, platform_code, &render_batches, frame_data, &game_memory);
 #else
         game_update_and_render(game_state, platform_code, &render_batches, &asset_list, frame_data, &game_memory);
 #endif

@@ -1,6 +1,7 @@
 #include "game.h"
 #include "asset.h"
 #include "base/allocator.h"
+#include "base/format.h"
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
 #include "base/list.h"
@@ -691,20 +692,48 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
     rb_sort_entries(rb);
 }
 
-static void debug_ui(UIState *ui, DebugState *debug_state)
+static String dbg_arena_usage_string(String name, ssize usage, Allocator allocator)
+{
+    String result = str_concat(
+        name,
+        str_concat(
+            f32_to_string((f32)usage / 1000.0f, 2, allocator),
+            str_lit("KBs"),
+            allocator),
+        allocator
+    );
+
+    return result;
+}
+
+static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory)
 {
     ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
-    ui_checkbox(ui, str_lit("Render quad tree"), &debug_state->quad_tree_overlay);
-    ui_checkbox(ui, str_lit("Render colliders"), &debug_state->render_colliders);
-    ui_checkbox(ui, str_lit("Render origin"), &debug_state->render_origin);
+    ssize temp_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
+    ssize perm_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
+    ssize world_arena_memory_usage = la_get_memory_usage(&game_state->world.world_arena);
+    // TODO: asset memory usage
+
+    Allocator temp_alloc = la_allocator(&game_memory->temporary_memory);
+    String temp_arena_str = dbg_arena_usage_string(str_lit("Frame arena: "), temp_arena_memory_usage, temp_alloc);
+    String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena: "), perm_arena_memory_usage, temp_alloc);
+    String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, temp_alloc);
+
+    ui_text(ui, temp_arena_str);
+    ui_text(ui, perm_arena_str);
+    ui_text(ui, world_arena_str);
+
+    ui_checkbox(ui, str_lit("Render quad tree"), &game_state->debug_state.quad_tree_overlay);
+    ui_checkbox(ui, str_lit("Render colliders"), &game_state->debug_state.render_colliders);
+    ui_checkbox(ui, str_lit("Render origin"),    &game_state->debug_state.render_origin);
 
     ui_pop_container(ui);
 }
 
-static void game_update_and_render_ui(UIState *ui, DebugState *debug_state)
+static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMemory *game_memory)
 {
-    debug_ui(ui, debug_state);
+    debug_ui(ui, game_state, game_memory);
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
@@ -720,7 +749,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     if (game_state->debug_state.debug_menu_active) {
         ui_core_begin_frame(&game_state->ui);
 
-        game_update_and_render_ui(&game_state->ui, &game_state->debug_state);
+        game_update_and_render_ui(&game_state->ui, game_state, game_memory);
 
         Matrix4 proj = mat4_orthographic(frame_data.window_size, Y_IS_DOWN);
         RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);

@@ -63,7 +63,6 @@ int main()
 
     run_tests();
 
-    return 0;
     WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
 	WINDOW_FLAG_NON_RESIZABLE, la_allocator(&game_memory.permanent_memory));
     RendererBackend *backend = renderer_backend_initialize(la_allocator(&game_memory.permanent_memory));
@@ -110,6 +109,7 @@ int main()
         f32 dt = time_point_new - time_point_last;
         time_point_last = time_point_new;
 
+        // TODO: should this be reset here or in game?
         la_reset(&game_memory.temporary_memory);
 
         file_watcher_reload_modified_assets(&asset_watcher, &asset_mgr, &game_memory.temporary_memory);

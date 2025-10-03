@@ -187,7 +187,9 @@ static void calculate_widget_interactions(Widget *widget, const Input *input)
         ASSERT(widget->final_size.y);
 
         Rectangle rect = widget_get_bounding_box(widget);
-        if (rect_contains_point(rect, input->mouse_position) && input_is_key_released(input, MOUSE_LEFT)) {
+        if (input_is_key_released(input, MOUSE_LEFT)
+            && rect_contains_point(rect, input->mouse_position)
+            && rect_contains_point(rect, input->mouse_click_position)) {
             widget->interaction_state.clicked = true;
         }
     }

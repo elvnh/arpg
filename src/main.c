@@ -91,6 +91,7 @@ int main()
 #endif
 
     Input input = {0};
+    input_initialize(&input);
 
     AssetWatcherContext asset_watcher = {0};
     file_watcher_start(&asset_watcher);

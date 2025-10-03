@@ -5,12 +5,12 @@
 #include "renderer/renderer_backend.h"
 
 // TODO: dynamically decide size of atlas
-#define FONT_ATLAS_WIDTH             1024
-#define FONT_ATLAS_HEIGHT            1024
+#define FONT_ATLAS_WIDTH             2048
+#define FONT_ATLAS_HEIGHT            2048
 #define FONT_FIRST_CHAR              ' '
 #define FONT_LAST_CHAR               '~'
 #define FONT_CHAR_COUNT              (FONT_LAST_CHAR - FONT_FIRST_CHAR)
-#define FONT_RASTERIZED_SIZE         64
+#define FONT_RASTERIZED_SIZE         128
 
 struct FontAsset {
     TextureHandle        texture_handle;
@@ -139,10 +139,19 @@ GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 positio
         (quad.y1 - quad.y0) * scale,
     };
 
+#if 1
     Vector2 glyph_bottom_left = {
         position.x + char_info.xoff * scale,
         position.y - char_info.yoff2 * scale
     };
+#else
+
+    f32 s = font_get_newline_advance(asset, font_size) * 0.5f;
+    Vector2 glyph_bottom_left = {
+        position.x + char_info.xoff * scale,
+        position.y + char_info.yoff * scale + s
+    };
+#endif
 
     Vertex tl = {
         v2_add(glyph_bottom_left, v2(0.0f, glyph_size.y)),

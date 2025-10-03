@@ -40,7 +40,13 @@ typedef struct Input {
     Keystate previous_keystates[KEY_COUNT];
     f32 scroll_delta;
     Vector2 mouse_position;
+    Vector2 mouse_click_position;
 } Input;
+
+static inline void input_initialize(Input *input)
+{
+    input->mouse_click_position = v2(-1.0f, -1.0f);
+}
 
 static inline Keystate input_get_key(const Input *input, Key key)
 {

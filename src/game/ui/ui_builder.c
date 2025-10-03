@@ -37,7 +37,7 @@ WidgetInteraction ui_checkbox(UIState *ui, b32 *b)
 {
     ASSERT(b);
 
-    Widget *widget = ui_core_colored_box(ui, v2(32, 32), RGBA32_WHITE, debug_id_counter++);
+    Widget *widget = ui_core_colored_box(ui, v2(12, 12), RGBA32_WHITE, debug_id_counter++);
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget->child_padding = 2.0f;
 

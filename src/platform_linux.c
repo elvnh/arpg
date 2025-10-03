@@ -127,6 +127,11 @@ void platform_update_input(Input *input, WindowHandle *window)
             result = KEYSTATE_RELEASED;
         }
 
+        if ((key == MOUSE_LEFT) && (result == KEYSTATE_PRESSED)) {
+            // TODO: should this be initialized to -1 before first click?
+            input->mouse_click_position = input->mouse_position;
+        }
+
         input->keystates[key] = result;
     }
 }

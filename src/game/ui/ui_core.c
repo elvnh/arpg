@@ -172,6 +172,8 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
             widget->text.string, widget->text.size);
     }
 
+    ASSERT(widget->final_size.x > 0.0f);
+    ASSERT(widget->final_size.y > 0.0f);
 }
 
 static void calculate_widget_interactions(Widget *widget, const Input *input)

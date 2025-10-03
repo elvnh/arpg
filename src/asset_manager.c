@@ -194,12 +194,7 @@ TextureHandle assets_register_texture(AssetManager *assets, String name, LinearA
 
 static FontAsset *load_asset_data_font(AssetManager *assets, String path, LinearArena *scratch)
 {
-    FontAsset *result = 0;
-    Span file_contents = platform_read_entire_file(path, la_allocator(scratch), scratch);
-
-    if (file_contents.data && file_contents.size) {
-        result = font_create_atlas(file_contents, assets, fl_allocator(&assets->asset_arena), scratch);
-    }
+    FontAsset *result = font_create_atlas(path, assets, fl_allocator(&assets->asset_arena), scratch);
 
     return result;
 }

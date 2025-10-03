@@ -2,6 +2,7 @@
 
 #include "font.h"
 #include "asset_manager.h"
+#include "platform.h"
 #include "renderer/renderer_backend.h"
 
 // TODO: dynamically decide size of atlas
@@ -13,6 +14,7 @@
 #define FONT_RASTERIZED_SIZE         128
 
 struct FontAsset {
+    Span                 font_file_buffer; // NOTE: Must stay loaded
     TextureHandle        texture_handle;
     stbtt_fontinfo       font_info;
     stbtt_packedchar     glyph_metrics[FONT_CHAR_COUNT];
@@ -20,11 +22,17 @@ struct FontAsset {
 };
 
 // TODO: Most calculations in this file are pretty hacky, fix them
-
-FontAsset *font_create_atlas(Span font_file_contents, struct AssetManager *assets, Allocator allocator,
+FontAsset *font_create_atlas(String font_path, struct AssetManager *assets, Allocator allocator,
     LinearArena *scratch)
 {
     FontAsset *result = allocate_item(allocator, FontAsset);
+    Span font_file_contents = platform_read_entire_file(font_path, allocator, scratch);
+
+    if (!font_file_contents.data) {
+        goto error;
+    }
+
+    result->font_file_buffer = font_file_contents;
 
     if (!stbtt_InitFont(&result->font_info, font_file_contents.data, 0)) {
         goto error;
@@ -80,7 +88,6 @@ FontAsset *font_create_atlas(Span font_file_contents, struct AssetManager *asset
 
   error:
     ASSERT(0);
-
     font_destroy_atlas(result, allocator);
 
     return 0;
@@ -88,6 +95,11 @@ FontAsset *font_create_atlas(Span font_file_contents, struct AssetManager *asset
 
 void font_destroy_atlas(FontAsset *asset, Allocator allocator)
 {
+    ASSERT(asset);
+
+    if (asset->font_file_buffer.data) {
+        deallocate(allocator, asset->font_file_buffer.data);
+    }
     deallocate(allocator, asset);
 }
 
@@ -219,6 +231,9 @@ Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
 
     result.x *= width_scale;
     result.y *= height_scale;
+
+    ASSERT(result.x > 0.0f);
+    ASSERT(result.y > 0.0f);
 
     return result;
 }

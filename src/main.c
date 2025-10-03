@@ -40,6 +40,8 @@ static Vector2 get_text_dimensions(FontHandle font_handle, String text, s32 text
 {
     FontAsset *asset = assets_get_font(&asset_mgr, font_handle);
     Vector2 result = font_get_text_dimensions(asset, text, text_size);
+    ASSERT(result.x > 0.0f);
+    ASSERT(result.y > 0.0f);
     //printf("%.2f, %.2f\n", (f64)result.x, (f64)result.y);
 
     return result;
@@ -129,7 +131,7 @@ int main()
 #if HOT_RELOAD
         game_code.update_and_render(game_state, platform_code, &render_batches, frame_data, &game_memory);
 #else
-        game_update_and_render(game_state, platform_code, &render_batches, &asset_list, frame_data, &game_memory);
+        game_update_and_render(game_state, platform_code, &render_batches, frame_data, &game_memory);
 #endif
 
         for (RenderBatchNode *node = list_head(&render_batches); node; node = list_next(node)) {

@@ -32,7 +32,7 @@ typedef struct {
     f32    advance_x;
 } GlyphVertices;
 
-FontAsset     *font_create_atlas(Span font_file, struct AssetManager *assets, Allocator allocator, LinearArena *scratch);
+FontAsset     *font_create_atlas(String font_path, struct AssetManager *assets, Allocator allocator, LinearArena *scratch);
 void           font_destroy_atlas(FontAsset *asset, Allocator allocator);
 TextureHandle  font_get_texture_handle(FontAsset *asset);
 GlyphVertices  font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 font_size, RGBA32 color,

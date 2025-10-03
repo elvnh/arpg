@@ -188,9 +188,11 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
     }
 }
 
-static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
+static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
+                         DebugState *debug_state)
 {
-    if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ColliderComponent))) {
+    if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ColliderComponent))
+       && debug_state->render_colliders) {
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
@@ -203,15 +205,7 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
     }
 
     if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ParticleSpawner))) {
-        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-        RGBA32 color = {0, 1, 0, 0.8f};
-        Rectangle rect = {physics->position, v2(16, 16)};
-
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
-
-
-        // TODO: particle size
-        rb_push_rect(rb, scratch, rect, color, assets->shape_shader, RENDER_LAYER_ENTITIES);
 
         if (ps->texture.id == NULL_TEXTURE.id) {
             ASSERT(ps->particle_color.a != 0.0f);
@@ -584,7 +578,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
 
 // TODO: this shouldn't need AssetList parameter?
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
-    LinearArena *frame_arena)
+    LinearArena *frame_arena, DebugState *debug_state)
 {
     // TODO: only render visible part of tilemap
     s32 min_x = world->tilemap.min_x;
@@ -629,7 +623,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
     for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {
         Entity *entity = es_get_entity(&world->entities, node->id);
 
-        entity_render(entity, rb, assets, frame_arena);
+        entity_render(entity, rb, assets, frame_arena, debug_state);
     }
 
     rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shape_shader, 3);
@@ -684,31 +678,34 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
 	frame_data.window_height);
     RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_UP, frame_arena);
 
-    world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena);
-    render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
+    world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena, &game_state->debug_state);
 
-    rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, game_state->asset_list.shape_shader, 3);
+    if (game_state->debug_state.quad_tree_overlay) {
+        render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
+    }
+
+    if (game_state->debug_state.render_origin) {
+        rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, game_state->asset_list.shape_shader, 3);
+    }
 
     rb_sort_entries(rb);
 }
 
-static void game_update_and_render_ui(UIState *ui)
+static void debug_ui(UIState *ui, DebugState *debug_state)
 {
     ui_begin_container(ui, str_lit("root"), v2(256, 256), UI_SIZE_KIND_ABSOLUTE, 8.0f);
 
-    static b32 a = true;
-    ui_checkbox(ui, str_lit("Check A"), &a);
-
-    static b32 b = false;
-    ui_checkbox(ui, str_lit("Check B"), &b);
-
-    ui_text(ui, str_lit("Check B"));
-
-    if (ui_button(ui, str_lit("Hello world")).clicked) {
-        printf("Clicked\n");
-    }
+    ui_checkbox(ui, str_lit("Render quad tree"), &debug_state->quad_tree_overlay);
+    ui_checkbox(ui, str_lit("Render colliders"), &debug_state->render_colliders);
+    ui_checkbox(ui, str_lit("Render origin"), &debug_state->render_origin);
 
     ui_pop_container(ui);
+}
+
+static void game_update_and_render_ui(UIState *ui, DebugState *debug_state)
+{
+    debug_ui(ui, debug_state);
+
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
@@ -717,13 +714,19 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);
 
-    ui_core_begin_frame(&game_state->ui);
+    if (input_is_key_pressed(frame_data.input, KEY_T)) {
+        game_state->debug_state.debug_menu_active = !game_state->debug_state.debug_menu_active;
+    }
 
-    game_update_and_render_ui(&game_state->ui);
+    if (game_state->debug_state.debug_menu_active) {
+        ui_core_begin_frame(&game_state->ui);
 
-    Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
-    RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
-    ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, &game_state->asset_list, platform_code);
+        game_update_and_render_ui(&game_state->ui, &game_state->debug_state);
+
+        Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
+        RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
+        ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, &game_state->asset_list, platform_code);
+    }
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)

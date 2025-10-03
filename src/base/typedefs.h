@@ -30,6 +30,7 @@ typedef size_t    usize;
 typedef ptrdiff_t ssize; // TODO: ssize -> size?
 
 typedef unsigned char byte;
+typedef s8  b8;
 typedef s32 b32;
 
 typedef float  f32;

@@ -14,9 +14,17 @@
  */
 
 typedef struct {
+    b32 debug_menu_active;
+    b32 quad_tree_overlay;
+    b32 render_colliders;
+    b32 render_origin;
+} DebugState;
+
+typedef struct {
     GameWorld world;
     UIState ui;
     AssetList asset_list;
+    DebugState debug_state;
 } GameState;
 
 typedef struct {

@@ -14,6 +14,8 @@
   - Layout stack, keep track of next position etc
  */
 
+#define UI_NULL_WIDGET_ID 0
+
 extern WidgetID debug_id_counter;
 
 struct Input;
@@ -65,5 +67,6 @@ Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id);
 Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id);
 WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widget);
 void ui_core_same_line(UIState *ui);
+WidgetID ui_core_hash_string(String text);
 
 #endif //UI_H

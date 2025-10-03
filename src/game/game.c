@@ -43,7 +43,7 @@ static CollisionEvent *collision_table_find(CollisionTable *table, EntityID a, E
 {
     EntityPair searched_pair = entity_pair_create(a, b);
     u64 hash = entity_pair_hash(searched_pair);
-    ssize index = hash_index(hash, table->table_size);
+    ssize index = mod_index(hash, table->table_size);
 
     CollisionList *list = &table->table[index];
 
@@ -62,7 +62,7 @@ static void collision_table_insert(CollisionTable *table, EntityID a, EntityID b
     if (!collision_table_find(table, a, b)) {
         EntityPair entity_pair = entity_pair_create(a, b);
         u64 hash = entity_pair_hash(entity_pair);
-        ssize index = hash_index(hash, table->table_size);
+        ssize index = mod_index(hash, table->table_size);
 
         CollisionEvent *new_node = la_allocate_item(&table->arena, CollisionEvent);
         new_node->entity_pair = entity_pair;
@@ -697,14 +697,16 @@ static void game_update_and_render_ui(UIState *ui)
     ui_core_begin_container(ui, v2(256, 256), UI_SIZE_KIND_ABSOLUTE, 8.0f);
 
     static b32 a = true;
-    ui_checkbox(ui, &a);
-    ui_core_same_line(ui);
-    ui_text(ui, str_lit("Check A"));
+    ui_checkbox(ui, str_lit("Check A"), &a);
 
     static b32 b = false;
-    ui_checkbox(ui, &b);
-    ui_core_same_line(ui);
+    ui_checkbox(ui, str_lit("Check B"), &b);
+
     ui_text(ui, str_lit("Check B"));
+
+    if (ui_button(ui, str_lit("Hello world")).clicked) {
+        printf("Clicked\n");
+    }
 
     ui_core_end_container(ui);
 }

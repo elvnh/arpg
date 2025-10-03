@@ -6,6 +6,7 @@
 
 #include "asset.h"
 #include "base/free_list_arena.h"
+#include "base/hash.h"
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
 #include "base/string8.h"

@@ -7,7 +7,7 @@
 #include "base/rectangle.h"
 #include "asset.h"
 
-typedef u32 WidgetID;
+typedef u64 WidgetID;
 
 typedef enum {
     WIDGET_CLICKABLE = (1u << 0),

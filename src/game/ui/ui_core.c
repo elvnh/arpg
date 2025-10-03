@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "base/hash.h"
 #include "game/ui/widget.h"
 #include "ui_core.h"
 #include "base/linear_arena.h"
@@ -14,7 +15,7 @@
 #define DEFAULT_LAYOUT_AXIS UI_LAYOUT_VERTICAL
 
 // TODO: get rid of this
-WidgetID debug_id_counter = 0;
+WidgetID debug_id_counter;
 
 WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 {
@@ -28,7 +29,7 @@ WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 
 static Widget *widget_frame_table_find(WidgetFrameTable *table, WidgetID id)
 {
-    ssize index = hash_index(id, table->entry_table_size);
+    ssize index = mod_index(id, table->entry_table_size);
 
     WidgetList *list = &table->entries[index];
 
@@ -45,9 +46,10 @@ static Widget *widget_frame_table_find(WidgetFrameTable *table, WidgetID id)
 
 static void widget_frame_table_push(WidgetFrameTable *table, Widget *widget)
 {
-    ASSERT(!widget_frame_table_find(table, widget->id));
+    ASSERT((widget->id == UI_NULL_WIDGET_ID || !widget_frame_table_find(table, widget->id))
+        && "Hash collision");
 
-    ssize index = hash_index(widget->id, table->entry_table_size);
+    ssize index = mod_index(widget->id, table->entry_table_size);
     sl_list_push_back_x(&table->entries[index], widget, next_in_hash);
 }
 
@@ -75,7 +77,7 @@ void ui_core_begin_frame(UIState *ui)
         la_reset(&ui->current_frame_widgets.arena);
     }
 
-    debug_id_counter = 0;
+    debug_id_counter = UI_NULL_WIDGET_ID + 1;
     ui->root_widget = 0;
 }
 
@@ -302,6 +304,7 @@ void ui_core_push_as_container(UIState *ui, Widget *widget)
 // TODO: not needed, implement in builder code that creates windows, groups etc
 void ui_core_begin_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 padding)
 {
+    // TODO: use hashed string id
     Widget *widget = ui_core_create_widget(ui, size, debug_id_counter++);
     widget->child_padding = padding;
     widget->size_kind = size_kind;
@@ -330,4 +333,12 @@ WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widg
 void ui_core_same_line(UIState *ui)
 {
     ui->current_layout_axis = UI_LAYOUT_HORIZONTAL;
+}
+
+WidgetID ui_core_hash_string(String text)
+{
+    // TODO: hash but don't make visible things after ##
+    WidgetID result = hash_string(text);
+
+    return result;
 }

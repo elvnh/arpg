@@ -715,14 +715,27 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ssize world_arena_memory_usage = la_get_memory_usage(&game_state->world.world_arena);
     // TODO: asset memory usage
 
+
     Allocator temp_alloc = la_allocator(&game_memory->temporary_memory);
+
     String temp_arena_str = dbg_arena_usage_string(str_lit("Frame arena: "), temp_arena_memory_usage, temp_alloc);
     String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena: "), perm_arena_memory_usage, temp_alloc);
     String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, temp_alloc);
 
+    ssize qt_nodes = qt_get_node_count(&game_state->world.entities.quad_tree);
+    String node_string = str_concat(str_lit("Quad tree nodes: "), s32_to_string(qt_nodes, temp_alloc), temp_alloc);
+
+    String entity_string = str_concat(
+        str_lit("Alive entity count: "),
+        s32_to_string(game_state->world.entities.alive_entity_count, temp_alloc),
+        temp_alloc
+    );
+
     ui_text(ui, temp_arena_str);
     ui_text(ui, perm_arena_str);
     ui_text(ui, world_arena_str);
+    ui_text(ui, node_string);
+    ui_text(ui, entity_string);
 
     ui_checkbox(ui, str_lit("Render quad tree"), &game_state->debug_state.quad_tree_overlay);
     ui_checkbox(ui, str_lit("Render colliders"), &game_state->debug_state.render_colliders);

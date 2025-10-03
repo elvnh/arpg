@@ -164,3 +164,26 @@ EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *
 
     return result;
 }
+
+static ssize qt_get_node_count_recursive(const QuadTree *qt, const QuadTreeNode *node)
+{
+    ssize result = 0;
+
+    if (node) {
+        result = 1;
+
+        result += qt_get_node_count_recursive(qt, node->top_left);
+        result += qt_get_node_count_recursive(qt, node->top_right);
+        result += qt_get_node_count_recursive(qt, node->bottom_right);
+        result += qt_get_node_count_recursive(qt, node->bottom_left);
+    }
+
+    return result;
+}
+
+ssize qt_get_node_count(const QuadTree *qt)
+{
+    ssize result = qt_get_node_count_recursive(qt, &qt->root);
+
+    return result;
+}

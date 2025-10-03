@@ -70,5 +70,6 @@ QuadTreeLocation qt_set_entity_area(QuadTree *qt, EntityID id,
     QuadTreeLocation location, Rectangle area, LinearArena *arena);
 void qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation location);
 EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *arena);
+ssize qt_get_node_count(const QuadTree *qt);
 
 #endif //QUAD_TREE_H

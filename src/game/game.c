@@ -694,7 +694,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Asset
 
 static void game_update_and_render_ui(UIState *ui)
 {
-    ui_core_begin_container(ui, v2(256, 256), UI_SIZE_KIND_ABSOLUTE, 8.0f);
+    ui_begin_container(ui, str_lit("root"), v2(256, 256), UI_SIZE_KIND_ABSOLUTE, 8.0f);
 
     static b32 a = true;
     ui_checkbox(ui, str_lit("Check A"), &a);
@@ -708,7 +708,7 @@ static void game_update_and_render_ui(UIState *ui)
         printf("Clicked\n");
     }
 
-    ui_core_end_container(ui);
+    ui_pop_container(ui);
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,

@@ -23,9 +23,9 @@ WidgetInteraction ui_button(UIState *ui, String text)
     widget->size_kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
     widget->child_padding = 8.0f;
 
-    ui_core_push_as_container(ui, widget);
+    ui_core_push_container(ui, widget);
     ui_text(ui, text);
-    ui_core_end_container(ui);
+    ui_core_pop_container(ui);
 
     WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
     return prev_interaction;
@@ -39,12 +39,12 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget->child_padding = 2.0f;
 
-    ui_core_push_as_container(ui, widget);
+    ui_core_push_container(ui, widget);
 
     Widget *child_box = ui_core_colored_box(ui, v2(1.0f, 1.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID);
     child_box->size_kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
 
-    ui_core_end_container(ui);
+    ui_pop_container(ui);
 
     if (!(*b)) {
         widget_add_flag(child_box, WIDGET_HIDDEN);
@@ -60,4 +60,21 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     }
 
     return prev_interaction;
+}
+
+WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, UISizeKind size_kind, f32 child_padding)
+{
+    Widget *widget = ui_core_create_widget(ui, size, ui_core_hash_string(title));
+    widget->child_padding = child_padding;
+    widget->size_kind = size_kind;
+
+    ui_core_push_container(ui, widget);
+
+    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
+    return prev_interaction;
+}
+
+void ui_pop_container(UIState *ui)
+{
+    ui_core_pop_container(ui);
 }

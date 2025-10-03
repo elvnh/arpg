@@ -14,9 +14,6 @@
 #define FRAME_WIDGET_TABLE_SIZE 1024
 #define DEFAULT_LAYOUT_AXIS UI_LAYOUT_VERTICAL
 
-// TODO: get rid of this
-WidgetID debug_id_counter;
-
 WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 {
     WidgetFrameTable result = {0};
@@ -77,7 +74,6 @@ void ui_core_begin_frame(UIState *ui)
         la_reset(&ui->current_frame_widgets.arena);
     }
 
-    debug_id_counter = UI_NULL_WIDGET_ID + 1;
     ui->root_widget = 0;
 }
 
@@ -294,25 +290,14 @@ Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id
     return widget;
 }
 
-void ui_core_push_as_container(UIState *ui, Widget *widget)
+void ui_core_push_container(UIState *ui, Widget *widget)
 {
     WidgetContainer *container = la_allocate_item(get_frame_arena(ui), WidgetContainer);
     container->widget = widget;
     sl_list_push_front(&ui->container_stack, container);
 }
 
-// TODO: not needed, implement in builder code that creates windows, groups etc
-void ui_core_begin_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 padding)
-{
-    // TODO: use hashed string id
-    Widget *widget = ui_core_create_widget(ui, size, debug_id_counter++);
-    widget->child_padding = padding;
-    widget->size_kind = size_kind;
-
-    ui_core_push_as_container(ui, widget);
-}
-
-void ui_core_end_container(UIState *ui)
+void ui_core_pop_container(UIState *ui)
 {
     ASSERT(!sl_list_is_empty(&ui->container_stack));
     sl_list_pop(&ui->container_stack);
@@ -339,6 +324,7 @@ WidgetID ui_core_hash_string(String text)
 {
     // TODO: hash but don't make visible things after ##
     WidgetID result = hash_string(text);
+    ASSERT(result != UI_NULL_WIDGET_ID);
 
     return result;
 }

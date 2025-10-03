@@ -16,8 +16,6 @@
 
 #define UI_NULL_WIDGET_ID 0
 
-extern WidgetID debug_id_counter;
-
 struct Input;
 struct RenderBatch;
 struct AssetList;
@@ -60,9 +58,8 @@ void ui_core_begin_frame(UIState *ui);
 void ui_core_end_frame(UIState *ui, const struct Input *input, struct RenderBatch *rb, const struct AssetList *assets,
     PlatformCode platform_code);
 void ui_core_set_style(UIState *ui, UIStyle style);
-void ui_core_begin_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 padding);
-void ui_core_end_container(UIState *ui);
-void ui_core_push_as_container(UIState *ui, Widget *widget);
+void ui_core_push_container(UIState *ui, Widget *widget);
+void ui_core_pop_container(UIState *ui);
 Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id);
 Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id);
 WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widget);

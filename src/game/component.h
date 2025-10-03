@@ -10,6 +10,7 @@
     COMPONENT(DamageFieldComponent)             \
     COMPONENT(HealthComponent)                  \
     COMPONENT(ParticleSpawner)                  \
+    COMPONENT(SpriteComponent)                  \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -59,7 +60,7 @@ typedef struct {
 
     f32 particle_timer;
     f32 particles_per_second;
-    TextureHandle texture;
+    TextureHandle particle_texture;
     RGBA32 particle_color;
     f32 particle_size;
     f32 particle_lifetime;
@@ -68,5 +69,10 @@ typedef struct {
     f32 particles_to_spawn;
     ParticleSpawnerWhenDone action_when_done;
 } ParticleSpawner;
+
+typedef struct {
+    TextureHandle texture;
+    Vector2 size;
+} SpriteComponent;
 
 #endif //COMPONENT_H

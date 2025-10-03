@@ -17,6 +17,7 @@
 #include "game/entity_system.h"
 #include "game/game_world.h"
 #include "game/quad_tree.h"
+#include "game/renderer/render_key.h"
 #include "game/tilemap.h"
 #include "game/ui/ui_builder.h"
 #include "game/ui/ui_core.h"
@@ -191,9 +192,18 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
                          DebugState *debug_state)
 {
-    if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ColliderComponent))
-       && debug_state->render_colliders) {
-        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    // TODO: Make this part of the entity rather than component
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    ASSERT(physics);
+
+    if (es_has_component(entity, SpriteComponent)) {
+        SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
+
+        Rectangle sprite_rect = { physics->position, sprite->size };
+        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
+    }
+
+    if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
         Rectangle rect = {
@@ -204,10 +214,10 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
         rb_push_rect(rb, scratch, rect, entity->color, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
-    if (es_has_components(entity, component_flag(PhysicsComponent) | component_flag(ParticleSpawner))) {
+    if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
 
-        if (ps->texture.id == NULL_TEXTURE.id) {
+        if (ps->particle_texture.id == NULL_TEXTURE.id) {
             ASSERT(ps->particle_color.a != 0.0f);
 
             rb_push_particles(rb, scratch, ps->particle_array, ps->particle_array_count,
@@ -753,29 +763,29 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     Rectangle tilemap_area = tilemap_get_bounding_box(&game_state->world.tilemap);
     es_initialize(&game_state->world.entities, tilemap_area);
 
-    for (s32 i = 0; i < 1; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);
-        Entity *player = es_get_entity(&game_state->world.entities, id);
+        Entity *entity = es_get_entity(&game_state->world.entities, id);
 
-        ASSERT(!es_has_component(player, PhysicsComponent));
-        ASSERT(!es_has_component(player, ColliderComponent));
+        ASSERT(!es_has_component(entity, PhysicsComponent));
+        ASSERT(!es_has_component(entity, ColliderComponent));
 
-        player->color = RGBA32_BLUE;
-        PhysicsComponent *physics = es_add_component(player, PhysicsComponent);
+        entity->color = RGBA32_BLUE;
+        PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
         physics->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
 
-        ColliderComponent *collider = es_add_component(player, ColliderComponent);
+        ColliderComponent *collider = es_add_component(entity, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
 
-        HealthComponent *hp = es_add_component(player, HealthComponent);
+        HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->hitpoints = 10;
 
-        ASSERT(es_has_component(player, PhysicsComponent));
-        ASSERT(es_has_component(player, ColliderComponent));
+        ASSERT(es_has_component(entity, PhysicsComponent));
+        ASSERT(es_has_component(entity, ColliderComponent));
 
 	Rectangle rect = get_entity_rect(physics, collider);
 
-        ParticleSpawner *spawner = es_add_component(player, ParticleSpawner);
+        ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
         //spawner->texture = game_state->texture;
         spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.5f};
         spawner->particle_size = 4.0f;
@@ -784,7 +794,11 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         spawner->particle_lifetime = 1.0f;
         //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 
+        SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
+        sprite->texture = game_state->asset_list.default_texture;
+        sprite->size = v2(32, 32);
+
         // TODO: do this automatically
-	es_set_entity_area(&game_state->world.entities, player, rect, &game_state->world.world_arena);
+	es_set_entity_area(&game_state->world.entities, entity, rect, &game_state->world.world_arena);
     }
 }

@@ -79,21 +79,6 @@ void ui_core_begin_frame(UIState *ui)
     ui->root_widget = 0;
 }
 
-static Vector2 get_next_child_position(UILayoutKind layout, Vector2 current_pos, f32 padding, Widget *child)
-{
-    Vector2 result = current_pos;
-
-    if (layout == UI_LAYOUT_VERTICAL) {
-        result.y += child->final_size.y + padding;
-    } else if (layout == UI_LAYOUT_HORIZONTAL) {
-        result.x += child->final_size.x + padding;
-    } else {
-        ASSERT(0);
-    }
-
-    return result;
-}
-
 typedef enum {
     TRAVERSAL_ORDER_PREORDER,
     TRAVERSAL_ORDER_POSTORDER,
@@ -118,10 +103,11 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
 {
     // TODO: these calculations are kind of hacky
     Vector2 next_child_pos = v2_add(widget->final_position, v2(widget->child_padding, widget->child_padding));
-    UILayoutKind prev_layout_dir = 0;
+    f32 current_row_size = 0.0f;
 
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
         calculate_widget_layout(child, next_child_pos, platform_code, widget);
+        current_row_size = MAX(current_row_size, child->final_size.y);
 
         Widget *next = child->next_sibling;
         if (next) {
@@ -129,7 +115,8 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
                 next_child_pos.x += child->final_size.x + widget->child_padding;
             } else {
                 next_child_pos.x = widget->final_position.x + widget->child_padding;
-                next_child_pos.y += child->final_size.y + widget->child_padding;
+                next_child_pos.y += current_row_size + widget->child_padding;
+                current_row_size = 0.0f;
             }
         }
     }
@@ -233,8 +220,6 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
             rb_push_text(rb, arena, widget->text.string, widget->final_position, RGBA32_WHITE, 12,
                 assets->shader, widget->text.font, depth);
         }
-    } else {
-        printf("foo\n");
     }
 
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {

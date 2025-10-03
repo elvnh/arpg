@@ -36,7 +36,7 @@ WidgetInteraction ui_button(UIState *ui, String text)
 WidgetInteraction ui_checkbox(UIState *ui, b32 *b)
 {
     ASSERT(b);
-    Widget *widget = ui_core_create_widget(ui, v2(12, 12), debug_id_counter++);
+    Widget *widget = ui_core_create_widget(ui, v2(32, 32), debug_id_counter++);
     widget_add_flag(widget, WIDGET_COLORED);
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget->child_padding = 2.0f;

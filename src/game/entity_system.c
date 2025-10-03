@@ -1,6 +1,7 @@
 #include "entity_system.h"
 #include "base/linear_arena.h"
 #include "base/sl_list.h"
+#include "game/quad_tree.h"
 
 #define ES_MEMORY_SIZE MB(2)
 
@@ -297,4 +298,10 @@ void es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch)
 void es_schedule_entity_for_removal(Entity *entity)
 {
     entity->is_inactive = true;
+}
+
+EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearArena *arena)
+{
+    EntityIDList result = qt_get_entities_in_area(&es->quad_tree, area, arena);
+    return result;
 }

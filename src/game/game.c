@@ -186,6 +186,8 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
         // NOTE: won't be removed until after this frame
         es_schedule_entity_for_removal(entity);
     }
+
+    //es_update_entity_quad_tree_location(&world->entities, entity, &world->world_arena);
 }
 
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
@@ -319,9 +321,8 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
         CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
             a->velocity, b->velocity, dt);
 
-        if (collision.collision_state != COLL_NOT_COLLIDING) {
-            if (!entities_intersected_this_frame(world, id_a, id_b)
-             && !entities_intersected_previous_frame(world, id_a, id_b)) {
+        if ((collision.collision_state != COLL_NOT_COLLIDING) && !entities_intersected_this_frame(world, id_a, id_b)) {
+            if (!entities_intersected_previous_frame(world, id_a, id_b)) {
                 handle_collision_side_effects(a, b);
             }
 
@@ -361,7 +362,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     s32 min_tile_y = (s32)(min_y / TILE_SIZE);
     s32 max_tile_y = (s32)(max_y / TILE_SIZE);
 
-    // TODO: fix this
+    // TODO: fix this, should only check tiles that exist
     /* min_tile_x = MAX(min_tile_x, world->tilemap.min_x); */
     /* max_tile_x = MIN(max_tile_x, world->tilemap.max_x); */
     /* min_tile_y = MAX(min_tile_y, world->tilemap.min_y); */
@@ -412,9 +413,8 @@ static b32 entities_should_collide(Entity *a, Entity *b)
     return true;
 }
 
-static void handle_collision_and_movement(GameWorld *world, f32 dt)
+static void handle_collision_and_movement(GameWorld *world, f32 dt, LinearArena *frame_arena)
 {
-    // TODO: spatial partition
     // TODO: don't access alive entity array directly
     for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
         // TODO: this seems bug prone
@@ -425,23 +425,43 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt)
         ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
         f32 movement_fraction_left = 1.0f;
 
+        Rectangle collision_area = {0};
+        {
+            // TODO: clean up these calculations
+            Vector2 next_pos = v2_add(a->position, a->velocity);
+            f32 min_x = MIN(a->position.x, next_pos.x);
+            f32 max_x = MAX(a->position.x, next_pos.x) + collider_a->size.x;
+            f32 min_y = MIN(a->position.y, next_pos.y);
+            f32 max_y = MAX(a->position.y, next_pos.y) + collider_a->size.y;
+
+            f32 width = max_x - min_x;
+            f32 height = max_y - min_y;
+
+            collision_area.position.x = min_x;
+            collision_area.position.y = min_y;
+            collision_area.size.x = width;
+            collision_area.size.y = height;
+        }
+
         if (collider_a) {
-            movement_fraction_left = entity_vs_tilemap_collision(a,
-                collider_a, world, movement_fraction_left, dt);
+            movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, world, movement_fraction_left, dt);
 
-            for (EntityIndex j = i + 1; j < world->entities.alive_entity_count; ++j) {
-                EntityID id_b = world->entities.alive_entity_ids[j];
-                Entity *b = es_get_entity(&world->entities, id_b);
+            EntityIDList entities_in_area = es_get_entities_in_area(&world->entities, collision_area, frame_arena);
 
-                ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
+            for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {
+                if (!entity_id_equal(node->id, id_a)) {
+                    Entity *b = es_get_entity(&world->entities, node->id);
 
-                if (!collider_b) {
-                    continue;
-                }
+                    ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
 
-                if (entities_should_collide(a, b)) {
-                    movement_fraction_left = entity_vs_entity_collision(world, a, collider_a,
-                        b, collider_b, movement_fraction_left, dt);
+                    if (!collider_b) {
+                        continue;
+                    }
+
+                    if (entities_should_collide(a, b)) {
+                        movement_fraction_left = entity_vs_entity_collision(world, a, collider_a,
+                            b, collider_b, movement_fraction_left, dt);
+                    }
                 }
             }
 
@@ -545,7 +565,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
         player->velocity = new_velocity;
     }
 
-    handle_collision_and_movement(world, dt);
+    handle_collision_and_movement(world, dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
     EntityIndex entity_count = world->entities.alive_entity_count;
@@ -756,6 +776,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
 	Rectangle rect = get_entity_rect(entity, collider);
 
+#if 0
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
         //spawner->texture = game_state->texture;
         spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.5f};
@@ -764,7 +785,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         spawner->particles_to_spawn = 100000.0f;
         spawner->particle_lifetime = 1.0f;
         //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
-
+#endif
         SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
         sprite->texture = game_state->asset_list.default_texture;
         sprite->size = v2(32, 32);

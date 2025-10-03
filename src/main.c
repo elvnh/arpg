@@ -27,8 +27,8 @@
 #include "hot_reload.h"
 #include "renderer_dispatch.h"
 
-#define WINDOW_WIDTH 768
-#define WINDOW_HEIGHT 468
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 768
 
 #define GAME_MEMORY_SIZE MB(32)
 #define PERMANENT_ARENA_SIZE GAME_MEMORY_SIZE / 2
@@ -60,7 +60,7 @@ int main()
     run_tests();
 
     WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
-	0, la_allocator(&game_memory.permanent_memory));
+	WINDOW_FLAG_NON_RESIZABLE, la_allocator(&game_memory.permanent_memory));
     RendererBackend *backend = renderer_backend_initialize(la_allocator(&game_memory.permanent_memory));
 
     assets_initialize(&asset_mgr, la_allocator(&game_memory.permanent_memory));

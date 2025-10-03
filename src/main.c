@@ -32,8 +32,6 @@
 #define PERMANENT_ARENA_SIZE GAME_MEMORY_SIZE / 2
 #define FRAME_ARENA_SIZE GAME_MEMORY_SIZE / 2
 
-#define GAME_SO_NAME "libgame.so"
-
 int main()
 {
     // TODO: make this use mmap
@@ -64,15 +62,7 @@ int main()
 
 
 #if HOT_RELOAD
-    String executable_dir = platform_get_executable_directory(la_allocator(&game_memory.permanent_memory),
-        &game_memory.temporary_memory);
-    String so_path = str_concat(executable_dir, str_lit("/"GAME_SO_NAME), la_allocator(&game_memory.permanent_memory));
-
-    GameCode game_code = {
-        .game_library_path = str_null_terminate(so_path, la_allocator(&game_memory.permanent_memory)),
-    };
-
-    load_game_code(&game_code, &game_memory.temporary_memory);
+    GameCode game_code = hot_reload_initialize(&game_memory);
 #endif
 
     Input input = {0};

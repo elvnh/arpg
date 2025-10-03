@@ -12,6 +12,7 @@
 #include "base/utils.h"
 #include "base/vector.h"
 #include "base/line.h"
+#include "game/camera.h"
 #include "game/component.h"
 #include "game/entity.h"
 #include "game/entity_system.h"
@@ -619,8 +620,9 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         }
     }
 
-    Rectangle rect = {{0, 0}, {1000, 1000}};
-    EntityIDList entities_in_area = qt_get_entities_in_area(&world->entities.quad_tree, rect, frame_arena);
+    // TODO: debug camera that is detached from regular camera
+    Rectangle visible_area = camera_get_visible_area(world->camera, frame_data.window_size);
+    EntityIDList entities_in_area = qt_get_entities_in_area(&world->entities.quad_tree, visible_area, frame_arena);
 
     for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {
         Entity *entity = es_get_entity(&world->entities, node->id);
@@ -628,10 +630,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
         entity_render(entity, rb, assets, frame_arena, debug_state);
     }
 
-    rb_push_rect(rb, frame_arena, rect, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shape_shader, 3);
-
-    /* rb_push_text(rb, frame_arena, str_lit("Hej"), v2(0, 0), RGBA32_WHITE, 64, assets->shader, */
-    /*     assets->default_font, 3); */
+    rb_push_rect(rb, frame_arena, visible_area, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shape_shader, 3);
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)

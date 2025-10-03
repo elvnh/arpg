@@ -63,17 +63,40 @@ static inline void camera_zoom(Camera *cam, s32 direction)
     }
 }
 
-static inline Vector2 screen_to_world_coords(Camera cam, Vector2 v,
-    s32 window_width, s32 window_height)
+static inline Vector2 screen_to_world_coords(Camera cam, Vector2 v, Vector2i window_size)
 {
     Vector2 result = {0};
 
     f32 scale = 1.0f + cam.zoom;
 
-    f32 center_x = ((f32)window_width / 2.0f);
-    f32 center_y = ((f32)window_height / 2.0f);
+    f32 center_x = ((f32)window_size.x / 2.0f);
+    f32 center_y = ((f32)window_size.y / 2.0f);
     result.x = (v.x - center_x) / scale + cam.position.x;
     result.y = (center_y - v.y) / scale + cam.position.y;
+
+    return result;
+}
+
+static inline Vector2 screen_to_world_vector(Camera cam, Vector2 v)
+{
+    Vector2 result = {0};
+
+    f32 scale = 1.0f + cam.zoom;
+
+    result.x = v.x / scale;
+    result.y = v.y / scale;
+
+    return result;
+}
+
+static inline Rectangle camera_get_visible_area(Camera cam, Vector2i window_size)
+{
+    Vector2 dims = screen_to_world_vector(cam, v2i_to_v2(window_size));
+
+    f32 min_x = cam.position.x - dims.x / 2.0f;
+    f32 min_y = cam.position.y - dims.y / 2.0f;
+
+    Rectangle result = {v2(min_x, min_y), dims};
 
     return result;
 }

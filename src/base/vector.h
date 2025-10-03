@@ -150,4 +150,10 @@ static inline Vector2 v2_reflect(Vector2 v, Vector2 normal)
     return result;
 }
 
+static inline Vector2 v2i_to_v2(Vector2i from)
+{
+    Vector2 result = {(f32)from.x, (f32)from.y};
+    return result;
+}
+
 #endif //VECTOR2_H

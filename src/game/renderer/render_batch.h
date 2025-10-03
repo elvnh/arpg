@@ -8,13 +8,15 @@
 #include "render_command.h"
 #include "render_key.h"
 
+// TODO: make RenderEntry array into ring buffer in case it overflows
+
 typedef struct {
     RenderKey         key;
     RenderCmdHeader  *data;
 } RenderEntry;
 
 typedef struct RenderBatch {
-    RenderEntry  entries[512];
+    RenderEntry  entries[1024];
     ssize        entry_count;
     Matrix4      projection;
     YDirection   y_direction; // TODO: get this from projection matrix instead of storing

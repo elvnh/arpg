@@ -1,6 +1,7 @@
 #include "entity_system.h"
 #include "base/linear_arena.h"
 #include "base/sl_list.h"
+#include "base/utils.h"
 #include "game/quad_tree.h"
 
 #define ES_MEMORY_SIZE MB(2)
@@ -304,4 +305,27 @@ EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearAre
 {
     EntityIDList result = qt_get_entities_in_area(&es->quad_tree, area, arena);
     return result;
+}
+
+void es_update_entity_quad_tree_location(EntitySystem *es, Entity *entity, LinearArena *arena)
+{
+    EntitySlot *slot = es_get_entity_slot(entity);
+    EntityID id = es_get_id_of_entity(es, entity);
+
+    Vector2 new_size = {1, 1};
+
+    if (es_has_component(entity, ColliderComponent)) {
+        ColliderComponent *collider = es_get_component(entity, ColliderComponent);
+        new_size.x = MAX(new_size.x, collider->size.x);
+        new_size.y = MAX(new_size.y, collider->size.y);
+    }
+
+    if (es_has_component(entity, SpriteComponent)) {
+        SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
+        new_size.x = MAX(new_size.x, sprite->size.x);
+        new_size.y = MAX(new_size.y, sprite->size.y);
+    }
+
+    Rectangle new_area = {entity->position, new_size};
+    slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, id, slot->quad_tree_location, new_area, arena);
 }

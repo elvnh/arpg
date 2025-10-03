@@ -187,7 +187,7 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
         es_schedule_entity_for_removal(entity);
     }
 
-    //es_update_entity_quad_tree_location(&world->entities, entity, &world->world_arena);
+    es_update_entity_quad_tree_location(&world->entities, entity, &world->world_arena);
 }
 
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
@@ -470,8 +470,6 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt, LinearArena 
 
             Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(a->velocity, movement_fraction_left), dt);
             a->position = v2_add(a->position, to_move_this_frame);
-
-            es_set_entity_position(&world->entities, a, a->position, &world->world_arena);
         }
     }
 }
@@ -491,9 +489,6 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
 
     DamageFieldComponent *damage = es_add_component(entity, DamageFieldComponent);
     damage->damage = 3;
-
-    es_set_entity_area(&world->entities, entity, (Rectangle){entity->position, collider->size},
-	&world->world_arena);
 
     collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
 }
@@ -774,8 +769,6 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         ASSERT(es_has_component(entity, ColliderComponent));
         ASSERT(es_has_component(entity, HealthComponent));
 
-	Rectangle rect = get_entity_rect(entity, collider);
-
 #if 0
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
         //spawner->texture = game_state->texture;
@@ -789,8 +782,5 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
         sprite->texture = game_state->asset_list.default_texture;
         sprite->size = v2(32, 32);
-
-        // TODO: do this automatically
-	es_set_entity_area(&game_state->world.entities, entity, rect, &game_state->world.world_arena);
     }
 }

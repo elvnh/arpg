@@ -12,15 +12,8 @@
 /*
   TODO:
   - Make sure that subdivided areas aren't too small
-  - Make entityID arrays be dynamic
-  - Deallocate empty nodes, hold on to freed nodes
-  - How to update entity locations on removing entity?
-    - Bidirectional pointers? Element has pointer back to quad tree
-      location?
-    - Entity ID already acts as a pointer, pass in EntityStorage when removing/inserting
-      an entity, will look up any entities that move array index and correct them
-    - Or use a linked list instead?
-  - Move children into one struct, allocate all at once
+  - Deallocate empty tree nodes, hold on to freed nodes
+  - Move child nodes into one struct, allocate all at once
  */
 
 typedef struct QuadTreeElement {

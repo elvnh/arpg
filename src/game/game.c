@@ -696,7 +696,7 @@ static void game_update_and_render_ui(UIState *ui)
 {
     ui_core_begin_container(ui, v2(256, 256), UI_SIZE_KIND_ABSOLUTE, 8.0f);
 
-    static b32 a = false;
+    static b32 a = true;
     ui_checkbox(ui, &a);
     ui_core_same_line(ui);
     ui_label(ui, str_lit("Check A"));
@@ -705,21 +705,7 @@ static void game_update_and_render_ui(UIState *ui)
     ui_checkbox(ui, &b);
     ui_core_same_line(ui);
     ui_label(ui, str_lit("Check B"));
-    //ui_checkbox(ui, &b);
-    //ui_checkbox(ui, &b);
 
-    /* ui_core_begin_container(ui, v2(1.0f, 0.25f), UI_LAYOUT_HORIZONTAL, UI_SIZE_KIND_PERCENT_OF_PARENT, 0.0f); */
-
-    /* ui_core_end_container(ui); */
-#if 0
-    if (ui_button(ui, str_lit("ABC")).clicked) {
-        printf("Clicked A\n");
-    }
-
-    if (ui_button(ui, str_lit("DEF")).clicked) {
-        printf("Clicked B\n");
-    }
-#endif
     ui_core_end_container(ui);
 }
 

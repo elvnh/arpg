@@ -11,6 +11,7 @@
 #include "input.h"
 
 #define FRAME_WIDGET_TABLE_SIZE 1024
+#define DEFAULT_LAYOUT_AXIS UI_LAYOUT_VERTICAL
 
 // TODO: get rid of this
 WidgetID debug_id_counter = 0;
@@ -49,7 +50,6 @@ static void widget_frame_table_push(WidgetFrameTable *table, Widget *widget)
     ssize index = hash_index(widget->id, table->entry_table_size);
     sl_list_push_back_x(&table->entries[index], widget, next_in_hash);
 }
-
 
 void ui_core_set_style(UIState *ui, UIStyle style)
 {
@@ -117,31 +117,20 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 static void calculate_layout_of_children(Widget *widget, PlatformCode platform_code)
 {
     // TODO: these calculations are kind of hacky
-    Vector2 next_child_pos = widget->final_position;
+    Vector2 next_child_pos = v2_add(widget->final_position, v2(widget->child_padding, widget->child_padding));
     UILayoutKind prev_layout_dir = 0;
 
-    if (!sl_list_is_empty(&widget->children)) {
-        if (sl_list_head(&widget->children)->parent_layout_kind == UI_LAYOUT_VERTICAL) {
-            next_child_pos.x += widget->child_padding;
-        } else {
-            next_child_pos.y += widget->child_padding;
-        }
-    }
-
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
-        next_child_pos = get_next_child_position(child->parent_layout_kind, next_child_pos,
-            widget->child_padding, child);
-
         calculate_widget_layout(child, next_child_pos, platform_code, widget);
 
-        if (child->parent_layout_kind == UI_LAYOUT_HORIZONTAL && prev_layout_dir != child->parent_layout_kind) {
-            next_child_pos.x = widget->final_position.x + widget->child_padding;
-        }
-
-        if (child->parent_layout_kind == UI_LAYOUT_HORIZONTAL) {
-            next_child_pos.y += widget->child_padding;
-        } else {
-            next_child_pos.x += widget->child_padding;
+        Widget *next = child->next_sibling;
+        if (next) {
+            if (next->parent_layout_kind == UI_LAYOUT_HORIZONTAL) {
+                next_child_pos.x += child->final_size.x + widget->child_padding;
+            } else {
+                next_child_pos.x = widget->final_position.x + widget->child_padding;
+                next_child_pos.y += child->final_size.y + widget->child_padding;
+            }
         }
     }
 }
@@ -228,24 +217,24 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
 {
     // TODO: depth isn't needed once a stable sort is implemented for render commands
     // TODO: render differently if clicked
-    LinearArena *arena = get_frame_arena(ui);
-    RGBA32 color = {0, 1.0f, 0.1f, 0.3f};
+    if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
+        LinearArena *arena = get_frame_arena(ui);
+        RGBA32 color = {0, 1.0f, 0.1f, 0.3f};
 
-    if (widget_has_flag(widget, WIDGET_COLORED)) {
-        color = RGBA32_BLUE;
-    }
+        if (widget_has_flag(widget, WIDGET_COLORED)) {
+            color = (RGBA32){0, 0, 1, 0.5f};
+        }
 
-    if (widget_has_flag(widget, WIDGET_TOGGLED)) {
-        color = RGBA32_RED;
-    }
+        Rectangle rect = widget_get_bounding_box(widget);
+        rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, color, assets->shader2, depth);
 
-    Rectangle rect = widget_get_bounding_box(widget);
-    rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, color, assets->shader2, depth);
-
-    if (widget_has_flag(widget, WIDGET_TEXT)) {
-        // TODO: allow changing font size
-        rb_push_text(rb, arena, widget->text.string, widget->final_position, RGBA32_WHITE, 12,
-            assets->shader, widget->text.font, depth);
+        if (widget_has_flag(widget, WIDGET_TEXT)) {
+            // TODO: allow changing font size
+            rb_push_text(rb, arena, widget->text.string, widget->final_position, RGBA32_WHITE, 12,
+                assets->shader, widget->text.font, depth);
+        }
+    } else {
+        printf("foo\n");
     }
 
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
@@ -256,6 +245,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
 void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets,
     PlatformCode platform_code)
 {
+    ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(sl_list_is_empty(&ui->container_stack));
 
     if (ui->root_widget) {
@@ -277,8 +267,6 @@ static Widget *get_top_container(UIState *ui)
     return result;
 }
 
-#define DEFAULT_LAYOUT_AXIS UI_LAYOUT_VERTICAL
-
 static void ui_core_push_widget(UIState *ui, Widget *widget)
 {
     widget_frame_table_push(&ui->current_frame_widgets, widget);
@@ -289,11 +277,11 @@ static void ui_core_push_widget(UIState *ui, Widget *widget)
 
     Widget *top_container = get_top_container(ui);
 
+    widget->parent_layout_kind = ui->current_layout_axis;
+    ui->current_layout_axis = DEFAULT_LAYOUT_AXIS;
+
     if (top_container) {
         widget_add_to_children(top_container, widget);
-        widget->parent_layout_kind = ui->current_layout_axis;
-
-        ui->current_layout_axis = DEFAULT_LAYOUT_AXIS;
     }
 }
 
@@ -315,6 +303,7 @@ void ui_core_push_as_container(UIState *ui, Widget *widget)
     sl_list_push_front(&ui->container_stack, container);
 }
 
+// TODO: not needed implement, in terms of ui_core_push_as_container
 void ui_core_begin_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 padding)
 {
     Widget *widget = ui_core_create_widget(ui, size, debug_id_counter++);

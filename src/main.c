@@ -60,7 +60,7 @@ int main()
     run_tests();
 
     WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
-	WINDOW_FLAG_NON_RESIZABLE, la_allocator(&game_memory.permanent_memory));
+	0, la_allocator(&game_memory.permanent_memory));
     RendererBackend *backend = renderer_backend_initialize(la_allocator(&game_memory.permanent_memory));
 
     assets_initialize(&asset_mgr, la_allocator(&game_memory.permanent_memory));
@@ -117,11 +117,11 @@ int main()
 
         renderer_backend_clear(backend);
 
+        Vector2i window_size = platform_get_window_size(window);
         FrameData frame_data = {
             .dt = dt,
             .input = &input,
-            .window_width = WINDOW_WIDTH,
-            .window_height = WINDOW_HEIGHT,
+            .window_size = window_size
         };
 
         list_clear(&render_batches);

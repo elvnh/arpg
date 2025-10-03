@@ -20,6 +20,12 @@ struct WindowHandle {
     GLFWwindow *window;
 };
 
+static void framebuffer_size_callback(GLFWwindow* window, s32 width, s32 height)
+{
+    (void)window;
+    glViewport(0, 0, width, height);
+}
+
 WindowHandle *platform_create_window(s32 width, s32 height, const char *title, u32 window_flags, Allocator allocator)
 {
     if (!glfwInit()) {
@@ -31,6 +37,7 @@ WindowHandle *platform_create_window(s32 width, s32 height, const char *title, u
     }
 
     GLFWwindow *window = glfwCreateWindow(width, height, title, 0, 0);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     if (!window) {
         glfwTerminate();

@@ -30,8 +30,7 @@ typedef struct {
 typedef struct {
     f32 dt;
     const Input *input;
-    s32 window_width;
-    s32 window_height;
+    Vector2i window_size;
 } FrameData;
 
 typedef struct {

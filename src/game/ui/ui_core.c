@@ -206,14 +206,11 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     // TODO: render differently if clicked
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
         LinearArena *arena = get_frame_arena(ui);
-        RGBA32 color = {0, 1.0f, 0.1f, 0.3f};
 
         if (widget_has_flag(widget, WIDGET_COLORED)) {
-            color = widget->color;
+            Rectangle rect = widget_get_bounding_box(widget);
+            rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, widget->color, assets->shape_shader, depth);
         }
-
-        Rectangle rect = widget_get_bounding_box(widget);
-        rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, color, assets->shape_shader, depth);
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
             // TODO: allow changing font size

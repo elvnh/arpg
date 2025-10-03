@@ -230,16 +230,6 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
     }
 }
 
-static Vector2i world_to_tile_coords(Vector2 world_coords)
-{
-    Vector2i result = {
-        (s32)(world_coords.x / TILE_SIZE),
-        (s32)(world_coords.y / TILE_SIZE)
-    };
-
-    return result;
-}
-
 static Vector2 tile_to_world_coords(Vector2i tile_coords)
 {
     Vector2 result = {
@@ -671,8 +661,7 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
 
 static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData frame_data, LinearArena *frame_arena)
 {
-    Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_width,
-	frame_data.window_height);
+    Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_size);
     RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_UP, frame_arena);
 
     world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena, &game_state->debug_state);
@@ -682,7 +671,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
     }
 
     if (game_state->debug_state.render_origin) {
-        rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {2, 2}}, RGBA32_RED, game_state->asset_list.shape_shader, 3);
+        rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED, game_state->asset_list.shape_shader, 3);
     }
 
     rb_sort_entries(rb);
@@ -690,7 +679,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
 
 static void debug_ui(UIState *ui, DebugState *debug_state)
 {
-    ui_begin_container(ui, str_lit("root"), v2(256, 256), UI_SIZE_KIND_ABSOLUTE, 8.0f);
+    ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     ui_checkbox(ui, str_lit("Render quad tree"), &debug_state->quad_tree_overlay);
     ui_checkbox(ui, str_lit("Render colliders"), &debug_state->render_colliders);
@@ -702,7 +691,6 @@ static void debug_ui(UIState *ui, DebugState *debug_state)
 static void game_update_and_render_ui(UIState *ui, DebugState *debug_state)
 {
     debug_ui(ui, debug_state);
-
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
@@ -720,7 +708,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
         game_update_and_render_ui(&game_state->ui, &game_state->debug_state);
 
-        Matrix4 proj = mat4_orthographic(frame_data.window_width, frame_data.window_height, Y_IS_DOWN);
+        Matrix4 proj = mat4_orthographic(frame_data.window_size, Y_IS_DOWN);
         RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
         ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, &game_state->asset_list, platform_code);
     }

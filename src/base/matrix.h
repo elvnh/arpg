@@ -42,14 +42,14 @@ inline static Matrix4 mat4_orthographic_base(f32 left, f32 right, f32 bottom, f3
     return m;
 }
 
-inline static Matrix4 mat4_orthographic(s32 window_width, s32 window_height, YDirection y_direction)
+inline static Matrix4 mat4_orthographic(Vector2i window_size, YDirection y_direction)
 {
     Matrix4 result = {0};
 
     if (y_direction == Y_IS_UP) {
-        result = mat4_orthographic_base(0.0f, (f32)window_width, 0.0f, (f32)window_height, 0.1f, 100.0f);
+        result = mat4_orthographic_base(0.0f, (f32)window_size.x, 0.0f, (f32)window_size.y, 0.1f, 100.0f);
     } else {
-        result = mat4_orthographic_base(0.0f, (f32)window_width, (f32)window_height, 0.0f, 0.1f, 100.0f);
+        result = mat4_orthographic_base(0.0f, (f32)window_size.x, (f32)window_size.y, 0.0f, 0.1f, 100.0f);
     }
 
     return result;

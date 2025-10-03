@@ -100,4 +100,7 @@ static inline void atomic_store_s32(s32 *ptr, s32 new_value)
 #endif
 }
 
+/* Misc */
+void platform_trap_on_fp_exceptions();
+
 #endif //PLATFORM_H

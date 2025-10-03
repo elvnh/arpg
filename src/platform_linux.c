@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #define _DEFAULT_SOURCE
 
 #include <sys/types.h>
@@ -9,6 +10,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <pthread.h>
+#include <fenv.h>
 
 #include "base/string8.h"
 
@@ -447,4 +449,10 @@ void mutex_lock(Mutex mutex)
 void mutex_release(Mutex mutex)
 {
     pthread_mutex_unlock(mutex.handle);
+}
+
+/* Misc */
+void platform_trap_on_fp_exceptions()
+{
+    feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 }

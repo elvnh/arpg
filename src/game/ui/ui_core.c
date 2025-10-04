@@ -109,7 +109,7 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
 
         Widget *next = child->next_sibling;
         if (next) {
-            if (next->parent_layout_kind == UI_LAYOUT_HORIZONTAL) {
+            if (next->layout_direction == UI_LAYOUT_HORIZONTAL) {
                 next_child_pos.x += child->final_size.x + widget->child_padding;
             } else {
                 next_child_pos.x = widget->final_position.x + widget->child_padding;
@@ -261,7 +261,7 @@ static void ui_core_push_widget(UIState *ui, Widget *widget)
 
     Widget *top_container = get_top_container(ui);
 
-    widget->parent_layout_kind = ui->current_layout_axis;
+    widget->layout_direction = ui->current_layout_axis;
     ui->current_layout_axis = DEFAULT_LAYOUT_AXIS;
 
     if (top_container) {

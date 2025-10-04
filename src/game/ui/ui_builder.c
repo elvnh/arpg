@@ -62,6 +62,20 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     return prev_interaction;
 }
 
+void ui_spacing(UIState *ui, f32 amount)
+{
+    // TODO: parameterize size
+
+    Widget *widget = ui_core_create_widget(ui, v2(amount, amount), UI_NULL_WIDGET_ID);
+    widget_add_flag(widget, WIDGET_HIDDEN);
+
+    if (widget->layout_direction == UI_LAYOUT_VERTICAL) {
+        widget->preliminary_size.x = 1.0f;
+    } else {
+        widget->preliminary_size.y = 1.0f;
+    }
+}
+
 WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, UISizeKind size_kind, f32 child_padding)
 {
     Widget *widget = ui_core_create_widget(ui, size, ui_core_hash_string(title));

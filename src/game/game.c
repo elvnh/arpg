@@ -630,8 +630,6 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
 
         entity_render(entity, rb, assets, frame_arena, debug_state);
     }
-
-    rb_push_rect(rb, frame_arena, visible_area, (RGBA32){0.1f, 0.9f, 0.1f, 0.1f}, assets->shape_shader, 3);
 }
 
 static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
@@ -723,11 +721,11 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, temp_alloc);
 
     ssize qt_nodes = qt_get_node_count(&game_state->world.entities.quad_tree);
-    String node_string = str_concat(str_lit("Quad tree nodes: "), s32_to_string(qt_nodes, temp_alloc), temp_alloc);
+    String node_string = str_concat(str_lit("Quad tree nodes: "), ssize_to_string(qt_nodes, temp_alloc), temp_alloc);
 
     String entity_string = str_concat(
         str_lit("Alive entity count: "),
-        s32_to_string(game_state->world.entities.alive_entity_count, temp_alloc),
+        ssize_to_string(game_state->world.entities.alive_entity_count, temp_alloc),
         temp_alloc
     );
 
@@ -736,6 +734,8 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_text(ui, world_arena_str);
     ui_text(ui, node_string);
     ui_text(ui, entity_string);
+
+    ui_spacing(ui, 8);
 
     ui_checkbox(ui, str_lit("Render quad tree"), &game_state->debug_state.quad_tree_overlay);
     ui_checkbox(ui, str_lit("Render colliders"), &game_state->debug_state.render_colliders);

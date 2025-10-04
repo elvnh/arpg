@@ -37,6 +37,7 @@ typedef struct {
 } WidgetList;
 
 typedef struct Widget {
+    /* Common variables */
     WidgetID id;
     WidgetInteraction interaction_state; // TODO: should this be in separate struct?
     WidgetFlag flags;
@@ -49,7 +50,7 @@ typedef struct Widget {
     Vector2    final_size;
     Vector2    final_position;
 
-    UILayoutKind     parent_layout_kind;
+    UILayoutKind     layout_direction; // TODO: rename to layout_direction
 
     f32              child_padding;
     WidgetList       children;

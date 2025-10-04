@@ -39,11 +39,13 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 
     Widget *widget = ui_core_colored_box(ui, v2(12, 12), RGBA32_WHITE, ui_core_hash_string(text));
     widget_add_flag(widget, WIDGET_CLICKABLE);
+
     widget->child_padding = 2.0f;
 
     ui_core_push_container(ui, widget);
 
     Widget *child_box = ui_core_colored_box(ui, v2(1.0f, 1.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID);
+    widget_add_flag(child_box, WIDGET_NON_INTERACTIVE);
     child_box->size_kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
 
     ui_pop_container(ui);

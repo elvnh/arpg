@@ -28,6 +28,7 @@ static inline LineIntersection line_intersection(Line a, Line b, f32 epsilon)
         // Lines are colinear so they might still overlap
         // TODO: check if they overlap
     } else if (denominator != 0.0f) {
+        // TODO: this can generate nan/infinity, insert check here
         f32 u = numerator / denominator;
         f32 t = v2_cross(v2_sub(b.start, a.start), s) / denominator;
 

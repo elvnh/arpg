@@ -82,6 +82,18 @@ void ui_core_begin_frame(UIState *ui)
     ui->root_widget = 0;
 }
 
+static b32 widget_is_hot(UIState *ui, Widget *widget)
+{
+    b32 result = (widget->id != UI_NULL_WIDGET_ID) && (ui->hot_widget == widget->id);
+    return result;
+}
+
+static b32 widget_is_active(UIState *ui, Widget *widget)
+{
+    b32 result = (widget->id != UI_NULL_WIDGET_ID) && (ui->active_widget == widget->id);
+    return result;
+}
+
 typedef enum {
     TRAVERSAL_ORDER_PREORDER,
     TRAVERSAL_ORDER_POSTORDER,
@@ -193,6 +205,7 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Inp
         calculate_widget_interactions(ui, child, input);
     }
 
+    // TODO: Instead check if ID is null
     if (widget_has_flag(widget, WIDGET_NON_INTERACTIVE)) {
         return;
     }
@@ -204,8 +217,7 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Inp
         ui->hot_widget = widget->id;
     }
 
-    // TODO: create functions for checking if hot/active
-    if (ui->hot_widget == widget->id) {
+    if (widget_is_hot(ui, widget)) {
         b32 clicked_inside = input_is_key_down(input, MOUSE_LEFT)
             && rect_contains_point(rect, input->mouse_click_position);
 
@@ -214,7 +226,7 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Inp
         }
     }
 
-    if (ui->active_widget == widget->id) {
+    if (widget_is_active(ui, widget)) {
         if (!mouse_inside) {
             ui->active_widget = UI_NULL_WIDGET_ID;
         } else if (input_is_key_released(input, MOUSE_LEFT)) {
@@ -229,18 +241,6 @@ static LinearArena *get_frame_arena(UIState *ui)
 {
     LinearArena *result = &ui->current_frame_widgets.arena;
 
-    return result;
-}
-
-static b32 widget_is_hot(UIState *ui, Widget *widget)
-{
-    b32 result = ui->hot_widget == widget->id;
-    return result;
-}
-
-static b32 widget_is_active(UIState *ui, Widget *widget)
-{
-    b32 result = ui->active_widget == widget->id;
     return result;
 }
 

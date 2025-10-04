@@ -3,6 +3,7 @@
 
 #include "typedefs.h"
 
+#define RGBA32_BLACK (RGBA32) {0.0f, 0.0f, 0.0f, 1.0f}
 #define RGBA32_WHITE (RGBA32) {1.0f, 1.0f, 1.0f, 1.0f}
 #define RGBA32_RED (RGBA32)   {1.0f, 0.0f, 0.0f, 1.0f}
 #define RGBA32_BLUE (RGBA32)  {0.0f, 0.0f, 1.0f, 1.0f}

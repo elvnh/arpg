@@ -232,8 +232,8 @@ Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
     result.x *= width_scale;
     result.y *= height_scale;
 
-    ASSERT(result.x > 0.0f);
-    ASSERT(result.y > 0.0f);
+    ASSERT(result.x > 0.0f || (text.length == 0));
+    ASSERT(result.y > 0.0f || (text.length == 0));
 
     return result;
 }

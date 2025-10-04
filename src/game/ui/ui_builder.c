@@ -1,10 +1,11 @@
 #include "ui_builder.h"
-#include "game/ui/ui_core.h"
-#include "game/ui/widget.h"
+#include "ui_core.h"
+#include "widget.h"
+#include "base/rgba.h"
 
 // ID is only needed if interacting with widget
 
-void ui_text(UIState *ui, String text)
+static Widget *ui_internal_text(UIState *ui, String text, RGBA32 color)
 {
     Widget *widget = ui_core_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID);
 
@@ -13,6 +14,14 @@ void ui_text(UIState *ui, String text)
     widget->text.string = text;
     widget->text.font = ui->current_style.font;
     widget->text.size = 12; // TODO: allow changing text size
+    widget->color = color;
+
+    return widget;
+}
+
+void ui_text(UIState *ui, String text)
+{
+    ui_internal_text(ui, text, RGBA32_WHITE);
 }
 
 WidgetInteraction ui_button(UIState *ui, String text)
@@ -66,8 +75,6 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 
 void ui_spacing(UIState *ui, f32 amount)
 {
-    // TODO: parameterize size
-
     Widget *widget = ui_core_create_widget(ui, v2(amount, amount), UI_NULL_WIDGET_ID);
     widget_add_flag(widget, WIDGET_HIDDEN);
 
@@ -76,6 +83,21 @@ void ui_spacing(UIState *ui, f32 amount)
     } else {
         widget->preliminary_size.y = 1.0f;
     }
+}
+
+void ui_textbox(UIState *ui, StringBuilder *sb)
+{
+    Widget *widget = ui_core_colored_box(ui, v2(128, 32), RGBA32_WHITE, (u64)sb);
+    widget->size_kind = UI_SIZE_KIND_ABSOLUTE;
+    widget_add_flag(widget, WIDGET_CLICKABLE);
+    widget_add_flag(widget, WIDGET_TEXT_INPUT);
+    widget_add_flag(widget, WIDGET_STAY_ACTIVE);
+
+    widget->text_input_buffer = sb;
+
+    ui_core_push_container(ui, widget);
+    ui_internal_text(ui, sb->buffer, RGBA32_BLACK);
+    ui_core_pop_container(ui);
 }
 
 WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, UISizeKind size_kind, f32 child_padding)

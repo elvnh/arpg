@@ -10,10 +10,12 @@
 typedef u64 WidgetID;
 
 typedef enum {
-    WIDGET_CLICKABLE = (1u << 0),
-    WIDGET_COLORED   = (1u << 1),
-    WIDGET_TEXT      = (1u << 2),
-    WIDGET_HIDDEN    = (1u << 3),
+    WIDGET_CLICKABLE  = (1u << 0),
+    WIDGET_COLORED    = (1u << 1),
+    WIDGET_TEXT       = (1u << 2),
+    WIDGET_HIDDEN     = (1u << 3),
+    WIDGET_TEXT_INPUT = (1u << 4),
+    WIDGET_STAY_ACTIVE = (1u << 5),
 } WidgetFlag;
 
 typedef enum {
@@ -65,6 +67,8 @@ typedef struct Widget {
     } text;
 
     RGBA32 color;
+
+    StringBuilder *text_input_buffer;
 } Widget;
 
 static inline b32 widget_has_flag(const Widget *widget, WidgetFlag flag)

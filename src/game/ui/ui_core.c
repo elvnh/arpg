@@ -116,7 +116,6 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 
 static void calculate_layout_of_children(Widget *widget, PlatformCode platform_code)
 {
-    // TODO: these calculations are kind of hacky
     Vector2 next_child_pos = v2_add(widget->final_position, v2(widget->child_padding, widget->child_padding));
     f32 current_row_size = 0.0f;
 
@@ -178,8 +177,6 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
         INVALID_DEFAULT_CASE;
     }
 
-
-
     if (order == TRAVERSAL_ORDER_PREORDER) {
         calculate_layout_of_children(widget, platform_code);
     }
@@ -189,8 +186,8 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
             widget->text.string, widget->text.size);
     }
 
-    ASSERT(widget->final_size.x > 0.0f);
-    ASSERT(widget->final_size.y > 0.0f);
+    /* ASSERT(widget->final_size.x > 0.0f); */
+    /* ASSERT(widget->final_size.y > 0.0f); */
 }
 
 static void calculate_widget_interactions(UIState *ui, Widget *widget, const Input *input)
@@ -225,14 +222,25 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Inp
     }
 
     if (widget_is_active(ui, widget)) {
-        if (!mouse_inside) {
+        if (!mouse_inside && !widget_has_flag(widget, WIDGET_STAY_ACTIVE)) {
             ui->active_widget = UI_NULL_WIDGET_ID;
         } else if (input_is_key_released(input, MOUSE_LEFT)) {
             widget->interaction_state.clicked = true;
-            ui->active_widget = UI_NULL_WIDGET_ID;
+
+            if (!widget_has_flag(widget, WIDGET_STAY_ACTIVE)) {
+                ui->active_widget = UI_NULL_WIDGET_ID;
+            }
+        }
+
+        // TODO: proper text input
+        if (widget_has_flag(widget, WIDGET_TEXT_INPUT)) {
+            if (input_is_key_pressed(input, KEY_A)) {
+                if (str_builder_has_capacity_for(widget->text_input_buffer, str_lit("A"))) {
+                    str_builder_append(widget->text_input_buffer, str_lit("A"));
+                }
+            }
         }
     }
-
 }
 
 static LinearArena *get_frame_arena(UIState *ui)
@@ -245,7 +253,6 @@ static LinearArena *get_frame_arena(UIState *ui)
 static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const AssetList *assets, ssize depth)
 {
     // TODO: depth isn't needed once a stable sort is implemented for render commands
-    // TODO: render differently if clicked
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
         LinearArena *arena = get_frame_arena(ui);
 
@@ -266,7 +273,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
             // TODO: allow changing font size
-            rb_push_text(rb, arena, widget->text.string, widget->final_position, RGBA32_WHITE, 12,
+            rb_push_text(rb, arena, widget->text.string, widget->final_position, widget->color, 12,
                 assets->texture_shader, widget->text.font, depth);
         }
     }
@@ -386,7 +393,7 @@ void ui_core_same_line(UIState *ui)
 
 WidgetID ui_core_hash_string(String text)
 {
-    // TODO: hash but don't make visible things after ##
+    // TODO: hash but don't make visible characters after ##
     WidgetID result = hash_string(text);
     ASSERT(result != UI_NULL_WIDGET_ID);
 

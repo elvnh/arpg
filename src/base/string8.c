@@ -165,3 +165,32 @@ ssize str_get_common_prefix_length(String a, String b)
 
     return i;
 }
+
+StringBuilder str_builder_allocate(ssize capacity, Allocator allocator)
+{
+    String buffer = str_allocate(capacity, allocator);
+    buffer.length = 0;
+
+    StringBuilder result = {
+        .buffer = buffer,
+        .capacity = capacity
+    };
+
+    return result;
+}
+
+void str_builder_append(StringBuilder *sb, String str)
+{
+    ASSERT(str_builder_has_capacity_for(sb, str));
+
+    char *dst = sb->buffer.data + sb->buffer.length;
+    memcpy(dst, str.data, (usize)str.length);
+
+    sb->buffer.length += str.length;
+}
+
+b32 str_builder_has_capacity_for(const StringBuilder *sb, String str)
+{
+    b32 result  = sb->buffer.length + str.length <= sb->capacity;
+    return result;
+}

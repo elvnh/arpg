@@ -14,7 +14,6 @@ typedef enum {
     WIDGET_COLORED   = (1u << 1),
     WIDGET_TEXT      = (1u << 2),
     WIDGET_HIDDEN    = (1u << 3),
-    WIDGET_NON_INTERACTIVE = (1u << 4),
 } WidgetFlag;
 
 typedef enum {

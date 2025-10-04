@@ -193,20 +193,18 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
     ASSERT(widget->final_size.y > 0.0f);
 }
 
-static void reset_active_widget(UIState *ui)
-{
-    ui->active_widget = UI_NULL_WIDGET_ID;
-}
-
 static void calculate_widget_interactions(UIState *ui, Widget *widget, const Input *input)
 {
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
-        // TODO: don't propagate input up widget tree
         calculate_widget_interactions(ui, child, input);
+
+        // If child widget is being interacted with, don't consider input further up the tree
+        if (widget_is_hot(ui, child)) {
+            return;
+        }
     }
 
-    // TODO: Instead check if ID is null
-    if (widget_has_flag(widget, WIDGET_NON_INTERACTIVE)) {
+    if (widget->id == UI_NULL_WIDGET_ID) {
         return;
     }
 

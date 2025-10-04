@@ -9,7 +9,6 @@ void ui_text(UIState *ui, String text)
     Widget *widget = ui_core_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID);
 
     widget_add_flag(widget, WIDGET_TEXT);
-    widget_add_flag(widget, WIDGET_NON_INTERACTIVE);
 
     widget->text.string = text;
     widget->text.font = ui->current_style.font;
@@ -45,7 +44,6 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     ui_core_push_container(ui, widget);
 
     Widget *child_box = ui_core_colored_box(ui, v2(1.0f, 1.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID);
-    widget_add_flag(child_box, WIDGET_NON_INTERACTIVE);
     child_box->size_kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
 
     ui_pop_container(ui);
@@ -72,8 +70,6 @@ void ui_spacing(UIState *ui, f32 amount)
 
     Widget *widget = ui_core_create_widget(ui, v2(amount, amount), UI_NULL_WIDGET_ID);
     widget_add_flag(widget, WIDGET_HIDDEN);
-    widget_add_flag(widget, WIDGET_NON_INTERACTIVE);
-
 
     if (widget->layout_direction == UI_LAYOUT_VERTICAL) {
         widget->preliminary_size.x = 1.0f;
@@ -85,7 +81,6 @@ void ui_spacing(UIState *ui, f32 amount)
 WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, UISizeKind size_kind, f32 child_padding)
 {
     Widget *widget = ui_core_create_widget(ui, size, ui_core_hash_string(title));
-    widget_add_flag(widget, WIDGET_NON_INTERACTIVE);
 
     widget->child_padding = child_padding;
     widget->size_kind = size_kind;

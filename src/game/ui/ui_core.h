@@ -46,6 +46,9 @@ typedef struct {
     WidgetFrameTable current_frame_widgets;
     WidgetContainerStack container_stack;
 
+    WidgetID hot_widget;
+    WidgetID active_widget;
+
     UILayoutKind current_layout_axis;
     UIStyle current_style; // TODO: style stack
     Widget *root_widget; // TODO: push container that contains entire viewport on beginning of each frame

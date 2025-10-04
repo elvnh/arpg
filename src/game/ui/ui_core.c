@@ -26,6 +26,10 @@ WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 
 static Widget *widget_frame_table_find(WidgetFrameTable *table, WidgetID id)
 {
+    if (id == UI_NULL_WIDGET_ID) {
+        return 0;
+    }
+
     ssize index = mod_index(id, table->entry_table_size);
 
     WidgetList *list = &table->entries[index];
@@ -74,6 +78,7 @@ void ui_core_begin_frame(UIState *ui)
         la_reset(&ui->current_frame_widgets.arena);
     }
 
+    ui->hot_widget = UI_NULL_WIDGET_ID;
     ui->root_widget = 0;
 }
 
@@ -176,29 +181,66 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
     ASSERT(widget->final_size.y > 0.0f);
 }
 
-static void calculate_widget_interactions(Widget *widget, const Input *input)
+static void reset_active_widget(UIState *ui)
+{
+    ui->active_widget = UI_NULL_WIDGET_ID;
+}
+
+static void calculate_widget_interactions(UIState *ui, Widget *widget, const Input *input)
 {
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
-        calculate_widget_interactions(child, input);
+        // TODO: don't propagate input up widget tree
+        calculate_widget_interactions(ui, child, input);
     }
 
-    if (widget_has_flag(widget, WIDGET_CLICKABLE)) {
-        ASSERT(widget->final_size.x);
-        ASSERT(widget->final_size.y);
+    if (widget_has_flag(widget, WIDGET_NON_INTERACTIVE)) {
+        return;
+    }
 
-        Rectangle rect = widget_get_bounding_box(widget);
-        if (input_is_key_released(input, MOUSE_LEFT)
-            && rect_contains_point(rect, input->mouse_position)
-            && rect_contains_point(rect, input->mouse_click_position)) {
-            widget->interaction_state.clicked = true;
+    Rectangle rect = widget_get_bounding_box(widget);
+    b32 mouse_inside = rect_contains_point(rect, input->mouse_position);
+
+    if (mouse_inside) {
+        ui->hot_widget = widget->id;
+    }
+
+    // TODO: create functions for checking if hot/active
+    if (ui->hot_widget == widget->id) {
+        b32 clicked_inside = input_is_key_down(input, MOUSE_LEFT)
+            && rect_contains_point(rect, input->mouse_click_position);
+
+        if (widget_has_flag(widget, WIDGET_CLICKABLE) && clicked_inside) {
+            ui->active_widget = widget->id;
         }
     }
+
+    if (ui->active_widget == widget->id) {
+        if (!mouse_inside) {
+            ui->active_widget = UI_NULL_WIDGET_ID;
+        } else if (input_is_key_released(input, MOUSE_LEFT)) {
+            widget->interaction_state.clicked = true;
+            ui->active_widget = UI_NULL_WIDGET_ID;
+        }
+    }
+
 }
 
 static LinearArena *get_frame_arena(UIState *ui)
 {
     LinearArena *result = &ui->current_frame_widgets.arena;
 
+    return result;
+}
+
+static b32 widget_is_hot(UIState *ui, Widget *widget)
+{
+    b32 result = ui->hot_widget == widget->id;
+    return result;
+}
+
+static b32 widget_is_active(UIState *ui, Widget *widget)
+{
+    b32 result = ui->active_widget == widget->id;
     return result;
 }
 
@@ -210,8 +252,18 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
         LinearArena *arena = get_frame_arena(ui);
 
         if (widget_has_flag(widget, WIDGET_COLORED)) {
-            Rectangle rect = widget_get_bounding_box(widget);
-            rb_push_rect(rb, &ui->current_frame_widgets.arena, rect, widget->color, assets->shape_shader, depth);
+            Rectangle widget_rect = widget_get_bounding_box(widget);
+            RGBA32 color = widget->color;
+
+            if (widget_is_hot(ui, widget)) {
+                color = RGBA32_GREEN;
+            }
+
+            if (widget_is_active(ui, widget)) {
+                color = RGBA32_RED;
+            }
+
+            rb_push_rect(rb, &ui->current_frame_widgets.arena, widget_rect, color, assets->shape_shader, depth);
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
@@ -226,6 +278,13 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     }
 }
 
+static Widget *get_active_widget(UIState *ui)
+{
+    Widget *result = widget_frame_table_find(&ui->previous_frame_widgets, ui->active_widget);
+
+    return result;
+}
+
 void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets,
     PlatformCode platform_code)
 {
@@ -234,8 +293,16 @@ void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, 
 
     if (ui->root_widget) {
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
-        calculate_widget_interactions(ui->root_widget, input);
+        calculate_widget_interactions(ui, ui->root_widget, input);
         render_widget(ui, ui->root_widget, rb, assets, 0);
+    }
+
+    //ui->hot_widget = UI_NULL_WIDGET_ID;
+
+    Widget *active_widget = get_active_widget(ui);
+
+    if (active_widget && widget_has_flag(active_widget, WIDGET_CLICKABLE)) {
+        //ui->active_widget = UI_NULL_WIDGET_ID;
     }
 }
 

@@ -7,6 +7,7 @@
 
 // Helper macros to make it easier to call Allocator function pointers
 // TODO: allocate should take item count and item size
+#define allocate(a, byte_count) ((void *)allocate_array((a), byte, byte_count))
 #define allocate_item(a, type) allocate_array((a), type, 1)
 #define allocate_array(a, type, count) (type *)((a).alloc(a.context, (count), sizeof(type), ALIGNOF(type)))
 #define allocate_aligned(a, count, item_size, alignment) (void *)(a).alloc((a).context, (count), (item_size), (alignment))

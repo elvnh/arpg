@@ -15,6 +15,7 @@
 #include "base/maths.h"
 #include "base/format.h"
 #include "platform.h"
+#include <stdint.h>
 
 static void tests_arena()
 {
@@ -1285,6 +1286,34 @@ static void tests_format()
     la_destroy(&arena);
 }
 
+static void tests_types()
+{
+    // TODO: make these tests independent of architecture
+    /* Signed */
+    ASSERT(S_SIZE_MAX == LLONG_MAX);
+    ASSERT(S_SIZE_MIN == LLONG_MIN);
+
+    ASSERT(S64_MAX == LLONG_MAX);
+    ASSERT(S64_MIN == LLONG_MIN);
+
+    ASSERT(S32_MAX == INT_MAX);
+    ASSERT(S32_MIN == INT_MIN);
+
+    ASSERT(S16_MAX == SHRT_MAX);
+    ASSERT(S16_MIN == SHRT_MIN);
+
+    ASSERT(S8_MAX == SCHAR_MAX);
+    ASSERT(S8_MIN == SCHAR_MIN);
+
+    /* Unsigned */
+    ASSERT(USIZE_MAX == SIZE_MAX);
+    ASSERT(U64_MAX == ULLONG_MAX);
+    ASSERT(U32_MAX == UINT_MAX);
+    ASSERT(U16_MAX == USHRT_MAX);
+    ASSERT(U8_MAX == UCHAR_MAX);
+}
+
+
 static void run_tests()
 {
     tests_arena();
@@ -1296,4 +1325,5 @@ static void run_tests()
     tests_free_list();
     tests_sl_list();
     tests_format();
+    tests_types();
 }

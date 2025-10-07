@@ -62,17 +62,18 @@ typedef struct {
     RGBA32 particle_color;
     f32 particle_size;
     f32 particle_lifetime;
-    s32 particles_to_spawn;
+    f32 particle_speed;
+    s32 total_particles_to_spawn;
 
     f32 particles_per_second;
 } ParticleSpawnerConfig;
 
-// TODO: different kinds of spawners: spawn all at once, infinite particles etc,
+// TODO: different kinds of spawners: infinite particles etc,
 // allow configuring angle of particles
 typedef struct {
     ParticleBuffer particle_buffer;
     f32 particle_timer;
-    s32 particles_left_to_spawn; // TODO: should be s32
+    s32 particles_left_to_spawn;
     ParticleSpawnerConfig config;
     ParticleSpawnerWhenDone action_when_done;
 } ParticleSpawner;
@@ -81,7 +82,7 @@ static inline void particle_spawner_initialize(ParticleSpawner *ps, ParticleSpaw
 {
     ring_initialize_static(&ps->particle_buffer);
     ps->config = config;
-    ps->particles_left_to_spawn = config.particles_to_spawn;
+    ps->particles_left_to_spawn = config.total_particles_to_spawn;
 }
 
 typedef struct {

@@ -99,7 +99,7 @@ static void swap_and_reset_collision_tables(GameWorld *world)
 static b32 particle_spawner_is_finished(ParticleSpawner *ps)
 {
     b32 result = (ring_length(&ps->particle_buffer) == 0)
-        && (ps->particles_left_to_spawn <= 0.0f);
+        && (ps->particles_left_to_spawn <= 0);
 
     return result;
 }
@@ -158,7 +158,10 @@ static void component_update_particle_spawner(Entity *entity, ParticleSpawner *p
     for (s32 i = 0; i < particles_to_spawn_this_frame; ++i) {
         f32 x = cos_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
         f32 y = sin_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
-        f32 speed = 15.0f + ((f32)rand() / (f32)RAND_MAX) * 100.0f;
+
+        f32 min_speed = ps->config.particle_speed * 0.5f;
+        f32 max_speed = ps->config.particle_speed * 1.5f;
+        f32 speed = min_speed + ((f32)rand() / (f32)RAND_MAX) * (max_speed - min_speed);
 
         // TODO: color variance
         Particle new_particle = {
@@ -519,7 +522,8 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
         .particle_color = (RGBA32){1.0f, 0.2f, 0.1f, 0.7f},
         .particle_size = 4.0f,
         .particle_lifetime = 1.0f,
-        .particles_to_spawn = 50
+        .total_particles_to_spawn = 50,
+        .particle_speed = 100.0f,
     };
     // TODO: configure particles
 
@@ -737,7 +741,7 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
     String result = str_concat(
         name,
         str_concat(
-            f32_to_string((f32)usage / 1000.0f, 2, allocator),
+            f32_to_string((f32)usage / 1024.0f, 2, allocator),
             str_lit(" KBs"),
             allocator),
         allocator
@@ -901,7 +905,8 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
             .particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f},
             .particle_size = 4.0f,
             .particles_per_second = 250.0f,
-            .particles_to_spawn = 100000.0f,
+            .total_particles_to_spawn = 100000.0f,
+            .particle_speed = 100.0f,
             .particle_lifetime = 1.0f
         };
 

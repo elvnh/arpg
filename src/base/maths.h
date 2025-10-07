@@ -49,4 +49,12 @@ static inline f32 interpolate_sin(f32 a, f32 b, f32 t)
     return result;
 }
 
+static inline f32 exponential_moving_avg(f32 curr_avg, f32 new_data, f32 alpha)
+{
+    ASSERT(f32_in_range(alpha, 0.0f, 1.0f, 0.0f));
+    f32 result = alpha * curr_avg + (1.0f - alpha) * new_data;
+
+    return result;
+}
+
 #endif //MATHS_H

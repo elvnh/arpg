@@ -693,7 +693,7 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
         name,
         str_concat(
             f32_to_string((f32)usage / 1000.0f, 2, allocator),
-            str_lit("KBs"),
+            str_lit(" KBs"),
             allocator),
         allocator
     );
@@ -722,7 +722,7 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     // TODO: average out the fps over multiple frames
     String fps_str = str_concat(
         str_lit("FPS: "),
-        f32_to_string(1.0f / frame_data.dt, 2, temp_alloc),
+        f32_to_string(game_state->debug_state.average_fps, 2, temp_alloc),
         temp_alloc
     );
 
@@ -774,9 +774,20 @@ static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMe
     debug_ui(ui, game_state, game_memory, frame_data);
 }
 
+void debug_update(GameState *game_state, FrameData frame_data)
+{
+    f32 curr_fps = 1.0f / frame_data.dt;
+    f32 avg_fps = game_state->debug_state.average_fps;
+
+    // NOTE: lower alpha value means more smoothing
+    game_state->debug_state.average_fps = exponential_moving_avg(avg_fps, curr_fps, 0.9f);
+}
+
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory)
 {
+    debug_update(game_state, frame_data);
+
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);
 
@@ -804,6 +815,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     game_state->world.current_frame_collisions = collision_table_create(&game_state->world.world_arena);
 
     game_state->sb = str_builder_allocate(32, la_allocator(&game_memory->permanent_memory));
+    game_state->debug_state.average_fps = 60.0f;
 
     UIStyle default_ui_style = {
         .font = game_state->asset_list.default_font

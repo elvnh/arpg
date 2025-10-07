@@ -1,6 +1,7 @@
 #ifndef ENTITY_SYSTEM_H
 #define ENTITY_SYSTEM_H
 
+#include "base/ring_buffer.h"
 #include "entity.h"
 #include "quad_tree.h"
 
@@ -19,11 +20,7 @@ typedef struct {
     EntityGeneration   generation;
 } EntitySlot;
 
-typedef struct {
-    EntityID   ids[MAX_ENTITIES];
-    ssize      head;
-    ssize      tail;
-} EntityIDQueue;
+DEFINE_STATIC_RING_BUFFER(EntityID, EntityIDQueue, MAX_ENTITIES);
 
 typedef struct EntityStorage {
     EntitySlot     entity_slots[MAX_ENTITIES];

@@ -252,7 +252,6 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
                     Rectangle rect = {particle->position, particle_dims};
                     f32 a = base_color.a - (particle->timer / particle->lifetime) * base_color.a;
-                    ASSERT(a >= 0.0f);
                     a = CLAMP(a, 0.0f, 1.0f);
 
                     RGBA32 color = {base_color.r, base_color.g, base_color.b, a};

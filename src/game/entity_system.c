@@ -1,5 +1,6 @@
 #include "entity_system.h"
 #include "base/linear_arena.h"
+#include "base/ring_buffer.h"
 #include "base/sl_list.h"
 #include "base/utils.h"
 #include "game/quad_tree.h"
@@ -80,59 +81,21 @@ void es_impl_remove_component(Entity *entity, ComponentType type)
     entity->active_components &= ~(bit_value);
 }
 
-static void id_queue_set_to_empty(EntityIDQueue *queue)
-{
-    queue->head = S_SIZE_MAX;
-    queue->tail = S_SIZE_MAX;
-}
-
 static void id_queue_initialize(EntityIDQueue *queue)
 {
-    id_queue_set_to_empty(queue);
-}
-
-static b32 id_queue_is_empty(const EntityIDQueue *queue)
-{
-    b32 result = (queue->head == S_SIZE_MAX) && (queue->tail == S_SIZE_MAX);
-    return result;
-}
-
-static b32 id_queue_is_full(const EntityIDQueue *queue)
-{
-    b32 result = (queue->head == queue->tail) && !id_queue_is_empty(queue);
-    return result;
+    ring_initialize_static(queue);
 }
 
 static void id_queue_push(EntityIDQueue *queue, EntityID id)
 {
-    ASSERT(!id_queue_is_full(queue));
-
-    ssize push_index;
-
-    if (id_queue_is_empty(queue)) {
-        queue->head = 0;
-        queue->tail = 1;
-        push_index = 0;
-    } else {
-        push_index = queue->tail;
-        queue->tail = (queue->tail + 1) % MAX_ENTITIES; // TODO: bitwise AND
-    }
-
-    queue->ids[push_index] = id;
+    ring_push(queue, &id);
 }
 
 static EntityID id_queue_pop(EntityIDQueue *queue)
 {
-    ASSERT(!id_queue_is_empty(queue));
+    EntityID result = ring_pop_load(queue);
 
-    EntityID id = queue->ids[queue->head];
-    queue->head = (queue->head + 1) % MAX_ENTITIES;
-
-    if (queue->head == queue->tail) {
-        id_queue_set_to_empty(queue);
-    }
-
-    return id;
+    return result;
 }
 
 void es_initialize(EntitySystem *es, Rectangle world_area)
@@ -180,8 +143,9 @@ EntityID es_create_entity(EntitySystem *es)
     es->alive_entity_ids[alive_index] = id;
 
     EntitySlot *slot = es_get_entity_slot_by_id(es, id);
-    *slot = (EntitySlot){0};
+    slot->entity = (Entity){0};
     slot->alive_entity_array_index = alive_index;
+    slot->quad_tree_location = (QuadTreeLocation){0};
 
     ASSERT(slot->generation == id.generation);
 

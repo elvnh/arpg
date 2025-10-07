@@ -833,7 +833,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     Rectangle tilemap_area = tilemap_get_bounding_box(&game_state->world.tilemap);
     es_initialize(&game_state->world.entities, tilemap_area);
 
-    for (s32 i = 0; i < 1; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);
         Entity *entity = es_get_entity(&game_state->world.entities, id);
         entity->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
@@ -853,11 +853,11 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
         ring_initialize_static(&spawner->particle_buffer);
         //spawner->texture = game_state->texture;
-        spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.5f};
+        spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f};
         spawner->particle_size = 4.0f;
-        spawner->particles_per_second = 1000.0f;
+        spawner->particles_per_second = 250.0f;
         spawner->particles_to_spawn = 100000.0f;
-        spawner->particle_lifetime = 10.0f;
+        spawner->particle_lifetime = 1.0f;
         //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 #endif
         SpriteComponent *sprite = es_add_component(entity, SpriteComponent);

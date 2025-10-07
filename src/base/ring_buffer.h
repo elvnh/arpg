@@ -70,7 +70,7 @@
 #define ring_is_empty(buf) ring_impl_is_empty(&(buf)->head, &(buf)->tail)
 
 /* Internal implementation functions */
-static inline b32 ring_impl_is_empty(ssize *head, ssize *tail)
+static inline b32 ring_impl_is_empty(const ssize *head, const ssize *tail)
 {
     b32 result = *head == -1;
     ASSERT(!result || (*tail == -1));
@@ -78,9 +78,23 @@ static inline b32 ring_impl_is_empty(ssize *head, ssize *tail)
     return result;
 }
 
-static inline b32 ring_impl_is_full(ssize *head, ssize *tail)
+static inline b32 ring_impl_is_full(const ssize *head, const ssize *tail)
 {
     b32 result = !ring_impl_is_empty(head, tail) && (*head == *tail);
+    return result;
+}
+
+static inline ssize ring_impl_length(ssize head, ssize tail, ssize capacity)
+{
+    ssize result = 0;
+    if (head == - 1) {
+
+    } else if (head < tail) {
+        result = tail - head;
+    } else {
+        result = tail + capacity - head;
+    }
+
     return result;
 }
 
@@ -92,7 +106,7 @@ static inline void ring_impl_set_to_empty(ssize *head, ssize *tail)
 
 static inline ssize ring_impl_pop_load(ssize *head, ssize *tail, ssize capacity)
 {
-    ASSERT(*head != -1);
+    ASSERT(!ring_impl_is_empty(head, tail));
     ssize previous_head = *head;
 
     ssize new_head = (previous_head + 1) % capacity;
@@ -161,18 +175,5 @@ static inline void ring_impl_bounds_check(ssize idx, ssize length)
     ASSERT(idx < length);
 }
 
-static inline ssize ring_impl_length(ssize head, ssize tail, ssize capacity)
-{
-    ssize result = 0;
-    if (head == - 1) {
-
-    } else if (head < tail) {
-        result = tail - head;
-    } else {
-        result = tail + capacity - head;
-    }
-
-    return result;
-}
 
 #endif //RING_BUFFER_H

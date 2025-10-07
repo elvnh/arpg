@@ -10,11 +10,11 @@
   - If using comma operator to bounds check, can't take address of expression.
     Return address?
   - Clean up header
-  - Better name for ring_load_pop
+  - Better name for ring_pop_load
  */
 
 /* Definition helpers */
-#define DEFINE_RING_BUFFER(type, name)          \
+#define DEFINE_HEAP_RING_BUFFER(type, name)	\
     typedef struct name {                       \
         type  *items;                           \
         ssize  head;                            \
@@ -47,13 +47,13 @@
     } while (0)
 
 /* Modifying operations */
-#define ring_push(buf, item) ring_push_impl((buf)->items, &(buf)->head, \
+#define ring_push(buf, item) ring_impl_push((buf)->items, &(buf)->head, \
         &(buf)->tail, (buf)->capacity, SIZEOF(*(buf)->items), (item))
-#define ring_push_overwrite(buf, item) ring_push_overwrite_impl((buf)->items, \
+#define ring_push_overwrite(buf, item) ring_impl_push_overwrite((buf)->items, \
         &(buf)->head, &(buf)->tail, (buf)->capacity, SIZEOF(*(buf)->items), (item))
-#define ring_pop(buf) ring_pop_impl(&(buf)->head, &(buf)->tail, (buf)->capacity)
-#define ring_load_pop(buf) ((buf)->items[ring_load_pop_impl(&(buf)->head, &(buf)->tail, (buf)->capacity)])
-#define ring_pop_tail(buf) ring_pop_tail_impl(&(buf)->head, &(buf)->tail, (buf)->capacity)
+#define ring_pop(buf) ring_impl_pop(&(buf)->head, &(buf)->tail, (buf)->capacity)
+#define ring_pop_load(buf) ((buf)->items[ring_impl_load_pop(&(buf)->head, &(buf)->tail, (buf)->capacity)])
+#define ring_pop_tail(buf) ring_impl_pop_tail(&(buf)->head, &(buf)->tail, (buf)->capacity)
 #define ring_swap_remove(buf, index) (*ring_at(buf, index) = *ring_peek_tail(buf), ring_pop_tail(buf))
 
 /* Access operations */
@@ -63,12 +63,12 @@
 #define ring_peek_tail(buf) ring_at(buf, ring_length(buf) - 1)
 
 /* Query operations */
-#define ring_length(buf) ring_length_impl((buf)->head, (buf)->tail, (buf)->capacity)
-#define ring_is_full(buf) ring_is_full_impl(&(buf)->head, &(buf)->tail)
-#define ring_is_empty(buf) ring_is_empty_impl(&(buf)->head, &(buf)->tail)
+#define ring_length(buf) ring_impl_length((buf)->head, (buf)->tail, (buf)->capacity)
+#define ring_is_full(buf) ring_impl_is_full(&(buf)->head, &(buf)->tail)
+#define ring_is_empty(buf) ring_impl_is_empty(&(buf)->head, &(buf)->tail)
 
 /* Internal implementation functions */
-static inline b32 ring_is_empty_impl(ssize *head, ssize *tail)
+static inline b32 ring_impl_is_empty(ssize *head, ssize *tail)
 {
     b32 result = *head == -1;
     ASSERT(!result || (*tail == -1));
@@ -76,9 +76,9 @@ static inline b32 ring_is_empty_impl(ssize *head, ssize *tail)
     return result;
 }
 
-static inline b32 ring_is_full_impl(ssize *head, ssize *tail)
+static inline b32 ring_impl_is_full(ssize *head, ssize *tail)
 {
-    b32 result = !ring_is_empty_impl(head, tail) && (*head == *tail);
+    b32 result = !ring_impl_is_empty(head, tail) && (*head == *tail);
     return result;
 }
 
@@ -88,7 +88,7 @@ static inline void ring_impl_set_to_empty(ssize *head, ssize *tail)
     *tail = -1;
 }
 
-static inline ssize ring_load_pop_impl(ssize *head, ssize *tail, ssize capacity)
+static inline ssize ring_impl_load_pop(ssize *head, ssize *tail, ssize capacity)
 {
     ASSERT(*head != -1);
     ssize previous_head = *head;
@@ -104,14 +104,14 @@ static inline ssize ring_load_pop_impl(ssize *head, ssize *tail, ssize capacity)
     return previous_head;
 }
 
-static inline void ring_pop_impl(ssize *head, ssize *tail, ssize capacity)
+static inline void ring_impl_pop(ssize *head, ssize *tail, ssize capacity)
 {
-    ring_load_pop_impl(head, tail, capacity);
+    ring_impl_load_pop(head, tail, capacity);
 }
 
-static inline void ring_pop_tail_impl(ssize *head, ssize *tail, ssize capacity)
+static inline void ring_impl_pop_tail(ssize *head, ssize *tail, ssize capacity)
 {
-    ASSERT(!ring_is_empty_impl(head, tail));
+    ASSERT(!ring_impl_is_empty(head, tail));
 
     *tail -= 1;
 
@@ -124,11 +124,11 @@ static inline void ring_pop_tail_impl(ssize *head, ssize *tail, ssize capacity)
     }
 }
 
-static inline void ring_push_impl(void *items, ssize *head, ssize *tail, ssize capacity,
+static inline void ring_impl_push(void *items, ssize *head, ssize *tail, ssize capacity,
     ssize item_size, void *item)
 {
     ASSERT(items);
-    ASSERT(!ring_is_full_impl(head, tail));
+    ASSERT(!ring_impl_is_full(head, tail));
 
     if (*head == -1) {
         *head = 0;
@@ -139,15 +139,15 @@ static inline void ring_push_impl(void *items, ssize *head, ssize *tail, ssize c
     *tail = (*tail + 1) % capacity;
 }
 
-static inline void ring_push_overwrite_impl(void *items, ssize *head, ssize *tail, ssize capacity,
+static inline void ring_impl_push_overwrite(void *items, ssize *head, ssize *tail, ssize capacity,
     ssize item_size, void *item)
 {
     // TODO: this can be made more efficient
-    if (ring_is_full_impl(head, tail)) {
-        ring_pop_impl(head, tail, capacity);
+    if (ring_impl_is_full(head, tail)) {
+        ring_impl_pop(head, tail, capacity);
     }
 
-    ring_push_impl(items, head, tail, capacity, item_size, item);
+    ring_impl_push(items, head, tail, capacity, item_size, item);
 }
 
 static inline void ring_impl_bounds_check(ssize idx, ssize length)
@@ -155,7 +155,7 @@ static inline void ring_impl_bounds_check(ssize idx, ssize length)
     ASSERT(idx < length);
 }
 
-static inline ssize ring_length_impl(ssize head, ssize tail, ssize capacity)
+static inline ssize ring_impl_length(ssize head, ssize tail, ssize capacity)
 {
     ssize result = 0;
     if (head == - 1) {

@@ -1540,9 +1540,9 @@ static void tests_ring()
 		ring_push(&buf, &j);
 	    }
 
-	    ASSERT(ring_load_pop(&buf) == 10);
-	    ASSERT(ring_load_pop(&buf) == 11);
-	    ASSERT(ring_load_pop(&buf) == 12);
+	    ASSERT(ring_pop_load(&buf) == 10);
+	    ASSERT(ring_pop_load(&buf) == 11);
+	    ASSERT(ring_pop_load(&buf) == 12);
 
 	}
     }
@@ -1552,7 +1552,7 @@ static void tests_ring()
 	LinearArena arena = la_create(default_allocator, 4096);
 	Allocator allocator = la_allocator(&arena);
 
-	DEFINE_RING_BUFFER(int, HeapIntBuffer);
+	DEFINE_HEAP_RING_BUFFER(int, HeapIntBuffer);
 
 	{
 	    HeapIntBuffer buf;

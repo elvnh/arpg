@@ -50,14 +50,21 @@ typedef enum {
     PS_WHEN_DONE_REMOVE_ENTITY,
 } ParticleSpawnerWhenDone;
 
+typedef enum {
+    PS_SPAWN_DISTRIBUTED,
+    PS_SPAWN_ALL_AT_ONCE,
+} ParticleSpawnerKind;
+
 // TODO: particle velocity
 typedef struct {
-    f32 particles_per_second;
+    ParticleSpawnerKind kind;
     TextureHandle particle_texture;
     RGBA32 particle_color;
     f32 particle_size;
     f32 particle_lifetime;
-    f32 particles_to_spawn; // TODO: this should be in ParticleSpawner
+    s32 particles_to_spawn;
+
+    f32 particles_per_second;
 } ParticleSpawnerConfig;
 
 // TODO: different kinds of spawners: spawn all at once, infinite particles etc,
@@ -65,7 +72,7 @@ typedef struct {
 typedef struct {
     ParticleBuffer particle_buffer;
     f32 particle_timer;
-    f32 particles_left_to_spawn;
+    s32 particles_left_to_spawn; // TODO: should be s32
     ParticleSpawnerConfig config;
     ParticleSpawnerWhenDone action_when_done;
 } ParticleSpawner;

@@ -138,13 +138,24 @@ static b32 entity_should_die(Entity *entity)
 // TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
 static void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vector2 position, f32 dt)
 {
-    ps->particle_timer += ps->config.particles_per_second * dt;
+    s32 particles_to_spawn_this_frame = 0;
 
-    s32 particles_to_spawn = MIN((s32)ps->particle_timer, (s32)ps->particles_left_to_spawn);
-    ps->particle_timer -= (f32)particles_to_spawn;
-    ps->particles_left_to_spawn -= (f32)particles_to_spawn;
+    switch (ps->config.kind) {
+        case PS_SPAWN_DISTRIBUTED: {
+            ps->particle_timer += ps->config.particles_per_second * dt;
 
-    for (s32 i = 0; i < particles_to_spawn; ++i) {
+            particles_to_spawn_this_frame = MIN((s32)ps->particle_timer, ps->particles_left_to_spawn);
+            ps->particle_timer -= (f32)particles_to_spawn_this_frame;
+            ps->particles_left_to_spawn -= particles_to_spawn_this_frame;
+        } break;
+
+        case PS_SPAWN_ALL_AT_ONCE: {
+            particles_to_spawn_this_frame = ps->particles_left_to_spawn;
+            ps->particles_left_to_spawn = 0;
+        } break;
+    }
+
+    for (s32 i = 0; i < particles_to_spawn_this_frame; ++i) {
         f32 x = cos_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
         f32 y = sin_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
         f32 speed = 15.0f + ((f32)rand() / (f32)RAND_MAX) * 100.0f;
@@ -504,11 +515,11 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
     OnDeathComponent *on_death = es_add_component(entity, OnDeathComponent);
     on_death->kind = DEATH_EFFECT_SPAWN_PARTICLES;
     on_death->as.spawn_particles.config = (ParticleSpawnerConfig) {
-        .particles_per_second = 1000.0f,
+        .kind = PS_SPAWN_ALL_AT_ONCE,
         .particle_color = (RGBA32){1.0f, 0.2f, 0.1f, 0.7f},
         .particle_size = 4.0f,
         .particle_lifetime = 1.0f,
-        .particles_to_spawn = 1000.0f,
+        .particles_to_spawn = 50
     };
     // TODO: configure particles
 
@@ -614,10 +625,9 @@ static Vector2i world_to_tile_coords(Vector2 world_coords)
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena, DebugState *debug_state)
 {
-    Rectangle visible_bounds = camera_get_visible_area(world->camera, frame_data.window_size);
-
-    Vector2i min_tile = world_to_tile_coords(rect_bottom_left(visible_bounds));
-    Vector2i max_tile = world_to_tile_coords(rect_top_right(visible_bounds));
+    Rectangle visible_area = camera_get_visible_area(world->camera, frame_data.window_size);
+    Vector2i min_tile = world_to_tile_coords(rect_bottom_left(visible_area));
+    Vector2i max_tile = world_to_tile_coords(rect_top_right(visible_area));
 
     s32 min_x = min_tile.x;
     s32 max_x = max_tile.x;
@@ -655,7 +665,6 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
     }
 
     // TODO: debug camera that is detached from regular camera
-    Rectangle visible_area = camera_get_visible_area(world->camera, frame_data.window_size);
     EntityIDList entities_in_area = qt_get_entities_in_area(&world->entities.quad_tree, visible_area, frame_arena);
 
     for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {

@@ -600,24 +600,38 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, const Ass
     swap_and_reset_collision_tables(world);
 }
 
+static Vector2i world_to_tile_coords(Vector2 world_coords)
+{
+    Vector2i result = {
+        (s32)((f32)world_coords.x / (f32)TILE_SIZE),
+        (s32)((f32)world_coords.y / (f32)TILE_SIZE)
+    };
+
+    return result;
+}
+
 // TODO: this shouldn't need AssetList parameter?
 static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
     LinearArena *frame_arena, DebugState *debug_state)
 {
-    // TODO: only render visible part of tilemap
+    Rectangle visible_bounds = camera_get_visible_area(world->camera, frame_data.window_size);
 
-    s32 min_x = world->tilemap.min_x;
-    s32 max_x = world->tilemap.max_x;
-    s32 min_y = world->tilemap.min_y;
-    s32 max_y = world->tilemap.max_y;
+    Vector2i min_tile = world_to_tile_coords(rect_bottom_left(visible_bounds));
+    Vector2i max_tile = world_to_tile_coords(rect_top_right(visible_bounds));
+
+    s32 min_x = min_tile.x;
+    s32 max_x = max_tile.x;
+    s32 min_y = min_tile.y;
+    s32 max_y = max_tile.y;
 
     for (s32 y = min_y; y <= max_y; ++y) {
         for (s32 x = min_x; x <= max_x; ++x) {
             Vector2i tile_coords = {x, y};
             Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
-            RGBA32 color;
 
             if (tile) {
+                RGBA32 color;
+
                 switch (tile->type) {
                     case TILE_FLOOR: {
                         color = (RGBA32){0.1f, 0.5f, 0.9f, 1.0f};
@@ -629,16 +643,14 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
 
                         INVALID_DEFAULT_CASE;
                 }
-            } else {
-                color = RGBA32_WHITE;
+
+                Rectangle tile_rect = {
+                    .position = tile_to_world_coords(tile_coords),
+                    .size = { (f32)TILE_SIZE, (f32)TILE_SIZE }
+                };
+
+                rb_push_rect(rb, frame_arena, tile_rect, color, assets->shape_shader, RENDER_LAYER_TILEMAP);
             }
-
-            Rectangle tile_rect = {
-                .position = tile_to_world_coords(tile_coords),
-                .size = { (f32)TILE_SIZE, (f32)TILE_SIZE }
-            };
-
-            rb_push_rect(rb, frame_arena, tile_rect, color, assets->shape_shader, RENDER_LAYER_TILEMAP);
         }
     }
 

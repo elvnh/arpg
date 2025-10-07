@@ -20,6 +20,7 @@
 #include "game/entity.h"
 #include "game/entity_system.h"
 #include "game/game_world.h"
+#include "game/health.h"
 #include "game/quad_tree.h"
 #include "game/renderer/render_key.h"
 #include "game/tilemap.h"
@@ -107,7 +108,7 @@ static b32 entity_should_die(Entity *entity)
     if (es_has_component(entity, HealthComponent)) {
         HealthComponent *health = es_get_component(entity, HealthComponent);
 
-        if (health->hitpoints <= 0) {
+        if (health->health.hitpoints <= 0) {
             return true;
         }
     }
@@ -280,21 +281,19 @@ static b32 entities_intersected_previous_frame(GameWorld *world, EntityID a, Ent
 
 // TODO: only try_get_component and try_get_entity can retur null
 
-static void deal_damage(Entity *a, DamageFieldComponent *dmg_field, Entity *b, HealthComponent *health)
+static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damage damage)
 {
-    (void)a;
-    (void)b;
-
-    health->hitpoints -= dmg_field->damage;
+    (void)entity;
+    health->health.hitpoints -= calculate_damage_received(health->health, damage);
 }
 
-static void try_deal_damage(Entity *a, Entity *b)
+static void try_deal_damage_field_damage(Entity *a, Entity *b)
 {
-    DamageFieldComponent *damage = es_get_component(a, DamageFieldComponent);
-    HealthComponent *health = es_get_component(b, HealthComponent);
+    HealthComponent *receiver_health = es_get_component(a, HealthComponent);
+    DamageFieldComponent *sender_damage_field = es_get_component(b, DamageFieldComponent);
 
-    if (damage && health) {
-        deal_damage(a, damage, b, health);
+    if (receiver_health && sender_damage_field) {
+        deal_damage_to_entity(a, receiver_health, sender_damage_field->damage);
     }
 }
 
@@ -303,16 +302,8 @@ static void handle_collision_side_effects(Entity *a, Entity *b)
     ASSERT(a);
     ASSERT(b);
 
-    try_deal_damage(a, b);
-    try_deal_damage(b, a);
-
-    if (es_has_component(a, DamageFieldComponent)) {
-        printf("Damage A: %d\n", es_get_component(a, DamageFieldComponent)->damage);
-    }
-
-    if (es_has_component(b, DamageFieldComponent)) {
-        printf("Damage B: %d\n", es_get_component(b, DamageFieldComponent)->damage);
-    }
+    try_deal_damage_field_damage(a, b);
+    try_deal_damage_field_damage(b, a);
 }
 
 static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
@@ -498,8 +489,8 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
     collider->size = v2(16.0f, 16.0f);
     collider->non_blocking = true;
 
-    DamageFieldComponent *damage = es_add_component(entity, DamageFieldComponent);
-    damage->damage = 3;
+    DamageFieldComponent *damage_field = es_add_component(entity, DamageFieldComponent);
+    damage_field->damage.fire_damage = 4;
 
     SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
     sprite->size = v2(16.0f, 16.0f);
@@ -863,7 +854,8 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         collider->size = v2(16.0f, 16.0f);
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
-        hp->hitpoints = 10;
+        hp->health.hitpoints = 10;
+        hp->health.fire_resistance = 50;
 
         ASSERT(es_has_component(entity, ColliderComponent));
         ASSERT(es_has_component(entity, HealthComponent));

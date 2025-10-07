@@ -1,6 +1,7 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+#include "health.h"
 #include "particle.h"
 #include "asset.h"
 
@@ -34,11 +35,11 @@ typedef struct {
 } ColliderComponent;
 
 typedef struct {
-    s32 damage;
+    Damage damage;
 } DamageFieldComponent;
 
 typedef struct {
-    s64 hitpoints;
+    Health health;
 } HealthComponent;
 
 // TODO: can be generalized

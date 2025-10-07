@@ -7,9 +7,11 @@
 #include "base/list.h"
 #include "base/matrix.h"
 #include "base/rectangle.h"
+#include "base/ring_buffer.h"
 #include "base/sl_list.h"
 #include "base/rgba.h"
 #include "base/maths.h"
+#include "base/string8.h"
 #include "base/utils.h"
 #include "base/vector.h"
 #include "base/line.h"
@@ -699,17 +701,30 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
     return result;
 }
 
-static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory)
+static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, FrameData frame_data)
 {
     ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
+#if 1
     ssize temp_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
     ssize perm_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
     ssize world_arena_memory_usage = la_get_memory_usage(&game_state->world.world_arena);
     // TODO: asset memory usage
 
-
     Allocator temp_alloc = la_allocator(&game_memory->temporary_memory);
+
+    String frame_time_str = str_concat(
+        str_lit("Frame time: "),
+        f32_to_string(frame_data.dt, 5, temp_alloc),
+        temp_alloc
+    );
+
+    // TODO: average out the fps over multiple frames
+    String fps_str = str_concat(
+        str_lit("FPS: "),
+        f32_to_string(1.0f / frame_data.dt, 2, temp_alloc),
+        temp_alloc
+    );
 
     String temp_arena_str = dbg_arena_usage_string(str_lit("Frame arena: "), temp_arena_memory_usage, temp_alloc);
     String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena: "), perm_arena_memory_usage, temp_alloc);
@@ -724,6 +739,11 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
         temp_alloc
     );
 
+    ui_text(ui, frame_time_str);
+    ui_text(ui, fps_str);
+
+    ui_spacing(ui, 8);
+
     ui_text(ui, temp_arena_str);
     ui_text(ui, perm_arena_str);
     ui_text(ui, world_arena_str);
@@ -735,13 +755,23 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_checkbox(ui, str_lit("Render quad tree"), &game_state->debug_state.quad_tree_overlay);
     ui_checkbox(ui, str_lit("Render colliders"), &game_state->debug_state.render_colliders);
     ui_checkbox(ui, str_lit("Render origin"),    &game_state->debug_state.render_origin);
+#endif
+
+    //ui_checkbox(ui, str_lit("Render quad tree"), &game_state->debug_state.quad_tree_overlay);
+
+    if (ui_button(ui, str_lit("Abc")).clicked) {
+        printf("Clicked\n");
+    }
+    /* ui_button(ui, str_lit("Def")); */
+
+    ui_textbox(ui, &game_state->sb);
 
     ui_pop_container(ui);
 }
 
-static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMemory *game_memory)
+static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, FrameData frame_data)
 {
-    debug_ui(ui, game_state, game_memory);
+    debug_ui(ui, game_state, game_memory, frame_data);
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
@@ -757,7 +787,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     if (game_state->debug_state.debug_menu_active) {
         ui_core_begin_frame(&game_state->ui);
 
-        game_update_and_render_ui(&game_state->ui, game_state, game_memory);
+        game_update_and_render_ui(&game_state->ui, game_state, game_memory, frame_data);
 
         Matrix4 proj = mat4_orthographic(frame_data.window_size, Y_IS_DOWN);
         RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
@@ -772,6 +802,8 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
     game_state->world.previous_frame_collisions = collision_table_create(&game_state->world.world_arena);
     game_state->world.current_frame_collisions = collision_table_create(&game_state->world.world_arena);
+
+    game_state->sb = str_builder_allocate(32, la_allocator(&game_memory->permanent_memory));
 
     UIStyle default_ui_style = {
         .font = game_state->asset_list.default_font

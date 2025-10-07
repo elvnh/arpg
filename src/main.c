@@ -48,8 +48,6 @@ int main()
 {
     run_tests();
 
-    return 0;
-
     // TODO: make this use mmap
     LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);
 

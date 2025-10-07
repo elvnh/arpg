@@ -25,6 +25,8 @@ typedef struct {
     UIState ui;
     AssetList asset_list;
     DebugState debug_state;
+
+    StringBuilder sb;
 } GameState;
 
 typedef struct {

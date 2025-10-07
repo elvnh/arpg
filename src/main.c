@@ -46,6 +46,10 @@ static Vector2 get_text_dimensions(FontHandle font_handle, String text, s32 text
 
 int main()
 {
+    run_tests();
+
+    return 0;
+
     // TODO: make this use mmap
     LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);
 
@@ -57,8 +61,6 @@ int main()
     GameState *game_state = la_allocate_item(&game_memory.permanent_memory, GameState);
 
     platform_trap_on_fp_exceptions();
-
-    run_tests();
 
     WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
 	WINDOW_FLAG_NON_RESIZABLE, la_allocator(&game_memory.permanent_memory));

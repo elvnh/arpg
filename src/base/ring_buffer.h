@@ -20,12 +20,26 @@
         ssize  capacity;                        \
     } name
 
-#define ring_initialize(buf, cap, allocator)                        \
+#define DEFINE_STATIC_RING_BUFFER(type, name, cap)      \
+    typedef struct name {                               \
+        type   items[cap];                              \
+        ssize  head;                                    \
+        ssize  tail;                                    \
+        ssize  capacity;                                \
+    } name
+
+#define ring_initialize(buf, cap, allocator)                            \
     do {                                                                \
         ASSERT(!multiply_overflows_ssize((cap), SIZEOF(*(buf)->items))); \
         (buf)->items = allocate(allocator, (cap) * SIZEOF(*(buf)->items)); \
-        ring_impl_set_to_empty(&(buf)->head, &(buf)->tail);         \
-        (buf)->capacity = (cap);                                        \
+        ring_initialize_static(buf, cap);                               \
+    } while (0)
+
+#define ring_initialize_static(buf, cap)                        \
+    do {                                                        \
+        ASSERT(!multiply_overflows_ssize((cap), SIZEOF(*(buf)->items))); \
+        ring_impl_set_to_empty(&(buf)->head, &(buf)->tail);     \
+        (buf)->capacity = (cap);                                \
     } while (0)
 
 #define ring_push(buf, item) ring_push_impl((buf)->items, &(buf)->head, \
@@ -45,7 +59,11 @@
 #define ring_is_full(buf) ring_is_full_impl(&(buf)->head, &(buf)->tail)
 #define ring_is_empty(buf) ring_is_empty_impl(&(buf)->head, &(buf)->tail)
 
+#if 0
 DEFINE_RING_BUFFER(int, IntBuffer);
+#else
+DEFINE_STATIC_RING_BUFFER(int, IntBuffer, 4);
+#endif
 
 static inline b32 ring_is_empty_impl(ssize *head, ssize *tail)
 {
@@ -104,7 +122,8 @@ static inline void *ring_pop_tail_impl(void *items, ssize *head, ssize *tail, ss
 
 static inline void ring_push_impl(void *items, ssize *head, ssize *tail, ssize capacity, ssize item_size, void *item)
 {
-    ASSERT((*head != *tail) || ((*head == -1) && (*tail == -1)));
+    ASSERT(items);
+    ASSERT(!ring_is_full_impl(head, tail));
 
     if (*head == -1) {
         *head = 0;

@@ -197,6 +197,26 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
     if (entity_should_die(entity)) {
         // NOTE: won't be removed until after this frame
         es_schedule_entity_for_removal(entity);
+
+        if (es_has_component(entity, OnDeathComponent)) {
+            OnDeathComponent *on_death = es_get_component(entity, OnDeathComponent);
+
+            switch (on_death->kind) {
+                case DEATH_EFFECT_SPAWN_PARTICLES: {
+                    EntityID id = es_create_entity(&world->entities);
+                    Entity *spawner = es_get_entity(&world->entities, id);
+                    spawner->position = entity->position;
+
+                    ParticleSpawner *ps = es_add_component(spawner, ParticleSpawner);
+                    ring_initialize_static(&ps->particle_buffer);
+                    ps->particle_color = (RGBA32){1.0f, 0.2f, 0.1f, 0.6f};
+                    ps->particle_size = 4.0f;
+                    ps->particles_per_second = 250.0f;
+                    ps->particles_to_spawn = 100000.0f;
+                    ps->particle_lifetime = 1.0f;
+                } break;
+            }
+        }
     }
 
     es_update_entity_quad_tree_location(&world->entities, entity, &world->world_arena);
@@ -499,6 +519,10 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
 
     LifetimeComponent *lifetime = es_add_component(entity, LifetimeComponent);
     lifetime->time_to_live = 2.0f;
+
+    OnDeathComponent *on_death = es_add_component(entity, OnDeathComponent);
+    on_death->kind = DEATH_EFFECT_SPAWN_PARTICLES;
+    // TODO: configure particles
 
     collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
 }

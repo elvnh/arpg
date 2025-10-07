@@ -12,6 +12,7 @@
     COMPONENT(ParticleSpawner)                  \
     COMPONENT(SpriteComponent)                  \
     COMPONENT(LifetimeComponent)                \
+    COMPONENT(OnDeathComponent)                 \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -49,6 +50,8 @@ typedef enum {
     PS_WHEN_DONE_REMOVE_ENTITY,
 } ParticleSpawnerWhenDone;
 
+// TODO: different kinds of spawners: spawn all at once, infinite particles etc,
+// allow configuring angle of particles
 typedef struct {
     ParticleBuffer particle_buffer;
     f32 particle_timer;
@@ -72,5 +75,21 @@ typedef struct {
     f32 time_to_live;
     // TODO: actions upon removal? OnDeath component?
 } LifetimeComponent;
+
+typedef enum {
+    DEATH_EFFECT_SPAWN_PARTICLES,
+} OnDeathEffectKind;
+
+typedef struct {
+    int n;
+} DeathEffectSpawnParticles;
+
+typedef struct {
+    OnDeathEffectKind kind;
+
+    union {
+        DeathEffectSpawnParticles spawn_particles;
+    } as;
+} OnDeathComponent;
 
 #endif //COMPONENT_H

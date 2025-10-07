@@ -5,7 +5,10 @@
 #include "entity.h"
 #include "quad_tree.h"
 
+// TODO: bug: can only create 1 less than this
 #define MAX_ENTITIES 32
+
+// TODO: Create try_get_component that can return 0, make get_component crash on 0
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_remove_component(entity, type)      es_impl_remove_component(entity, ES_IMPL_COMP_ENUM_NAME(type))

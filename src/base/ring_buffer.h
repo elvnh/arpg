@@ -5,10 +5,11 @@
 
 /*
   TODO:
+  - Return address of pushed value
+  - ring_alloc - Doesn't push, just allocates space
   - Return value when popping, can probably be done with comma operator
   - If using comma operator to bounds check, can't take address of expression.
     Return address?
-  - Swap remove
   - Unit tests
  */
 
@@ -32,14 +33,15 @@
     do {                                                                \
         ASSERT(!multiply_overflows_ssize((cap), SIZEOF(*(buf)->items))); \
         (buf)->items = allocate(allocator, (cap) * SIZEOF(*(buf)->items)); \
-        ring_initialize_static(buf, cap);                               \
+        (buf)->capacity = cap;						\
+	ring_impl_set_to_empty(&(buf)->head, &(buf)->tail);		\
     } while (0)
 
-#define ring_initialize_static(buf, cap)                        \
+#define ring_initialize_static(buf)                        \
     do {                                                        \
-        ASSERT(!multiply_overflows_ssize((cap), SIZEOF(*(buf)->items))); \
+        (buf)->capacity = ARRAY_COUNT((buf)->items);		\
+        ASSERT(!multiply_overflows_ssize((buf)->capacity, SIZEOF(*(buf)->items))); \
         ring_impl_set_to_empty(&(buf)->head, &(buf)->tail);     \
-        (buf)->capacity = (cap);                                \
     } while (0)
 
 #define ring_push(buf, item) ring_push_impl((buf)->items, &(buf)->head, \
@@ -50,22 +52,19 @@
         (buf)->capacity, SIZEOF(*((buf)->items)))
 #define ring_pop_tail(buf) ring_pop_tail_impl((buf)->items, &(buf)->head, &(buf)->tail, \
         (buf)->capacity, SIZEOF(*((buf)->items)))
-#define ring_swap_remove_impl(buf, index) (*ring_at(buf, index) = *ring_at(buf, ring_length(buf) - 1), \
+
+// TODO: replace second ring_at with ring_peek_tail
+#define ring_swap_remove(buf, index) (*ring_at(buf, index) = *ring_peek_tail(buf), \
 	ring_pop_tail(buf))
 
 #define ring_at(buf, idx) (ring_internal_bounds_check((idx), ring_length((buf))), \
         &((buf)->items[((buf)->head + (idx)) % (buf)->capacity]))
-#define ring_peek(buf) ring_at((buf), 0)
+#define ring_peek(buf) ring_at(buf, 0)
+#define ring_peek_tail(buf) ring_at(buf, ring_length(buf) - 1)
 
 #define ring_length(buf) ring_length_impl((buf)->head, (buf)->tail, (buf)->capacity)
 #define ring_is_full(buf) ring_is_full_impl(&(buf)->head, &(buf)->tail)
 #define ring_is_empty(buf) ring_is_empty_impl(&(buf)->head, &(buf)->tail)
-
-#if 0
-DEFINE_RING_BUFFER(int, IntBuffer);
-#else
-DEFINE_STATIC_RING_BUFFER(int, IntBuffer, 4);
-#endif
 
 static inline b32 ring_is_empty_impl(ssize *head, ssize *tail)
 {

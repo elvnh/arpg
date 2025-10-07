@@ -1,6 +1,7 @@
 #include "base/free_list_arena.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
+#include "base/ring_buffer.h"
 #include "base/sl_list.h"
 #include "base/typedefs.h"
 #include "base/string8.h"
@@ -1314,6 +1315,240 @@ static void tests_types()
 }
 
 
+static void tests_ring()
+{
+
+    /* Static buffers */
+    {
+	DEFINE_STATIC_RING_BUFFER(int, StaticIntBuffer, 3);
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+	    ASSERT(buf.capacity == 3);
+	    ASSERT(ring_is_empty(&buf));
+	    ASSERT(!ring_is_full(&buf));
+	    ASSERT(ring_length(&buf) == 0);
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    // TODO: pushing items by value
+	    s32 i = 123;
+	    ring_push(&buf, &i);
+
+	    ASSERT(ring_length(&buf) == 1);
+	    ASSERT(!ring_is_empty(&buf));
+	    ASSERT(!ring_is_full(&buf));
+	    ASSERT(*ring_at(&buf, 0) == 123);
+
+	    ring_pop(&buf);
+	    ASSERT(ring_length(&buf) == 0);
+	    ASSERT(ring_is_empty(&buf));
+	    ASSERT(!ring_is_full(&buf));
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    for (s32 i = 0; i < buf.capacity; ++i) {
+		ring_push(&buf, &i);
+	    }
+
+	    ASSERT(ring_length(&buf) == buf.capacity);
+	    ASSERT(ring_is_full(&buf));
+	    ASSERT(!ring_is_empty(&buf));
+
+	    for (s32 i = 0; i < ring_length(&buf); ++i) {
+		ASSERT(*ring_at(&buf, i) == i);
+	    }
+
+	    ring_pop(&buf);
+	    ASSERT(ring_length(&buf) == buf.capacity - 1);
+	    ASSERT(*ring_peek(&buf) == 1);
+
+	    ring_pop(&buf);
+	    ASSERT(*ring_peek(&buf) == 2);
+
+	    ring_pop(&buf);
+	    ASSERT(ring_is_empty(&buf));
+
+	    s32 i = 0;
+	    ring_push(&buf, &i);
+
+	    ASSERT(ring_length(&buf) == 1);
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    s32 i = 0;
+	    ring_push(&buf, &i);
+
+	    i = 1;
+	    ring_push(&buf, &i);
+
+	    ASSERT(ring_length(&buf) == 2);
+	    ASSERT(*ring_at(&buf, 0) == 0);
+	    ASSERT(*ring_at(&buf, 1) == 1);
+
+	    ring_pop(&buf);
+	    ASSERT(ring_length(&buf) == 1);
+	    ASSERT(*ring_at(&buf, 0) == 1);
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    s32 i = 0;
+	    ring_push(&buf, &i);
+
+	    i = 1;
+	    ring_push(&buf, &i);
+
+	    ring_pop(&buf);
+
+	    i = 2;
+	    ring_push(&buf, &i);
+
+	    i = 3;
+	    ring_push(&buf, &i);
+
+	    ASSERT(*ring_at(&buf, 0) == 1);
+	    ASSERT(*ring_at(&buf, 1) == 2);
+	    ASSERT(*ring_at(&buf, 2) == 3);
+
+	    ring_pop(&buf);
+	    ring_pop(&buf);
+	    ring_pop(&buf);
+
+	    ASSERT(ring_is_empty(&buf));
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    for (s32 i = 0; i < buf.capacity * 2; ++i) {
+		ring_push_overwrite(&buf, &i);
+	    }
+
+	    ASSERT(ring_is_full(&buf));
+
+	    for (s32 i = 0; i < ring_length(&buf); ++i) {
+		ASSERT(*ring_at(&buf, i) == (i + buf.capacity));
+	    }
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    for (s32 i = 0; i < buf.capacity; ++i) {
+		ring_push(&buf, &i);
+	    }
+
+	    ASSERT(*ring_peek_tail(&buf) == 2);
+	    ring_pop_tail(&buf);
+
+	    ASSERT(*ring_peek_tail(&buf) == 1);
+	    ring_pop_tail(&buf);
+
+	    ASSERT(*ring_peek_tail(&buf) == 0);
+	    ring_pop_tail(&buf);
+
+	    ASSERT(ring_is_empty(&buf));
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    for (s32 i = 0; i < buf.capacity; ++i) {
+		ring_push(&buf, &i);
+	    }
+
+	    ring_swap_remove(&buf, 0);
+	    ASSERT(ring_length(&buf) == 2);
+
+	    ASSERT(*ring_at(&buf, 0) == 2);
+	    ASSERT(*ring_at(&buf, 1) == 1);
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    for (s32 i = 0; i < buf.capacity; ++i) {
+		ring_push(&buf, &i);
+	    }
+
+	    ring_swap_remove(&buf, 1);
+	    ASSERT(ring_length(&buf) == 2);
+
+	    ASSERT(*ring_at(&buf, 0) == 0);
+	    ASSERT(*ring_at(&buf, 1) == 2);
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    for (s32 i = 0; i < buf.capacity; ++i) {
+		ring_push(&buf, &i);
+	    }
+
+	    ring_swap_remove(&buf, 2);
+	    ASSERT(ring_length(&buf) == 2);
+
+	    ASSERT(*ring_at(&buf, 0) == 0);
+	    ASSERT(*ring_at(&buf, 1) == 1);
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    for (s32 i = 0; i < buf.capacity; ++i) {
+		ring_push(&buf, &i);
+	    }
+
+	    ring_swap_remove(&buf, 2);
+	    ring_swap_remove(&buf, 1);
+
+	    ASSERT(ring_length(&buf) == 1);
+	    ASSERT(*ring_peek(&buf) == 0);
+
+	    ring_swap_remove(&buf, 0);
+
+	    ASSERT(ring_is_empty(&buf));
+	}
+    }
+
+    /* Heap buffers */
+    {
+	LinearArena arena = la_create(default_allocator, 4096);
+	Allocator allocator = la_allocator(&arena);
+
+	DEFINE_RING_BUFFER(int, HeapIntBuffer);
+
+	{
+	    HeapIntBuffer buf;
+	    ring_initialize(&buf, 4, allocator);
+	    ASSERT(buf.capacity == 4);
+	    ASSERT(buf.items);
+	    ASSERT(ring_is_empty(&buf));
+	}
+
+	la_destroy(&arena);
+    }
+}
+
 static void run_tests()
 {
     tests_arena();
@@ -1326,4 +1561,5 @@ static void run_tests()
     tests_sl_list();
     tests_format();
     tests_types();
+    tests_ring();
 }

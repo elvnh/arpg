@@ -422,30 +422,31 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt, LinearArena 
         // TODO: this seems bug prone
 
         EntityID id_a = world->entities.alive_entity_ids[i];
-        Entity *a = es_get_entity(&world->entities,id_a);
-
+        Entity *a = es_get_entity(&world->entities, id_a);
         ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
+        ASSERT(a);
+
         f32 movement_fraction_left = 1.0f;
 
-        Rectangle collision_area = {0};
-        {
-            // TODO: clean up these calculations
-            Vector2 next_pos = v2_add(a->position, a->velocity);
-            f32 min_x = MIN(a->position.x, next_pos.x);
-            f32 max_x = MAX(a->position.x, next_pos.x) + collider_a->size.x;
-            f32 min_y = MIN(a->position.y, next_pos.y);
-            f32 max_y = MAX(a->position.y, next_pos.y) + collider_a->size.y;
-
-            f32 width = max_x - min_x;
-            f32 height = max_y - min_y;
-
-            collision_area.position.x = min_x;
-            collision_area.position.y = min_y;
-            collision_area.size.x = width;
-            collision_area.size.y = height;
-        }
-
         if (collider_a) {
+            Rectangle collision_area = {0};
+            {
+                // TODO: clean up these calculations
+                Vector2 next_pos = v2_add(a->position, a->velocity);
+                f32 min_x = MIN(a->position.x, next_pos.x);
+                f32 max_x = MAX(a->position.x, next_pos.x) + collider_a->size.x;
+                f32 min_y = MIN(a->position.y, next_pos.y);
+                f32 max_y = MAX(a->position.y, next_pos.y) + collider_a->size.y;
+
+                f32 width = max_x - min_x;
+                f32 height = max_y - min_y;
+
+                collision_area.position.x = min_x;
+                collision_area.position.y = min_y;
+                collision_area.size.x = width;
+                collision_area.size.y = height;
+            }
+
             movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, world, movement_fraction_left, dt);
 
             EntityIDList entities_in_area = es_get_entities_in_area(&world->entities, collision_area, frame_arena);

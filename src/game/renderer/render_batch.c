@@ -180,12 +180,11 @@ RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vect
     return result;
 }
 
-RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, Particle *particles,
-    ssize particle_count, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
+RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, ParticleBuffer *particles,
+    RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {
     ParticleGroupCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_PARTICLES);
     cmd->particles = particles;
-    cmd->particle_count = particle_count;
     cmd->color = color;
     cmd->particle_size = particle_size;
 
@@ -197,11 +196,10 @@ RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, Particle *pa
     return result;
 }
 
-RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, struct Particle *particles,
-    ssize particle_count, TextureHandle texture, RGBA32 color, f32 particle_size,
-    ShaderHandle shader, RenderLayer layer)
+RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
+    TextureHandle texture, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {
-    RenderEntry *entry = rb_push_particles(rb, arena, particles, particle_count, color, particle_size, shader, layer);
+    RenderEntry *entry = rb_push_particles(rb, arena, particles, color, particle_size, shader, layer);
     entry->key = render_key_create(layer, shader, texture, NULL_FONT, 0);
 
     return entry;

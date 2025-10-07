@@ -1,6 +1,8 @@
 #ifndef RING_BUFFER_H
 #define RING_BUFFER_H
 
+#include <string.h>
+
 #include "base/utils.h"
 
 /*
@@ -128,6 +130,7 @@ static inline void ring_impl_push(void *items, ssize *head, ssize *tail, ssize c
     ssize item_size, void *item)
 {
     ASSERT(items);
+    ASSERT(capacity);
     ASSERT(!ring_impl_is_full(head, tail));
 
     if (*head == -1) {
@@ -142,6 +145,9 @@ static inline void ring_impl_push(void *items, ssize *head, ssize *tail, ssize c
 static inline void ring_impl_push_overwrite(void *items, ssize *head, ssize *tail, ssize capacity,
     ssize item_size, void *item)
 {
+    ASSERT(items);
+    ASSERT(capacity);
+
     // TODO: this can be made more efficient
     if (ring_impl_is_full(head, tail)) {
         ring_impl_pop(head, tail, capacity);

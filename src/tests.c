@@ -129,58 +129,6 @@ static void tests_arena()
         la_destroy(&arena);
     }
 
-#if 0
-    {
-        LinearArena arena = arena_create(default_allocator, 1024);
-
-        byte *ptr = la_allocate_array(&arena, byte, 16);
-        ASSERT(arena_get_memory_usage(&arena) == 16);
-
-        const bool extended = arena_try_resize(&arena, ptr, 16, 32);
-        ASSERT(extended);
-        ASSERT(arena_get_memory_usage(&arena) == 32);
-
-        byte *ptr2 = la_allocate_array(&arena, byte, 16);
-        ASSERT(ptr2 == (ptr + 32));
-        ASSERT(arena_get_memory_usage(&arena) == 48);
-        arena_destroy(&arena);
-    }
-
-    {
-        LinearArena arena = arena_create(default_allocator, 1024);
-
-        byte *ptr = la_allocate_array(&arena, byte, 16);
-        la_allocate_array(&arena, byte, 16);
-
-        bool extended = arena_try_resize(&arena, ptr, 16, 32);
-        ASSERT(!extended);
-
-        arena_destroy(&arena);
-    }
-
-    {
-        LinearArena arena = arena_create(default_allocator, 1024);
-
-        byte *ptr = la_allocate_array(&arena, byte, 16);
-        bool extended = arena_try_resize(&arena, ptr, 16, 2000);
-        ASSERT(!extended);
-
-        arena_destroy(&arena);
-    }
-
-    {
-        LinearArena arena = arena_create(default_allocator, 1024);
-
-        byte *first = la_allocate_array(&arena, byte, 16);
-        bool resized = arena_try_resize(&arena, first, 16, 1);
-        ASSERT(resized);
-
-        byte *next = la_allocate_item(&arena, byte);
-        ASSERT(next == first + 1);
-
-        arena_destroy(&arena);
-    }
-#endif
     {
         LinearArena arena = la_create(default_allocator, 1024);
         byte *first = la_allocate_array(&arena, byte, 256);

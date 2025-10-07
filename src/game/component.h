@@ -48,10 +48,7 @@ typedef enum {
 } ParticleSpawnerWhenDone;
 
 typedef struct {
-    // TODO: make into proper ring buffer
-    Particle particle_array[1024];
-    ssize particle_array_count;
-
+    ParticleBuffer particle_buffer;
     f32 particle_timer;
     f32 particles_per_second;
     TextureHandle particle_texture;

@@ -243,13 +243,12 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
             case RENDER_CMD_PARTICLES: {
                 ParticleGroupCmd *cmd = (ParticleGroupCmd *)entry->data;
 
-                Particle *particles = cmd->particles;
-                ssize count = cmd->particle_count;
+                ParticleBuffer *particles = cmd->particles;
                 Vector2 particle_dims = v2(cmd->particle_size, cmd->particle_size);
                 RGBA32 base_color = cmd->color;
 
-                for (ssize p = 0; p < count; ++p) {
-                    Particle *particle = &particles[p];
+                for (ssize p = 0; p < ring_length(particles); ++p) {
+                    Particle *particle = ring_at(particles, p);
 
                     Rectangle rect = {particle->position, particle_dims};
                     f32 a = base_color.a - (particle->timer / particle->lifetime) * base_color.a;

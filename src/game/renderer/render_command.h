@@ -72,8 +72,7 @@ typedef struct {
 
 typedef struct {
     RenderCmdHeader header;
-    struct Particle *particles;
-    ssize particle_count;
+    struct ParticleBuffer *particles;
     f32 particle_size;
     RGBA32 color;
 } ParticleGroupCmd;

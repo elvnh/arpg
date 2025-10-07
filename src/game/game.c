@@ -94,7 +94,7 @@ static void swap_and_reset_collision_tables(GameWorld *world)
 
 static b32 particle_spawner_is_finished(ParticleSpawner *ps)
 {
-    b32 result = (ps->particle_array_count == 0)
+    b32 result = (ring_length(&ps->particle_buffer) == 0)
         && (ps->particles_to_spawn <= 0.0f);
 
     return result;
@@ -139,29 +139,24 @@ static void component_update_particle_spawner(Entity *entity, ParticleSpawner *p
         f32 speed = 15.0f + ((f32)rand() / (f32)RAND_MAX) * 100.0f;
 
         // TODO: color variance
-        ps->particle_array[ps->particle_array_count] = (Particle){
+        Particle new_particle = {
             .timer = 0.0f,
             .lifetime = ps->particle_lifetime,
             .position = position,
             .velocity = v2_mul_s(v2(x, y), speed)
         };
 
-        ssize new_size = (ps->particle_array_count + 1) % ARRAY_COUNT(ps->particle_array);
-        ps->particle_array_count = new_size;
-
+        ring_push_overwrite(&ps->particle_buffer, &new_particle);
     }
 
-    for (ssize i = 0; i < ps->particle_array_count; ++i) {
-        Particle *p = &ps->particle_array[i];
-        p->timer += dt;
+    for (ssize i = 0; i < ring_length(&ps->particle_buffer); ++i) {
+        Particle *p = ring_at(&ps->particle_buffer, i);
 
         if (p->timer > p->lifetime) {
-            *p = ps->particle_array[ps->particle_array_count - 1];
-            --i;
-            --ps->particle_array_count;
-            continue;
+            ring_swap_remove(&ps->particle_buffer, i);
         }
 
+        p->timer += dt;
         p->position = v2_add(p->position, v2_mul_s(p->velocity, dt));
         p->velocity = v2_add(p->velocity, v2(0, -1.0f));
         p->velocity = v2_add(p->velocity, v2_mul_s(p->velocity, -0.009f));
@@ -219,7 +214,7 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
         if (ps->particle_texture.id == NULL_TEXTURE.id) {
             ASSERT(ps->particle_color.a != 0.0f);
 
-            rb_push_particles(rb, scratch, ps->particle_array, ps->particle_array_count,
+            rb_push_particles(rb, scratch, &ps->particle_buffer,
                 ps->particle_color, ps->particle_size, assets->shape_shader, RENDER_LAYER_PARTICLES);
         } else {
             // If color isn't set, assume it to be white
@@ -228,7 +223,7 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
                 particle_color = RGBA32_WHITE;
             }
 
-            rb_push_particles_textured(rb, scratch, ps->particle_array, ps->particle_array_count,
+            rb_push_particles_textured(rb, scratch, &ps->particle_buffer,
                 assets->default_texture, particle_color, ps->particle_size, assets->texture_shader, RENDER_LAYER_PARTICLES);
         }
     }
@@ -794,7 +789,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     Rectangle tilemap_area = tilemap_get_bounding_box(&game_state->world.tilemap);
     es_initialize(&game_state->world.entities, tilemap_area);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 1; ++i) {
         EntityID id = es_create_entity(&game_state->world.entities);
         Entity *entity = es_get_entity(&game_state->world.entities, id);
         entity->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
@@ -810,14 +805,15 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         ASSERT(es_has_component(entity, ColliderComponent));
         ASSERT(es_has_component(entity, HealthComponent));
 
-#if 0
+#if 1
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
+        ring_initialize_static(&spawner->particle_buffer);
         //spawner->texture = game_state->texture;
         spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.5f};
         spawner->particle_size = 4.0f;
-        spawner->particles_per_second = 500.0f;
+        spawner->particles_per_second = 1000.0f;
         spawner->particles_to_spawn = 100000.0f;
-        spawner->particle_lifetime = 1.0f;
+        spawner->particle_lifetime = 10.0f;
         //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 #endif
         SpriteComponent *sprite = es_add_component(entity, SpriteComponent);

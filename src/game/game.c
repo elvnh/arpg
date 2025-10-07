@@ -35,6 +35,7 @@
 #define INTERSECTION_TABLE_ARENA_SIZE (128 * SIZEOF(CollisionEvent))
 #define INTERSECTION_TABLE_SIZE 512
 
+// TODO: move these collision table functions elsewhere
 static CollisionTable collision_table_create(LinearArena *parent_arena)
 {
     CollisionTable result = {0};
@@ -98,7 +99,7 @@ static void swap_and_reset_collision_tables(GameWorld *world)
 static b32 particle_spawner_is_finished(ParticleSpawner *ps)
 {
     b32 result = (ring_length(&ps->particle_buffer) == 0)
-        && (ps->config.particles_to_spawn <= 0.0f);
+        && (ps->particles_left_to_spawn <= 0.0f);
 
     return result;
 }
@@ -139,10 +140,9 @@ static void component_update_particle_spawner(Entity *entity, ParticleSpawner *p
 {
     ps->particle_timer += ps->config.particles_per_second * dt;
 
-    s32 particles_to_spawn = MIN((s32)ps->particle_timer, (s32)ps->config.particles_to_spawn);
+    s32 particles_to_spawn = MIN((s32)ps->particle_timer, (s32)ps->particles_left_to_spawn);
     ps->particle_timer -= (f32)particles_to_spawn;
-    ps->config.particles_to_spawn -= (f32)particles_to_spawn;
-    // TODO: remove spawner once time runs out
+    ps->particles_left_to_spawn -= (f32)particles_to_spawn;
 
     for (s32 i = 0; i < particles_to_spawn; ++i) {
         f32 x = cos_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
@@ -181,8 +181,6 @@ static void component_update_particle_spawner(Entity *entity, ParticleSpawner *p
 
 static void entity_update(GameWorld *world, Entity *entity, f32 dt)
 {
-    (void)world;
-
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
 
@@ -208,8 +206,8 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
                     spawner->position = entity->position;
 
                     ParticleSpawner *ps = es_add_component(spawner, ParticleSpawner);
-                    ring_initialize_static(&ps->particle_buffer);
-                    ps->config = on_death->as.spawn_particles.config;
+                    particle_spawner_initialize(ps, on_death->as.spawn_particles.config);
+                    ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
                 } break;
             }
         }
@@ -219,7 +217,7 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
 }
 
 static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
-                         DebugState *debug_state)
+    DebugState *debug_state)
 {
     if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
@@ -236,7 +234,7 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
             .size = collider->size
         };
 
-        rb_push_rect(rb, scratch, rect, RGBA32_GREEN, assets->shape_shader, RENDER_LAYER_ENTITIES);
+        rb_push_rect(rb, scratch, rect, (RGBA32){0, 1, 0, 0.5f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ParticleSpawner)) {
@@ -295,8 +293,6 @@ static b32 entities_intersected_previous_frame(GameWorld *world, EntityID a, Ent
 
     return result;
 }
-
-// TODO: only try_get_component and try_get_entity can retur null
 
 static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damage damage)
 {
@@ -424,12 +420,21 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     return movement_fraction_left;
 }
 
-static b32 entities_should_collide(Entity *a, Entity *b)
+static Rectangle get_entity_collision_area(const Entity *entity, ColliderComponent *collider)
 {
-    (void)a;
-    (void)b;
-    // TODO: collision rules
-    return true;
+    Vector2 next_pos = v2_add(entity->position, entity->velocity);
+
+    f32 min_x = MIN(entity->position.x, next_pos.x);
+    f32 max_x = MAX(entity->position.x, next_pos.x) + collider->size.x;
+    f32 min_y = MIN(entity->position.y, next_pos.y);
+    f32 max_y = MAX(entity->position.y, next_pos.y) + collider->size.y;
+
+    f32 width = max_x - min_x;
+    f32 height = max_y - min_y;
+
+    Rectangle result = {{min_x, min_y}, {width, height}};
+
+    return result;
 }
 
 static void handle_collision_and_movement(GameWorld *world, f32 dt, LinearArena *frame_arena)
@@ -446,26 +451,9 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt, LinearArena 
         f32 movement_fraction_left = 1.0f;
 
         if (collider_a) {
-            Rectangle collision_area = {0};
-            {
-                // TODO: clean up these calculations
-                Vector2 next_pos = v2_add(a->position, a->velocity);
-                f32 min_x = MIN(a->position.x, next_pos.x);
-                f32 max_x = MAX(a->position.x, next_pos.x) + collider_a->size.x;
-                f32 min_y = MIN(a->position.y, next_pos.y);
-                f32 max_y = MAX(a->position.y, next_pos.y) + collider_a->size.y;
-
-                f32 width = max_x - min_x;
-                f32 height = max_y - min_y;
-
-                collision_area.position.x = min_x;
-                collision_area.position.y = min_y;
-                collision_area.size.x = width;
-                collision_area.size.y = height;
-            }
-
             movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, world, movement_fraction_left, dt);
 
+            Rectangle collision_area = get_entity_collision_area(a, collider_a);
             EntityIDList entities_in_area = es_get_entities_in_area(&world->entities, collision_area, frame_arena);
 
             for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {
@@ -474,11 +462,7 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt, LinearArena 
 
                     ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
 
-                    if (!collider_b) {
-                        continue;
-                    }
-
-                    if (entities_should_collide(a, b)) {
+                    if (collider_b) {
                         movement_fraction_left = entity_vs_entity_collision(world, a, collider_a,
                             b, collider_b, movement_fraction_left, dt);
                     }
@@ -519,7 +503,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
 
     OnDeathComponent *on_death = es_add_component(entity, OnDeathComponent);
     on_death->kind = DEATH_EFFECT_SPAWN_PARTICLES;
-    on_death->as.spawn_particles.config = (ParticleSystemConfig) {
+    on_death->as.spawn_particles.config = (ParticleSpawnerConfig) {
         .particles_per_second = 1000.0f,
         .particle_color = (RGBA32){1.0f, 0.2f, 0.1f, 0.7f},
         .particle_size = 4.0f,
@@ -610,7 +594,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, const Ass
         entity_update(world, entity, dt);
     }
 
-    // TODO: should this be done at beginning of each frame to inactive entities are rendered?
+    // TODO: should this be done at beginning of each frame so inactive entities are rendered?
     es_remove_inactive_entities(&world->entities, frame_arena);
 
     swap_and_reset_collision_tables(world);
@@ -621,6 +605,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
     LinearArena *frame_arena, DebugState *debug_state)
 {
     // TODO: only render visible part of tilemap
+
     s32 min_x = world->tilemap.min_x;
     s32 max_x = world->tilemap.max_x;
     s32 min_y = world->tilemap.min_y;
@@ -642,7 +627,7 @@ static void world_render(GameWorld *world, RenderBatch *rb, const AssetList *ass
                         color = (RGBA32){1.0f, 0.2f, 0.1f, 1.0f};
                     } break;
 
-                    INVALID_DEFAULT_CASE;
+                        INVALID_DEFAULT_CASE;
                 }
             } else {
                 color = RGBA32_WHITE;
@@ -758,7 +743,6 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
         temp_alloc
     );
 
-    // TODO: average out the fps over multiple frames
     String fps_str = str_concat(
         str_lit("FPS: "),
         f32_to_string(game_state->debug_state.average_fps, 2, temp_alloc),
@@ -891,14 +875,17 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
 #if 1
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
-        ring_initialize_static(&spawner->particle_buffer);
-        //spawner->texture = game_state->texture;
-        spawner->config.particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f};
-        spawner->config.particle_size = 4.0f;
-        spawner->config.particles_per_second = 250.0f;
-        spawner->config.particles_to_spawn = 100000.0f;
-        spawner->config.particle_lifetime = 1.0f;
-        //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+        spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+        ParticleSpawnerConfig config = {
+            .particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f},
+            .particle_size = 4.0f,
+            .particles_per_second = 250.0f,
+            .particles_to_spawn = 100000.0f,
+            .particle_lifetime = 1.0f
+        };
+
+        particle_spawner_initialize(spawner, config);
+
 #endif
         SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
         sprite->texture = game_state->asset_list.default_texture;

@@ -57,19 +57,25 @@ typedef struct {
     RGBA32 particle_color;
     f32 particle_size;
     f32 particle_lifetime;
-    // TODO: allow infinite number of particles
     f32 particles_to_spawn; // TODO: this should be in ParticleSpawner
-} ParticleSystemConfig;
+} ParticleSpawnerConfig;
 
 // TODO: different kinds of spawners: spawn all at once, infinite particles etc,
 // allow configuring angle of particles
-// TODO: function that initializes this from ParticleSystemConfig
 typedef struct {
     ParticleBuffer particle_buffer;
     f32 particle_timer;
-    ParticleSystemConfig config;
+    f32 particles_left_to_spawn;
+    ParticleSpawnerConfig config;
     ParticleSpawnerWhenDone action_when_done;
 } ParticleSpawner;
+
+static inline void particle_spawner_initialize(ParticleSpawner *ps, ParticleSpawnerConfig config)
+{
+    ring_initialize_static(&ps->particle_buffer);
+    ps->config = config;
+    ps->particles_left_to_spawn = config.particles_to_spawn;
+}
 
 typedef struct {
     TextureHandle texture;
@@ -85,9 +91,10 @@ typedef enum {
 } OnDeathEffectKind;
 
 typedef struct {
-    ParticleSystemConfig config;
+    ParticleSpawnerConfig config;
 } DeathEffectSpawnParticles;
 
+// TODO: multiple on death effects
 typedef struct {
     OnDeathEffectKind kind;
 

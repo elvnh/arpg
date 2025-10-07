@@ -7,12 +7,13 @@
   TODO:
   - Return address of pushed value
   - ring_alloc - Doesn't push, just allocates space
-  - Return value when popping, can probably be done with comma operator
   - If using comma operator to bounds check, can't take address of expression.
     Return address?
-  - Unit tests
+  - Clean up header
+  - Better name for ring_load_pop
  */
 
+/* Definition helpers */
 #define DEFINE_RING_BUFFER(type, name)          \
     typedef struct name {                       \
         type  *items;                           \
@@ -29,43 +30,44 @@
         ssize  capacity;                                \
     } name
 
-#define ring_initialize(buf, cap, allocator)                            \
-    do {                                                                \
-        ASSERT(!multiply_overflows_ssize((cap), SIZEOF(*(buf)->items))); \
+/* Initialization */
+#define ring_initialize(buf, cap, allocator)                               \
+    do {                                                                   \
+        ASSERT(!multiply_overflows_ssize((cap), SIZEOF(*(buf)->items)));   \
         (buf)->items = allocate(allocator, (cap) * SIZEOF(*(buf)->items)); \
-        (buf)->capacity = cap;						\
-	ring_impl_set_to_empty(&(buf)->head, &(buf)->tail);		\
+        (buf)->capacity = cap;						   \
+	ring_impl_set_to_empty(&(buf)->head, &(buf)->tail);		   \
     } while (0)
 
-#define ring_initialize_static(buf)                        \
-    do {                                                        \
-        (buf)->capacity = ARRAY_COUNT((buf)->items);		\
+#define ring_initialize_static(buf)					           \
+    do {								           \
+        (buf)->capacity = ARRAY_COUNT((buf)->items);			           \
         ASSERT(!multiply_overflows_ssize((buf)->capacity, SIZEOF(*(buf)->items))); \
-        ring_impl_set_to_empty(&(buf)->head, &(buf)->tail);     \
+        ring_impl_set_to_empty(&(buf)->head, &(buf)->tail);			   \
     } while (0)
 
+/* Modifying operations */
 #define ring_push(buf, item) ring_push_impl((buf)->items, &(buf)->head, \
         &(buf)->tail, (buf)->capacity, SIZEOF(*(buf)->items), (item))
 #define ring_push_overwrite(buf, item) ring_push_overwrite_impl((buf)->items, \
         &(buf)->head, &(buf)->tail, (buf)->capacity, SIZEOF(*(buf)->items), (item))
-#define ring_pop(buf) ring_pop_impl((buf)->items, &(buf)->head, &(buf)->tail, \
-        (buf)->capacity, SIZEOF(*((buf)->items)))
-#define ring_pop_tail(buf) ring_pop_tail_impl((buf)->items, &(buf)->head, &(buf)->tail, \
-        (buf)->capacity, SIZEOF(*((buf)->items)))
+#define ring_pop(buf) ring_pop_impl(&(buf)->head, &(buf)->tail, (buf)->capacity)
+#define ring_load_pop(buf) ((buf)->items[ring_load_pop_impl(&(buf)->head, &(buf)->tail, (buf)->capacity)])
+#define ring_pop_tail(buf) ring_pop_tail_impl(&(buf)->head, &(buf)->tail, (buf)->capacity)
+#define ring_swap_remove(buf, index) (*ring_at(buf, index) = *ring_peek_tail(buf), ring_pop_tail(buf))
 
-// TODO: replace second ring_at with ring_peek_tail
-#define ring_swap_remove(buf, index) (*ring_at(buf, index) = *ring_peek_tail(buf), \
-	ring_pop_tail(buf))
-
-#define ring_at(buf, idx) (ring_internal_bounds_check((idx), ring_length((buf))), \
+/* Access operations */
+#define ring_at(buf, idx) (ring_impl_bounds_check((idx), ring_length((buf))), \
         &((buf)->items[((buf)->head + (idx)) % (buf)->capacity]))
 #define ring_peek(buf) ring_at(buf, 0)
 #define ring_peek_tail(buf) ring_at(buf, ring_length(buf) - 1)
 
+/* Query operations */
 #define ring_length(buf) ring_length_impl((buf)->head, (buf)->tail, (buf)->capacity)
 #define ring_is_full(buf) ring_is_full_impl(&(buf)->head, &(buf)->tail)
 #define ring_is_empty(buf) ring_is_empty_impl(&(buf)->head, &(buf)->tail)
 
+/* Internal implementation functions */
 static inline b32 ring_is_empty_impl(ssize *head, ssize *tail)
 {
     b32 result = *head == -1;
@@ -86,12 +88,12 @@ static inline void ring_impl_set_to_empty(ssize *head, ssize *tail)
     *tail = -1;
 }
 
-static inline void *ring_pop_impl(void *items, ssize *head, ssize *tail, ssize capacity, ssize item_size)
+static inline ssize ring_load_pop_impl(ssize *head, ssize *tail, ssize capacity)
 {
     ASSERT(*head != -1);
-    void *result = byte_offset(items, *head * item_size);
+    ssize previous_head = *head;
 
-    ssize new_head = (*head + 1) % capacity;
+    ssize new_head = (previous_head + 1) % capacity;
 
     if (new_head == *tail) {
         ring_impl_set_to_empty(head, tail);
@@ -99,10 +101,15 @@ static inline void *ring_pop_impl(void *items, ssize *head, ssize *tail, ssize c
         *head = new_head;
     }
 
-    return result;
+    return previous_head;
 }
 
-static inline void *ring_pop_tail_impl(void *items, ssize *head, ssize *tail, ssize capacity, ssize item_size)
+static inline void ring_pop_impl(ssize *head, ssize *tail, ssize capacity)
+{
+    ring_load_pop_impl(head, tail, capacity);
+}
+
+static inline void ring_pop_tail_impl(ssize *head, ssize *tail, ssize capacity)
 {
     ASSERT(!ring_is_empty_impl(head, tail));
 
@@ -112,16 +119,13 @@ static inline void *ring_pop_tail_impl(void *items, ssize *head, ssize *tail, ss
         *tail = capacity - 1;
     }
 
-    void *result = byte_offset(items, *tail * item_size);
-
     if (*tail == *head) {
         ring_impl_set_to_empty(head, tail);
     }
-
-    return result;
 }
 
-static inline void ring_push_impl(void *items, ssize *head, ssize *tail, ssize capacity, ssize item_size, void *item)
+static inline void ring_push_impl(void *items, ssize *head, ssize *tail, ssize capacity,
+    ssize item_size, void *item)
 {
     ASSERT(items);
     ASSERT(!ring_is_full_impl(head, tail));
@@ -140,13 +144,13 @@ static inline void ring_push_overwrite_impl(void *items, ssize *head, ssize *tai
 {
     // TODO: this can be made more efficient
     if (ring_is_full_impl(head, tail)) {
-        ring_pop_impl(items, head, tail, capacity, item_size);
+        ring_pop_impl(head, tail, capacity);
     }
 
     ring_push_impl(items, head, tail, capacity, item_size, item);
 }
 
-static inline void ring_internal_bounds_check(ssize idx, ssize length)
+static inline void ring_impl_bounds_check(ssize idx, ssize length)
 {
     ASSERT(idx < length);
 }

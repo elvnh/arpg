@@ -1343,6 +1343,8 @@ static void tests_ring()
 	    ASSERT(!ring_is_empty(&buf));
 	    ASSERT(!ring_is_full(&buf));
 	    ASSERT(*ring_at(&buf, 0) == 123);
+	    ASSERT(*ring_peek(&buf) == 123);
+	    ASSERT(*ring_peek_tail(&buf) == 123);
 
 	    ring_pop(&buf);
 	    ASSERT(ring_length(&buf) == 0);
@@ -1527,6 +1529,21 @@ static void tests_ring()
 	    ring_swap_remove(&buf, 0);
 
 	    ASSERT(ring_is_empty(&buf));
+	}
+
+	{
+	    StaticIntBuffer buf;
+	    ring_initialize_static(&buf);
+
+	    for (s32 i = 0; i < buf.capacity; ++i) {
+		s32 j = i + 10;
+		ring_push(&buf, &j);
+	    }
+
+	    ASSERT(ring_load_pop(&buf) == 10);
+	    ASSERT(ring_load_pop(&buf) == 11);
+	    ASSERT(ring_load_pop(&buf) == 12);
+
 	}
     }
 

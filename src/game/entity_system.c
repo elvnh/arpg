@@ -24,6 +24,7 @@ static ssize get_component_offset(ComponentType type)
 static EntitySlot *es_get_entity_slot(Entity *entity)
 {
     // NOTE: this is safe as long as entity is first member of EntitySlot
+    ASSERT(offsetof(EntitySlot, entity) == 0);
     EntitySlot *result = (EntitySlot *)entity;
 
     return result;
@@ -227,6 +228,7 @@ void es_set_entity_position(EntitySystem *es, Entity *entity, Vector2 new_pos, L
 {
     EntitySlot *slot = es_get_entity_slot(entity);
     EntityID id = get_entity_id_from_slot(es, slot);
+
     slot->quad_tree_location = qt_move_entity(&es->quad_tree, id, slot->quad_tree_location,
 	new_pos, arena);
 }

@@ -10,6 +10,7 @@
     COMPONENT(HealthComponent)                  \
     COMPONENT(ParticleSpawner)                  \
     COMPONENT(SpriteComponent)                  \
+    COMPONENT(LifetimeComponent)                \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -65,5 +66,10 @@ typedef struct {
     TextureHandle texture;
     Vector2 size;
 } SpriteComponent;
+
+typedef struct {
+    f32 time_to_live;
+    // TODO: actions upon removal? OnDeath component?
+} LifetimeComponent;
 
 #endif //COMPONENT_H

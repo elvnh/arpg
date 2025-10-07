@@ -121,6 +121,14 @@ static b32 entity_should_die(Entity *entity)
         }
     }
 
+    if (es_has_component(entity, LifetimeComponent)) {
+        LifetimeComponent *lt = es_get_component(entity, LifetimeComponent);
+
+        if (lt->time_to_live <= 0.0f) {
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -180,6 +188,10 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
         component_update_particle_spawner(entity, particle_spawner, entity->position, dt);
     }
 
+    if (es_has_component(entity, LifetimeComponent)) {
+        LifetimeComponent *lifetime = es_get_component(entity, LifetimeComponent);
+        lifetime->time_to_live -= dt;
+    }
 
     if (entity_should_die(entity)) {
         // NOTE: won't be removed until after this frame
@@ -473,7 +485,7 @@ static void handle_collision_and_movement(GameWorld *world, f32 dt, LinearArena 
     }
 }
 
-static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
+static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id, const AssetList *assets)
 {
     // TODO: return id and entity pointer when creating
     EntityID id = es_create_entity(&world->entities);
@@ -489,10 +501,17 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id)
     DamageFieldComponent *damage = es_add_component(entity, DamageFieldComponent);
     damage->damage = 3;
 
+    SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
+    sprite->size = v2(16.0f, 16.0f);
+    sprite->texture = assets->default_texture;
+
+    LifetimeComponent *lifetime = es_add_component(entity, LifetimeComponent);
+    lifetime->time_to_live = 2.0f;
+
     collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
 }
 
-static void world_update(GameWorld *world, const Input *input, f32 dt, LinearArena *frame_arena)
+static void world_update(GameWorld *world, const Input *input, f32 dt, const AssetList *assets, LinearArena *frame_arena)
 {
     if (world->entities.alive_entity_count < 1) {
         return;
@@ -511,7 +530,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, LinearAre
         }
 
         if (input_is_key_pressed(input, KEY_G)) {
-            spawn_projectile(world, player->position, player_id);
+            spawn_projectile(world, player->position, player_id, assets);
         }
 
         camera_set_target(&world->camera, target);
@@ -637,7 +656,7 @@ static void game_update(GameState *game_state, const Input *input, f32 dt, Linea
         DEBUG_BREAK;
     }
 
-    world_update(&game_state->world, input, dt, frame_arena);
+    world_update(&game_state->world, input, dt, &game_state->asset_list, frame_arena);
 
 }
 

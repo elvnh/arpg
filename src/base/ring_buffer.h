@@ -50,6 +50,8 @@
         (buf)->capacity, SIZEOF(*((buf)->items)))
 #define ring_pop_tail(buf) ring_pop_tail_impl((buf)->items, &(buf)->head, &(buf)->tail, \
         (buf)->capacity, SIZEOF(*((buf)->items)))
+#define ring_swap_remove_impl(buf, index) (*ring_at(buf, index) = *ring_at(buf, ring_length(buf) - 1), \
+	ring_pop_tail(buf))
 
 #define ring_at(buf, idx) (ring_internal_bounds_check((idx), ring_length((buf))), \
         &((buf)->items[((buf)->head + (idx)) % (buf)->capacity]))

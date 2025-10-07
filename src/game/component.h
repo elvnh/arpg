@@ -50,19 +50,24 @@ typedef enum {
     PS_WHEN_DONE_REMOVE_ENTITY,
 } ParticleSpawnerWhenDone;
 
-// TODO: different kinds of spawners: spawn all at once, infinite particles etc,
-// allow configuring angle of particles
+// TODO: particle velocity
 typedef struct {
-    ParticleBuffer particle_buffer;
-    f32 particle_timer;
     f32 particles_per_second;
     TextureHandle particle_texture;
     RGBA32 particle_color;
     f32 particle_size;
     f32 particle_lifetime;
-
     // TODO: allow infinite number of particles
-    f32 particles_to_spawn;
+    f32 particles_to_spawn; // TODO: this should be in ParticleSpawner
+} ParticleSystemConfig;
+
+// TODO: different kinds of spawners: spawn all at once, infinite particles etc,
+// allow configuring angle of particles
+// TODO: function that initializes this from ParticleSystemConfig
+typedef struct {
+    ParticleBuffer particle_buffer;
+    f32 particle_timer;
+    ParticleSystemConfig config;
     ParticleSpawnerWhenDone action_when_done;
 } ParticleSpawner;
 
@@ -73,7 +78,6 @@ typedef struct {
 
 typedef struct {
     f32 time_to_live;
-    // TODO: actions upon removal? OnDeath component?
 } LifetimeComponent;
 
 typedef enum {
@@ -81,7 +85,7 @@ typedef enum {
 } OnDeathEffectKind;
 
 typedef struct {
-    int n;
+    ParticleSystemConfig config;
 } DeathEffectSpawnParticles;
 
 typedef struct {

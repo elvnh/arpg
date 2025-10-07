@@ -98,7 +98,7 @@ static void swap_and_reset_collision_tables(GameWorld *world)
 static b32 particle_spawner_is_finished(ParticleSpawner *ps)
 {
     b32 result = (ring_length(&ps->particle_buffer) == 0)
-        && (ps->particles_to_spawn <= 0.0f);
+        && (ps->config.particles_to_spawn <= 0.0f);
 
     return result;
 }
@@ -137,11 +137,11 @@ static b32 entity_should_die(Entity *entity)
 // TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
 static void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vector2 position, f32 dt)
 {
-    ps->particle_timer += ps->particles_per_second * dt;
+    ps->particle_timer += ps->config.particles_per_second * dt;
 
-    s32 particles_to_spawn = MIN((s32)ps->particle_timer, (s32)ps->particles_to_spawn);
+    s32 particles_to_spawn = MIN((s32)ps->particle_timer, (s32)ps->config.particles_to_spawn);
     ps->particle_timer -= (f32)particles_to_spawn;
-    ps->particles_to_spawn -= (f32)particles_to_spawn;
+    ps->config.particles_to_spawn -= (f32)particles_to_spawn;
     // TODO: remove spawner once time runs out
 
     for (s32 i = 0; i < particles_to_spawn; ++i) {
@@ -152,7 +152,7 @@ static void component_update_particle_spawner(Entity *entity, ParticleSpawner *p
         // TODO: color variance
         Particle new_particle = {
             .timer = 0.0f,
-            .lifetime = ps->particle_lifetime,
+            .lifetime = ps->config.particle_lifetime,
             .position = position,
             .velocity = v2_mul_s(v2(x, y), speed)
         };
@@ -209,11 +209,7 @@ static void entity_update(GameWorld *world, Entity *entity, f32 dt)
 
                     ParticleSpawner *ps = es_add_component(spawner, ParticleSpawner);
                     ring_initialize_static(&ps->particle_buffer);
-                    ps->particle_color = (RGBA32){1.0f, 0.2f, 0.1f, 0.6f};
-                    ps->particle_size = 4.0f;
-                    ps->particles_per_second = 250.0f;
-                    ps->particles_to_spawn = 100000.0f;
-                    ps->particle_lifetime = 1.0f;
+                    ps->config = on_death->as.spawn_particles.config;
                 } break;
             }
         }
@@ -246,20 +242,21 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
 
-        if (ps->particle_texture.id == NULL_TEXTURE.id) {
-            ASSERT(ps->particle_color.a != 0.0f);
+        if (ps->config.particle_texture.id == NULL_TEXTURE.id) {
+            ASSERT(ps->config.particle_color.a != 0.0f);
 
             rb_push_particles(rb, scratch, &ps->particle_buffer,
-                ps->particle_color, ps->particle_size, assets->shape_shader, RENDER_LAYER_PARTICLES);
+                ps->config.particle_color, ps->config.particle_size, assets->shape_shader, RENDER_LAYER_PARTICLES);
         } else {
             // If color isn't set, assume it to be white
-            RGBA32 particle_color = ps->particle_color;
+            RGBA32 particle_color = ps->config.particle_color;
             if (particle_color.a == 0.0f) {
                 particle_color = RGBA32_WHITE;
             }
 
             rb_push_particles_textured(rb, scratch, &ps->particle_buffer,
-                assets->default_texture, particle_color, ps->particle_size, assets->texture_shader, RENDER_LAYER_PARTICLES);
+                assets->default_texture, particle_color, ps->config.particle_size, assets->texture_shader,
+                RENDER_LAYER_PARTICLES);
         }
     }
 }
@@ -522,6 +519,13 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
 
     OnDeathComponent *on_death = es_add_component(entity, OnDeathComponent);
     on_death->kind = DEATH_EFFECT_SPAWN_PARTICLES;
+    on_death->as.spawn_particles.config = (ParticleSystemConfig) {
+        .particles_per_second = 1000.0f,
+        .particle_color = (RGBA32){1.0f, 0.2f, 0.1f, 0.7f},
+        .particle_size = 4.0f,
+        .particle_lifetime = 1.0f,
+        .particles_to_spawn = 1000.0f,
+    };
     // TODO: configure particles
 
     collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
@@ -889,11 +893,11 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
         ring_initialize_static(&spawner->particle_buffer);
         //spawner->texture = game_state->texture;
-        spawner->particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f};
-        spawner->particle_size = 4.0f;
-        spawner->particles_per_second = 250.0f;
-        spawner->particles_to_spawn = 100000.0f;
-        spawner->particle_lifetime = 1.0f;
+        spawner->config.particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f};
+        spawner->config.particle_size = 4.0f;
+        spawner->config.particles_per_second = 250.0f;
+        spawner->config.particles_to_spawn = 100000.0f;
+        spawner->config.particle_lifetime = 1.0f;
         //spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 #endif
         SpriteComponent *sprite = es_add_component(entity, SpriteComponent);

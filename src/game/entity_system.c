@@ -8,8 +8,8 @@
 
 #define ES_MEMORY_SIZE MB(2)
 
-#define FIRST_VALID_ENTITY_INDEX (NULL_ENTITY_ID.slot_index + 1)
-#define LAST_VALID_ENTITY_INDEX  (FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES)
+#define FIRST_VALID_ENTITY_INDEX (NULL_ENTITY_ID.slot_id + 1)
+#define LAST_VALID_ENTITY_INDEX  (FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES - 1)
 
 static ssize component_offsets[] = {
     #define COMPONENT(type) offsetof(Entity, ES_IMPL_COMP_FIELD_NAME(type)),
@@ -37,8 +37,8 @@ static EntitySlot *es_get_entity_slot(Entity *entity)
 
 static EntitySlot *es_get_entity_slot_by_id(EntitySystem *es, EntityID id)
 {
-    ASSERT(id.slot_index < MAX_ENTITIES + FIRST_VALID_ENTITY_INDEX);
-    EntitySlot *result = &es->entity_slots[id.slot_index - FIRST_VALID_ENTITY_INDEX];
+    ASSERT(id.slot_id <= LAST_VALID_ENTITY_INDEX);
+    EntitySlot *result = &es->entity_slots[id.slot_id - FIRST_VALID_ENTITY_INDEX];
 
     return result;
 }
@@ -47,7 +47,7 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
 {
     b32 result =
 	!entity_id_equal(id, NULL_ENTITY_ID)
-	&& (id.slot_index < (FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES))
+	&& (id.slot_id <= LAST_VALID_ENTITY_INDEX)
         && (es_get_entity_slot_by_id(es, id)->generation == id.generation);
 
     return result;
@@ -60,7 +60,7 @@ static EntityID get_entity_id_from_slot(EntitySystem *es, EntitySlot *slot)
     EntityGeneration generation = slot->generation;
 
     EntityID result = {
-	.slot_index = FIRST_VALID_ENTITY_INDEX + index,
+	.slot_id = FIRST_VALID_ENTITY_INDEX + index,
 	.generation = generation
     };
 
@@ -128,9 +128,9 @@ void es_initialize(EntitySystem *es, Rectangle world_area)
     id_queue_initialize(&es->free_id_queue);
     qt_initialize(&es->quad_tree, world_area);
 
-    for (EntityIndex i = FIRST_VALID_ENTITY_INDEX; i < FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES; ++i) {
+    for (EntityIndex i = FIRST_VALID_ENTITY_INDEX; i <= LAST_VALID_ENTITY_INDEX; ++i) {
         EntityID new_id = {
-            .slot_index = (s32)i,
+            .slot_id = (s32)i,
             .generation = 0
         };
 
@@ -184,7 +184,7 @@ void es_remove_entity(EntitySystem *es, EntityID id)
 
     EntityID *removed_id = &es->alive_entity_ids[removed_slot->alive_entity_array_index];
     EntityID *last_alive =  &es->alive_entity_ids[es->alive_entity_count - 1];
-    ASSERT(removed_id->slot_index == id.slot_index);
+    ASSERT(removed_id->slot_id == id.slot_id);
     ASSERT(removed_id->generation == id.generation);
     EntitySlot *last_alive_slot = es_get_entity_slot_by_id(es, *last_alive);
 
@@ -212,18 +212,9 @@ void es_remove_entity(EntitySystem *es, EntityID id)
 Entity *es_get_entity(EntitySystem *es, EntityID id)
 {
     ASSERT(entity_id_is_valid(es, id));
-    Entity *result = &es->entity_slots[id.slot_index - FIRST_VALID_ENTITY_INDEX].entity;
+    EntitySlot *slot = es_get_entity_slot_by_id(es, id);
+    Entity *result = &slot->entity;
 
-    return result;
-}
-
-Entity *es_get_entity_in_slot(EntitySystem *es, EntityIndex slot_index)
-{
-    EntityID id = {
-        .slot_index = slot_index
-    };
-
-    Entity *result = es_get_entity(es, id);
     return result;
 }
 

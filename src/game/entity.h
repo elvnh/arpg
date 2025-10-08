@@ -9,7 +9,7 @@ typedef s32 EntityIndex;
 typedef s32 EntityGeneration;
 
 typedef struct {
-    EntityIndex      slot_index;
+    EntityIndex      slot_id;
     EntityGeneration generation;
 } EntityID;
 
@@ -32,14 +32,14 @@ typedef struct {
 
 static inline b32 entity_id_equal(EntityID lhs, EntityID rhs)
 {
-    b32 result = (lhs.slot_index == rhs.slot_index) && (lhs.generation == rhs.generation);
+    b32 result = (lhs.slot_id == rhs.slot_id) && (lhs.generation == rhs.generation);
 
     return result;
 }
 
 static inline b32 entity_id_less_than(EntityID lhs, EntityID rhs)
 {
-    b32 result = lhs.slot_index < rhs.slot_index;
+    b32 result = lhs.slot_id < rhs.slot_id;
 
     return result;
 }
@@ -70,7 +70,7 @@ static inline EntityPair entity_pair_create(EntityID a, EntityID b)
 
 static inline u64 entity_pair_hash(EntityPair pair)
 {
-    u64 result = (u32)pair.entity_a.slot_index ^ (u32)pair.entity_b.slot_index; // TODO: better hash
+    u64 result = (u32)pair.entity_a.slot_id ^ (u32)pair.entity_b.slot_id; // TODO: better hash
 
     return result;
 }

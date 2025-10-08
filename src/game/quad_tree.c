@@ -132,7 +132,7 @@ QuadTreeLocation qt_set_entity_area(QuadTree *qt, EntityID id,
 void qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation location)
 {
     ASSERT(!qt_location_is_null(location));
-    ASSERT(location.element->entity_id.slot_index == id.slot_index);
+    ASSERT(location.element->entity_id.slot_id == id.slot_id);
 
     list_remove(&location.node->entities_in_node, location.element);
     list_push_back(&qt->entity_element_free_list, location.element);

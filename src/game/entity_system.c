@@ -3,9 +3,13 @@
 #include "base/ring_buffer.h"
 #include "base/sl_list.h"
 #include "base/utils.h"
+#include "game/entity.h"
 #include "game/quad_tree.h"
 
 #define ES_MEMORY_SIZE MB(2)
+
+#define FIRST_VALID_ENTITY_INDEX (NULL_ENTITY_ID.slot_index + 1)
+#define LAST_VALID_ENTITY_INDEX  (FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES)
 
 static ssize component_offsets[] = {
     #define COMPONENT(type) offsetof(Entity, ES_IMPL_COMP_FIELD_NAME(type)),
@@ -30,13 +34,33 @@ static EntitySlot *es_get_entity_slot(Entity *entity)
     return result;
 }
 
+
+static EntitySlot *es_get_entity_slot_by_id(EntitySystem *es, EntityID id)
+{
+    ASSERT(id.slot_index < MAX_ENTITIES + FIRST_VALID_ENTITY_INDEX);
+    EntitySlot *result = &es->entity_slots[id.slot_index - FIRST_VALID_ENTITY_INDEX];
+
+    return result;
+}
+
+static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
+{
+    b32 result =
+	!entity_id_equal(id, NULL_ENTITY_ID)
+	&& (id.slot_index < (FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES))
+        && (es_get_entity_slot_by_id(es, id)->generation == id.generation);
+
+    return result;
+}
+
+
 static EntityID get_entity_id_from_slot(EntitySystem *es, EntitySlot *slot)
 {
     EntityIndex index = (EntityIndex)(slot - es->entity_slots);
     EntityGeneration generation = slot->generation;
 
     EntityID result = {
-	.slot_index = index,
+	.slot_index = FIRST_VALID_ENTITY_INDEX + index,
 	.generation = generation
     };
 
@@ -104,7 +128,7 @@ void es_initialize(EntitySystem *es, Rectangle world_area)
     id_queue_initialize(&es->free_id_queue);
     qt_initialize(&es->quad_tree, world_area);
 
-    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+    for (EntityIndex i = FIRST_VALID_ENTITY_INDEX; i < FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES; ++i) {
         EntityID new_id = {
             .slot_index = (s32)i,
             .generation = 0
@@ -114,27 +138,15 @@ void es_initialize(EntitySystem *es, Rectangle world_area)
     }
 }
 
-static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
-{
-    b32 result = (id.slot_index < MAX_ENTITIES)
-        && (es->entity_slots[id.slot_index].generation == id.generation);
-
-    return result;
-}
 
 static EntityID get_new_entity_id(EntitySystem *es)
 {
     EntityID result = id_queue_pop(&es->free_id_queue);
-    return result;
-}
-
-EntitySlot *es_get_entity_slot_by_id(EntitySystem *es, EntityID id)
-{
-    ASSERT(id.slot_index < MAX_ENTITIES);
-    EntitySlot *result = &es->entity_slots[id.slot_index];
+    ASSERT(entity_id_is_valid(es, result));
 
     return result;
 }
+
 
 EntityID es_create_entity(EntitySystem *es)
 {
@@ -200,7 +212,7 @@ void es_remove_entity(EntitySystem *es, EntityID id)
 Entity *es_get_entity(EntitySystem *es, EntityID id)
 {
     ASSERT(entity_id_is_valid(es, id));
-    Entity *result = &es->entity_slots[id.slot_index].entity;
+    Entity *result = &es->entity_slots[id.slot_index - FIRST_VALID_ENTITY_INDEX].entity;
 
     return result;
 }

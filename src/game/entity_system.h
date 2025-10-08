@@ -8,6 +8,8 @@
 // TODO: bug: can only create 1 less than this
 #define MAX_ENTITIES 32
 
+#define NULL_ENTITY_ID ((EntityID){ 0, 0 })
+
 // TODO: Create try_get_component that can return 0, make get_component crash on 0
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))

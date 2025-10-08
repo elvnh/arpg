@@ -113,7 +113,7 @@ typedef struct {
 } OnDeathComponent;
 
 typedef struct {
-    DamageResistances resistances;
+    ResistanceStats resistances;
 } StatsComponent;
 
 #endif //COMPONENT_H

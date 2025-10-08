@@ -958,6 +958,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         sprite->size = v2(32, 32);
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
-        stats->resistances.fire_resistance = 50;
+        stats->resistances.base_resistances.fire_resistance = 10;
+        stats->resistances.flat_bonuses.fire_resistance = 5;
     }
 }

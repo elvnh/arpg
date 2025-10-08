@@ -27,10 +27,10 @@ static inline LineIntersection line_intersection(Line a, Line b, f32 epsilon)
     if ((numerator == 0.0f) && (denominator == 0.0f)) {
         // Lines are colinear so they might still overlap
         // TODO: check if they overlap
-    } else if (denominator != 0.0f) {
-        // TODO: this can generate nan/infinity, insert check here
-        f32 u = numerator / denominator;
+    } else if ((denominator != 0.0f) && (abs_f32(denominator) > epsilon)) {
+        // NOTE: this should guard against infinity being
         f32 t = v2_cross(v2_sub(b.start, a.start), s) / denominator;
+        f32 u = numerator / denominator;
 
         if (f32_in_range(u, 0.0f, 1.0f, epsilon) && f32_in_range(t, 0.0f, 1.0f, epsilon)) {
             Vector2 intersection = {

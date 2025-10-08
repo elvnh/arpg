@@ -18,6 +18,7 @@ typedef struct {
     b32 quad_tree_overlay;
     b32 render_colliders;
     b32 render_origin;
+    b32 render_entity_positions;
     f32 average_fps;
 } DebugState;
 

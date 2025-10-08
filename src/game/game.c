@@ -243,12 +243,12 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
-        Rectangle rect = {
+        Rectangle collider_rect = {
             .position = entity->position,
             .size = collider->size
         };
 
-        rb_push_rect(rb, scratch, rect, (RGBA32){0, 1, 0, 0.5f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
+        rb_push_rect(rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ParticleSpawner)) {
@@ -270,6 +270,11 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
                 assets->default_texture, particle_color, ps->config.particle_size, assets->texture_shader,
                 RENDER_LAYER_PARTICLES);
         }
+    }
+
+    if (debug_state->render_entity_positions) {
+        Rectangle entity_rect = {entity->position, {4, 4}};
+        rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.75f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 }
 
@@ -809,9 +814,11 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
     ui_spacing(ui, 8);
 
-    ui_checkbox(ui, str_lit("Render quad tree"), &game_state->debug_state.quad_tree_overlay);
-    ui_checkbox(ui, str_lit("Render colliders"), &game_state->debug_state.render_colliders);
-    ui_checkbox(ui, str_lit("Render origin"),    &game_state->debug_state.render_origin);
+    ui_checkbox(ui, str_lit("Render quad tree"),        &game_state->debug_state.quad_tree_overlay);
+    ui_checkbox(ui, str_lit("Render colliders"),        &game_state->debug_state.render_colliders);
+    ui_checkbox(ui, str_lit("Render origin"),           &game_state->debug_state.render_origin);
+    ui_checkbox(ui, str_lit("Render entity positions"), &game_state->debug_state.render_entity_positions);
+
 #endif
 
     //ui_checkbox(ui, str_lit("Render quad tree"), &game_state->debug_state.quad_tree_overlay);
@@ -909,12 +916,12 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
 #if 1
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
-        spawner->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+        spawner->action_when_done = PS_WHEN_DONE_DO_NOTHING;
         ParticleSpawnerConfig config = {
             .particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f},
             .particle_size = 4.0f,
             .particles_per_second = 250.0f,
-            .total_particles_to_spawn = 100000.0f,
+            .total_particles_to_spawn = 10.0f,
             .particle_speed = 100.0f,
             .particle_lifetime = 1.0f
         };

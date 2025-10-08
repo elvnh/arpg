@@ -768,7 +768,6 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 {
     ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
-#if 1
     ssize temp_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
     ssize perm_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
     ssize world_arena_memory_usage = la_get_memory_usage(&game_state->world.world_arena);
@@ -819,16 +818,17 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_checkbox(ui, str_lit("Render origin"),           &game_state->debug_state.render_origin);
     ui_checkbox(ui, str_lit("Render entity bounds"),    &game_state->debug_state.render_entity_bounds);
 
-#endif
+    ui_spacing(ui, 8);
 
-    //ui_checkbox(ui, str_lit("Render quad tree"), &game_state->debug_state.quad_tree_overlay);
-
-    if (ui_button(ui, str_lit("Abc")).clicked) {
-        printf("Clicked\n");
+    // TODO: display more stats about hovered entity
+    if (!entity_id_equal(game_state->debug_state.hovered_entity, NULL_ENTITY_ID)) {
+        String entity_str = str_concat(
+            str_lit("Hovered entity: "),
+            ssize_to_string(game_state->debug_state.hovered_entity.slot_id, temp_alloc),
+            temp_alloc
+        );
+        ui_text(ui, entity_str);
     }
-    /* ui_button(ui, str_lit("Def")); */
-
-    ui_textbox(ui, &game_state->sb);
 
     ui_pop_container(ui);
 }
@@ -838,19 +838,34 @@ static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMe
     debug_ui(ui, game_state, game_memory, frame_data);
 }
 
-void debug_update(GameState *game_state, FrameData frame_data)
+void debug_update(GameState *game_state, FrameData frame_data, LinearArena *frame_arena)
 {
     f32 curr_fps = 1.0f / frame_data.dt;
     f32 avg_fps = game_state->debug_state.average_fps;
 
     // NOTE: lower alpha value means more smoothing
     game_state->debug_state.average_fps = exponential_moving_avg(avg_fps, curr_fps, 0.9f);
+
+    Vector2 hovered_coords = screen_to_world_coords(
+        game_state->world.camera,
+        frame_data.input->mouse_position,
+        frame_data.window_size
+    );
+
+    Rectangle hovered_rect = {hovered_coords, {1, 1}};
+    EntityIDList hovered_entities = es_get_entities_in_area(&game_state->world.entities, hovered_rect, frame_arena);
+
+    if (!sl_list_is_empty(&hovered_entities)) {
+        game_state->debug_state.hovered_entity = sl_list_head(&hovered_entities)->id;
+    } else {
+        game_state->debug_state.hovered_entity = NULL_ENTITY_ID;
+    }
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory)
 {
-    debug_update(game_state, frame_data);
+    debug_update(game_state, frame_data, &game_memory->temporary_memory);
 
     game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
     game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);

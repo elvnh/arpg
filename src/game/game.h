@@ -20,6 +20,8 @@ typedef struct {
     b32 render_origin;
     b32 render_entity_bounds;
     f32 average_fps;
+
+    EntityID hovered_entity;
 } DebugState;
 
 typedef struct {

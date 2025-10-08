@@ -316,7 +316,16 @@ static b32 entities_intersected_previous_frame(GameWorld *world, EntityID a, Ent
 static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damage damage)
 {
     (void)entity;
-    health->health.hitpoints -= calculate_damage_received(health->health, damage);
+    s64 damage_taken = 0;
+
+    if (es_has_component(entity, StatsComponent)) {
+        StatsComponent *stats = es_get_component(entity, StatsComponent);
+        damage_taken = calculate_damage_received(stats->resistances, damage);
+    } else {
+        damage_taken = damage_sum(damage);
+    }
+
+    health->health.hitpoints -= damage_taken;
 }
 
 static void try_deal_damage_field_damage(Entity *a, Entity *b)
@@ -813,10 +822,10 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
     ui_spacing(ui, 8);
 
-    ui_checkbox(ui, str_lit("Render quad tree"),        &game_state->debug_state.quad_tree_overlay);
-    ui_checkbox(ui, str_lit("Render colliders"),        &game_state->debug_state.render_colliders);
-    ui_checkbox(ui, str_lit("Render origin"),           &game_state->debug_state.render_origin);
-    ui_checkbox(ui, str_lit("Render entity bounds"),    &game_state->debug_state.render_entity_bounds);
+    ui_checkbox(ui, str_lit("Render quad tree"),     &game_state->debug_state.quad_tree_overlay);
+    ui_checkbox(ui, str_lit("Render colliders"),     &game_state->debug_state.render_colliders);
+    ui_checkbox(ui, str_lit("Render origin"),        &game_state->debug_state.render_origin);
+    ui_checkbox(ui, str_lit("Render entity bounds"), &game_state->debug_state.render_entity_bounds);
 
     ui_spacing(ui, 8);
 
@@ -827,6 +836,7 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
             ssize_to_string(game_state->debug_state.hovered_entity.slot_id, temp_alloc),
             temp_alloc
         );
+
         ui_text(ui, entity_str);
     }
 
@@ -924,7 +934,6 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->health.hitpoints = 10;
-        hp->health.fire_resistance = 100;
 
         ASSERT(es_has_component(entity, ColliderComponent));
         ASSERT(es_has_component(entity, HealthComponent));
@@ -947,5 +956,8 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
         sprite->texture = game_state->asset_list.default_texture;
         sprite->size = v2(32, 32);
+
+        StatsComponent *stats = es_add_component(entity, StatsComponent);
+        stats->resistances.fire_resistance = 50;
     }
 }

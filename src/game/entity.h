@@ -15,7 +15,7 @@ typedef struct {
 
 typedef struct {
     ComponentBitset active_components;
-    b32    is_inactive;
+    b32 is_inactive;
 
     Vector2 position;
     Vector2 velocity;

@@ -1,7 +1,7 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
-#include "health.h"
+#include "damage.h"
 #include "particle.h"
 #include "asset.h"
 
@@ -13,6 +13,7 @@
     COMPONENT(SpriteComponent)                  \
     COMPONENT(LifetimeComponent)                \
     COMPONENT(OnDeathComponent)                 \
+    COMPONENT(StatsComponent)                   \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -110,5 +111,9 @@ typedef struct {
         DeathEffectSpawnParticles spawn_particles;
     } as;
 } OnDeathComponent;
+
+typedef struct {
+    DamageResistances resistances;
+} StatsComponent;
 
 #endif //COMPONENT_H

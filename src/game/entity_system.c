@@ -283,25 +283,33 @@ EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearAre
     return result;
 }
 
+Rectangle es_get_entity_bounding_box(Entity *entity)
+{
+    // NOTE: this minimum size is completely arbitrary
+    Vector2 size = {4, 4};
+
+    if (es_has_component(entity, ColliderComponent)) {
+        ColliderComponent *collider = es_get_component(entity, ColliderComponent);
+        size.x = MAX(size.x, collider->size.x);
+        size.y = MAX(size.y, collider->size.y);
+    }
+
+    if (es_has_component(entity, SpriteComponent)) {
+        SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
+        size.x = MAX(size.x, sprite->size.x);
+        size.y = MAX(size.y, sprite->size.y);
+    }
+
+    Rectangle result = {entity->position, size};
+
+    return result;
+}
+
 void es_update_entity_quad_tree_location(EntitySystem *es, Entity *entity, LinearArena *arena)
 {
     EntitySlot *slot = es_get_entity_slot(entity);
     EntityID id = es_get_id_of_entity(es, entity);
 
-    Vector2 new_size = {1, 1};
-
-    if (es_has_component(entity, ColliderComponent)) {
-        ColliderComponent *collider = es_get_component(entity, ColliderComponent);
-        new_size.x = MAX(new_size.x, collider->size.x);
-        new_size.y = MAX(new_size.y, collider->size.y);
-    }
-
-    if (es_has_component(entity, SpriteComponent)) {
-        SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
-        new_size.x = MAX(new_size.x, sprite->size.x);
-        new_size.y = MAX(new_size.y, sprite->size.y);
-    }
-
-    Rectangle new_area = {entity->position, new_size};
+    Rectangle new_area = es_get_entity_bounding_box(entity);
     slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, id, slot->quad_tree_location, new_area, arena);
 }

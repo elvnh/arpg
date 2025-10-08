@@ -272,9 +272,9 @@ static void entity_render(Entity *entity, RenderBatch *rb, const AssetList *asse
         }
     }
 
-    if (debug_state->render_entity_positions) {
-        Rectangle entity_rect = {entity->position, {4, 4}};
-        rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.75f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
+    if (debug_state->render_entity_bounds) {
+        Rectangle entity_rect = es_get_entity_bounding_box(entity);
+        rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 }
 
@@ -288,7 +288,7 @@ static Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
-static Rectangle get_entity_rect(Entity *entity, ColliderComponent *collider)
+static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent *collider)
 {
     Rectangle result = {
         entity->position,
@@ -349,8 +349,8 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
     b32 should_collide = !rule_for_entities || rule_for_entities->should_collide;
 
     if (should_collide) {
-        Rectangle rect_a = get_entity_rect(a, collider_a);
-        Rectangle rect_b = get_entity_rect(b, collider_b);
+        Rectangle rect_a = get_entity_collider_rectangle(a, collider_a);
+        Rectangle rect_b = get_entity_collider_rectangle(b, collider_b);
 
         CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
             a->velocity, b->velocity, dt);
@@ -408,7 +408,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
             Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
             if (!tile || (tile->type == TILE_WALL)) {
-                Rectangle entity_rect = get_entity_rect(entity, collider);
+                Rectangle entity_rect = get_entity_collider_rectangle(entity, collider);
                 Rectangle tile_rect = {
                     tile_to_world_coords(tile_coords),
                     {(f32)TILE_SIZE, (f32)TILE_SIZE },
@@ -817,7 +817,7 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_checkbox(ui, str_lit("Render quad tree"),        &game_state->debug_state.quad_tree_overlay);
     ui_checkbox(ui, str_lit("Render colliders"),        &game_state->debug_state.render_colliders);
     ui_checkbox(ui, str_lit("Render origin"),           &game_state->debug_state.render_origin);
-    ui_checkbox(ui, str_lit("Render entity positions"), &game_state->debug_state.render_entity_positions);
+    ui_checkbox(ui, str_lit("Render entity bounds"),    &game_state->debug_state.render_entity_bounds);
 
 #endif
 

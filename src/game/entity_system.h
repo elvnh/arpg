@@ -44,6 +44,8 @@ void       es_schedule_entity_for_removal(Entity *entity);
 void       es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch);
 EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearArena *arena);
 EntityIDList es_get_inactive_entities(EntitySystem *es, LinearArena *scratch);
+Rectangle    es_get_entity_bounding_box(Entity *entity);
+
 void      *es_impl_add_component(Entity *entity, ComponentType type);
 void      *es_impl_get_component(Entity *entity, ComponentType type);
 void       es_impl_remove_component(Entity *entity, ComponentType type);
@@ -51,10 +53,5 @@ void       es_impl_remove_component(Entity *entity, ComponentType type);
 // NOTE: until this is called at end of every entity update, entity won't be colliding with others
 // etc. This might cause issues if an entity is spawning other entities
 void       es_update_entity_quad_tree_location(EntitySystem *es, Entity *entity, LinearArena *arena);
-
-#if 0
-void	   es_set_entity_position(EntitySystem *es, Entity *entity, Vector2 new_pos, LinearArena *arena);
-void	   es_set_entity_area(EntitySystem *es, Entity *entity, Rectangle rectangle, LinearArena *arena);
-#endif
 
 #endif //ENTITY_SYSTEM_H

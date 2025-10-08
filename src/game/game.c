@@ -609,7 +609,16 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, const Ass
         entity_update(world, entity, dt);
     }
 
+    // TODO: don't use linked list for this
+    EntityIDList inactive_entities = es_get_inactive_entities(&world->entities, frame_arena);
+
+    // NOTE: wait until after all updates have ran before removing collision rules
+    for (EntityIDNode *node = list_head(&inactive_entities); node; node = list_next(node)) {
+        collision_rule_remove_rules_with_entity(&world->collision_rules, node->id);
+    }
+
     // TODO: should this be done at beginning of each frame so inactive entities are rendered?
+    // TODO: it would be better to pass list of entities to remove since we just retrieved inactive entities
     es_remove_inactive_entities(&world->entities, frame_arena);
 
     swap_and_reset_collision_tables(world);
@@ -893,7 +902,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->health.hitpoints = 10;
-        hp->health.fire_resistance = 50;
+        hp->health.fire_resistance = 100;
 
         ASSERT(es_has_component(entity, ColliderComponent));
         ASSERT(es_has_component(entity, HealthComponent));

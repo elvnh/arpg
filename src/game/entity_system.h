@@ -41,6 +41,7 @@ b32        es_entity_exists(EntitySystem *es, EntityID entity_id);
 void       es_schedule_entity_for_removal(Entity *entity);
 void       es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch);
 EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearArena *arena);
+EntityIDList es_get_inactive_entities(EntitySystem *es, LinearArena *scratch);
 void      *es_impl_add_component(Entity *entity, ComponentType type);
 void      *es_impl_get_component(Entity *entity, ComponentType type);
 void       es_impl_remove_component(Entity *entity, ComponentType type);

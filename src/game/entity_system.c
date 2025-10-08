@@ -241,9 +241,9 @@ b32 es_entity_exists(EntitySystem *es, EntityID entity_id)
     return result;
 }
 
-void es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch)
+EntityIDList es_get_inactive_entities(EntitySystem *es, LinearArena *scratch)
 {
-    EntityIDList to_remove = {0};
+    EntityIDList result = {0};
 
     for (EntityIndex i = 0; i < es->alive_entity_count; ++i) {
         EntityID id = es->alive_entity_ids[i];
@@ -253,9 +253,16 @@ void es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch)
             EntityIDNode *node = la_allocate_item(scratch, EntityIDNode);
             node->id = id;
 
-            sl_list_push_back(&to_remove, node);
+            sl_list_push_back(&result, node);
         }
     }
+
+    return result;
+}
+
+void es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch)
+{
+    EntityIDList to_remove = es_get_inactive_entities(es, scratch);
 
     for (EntityIDNode *node = sl_list_head(&to_remove); node; node = sl_list_next(node)) {
         es_remove_entity(es, node->id);

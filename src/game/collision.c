@@ -165,15 +165,17 @@ void collision_rule_remove_rules_with_entity(CollisionRuleTable *table, EntityID
         CollisionRuleList *list = &table->table[i];
 
         for (CollisionRule *rule = list_head(list); rule;) {
+            CollisionRule *next = list_next(rule);
+
 	    if (entity_id_equal(rule->entity_pair.entity_a, a)
 	     || entity_id_equal(rule->entity_pair.entity_b, a)) {
-                CollisionRule *next = list_next(rule);
 
                 list_remove(list, rule);
                 list_push_back(&table->free_node_list, rule);
 
-                rule = next;
 	    }
+
+            rule = next;
         }
     }
 }

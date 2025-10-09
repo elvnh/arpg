@@ -819,8 +819,6 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_text(ui, world_arena_str);
     ui_text(ui, node_string);
     ui_text(ui, entity_string);
-    ui_text(ui, str_lit("Foo\nBar"));
-    ui_button(ui, str_lit("Test\nLala"));
 
     ui_spacing(ui, 8);
 

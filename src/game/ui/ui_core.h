@@ -12,6 +12,8 @@
 /*
   TODO:
   - Centering?
+  - Fill entire parent width/height
+  - Separate size kinds for horizontal and vertical axis?
  */
 
 #define UI_NULL_WIDGET_ID 0

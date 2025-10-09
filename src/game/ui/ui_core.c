@@ -138,7 +138,7 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
 
 static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent)
 {
-    widget->final_position = offset;
+    widget->final_position = v2_add(offset, widget->offset_from_parent);
 
     TraversalOrder order = get_layout_traversal_order(widget->size_kind);
 
@@ -257,7 +257,7 @@ static LinearArena *get_frame_arena(UIState *ui)
 static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const AssetList *assets, ssize depth)
 {
     // TODO: depth isn't needed once a stable sort is implemented for render commands
-#if 0
+#if 1
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
         LinearArena *arena = get_frame_arena(ui);
 

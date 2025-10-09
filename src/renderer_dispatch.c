@@ -148,6 +148,52 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 		    verts.bottom_right, verts.bottom_left);
             } break;
 
+            case RENDER_CMD_CROPPED_RECTANGLE: {
+                CroppedRectangleCmd *cmd = (CroppedRectangleCmd *)entry->data;
+
+                Rectangle rect = cmd->visible_rect;
+                Vector2 sprite_size = cmd->uv_rect_size;
+                RGBA32 color = cmd->color;
+
+                f32 uv_top =
+                    (rb->y_direction == Y_IS_UP)
+                    ? 1.0f - (rect.size.y / sprite_size.y)
+                    : 1.0f;
+                f32 uv_bottom =
+                    (rb->y_direction == Y_IS_DOWN)
+                    ? 1.0f - (rect.size.y / sprite_size.y)
+                    : 1.0f;
+
+                f32 uv_left = 0.0f;
+                f32 uv_right = rect.size.x / sprite_size.x;
+
+                Vertex a = {
+                    rect_top_left(rect),
+                    {uv_left, uv_top},
+                    color
+                };
+
+                Vertex b = {
+                    rect_top_right(rect),
+                    {uv_right, uv_top},
+                    color
+                };
+
+                Vertex c = {
+                    rect_bottom_right(rect),
+                    {uv_right, uv_bottom},
+                    color
+                };
+
+                Vertex d = {
+                    rect_bottom_left(rect),
+                    {uv_left, uv_bottom},
+                    color
+                };
+
+                renderer_backend_draw_quad(backend, a, b, c, d);
+            } break;
+
             case RENDER_CMD_OUTLINED_RECTANGLE: {
                 OutlinedRectangleCmd *cmd = (OutlinedRectangleCmd *)entry->data;
 

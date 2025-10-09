@@ -281,7 +281,12 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                         cursor.x += verts.advance_x;
                     } else {
                         cursor.x = start_position.x;
-                        cursor.y -= newline_advance;
+
+                        if (rb->y_direction == Y_IS_UP) {
+                            cursor.y -= newline_advance;
+                        } else {
+                            cursor.y += newline_advance;
+                        }
                     }
                 }
             } break;

@@ -13,7 +13,7 @@ static Widget *ui_internal_text(UIState *ui, String text, RGBA32 color)
 
     widget->text.string = text;
     widget->text.font = ui->current_style.font;
-    widget->text.size = 12; // TODO: allow changing text size
+    widget->text.size = 18; // TODO: allow changing text size
     widget->color = color;
 
     return widget;
@@ -43,6 +43,7 @@ WidgetInteraction ui_button(UIState *ui, String text)
 
 WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 {
+    // TODO: fix vertical alignment with text
     ASSERT(b);
 
     Widget *widget = ui_core_colored_box(ui, v2(12, 12), RGBA32_WHITE, ui_core_hash_string(text));

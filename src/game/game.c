@@ -819,6 +819,8 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_text(ui, world_arena_str);
     ui_text(ui, node_string);
     ui_text(ui, entity_string);
+    ui_text(ui, str_lit("Foo\nBar"));
+    ui_button(ui, str_lit("Test\nLala"));
 
     ui_spacing(ui, 8);
 
@@ -828,6 +830,8 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_checkbox(ui, str_lit("Render entity bounds"), &game_state->debug_state.render_entity_bounds);
 
     ui_spacing(ui, 8);
+
+    //ui_button(ui, str_lit("Abc\nDef"));
 
     // TODO: display more stats about hovered entity
     if (!entity_id_equal(game_state->debug_state.hovered_entity, NULL_ENTITY_ID)) {

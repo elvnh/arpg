@@ -44,6 +44,22 @@ static Vector2 get_text_dimensions(FontHandle font_handle, String text, s32 text
     return result;
 }
 
+static f32 get_text_newline_advance(FontHandle font_handle, s32 text_size)
+{
+    FontAsset *asset = assets_get_font(&asset_mgr, font_handle);
+    f32 result = font_get_newline_advance(asset, text_size);
+
+    return result;
+}
+
+static f32 get_font_baseline_offset(FontHandle font_handle, s32 text_size)
+{
+    FontAsset *asset = assets_get_font(&asset_mgr, font_handle);
+    f32 result = font_get_baseline_offset(asset, text_size);
+
+    return result;
+}
+
 int main()
 {
     run_tests();
@@ -74,7 +90,9 @@ int main()
     };
 
     PlatformCode platform_code = {
-        .get_text_dimensions = get_text_dimensions
+        .get_text_dimensions = get_text_dimensions,
+        .get_text_newline_advance = get_text_newline_advance,
+        .get_font_baseline_offset = get_font_baseline_offset,
     };
 
 #if HOT_RELOAD

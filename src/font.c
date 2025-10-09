@@ -1,5 +1,8 @@
 #include <stb_truetype.h>
 
+#include "base/linear_arena.h"
+#include "base/matrix.h"
+#include "base/utils.h"
 #include "font.h"
 #include "asset_manager.h"
 #include "platform.h"
@@ -13,13 +16,36 @@
 #define FONT_CHAR_COUNT              (FONT_LAST_CHAR - FONT_FIRST_CHAR)
 #define FONT_RASTERIZED_SIZE         128
 
+typedef struct {
+    /* NOTE: These are unscaled */
+    f32 advance_x;
+    f32 left_side_bearing;
+
+    Vector2 uv_top_left;
+    Vector2 uv_top_right;
+    Vector2 uv_bottom_right;
+    Vector2 uv_bottom_left;
+} GlyphInfo;
+
 struct FontAsset {
     Span                 font_file_buffer; // NOTE: Must stay loaded
     TextureHandle        texture_handle;
     stbtt_fontinfo       font_info;
-    stbtt_packedchar     glyph_metrics[FONT_CHAR_COUNT];
-    stbtt_aligned_quad   glyph_quads[FONT_CHAR_COUNT];
+    GlyphInfo            glyph_infos[FONT_CHAR_COUNT];
+
+    /* NOTE: These are unscaled */
+    f32                  ascent;
+    f32                  descent;
+    f32                  line_gap;
 };
+
+static inline s32 char_index(char ch)
+{
+    s32 result = (s32)ch - (s32)FONT_FIRST_CHAR;
+    ASSERT((result >= 0) && (result < FONT_CHAR_COUNT));
+
+    return result;
+}
 
 // TODO: Most calculations in this file are pretty hacky, fix them
 FontAsset *font_create_atlas(String font_path, struct AssetManager *assets, Allocator allocator,
@@ -47,8 +73,9 @@ FontAsset *font_create_atlas(String font_path, struct AssetManager *assets, Allo
 
     stbtt_PackSetOversampling(&pack_ctx, 2, 2);
 
+    stbtt_packedchar *glyph_metrics = la_allocate_array(scratch, stbtt_packedchar, FONT_CHAR_COUNT);
     if (!stbtt_PackFontRange(&pack_ctx, font_file_contents.data, 0, FONT_RASTERIZED_SIZE,
-            FONT_FIRST_CHAR, FONT_CHAR_COUNT, result->glyph_metrics)) {
+            FONT_FIRST_CHAR, FONT_CHAR_COUNT, glyph_metrics)) {
         goto error;
     }
 
@@ -56,8 +83,22 @@ FontAsset *font_create_atlas(String font_path, struct AssetManager *assets, Allo
 
     f32 unused_x, unused_y;
     for (s32 i = 0; i < FONT_CHAR_COUNT; ++i) {
-        stbtt_GetPackedQuad(result->glyph_metrics, FONT_ATLAS_WIDTH, FONT_ATLAS_HEIGHT,
-            i, &unused_x, &unused_y, &result->glyph_quads[i], 0);
+        stbtt_aligned_quad quad;
+        stbtt_GetPackedQuad(glyph_metrics, FONT_ATLAS_WIDTH, FONT_ATLAS_HEIGHT,
+            i, &unused_x, &unused_y, &quad, 0);
+
+        char ch = (char)(FONT_FIRST_CHAR + i);
+        s32 advance_x, lsb;
+        stbtt_GetCodepointHMetrics(&result->font_info, ch, &advance_x, &lsb);
+
+        result->glyph_infos[i] = (GlyphInfo) {
+            .advance_x = (f32)advance_x,
+            .left_side_bearing = (f32)lsb,
+            .uv_top_left = {quad.s0, quad.t0},
+            .uv_top_right = {quad.s1, quad.t0},
+            .uv_bottom_right = {quad.s1, quad.t1},
+            .uv_bottom_left = {quad.s0, quad.t1}
+        };
     }
 
     byte *rgba_font_bitmap = la_allocate_array(scratch, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT * 4);
@@ -82,6 +123,12 @@ FontAsset *font_create_atlas(String font_path, struct AssetManager *assets, Allo
         .channels = 4
     };
 
+    s32 ascent, descent, line_gap;
+    stbtt_GetFontVMetrics(&result->font_info, &ascent, &descent, &line_gap);
+
+    result->ascent = (f32)ascent;
+    result->descent = (f32)descent;
+    result->line_gap = (f32)line_gap;
     result->texture_handle = assets_create_texture_from_memory(assets, font_image);
 
     return result;
@@ -100,6 +147,7 @@ void font_destroy_atlas(FontAsset *asset, Allocator allocator)
     if (asset->font_file_buffer.data) {
         deallocate(allocator, asset->font_file_buffer.data);
     }
+
     deallocate(allocator, asset);
 }
 
@@ -110,83 +158,77 @@ TextureHandle font_get_texture_handle(FontAsset *asset)
     return result;
 }
 
-static inline s32 char_index(char ch)
+
+static inline f32 get_text_scale(FontAsset *asset, s32 text_size)
 {
-    s32 result = (s32)ch - (s32)FONT_FIRST_CHAR;
-    ASSERT((result >= 0) && (result < FONT_CHAR_COUNT));
+    f32 result = stbtt_ScaleForPixelHeight(&asset->font_info, (f32)text_size);
 
     return result;
 }
 
-static inline f32 get_text_scale(s32 text_size)
+f32 font_get_baseline_offset(FontAsset *asset, s32 text_size)
 {
-    // TODO: fix this calculation
-    f32 result = ((f32)text_size / (f32)FONT_RASTERIZED_SIZE) * 1.6f;
+    f32 scale = get_text_scale(asset, text_size);
+    f32 result = asset->ascent * scale;
 
     return result;
 }
 
 f32 font_get_newline_advance(FontAsset *asset, s32 text_size)
 {
-    (void)asset;
-    // TODO: fix this
-    f32 scale = get_text_scale(text_size);
-    f32 result = (f32)FONT_RASTERIZED_SIZE * scale;
+    f32 scale = get_text_scale(asset, text_size);
+
+    f32 result = (asset->ascent - asset->descent + asset->line_gap) * scale;
 
     return result;
 }
 
-GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 font_size, RGBA32 color,
+GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 text_size, RGBA32 color,
     YDirection y_dir)
 {
-    stbtt_packedchar char_info = asset->glyph_metrics[char_index(ch)];
-    stbtt_aligned_quad quad = asset->glyph_quads[char_index(ch)];
+    GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
 
-    f32 scale = get_text_scale(font_size);
+    f32 scale = get_text_scale(asset, text_size);
 
-    // TODO: Properly fix glyph offsets when y dir is down
-    Vector2 glyph_size = {
-        (quad.x1 - quad.x0) * scale,
-        (quad.y1 - quad.y0) * scale,
-    };
+    f32 advance_x = roundf(glyph_info.advance_x * scale);
+    f32 lsb = roundf(glyph_info.left_side_bearing * scale);
 
-#if 0
-    Vector2 glyph_bottom_left = {
-        position.x + char_info.xoff * scale,
-        position.y - char_info.yoff2 * scale
-    };
-#else
-    Vector2 glyph_bottom_left = {
-        position.x + char_info.xoff * scale,
-        position.y + char_info.yoff * scale + font_get_newline_advance(asset, font_size) * 0.60f
-    };
-#endif
+    s32 x0, y0, x1, y1;
+    stbtt_GetCodepointBitmapBox(&asset->font_info, ch, scale, scale, &x0, &y0, &x1, &y1);
+
+    Vector2 glyph_size = {(f32)(x1 - x0), (f32)(y1 - y0)};
+
+    Vector2 glyph_bottom_left;
+
+    if (y_dir == Y_IS_DOWN) {
+        glyph_bottom_left = v2(position.x + lsb, position.y + (f32)y0);
+    } else {
+        glyph_bottom_left = v2(position.x + lsb, position.y - (f32)y1);
+    }
 
     Vertex tl = {
         v2_add(glyph_bottom_left, v2(0.0f, glyph_size.y)),
-        {quad.s0, (y_dir == Y_IS_UP) ? quad.t0 : quad.t1},
+        {glyph_info.uv_top_left.x, (y_dir == Y_IS_UP) ? glyph_info.uv_top_left.y : glyph_info.uv_bottom_left.y},
         color
     };
 
     Vertex tr = {
         v2_add(glyph_bottom_left, glyph_size),
-        {quad.s1, (y_dir == Y_IS_UP) ? quad.t0 : quad.t1},
+        {glyph_info.uv_top_right.x, (y_dir == Y_IS_UP) ? glyph_info.uv_top_right.y : glyph_info.uv_bottom_right.y},
         color
     };
 
     Vertex br = {
         v2_add(glyph_bottom_left, v2(glyph_size.x, 0.0f)),
-        {quad.s1, (y_dir == Y_IS_UP) ? quad.t1 : quad.t0},
+        {glyph_info.uv_bottom_right.x, (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_right.y : glyph_info.uv_top_right.y},
         color
     };
 
     Vertex bl = {
         glyph_bottom_left,
-        {quad.s0, (y_dir == Y_IS_UP) ? quad.t1 : quad.t0},
+        {glyph_info.uv_bottom_left.x, (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_left.y : glyph_info.uv_top_left.y},
         color
     };
-
-    f32 advance_x = char_info.xadvance * scale;
 
     GlyphVertices result = {
         .top_left = tl,
@@ -201,11 +243,8 @@ GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 positio
 
 Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
 {
-    s32 ascent, descent, line_gap;
-    stbtt_GetFontVMetrics(&asset->font_info, &ascent, &descent, &line_gap);
-
-    // TODO: calculate newline gap this way to
-    f32 font_height = (f32)(line_gap + ascent - descent);
+    f32 scale = get_text_scale(asset, text_size);
+    f32 font_height = asset->ascent - asset->descent;
 
     Vector2 result = {0.0f, font_height};
 
@@ -214,9 +253,9 @@ Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
         char ch = text.data[i];
 
         if (ch != '\n') {
-            stbtt_packedchar char_info = asset->glyph_metrics[char_index(ch)];
+            GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
 
-            result.x += char_info.xadvance;
+            result.x += glyph_info.advance_x + glyph_info.left_side_bearing;
             max_x = MAX(result.x, max_x);
         } else {
             max_x = MAX(result.x, max_x);
@@ -226,11 +265,9 @@ Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
         }
     }
 
-    f32 width_scale = get_text_scale(text_size);
-    f32 height_scale = stbtt_ScaleForPixelHeight(&asset->font_info, (f32)text_size);
 
-    result.x *= width_scale;
-    result.y *= height_scale;
+    result.x *= scale;
+    result.y *= scale;
 
     ASSERT(result.x > 0.0f || (text.length == 0));
     ASSERT(result.y > 0.0f || (text.length == 0));

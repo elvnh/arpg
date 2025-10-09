@@ -182,8 +182,12 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
     }
 
     if (widget_has_flag(widget, WIDGET_TEXT)) {
-        widget->final_size = platform_code.get_text_dimensions(widget->text.font,
+        f32 baseline = platform_code.get_font_baseline_offset(widget->text.font, widget->text.size);
+        Vector2 text_dims = platform_code.get_text_dimensions(widget->text.font,
             widget->text.string, widget->text.size);
+
+        widget->final_size = text_dims;
+        widget->text.baseline_y_offset = baseline;
     }
 
     /* ASSERT(widget->final_size.x > 0.0f); */
@@ -253,6 +257,7 @@ static LinearArena *get_frame_arena(UIState *ui)
 static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const AssetList *assets, ssize depth)
 {
     // TODO: depth isn't needed once a stable sort is implemented for render commands
+#if 0
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
         LinearArena *arena = get_frame_arena(ui);
 
@@ -272,11 +277,44 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
-            // TODO: allow changing font size
-            rb_push_text(rb, arena, widget->text.string, widget->final_position, widget->color, 12,
+            Vector2 text_position = v2_add(widget->final_position, v2(0.0f, widget->text.baseline_y_offset));
+
+            rb_push_text(rb, arena, widget->text.string, text_position, widget->color, widget->text.size,
                 assets->texture_shader, widget->text.font, depth);
         }
     }
+#else
+    if (true || !widget_has_flag(widget, WIDGET_HIDDEN)) {
+        LinearArena *arena = get_frame_arena(ui);
+
+        if (true || widget_has_flag(widget, WIDGET_COLORED)) {
+            Rectangle widget_rect = widget_get_bounding_box(widget);
+            RGBA32 color = widget->color;
+
+            if (widget_is_hot(ui, widget)) {
+                color = RGBA32_GREEN;
+            }
+
+            if (widget_is_active(ui, widget)) {
+                color = RGBA32_RED;
+            }
+
+            if (!widget_has_flag(widget, WIDGET_COLORED) || widget_has_flag(widget, WIDGET_HIDDEN)) {
+                color = (RGBA32){0, 1, 0, 0.5f};
+            }
+
+            rb_push_rect(rb, &ui->current_frame_widgets.arena, widget_rect, color, assets->shape_shader, depth);
+        }
+
+        if (widget_has_flag(widget, WIDGET_TEXT)) {
+            Vector2 text_position = v2_add(widget->final_position, v2(0.0f, widget->text.baseline_y_offset));
+
+            // TODO: newlines don't work properly
+            rb_push_text(rb, arena, widget->text.string, text_position, widget->color, widget->text.size,
+                assets->texture_shader, widget->text.font, depth);
+        }
+    }
+#endif
 
     for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
         render_widget(ui, child, rb, assets, depth + 1);

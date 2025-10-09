@@ -12,9 +12,13 @@
 typedef struct WindowHandle WindowHandle;
 
 typedef Vector2 (PlatformGetTextDimensions)(FontHandle, String, s32);
+typedef f32     (PlatformGetTextNewlineAdvance)(FontHandle, s32);
+typedef f32     (PlatformGetFontBaselineOffset)(FontHandle, s32);
 
 typedef struct {
     PlatformGetTextDimensions *get_text_dimensions;
+    PlatformGetTextNewlineAdvance *get_text_newline_advance; // TODO: not needed?
+    PlatformGetFontBaselineOffset *get_font_baseline_offset;
 } PlatformCode;
 
 enum {

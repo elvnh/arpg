@@ -64,6 +64,7 @@ typedef struct Widget {
         String string;
         FontHandle font;
         s32 size;
+        f32 baseline_y_offset;
     } text;
 
     RGBA32 color;

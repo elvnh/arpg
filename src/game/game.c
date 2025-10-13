@@ -411,6 +411,8 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     /* min_tile_y = MAX(min_tile_y, world->tilemap.min_y); */
     /* max_tile_y = MIN(max_tile_y, world->tilemap.max_y); */
 
+    CollisionInfo closest_collision = { .movement_fraction_left = INFINITY };
+
     for (s32 y = min_tile_y - 1; y <= max_tile_y + 1; ++y) {
         for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
             Vector2i tile_coords = {x, y};
@@ -427,22 +429,26 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
                 CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
 		    tile_rect, entity->velocity, V2_ZERO, dt);
 
-                if (collision.collision_state != COLL_NOT_COLLIDING) {
-                    entity->position = collision.new_position_a;
+                if ((collision.collision_state != COLL_NOT_COLLIDING)
+                    && (collision.movement_fraction_left < closest_collision.movement_fraction_left)) {
+                    closest_collision = collision;
 
-#if 0
-                    entity->velocity = collision.new_velocity_a;
-#else
-                    entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
-#endif
-
-                    movement_fraction_left = collision.movement_fraction_left;
-
-                    ASSERT(v2_eq(collision.new_position_b, tile_rect.position));
-                    ASSERT(v2_eq(collision.new_velocity_b, V2_ZERO));
                 }
             }
         }
+    }
+
+    if (closest_collision.collision_state != COLL_NOT_COLLIDING) {
+        entity->position = closest_collision.new_position_a;
+
+#if 0
+        entity->velocity = closest_collision.new_velocity_a;
+        movement_fraction_left = closest_collision.movement_fraction_left;
+#else
+        // TODO: fix this properly
+        entity->velocity = v2_reflect(entity->velocity, closest_collision.collision_normal);
+        movement_fraction_left = 0.0f;
+#endif
     }
 
     return movement_fraction_left;

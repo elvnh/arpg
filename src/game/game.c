@@ -749,31 +749,18 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
 static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData frame_data, LinearArena *frame_arena)
 {
     Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_size);
-    RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, frame_arena);
+    RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_UP, frame_arena);
 
-    //world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena, &game_state->debug_state);
+    world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena,
+	&game_state->debug_state);
 
-    Rectangle imaginary = {{0, 0}, {128, 128}};
-    static f32 x = 0.0f;
-    static f32 y = 0.0f;
-    Rectangle sprite = {{x, y}, {64, 64}};
-    x+= 0.1f;
-    //y-= 0.2f;
-
-    rb_push_rect(rb, frame_arena, imaginary, RGBA32_GREEN, game_state->asset_list.shape_shader, 3);
-#if 0
-    rb_push_sprite(rb, frame_arena, game_state->asset_list.default_texture, sprite, RGBA32_WHITE,
-        game_state->asset_list.texture_shader, 4);
-#else
-    rb_push_cropped_sprite2(rb, frame_arena, game_state->asset_list.default_texture, sprite, imaginary,
-        RGBA32_WHITE, game_state->asset_list.texture_shader, 4);
-#endif
     if (game_state->debug_state.quad_tree_overlay) {
         render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
     }
 
     if (game_state->debug_state.render_origin) {
-        rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED, game_state->asset_list.shape_shader, 3);
+        rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
+	    game_state->asset_list.shape_shader, 3);
     }
 
     rb_sort_entries(rb);

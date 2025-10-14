@@ -19,7 +19,7 @@ typedef struct {
 
 static inline Matrix4 camera_get_matrix(Camera cam, Vector2i window_dims)
 {
-    Matrix4 result = mat4_orthographic(window_dims, Y_IS_DOWN);
+    Matrix4 result = mat4_orthographic(window_dims, Y_IS_UP);
 
     Vector2 window_center = {(f32)window_dims.x / 2.0f, (f32)window_dims.y / 2.0f};
     result = mat4_translate(result, v2_add(window_center, v2_neg(cam.position)));

@@ -68,6 +68,8 @@ static inline Vector2 rect_bottom_left(Rectangle rect)
 
 static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color, YDirection y_direction)
 {
+    ASSERT(rect.size.x > 0.0f && rect.size.y > 0.0f);
+
     Vertex tl = {
         .position = rect_top_left(rect),
         .color = color,
@@ -190,6 +192,30 @@ static inline Rectangle rect_minkowski_diff(Rectangle a, Rectangle b)
 
     Rectangle result = { pos, size };
 
+    return result;
+}
+
+static inline Rectangle rect_overlap_area(Rectangle a, Rectangle b)
+{
+    // TODO: fix for when y direction is down
+    f32 l1 = a.position.x;
+    f32 l2 = b.position.x;
+    f32 r1 = a.position.x + a.size.x;
+    f32 r2 = b.position.x + b.size.x;
+    f32 t1 = a.position.y + a.size.y;
+    f32 t2 = b.position.y + b.size.y;
+    f32 b1 = a.position.y;
+    f32 b2 = b.position.y;
+
+    f32 left = MAX(l1, l2);
+    f32 right = MIN(r1, r2);
+    f32 top = MIN(t1, t2);
+    f32 bottom = MAX(b1, b2);
+
+    f32 width = right - left;
+    f32 height = top - bottom;
+
+    Rectangle result = {{left, bottom}, {width, height}};
     return result;
 }
 

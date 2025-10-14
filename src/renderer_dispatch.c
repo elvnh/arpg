@@ -144,12 +144,15 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 RectangleCmd *cmd = (RectangleCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color, rb->y_direction);
 
+                ASSERT(cmd->rect.size.x > 0.0f && cmd->rect.size.y > 0.0f);
+
 		renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
 		    verts.bottom_right, verts.bottom_left);
             } break;
 
             case RENDER_CMD_CROPPED_RECTANGLE: {
                 CroppedRectangleCmd *cmd = (CroppedRectangleCmd *)entry->data;
+                ASSERT(cmd->visible_rect.size.x > 0.0f && cmd->visible_rect.size.y > 0.0f);
 
                 Rectangle rect = cmd->visible_rect;
                 Vector2 sprite_size = cmd->uv_rect_size;
@@ -196,6 +199,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
             case RENDER_CMD_OUTLINED_RECTANGLE: {
                 OutlinedRectangleCmd *cmd = (OutlinedRectangleCmd *)entry->data;
+                ASSERT(cmd->rect.size.x > 0.0f && cmd->rect.size.y > 0.0f);
 
 		RGBA32 color = cmd->color;
 		f32 thick = cmd->thickness;

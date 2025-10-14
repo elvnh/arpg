@@ -209,38 +209,18 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 if (rect_is_valid(overlap)) {
                     f32 rel_left = rect_top_left(overlap).x - visible_rect.position.x;
                     f32 rel_right = rect_top_right(overlap).x - visible_rect.position.x;
-                    f32 rel_bottom = rect_bottom_right(overlap).y - visible_rect.position.y;
+                    f32 rel_bottom = rect_bottom_left(overlap).y - visible_rect.position.y;
                     f32 rel_top = rect_top_left(overlap).y - visible_rect.position.y;
 
-                    // TODO: fix for y is up
-                    f32 uv_left =
-                        (overlap.position.x >= uv_rect.position.x)
-                        ? 0.0f
-                        : rel_left / uv_rect.size.x;
-                    f32 uv_right =
-                        (rect_top_right(overlap).x <= rect_top_right(uv_rect).x)
-                        ? 1.0f
-                        : rel_right / uv_rect.size.x;
-                    f32 uv_top =
-                        (rect_top_left(overlap).y <= rect_top_left(uv_rect).y)
-                        ? 0.0f
-                        : (rel_top / uv_rect.size.y);
-                    f32 uv_bottom =
-                        (rect_bottom_left(overlap).y >= rect_bottom_left(uv_rect).y)
-                        ? 1.0f
-                        : (rel_bottom / uv_rect.size.y);
+                    f32 uv_left = rel_left / visible_rect.size.x;
+                    f32 uv_right = rel_right / visible_rect.size.x;
+                    f32 uv_top = rel_top / visible_rect.size.y;
+                    f32 uv_bottom = rel_bottom / visible_rect.size.y;
 
-#if 0
-                    f32 uv_top =
-                        (rect_top_left(overlap).x <= )
-                        (rb->y_direction == Y_IS_UP) ?
-                        (1.0f - rel_top / uv_rect.size.y)
-                        : (rel_top / uv_rect.size.y);
-                    f32 uv_bottom =
-                        (rb->y_direction == Y_IS_UP) ?
-                        (1.0f - rel_bottom / uv_rect.size.y)
-                        : (rel_bottom / uv_rect.size.y);
-#endif
+		    if (rb->y_direction == Y_IS_UP) {
+			uv_top = 1.0f - uv_top;
+			uv_bottom = 1.0f - uv_bottom;
+		    }
 
                     Vertex a = {
                         rect_top_left(overlap),
@@ -268,7 +248,6 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
                     renderer_backend_draw_quad(backend, a, b, c, d);
                 }
-
             } break;
 
             case RENDER_CMD_OUTLINED_RECTANGLE: {

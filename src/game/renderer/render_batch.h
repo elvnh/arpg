@@ -9,6 +9,8 @@
 #include "render_key.h"
 
 // TODO: make RenderEntry array into ring buffer in case it overflows
+// TODO: reduce amount of parameters, eg. create specialization for push_sprite in case
+// color needs to be provided, otherwise default to white
 
 typedef struct {
     RenderKey         key;

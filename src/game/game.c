@@ -815,6 +815,7 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
         temp_alloc
     );
 
+
     ui_text(ui, frame_time_str);
     ui_text(ui, fps_str);
 
@@ -835,17 +836,35 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
     ui_spacing(ui, 8);
 
-    //ui_button(ui, str_lit("Abc\nDef"));
+    {
+        String camera_pos_str = str_concat(
+            str_lit("Camera position: "),
+            v2_to_string(game_state->world.camera.position, temp_alloc),
+            temp_alloc
+        );
+
+        ui_text(ui, camera_pos_str);
+        ui_text(ui, str_concat(str_lit("Zoom: "), f32_to_string(game_state->world.camera.zoom, 2, temp_alloc), temp_alloc));
+    }
+
+    ui_spacing(ui, 8);
 
     // TODO: display more stats about hovered entity
     if (!entity_id_equal(game_state->debug_state.hovered_entity, NULL_ENTITY_ID)) {
+        const Entity *entity = es_get_entity(&game_state->world.entities, game_state->debug_state.hovered_entity);
+
         String entity_str = str_concat(
             str_lit("Hovered entity: "),
             ssize_to_string(game_state->debug_state.hovered_entity.slot_id, temp_alloc),
             temp_alloc
         );
 
+        String entity_pos_str = str_concat(
+            str_lit("Position: "), v2_to_string(entity->position, temp_alloc), temp_alloc
+        );
+
         ui_text(ui, entity_str);
+        ui_text(ui, entity_pos_str);
     }
 
     ui_pop_container(ui);

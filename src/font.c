@@ -252,16 +252,21 @@ Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
     for (s32 i = 0; i < text.length; ++i) {
         char ch = text.data[i];
 
-        if (ch != '\n') {
-            GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
-
-            result.x += glyph_info.advance_x + glyph_info.left_side_bearing;
-            max_x = MAX(result.x, max_x);
-        } else {
+        if (ch == '\n') {
             max_x = MAX(result.x, max_x);
 
             result.x = 0.0f;
             result.y += font_height;
+        } else if (ch == '\t') {
+            GlyphInfo glyph_info = asset->glyph_infos[char_index(' ')];
+
+            result.x += (glyph_info.advance_x + glyph_info.left_side_bearing) * 4;
+            max_x = MAX(result.x, max_x);
+        } else {
+            GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
+
+            result.x += glyph_info.advance_x + glyph_info.left_side_bearing;
+            max_x = MAX(result.x, max_x);
         }
     }
 

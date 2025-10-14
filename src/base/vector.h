@@ -156,4 +156,5 @@ static inline Vector2 v2i_to_v2(Vector2i from)
     return result;
 }
 
+
 #endif //VECTOR2_H

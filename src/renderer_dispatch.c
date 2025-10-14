@@ -275,15 +275,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 for (s32 ch = 0; ch < cmd->text.length; ++ch) {
                     char glyph = text.data[ch];
 
-                    if (glyph != '\n') {
-                        GlyphVertices verts = font_get_glyph_vertices(font_asset, glyph, cursor,
-                            text_size, color, rb->y_direction);
-
-                        renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
-                            verts.bottom_right, verts.bottom_left);
-
-                        cursor.x += verts.advance_x;
-                    } else {
+                    if (glyph == '\n') {
                         cursor.x = start_position.x;
 
                         if (rb->y_direction == Y_IS_UP) {
@@ -291,6 +283,19 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                         } else {
                             cursor.y += newline_advance;
                         }
+                    } else if (glyph == '\t') {
+                        GlyphVertices verts = font_get_glyph_vertices(font_asset, ' ', cursor,
+                            text_size, color, rb->y_direction);
+
+                        cursor.x += verts.advance_x * 4;
+                    } else {
+                        GlyphVertices verts = font_get_glyph_vertices(font_asset, glyph, cursor,
+                            text_size, color, rb->y_direction);
+
+                        renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+                            verts.bottom_right, verts.bottom_left);
+
+                        cursor.x += verts.advance_x;
                     }
                 }
             } break;

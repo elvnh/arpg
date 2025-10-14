@@ -53,4 +53,31 @@ static inline String f32_to_string(f32 number, s32 precision, Allocator allocato
     return result;
 }
 
+
+static inline String v2_to_string(Vector2 v, Allocator allocator)
+{
+    String result = str_concat(
+        str_lit("("),
+        f32_to_string(v.x, 2, allocator),
+        allocator
+    );
+
+    result = str_concat(
+        result,
+        str_concat(
+            str_lit(", "),
+            f32_to_string(v.y, 2, allocator),
+            allocator),
+        allocator
+    );
+
+    result = str_concat(
+        result,
+        str_lit(")"),
+        allocator
+    );
+
+    return result;
+}
+
 #endif //FORMAT_H

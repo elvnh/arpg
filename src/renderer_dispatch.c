@@ -150,72 +150,25 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 		    verts.bottom_right, verts.bottom_left);
             } break;
 
-            case RENDER_CMD_CROPPED_RECTANGLE: {
-                CroppedRectangleCmd *cmd = (CroppedRectangleCmd *)entry->data;
-                ASSERT(cmd->visible_rect.size.x > 0.0f && cmd->visible_rect.size.y > 0.0f);
+            case RENDER_CMD_CLIPPED_RECTANGLE: {
+                ClippedRectangleCmd *cmd = (ClippedRectangleCmd *)entry->data;
 
-                Rectangle rect = cmd->visible_rect;
-                Vector2 sprite_size = cmd->uv_rect_size;
+                Rectangle rect = cmd->rect;
+                Rectangle viewport = cmd->viewport_rect;
                 RGBA32 color = cmd->color;
 
-                f32 uv_top =
-                    (rb->y_direction == Y_IS_UP)
-                    ? 1.0f - (rect.size.y / sprite_size.y)
-                    : 1.0f;
-                f32 uv_bottom =
-                    (rb->y_direction == Y_IS_DOWN)
-                    ? 1.0f - (rect.size.y / sprite_size.y)
-                    : 1.0f;
-
-                f32 uv_left = 0.0f;
-                f32 uv_right = rect.size.x / sprite_size.x;
-
-                Vertex a = {
-                    rect_top_left(rect),
-                    {uv_left, uv_top},
-                    color
-                };
-
-                Vertex b = {
-                    rect_top_right(rect),
-                    {uv_right, uv_top},
-                    color
-                };
-
-                Vertex c = {
-                    rect_bottom_right(rect),
-                    {uv_right, uv_bottom},
-                    color
-                };
-
-                Vertex d = {
-                    rect_bottom_left(rect),
-                    {uv_left, uv_bottom},
-                    color
-                };
-
-                renderer_backend_draw_quad(backend, a, b, c, d);
-            } break;
-
-            case RENDER_CMD_CROPPED_RECTANGLE2: {
-                CroppedRectangleCmd2 *cmd = (CroppedRectangleCmd2 *)entry->data;
-
-                Rectangle visible_rect = cmd->visible_rect;
-                Rectangle uv_rect = cmd->uv_rect;
-                RGBA32 color = cmd->color;
-
-                Rectangle overlap = rect_overlap_area(visible_rect, uv_rect);
+                Rectangle overlap = rect_overlap_area(rect, viewport);
 
                 if (rect_is_valid(overlap)) {
-                    f32 rel_left = rect_top_left(overlap).x - visible_rect.position.x;
-                    f32 rel_right = rect_top_right(overlap).x - visible_rect.position.x;
-                    f32 rel_bottom = rect_bottom_left(overlap).y - visible_rect.position.y;
-                    f32 rel_top = rect_top_left(overlap).y - visible_rect.position.y;
+                    f32 rel_left = rect_top_left(overlap).x - rect.position.x;
+                    f32 rel_right = rect_top_right(overlap).x - rect.position.x;
+                    f32 rel_bottom = rect_bottom_left(overlap).y - rect.position.y;
+                    f32 rel_top = rect_top_left(overlap).y - rect.position.y;
 
-                    f32 uv_left = rel_left / visible_rect.size.x;
-                    f32 uv_right = rel_right / visible_rect.size.x;
-                    f32 uv_top = rel_top / visible_rect.size.y;
-                    f32 uv_bottom = rel_bottom / visible_rect.size.y;
+                    f32 uv_left = rel_left / rect.size.x;
+                    f32 uv_right = rel_right / rect.size.x;
+                    f32 uv_top = rel_top / rect.size.y;
+                    f32 uv_bottom = rel_bottom / rect.size.y;
 
 		    if (rb->y_direction == Y_IS_UP) {
 			uv_top = 1.0f - uv_top;

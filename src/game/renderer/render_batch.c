@@ -54,12 +54,8 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
             result = la_allocate_item(arena, RectangleCmd);
         } break;
 
-        case RENDER_CMD_CROPPED_RECTANGLE: {
-            result = la_allocate_item(arena, CroppedRectangleCmd);
-        } break;
-
-        case RENDER_CMD_CROPPED_RECTANGLE2: {
-            result = la_allocate_item(arena, CroppedRectangleCmd2);
+        case RENDER_CMD_CLIPPED_RECTANGLE: {
+            result = la_allocate_item(arena, ClippedRectangleCmd);
         } break;
 
         case RENDER_CMD_OUTLINED_RECTANGLE: {
@@ -120,26 +116,12 @@ RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     return rb_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);
 }
 
-RenderEntry *rb_push_cropped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
-    Vector2 sprite_size, RGBA32 color, ShaderHandle shader, RenderLayer layer)
+RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
+    Rectangle viewport, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
-    CroppedRectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_CROPPED_RECTANGLE);
-    cmd->visible_rect = rect;
-    cmd->uv_rect_size = sprite_size;
-    cmd->color = color;
-
-    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)rect.position.y);
-    RenderEntry *result = push_render_entry(rb, key, cmd);
-
-    return result;
-}
-
-RenderEntry *rb_push_cropped_sprite2(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
-    Rectangle uv_rect, RGBA32 color, ShaderHandle shader, RenderLayer layer)
-{
-    CroppedRectangleCmd2 *cmd = allocate_render_cmd(arena, RENDER_CMD_CROPPED_RECTANGLE2);
-    cmd->visible_rect = rect;
-    cmd->uv_rect = uv_rect;
+    ClippedRectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_CLIPPED_RECTANGLE);
+    cmd->rect = rect;
+    cmd->viewport_rect = viewport;
     cmd->color = color;
 
     RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)rect.position.y);

@@ -144,7 +144,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 RectangleCmd *cmd = (RectangleCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color, rb->y_direction);
 
-                ASSERT(cmd->rect.size.x > 0.0f && cmd->rect.size.y > 0.0f);
+                ASSERT(rect_is_valid(cmd->rect));
 
 		renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
 		    verts.bottom_right, verts.bottom_left);
@@ -195,6 +195,80 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 };
 
                 renderer_backend_draw_quad(backend, a, b, c, d);
+            } break;
+
+            case RENDER_CMD_CROPPED_RECTANGLE2: {
+                CroppedRectangleCmd2 *cmd = (CroppedRectangleCmd2 *)entry->data;
+
+                Rectangle visible_rect = cmd->visible_rect;
+                Rectangle uv_rect = cmd->uv_rect;
+                RGBA32 color = cmd->color;
+
+                Rectangle overlap = rect_overlap_area(visible_rect, uv_rect);
+
+                if (rect_is_valid(overlap)) {
+                    f32 rel_left = rect_top_left(overlap).x - visible_rect.position.x;
+                    f32 rel_right = rect_top_right(overlap).x - visible_rect.position.x;
+                    f32 rel_bottom = rect_bottom_right(overlap).y - visible_rect.position.y;
+                    f32 rel_top = rect_top_left(overlap).y - visible_rect.position.y;
+
+                    // TODO: fix for y is up
+                    f32 uv_left =
+                        (overlap.position.x >= uv_rect.position.x)
+                        ? 0.0f
+                        : rel_left / uv_rect.size.x;
+                    f32 uv_right =
+                        (rect_top_right(overlap).x <= rect_top_right(uv_rect).x)
+                        ? 1.0f
+                        : rel_right / uv_rect.size.x;
+                    f32 uv_top =
+                        (rect_top_left(overlap).y <= rect_top_left(uv_rect).y)
+                        ? 0.0f
+                        : (rel_top / uv_rect.size.y);
+                    f32 uv_bottom =
+                        (rect_bottom_left(overlap).y >= rect_bottom_left(uv_rect).y)
+                        ? 1.0f
+                        : (rel_bottom / uv_rect.size.y);
+
+#if 0
+                    f32 uv_top =
+                        (rect_top_left(overlap).x <= )
+                        (rb->y_direction == Y_IS_UP) ?
+                        (1.0f - rel_top / uv_rect.size.y)
+                        : (rel_top / uv_rect.size.y);
+                    f32 uv_bottom =
+                        (rb->y_direction == Y_IS_UP) ?
+                        (1.0f - rel_bottom / uv_rect.size.y)
+                        : (rel_bottom / uv_rect.size.y);
+#endif
+
+                    Vertex a = {
+                        rect_top_left(overlap),
+                        {uv_left, uv_top},
+                        color
+                    };
+
+                    Vertex b = {
+                        rect_top_right(overlap),
+                        {uv_right, uv_top},
+                        color
+                    };
+
+                    Vertex c = {
+                        rect_bottom_right(overlap),
+                        {uv_right, uv_bottom},
+                        color
+                    };
+
+                    Vertex d = {
+                        rect_bottom_left(overlap),
+                        {uv_left, uv_bottom},
+                        color
+                    };
+
+                    renderer_backend_draw_quad(backend, a, b, c, d);
+                }
+
             } break;
 
             case RENDER_CMD_OUTLINED_RECTANGLE: {

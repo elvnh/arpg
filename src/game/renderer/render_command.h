@@ -11,6 +11,7 @@
 typedef enum {
     RENDER_CMD_RECTANGLE,
     RENDER_CMD_CROPPED_RECTANGLE,
+    RENDER_CMD_CROPPED_RECTANGLE2,
     RENDER_CMD_OUTLINED_RECTANGLE,
     RENDER_CMD_CIRCLE,
     RENDER_CMD_LINE,
@@ -46,6 +47,13 @@ typedef struct {
     Vector2 uv_rect_size;
     RGBA32 color;
 } CroppedRectangleCmd;
+
+typedef struct {
+    RenderCmdHeader header;
+    Rectangle visible_rect;
+    Rectangle uv_rect;
+    RGBA32 color;
+} CroppedRectangleCmd2;
 
 typedef struct {
     RenderCmdHeader header;

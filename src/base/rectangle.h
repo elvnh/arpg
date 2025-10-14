@@ -66,9 +66,15 @@ static inline Vector2 rect_bottom_left(Rectangle rect)
     return result;
 }
 
+static inline b32 rect_is_valid(Rectangle rect)
+{
+    b32 result = (rect.size.x > 0.0f) && (rect.size.y > 0.0f);
+    return result;
+}
+
 static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color, YDirection y_direction)
 {
-    ASSERT(rect.size.x > 0.0f && rect.size.y > 0.0f);
+    ASSERT(rect_is_valid(rect));
 
     Vertex tl = {
         .position = rect_top_left(rect),

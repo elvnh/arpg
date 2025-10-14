@@ -40,6 +40,8 @@ RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, R
     ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_cropped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
     Vector2 sprite_size, RGBA32 color, ShaderHandle shader, RenderLayer layer);
+RenderEntry *rb_push_cropped_sprite2(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
+    Rectangle uv_rect, RGBA32 color, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     f32 thickness, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,

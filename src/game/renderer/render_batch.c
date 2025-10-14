@@ -58,6 +58,10 @@ static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
             result = la_allocate_item(arena, CroppedRectangleCmd);
         } break;
 
+        case RENDER_CMD_CROPPED_RECTANGLE2: {
+            result = la_allocate_item(arena, CroppedRectangleCmd2);
+        } break;
+
         case RENDER_CMD_OUTLINED_RECTANGLE: {
             result = la_allocate_item(arena, OutlinedRectangleCmd);
         } break;
@@ -122,6 +126,20 @@ RenderEntry *rb_push_cropped_sprite(RenderBatch *rb, LinearArena *arena, Texture
     CroppedRectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_CROPPED_RECTANGLE);
     cmd->visible_rect = rect;
     cmd->uv_rect_size = sprite_size;
+    cmd->color = color;
+
+    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)rect.position.y);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
+RenderEntry *rb_push_cropped_sprite2(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
+    Rectangle uv_rect, RGBA32 color, ShaderHandle shader, RenderLayer layer)
+{
+    CroppedRectangleCmd2 *cmd = allocate_render_cmd(arena, RENDER_CMD_CROPPED_RECTANGLE2);
+    cmd->visible_rect = rect;
+    cmd->uv_rect = uv_rect;
     cmd->color = color;
 
     RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)rect.position.y);

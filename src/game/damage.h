@@ -3,78 +3,85 @@
 
 #include "health.h"
 
-typedef struct {
-    // TODO: elemental damage types
-    // TODO: resistance penetration
-    s64 fire_damage;
-} Damage;
+/*
+  TODO:
+  - Resistance penetration
+  - Better way of setting resistance/damage values
+  - Better naming
+ */
 
-// TODO: move to separate file
-typedef struct {
-    DamageResistances base_resistances;
-    DamageResistances flat_bonuses;
-} ResistanceStats;
+typedef s64 DamageValue;
 
 typedef enum {
-    DMG_TYPE_FIRE,
-} DamageType;
+    DMG_KIND_FIRE,
+    DMG_KIND_COUNT,
+} DamageKind;
 
-static inline s64 damage_sum(Damage damage)
+typedef struct {
+    DamageValue damage_types[DMG_KIND_COUNT]; // Use DamageKind as index
+} DamageTypes;
+
+typedef struct {
+    DamageTypes base_resistances;
+    DamageTypes flat_bonuses;
+} ResistanceStats;
+
+typedef struct {
+    DamageTypes values;
+} Damage;
+
+static inline DamageValue get_damage_value_of_type(DamageTypes damages, DamageKind type)
 {
-    s64 result = 0;
+    ssize index = (ssize)type;
+    ASSERT((index >= 0) && (index < DMG_KIND_COUNT));
 
-    result += damage.fire_damage;
+    DamageValue result = damages.damage_types[index];
 
     return result;
 }
 
-static inline s64 extract_damage_of_type(Damage damage, DamageType type)
+static inline DamageValue damage_sum(Damage damage)
 {
-    switch (type) {
-        case DMG_TYPE_FIRE: return damage.fire_damage;
+    DamageValue result = 0;
+
+    for (DamageKind kind = 0; kind < DMG_KIND_COUNT; ++kind) {
+	result += get_damage_value_of_type(damage.values, kind);
     }
-
-    ASSERT(0);
-    return 0;
-}
-
-static inline s32 extract_resistance_of_type(DamageResistances resistances, DamageType type)
-{
-    switch (type) {
-        case DMG_TYPE_FIRE: return resistances.fire_resistance;
-    }
-
-    ASSERT(0);
-    return 0;
-}
-
-static inline s32 get_total_resistance_of_type(ResistanceStats resistances, DamageType type)
-{
-    s32 base_resistance = extract_resistance_of_type(resistances.base_resistances, type);
-    s32 flat_bonus = extract_resistance_of_type(resistances.flat_bonuses, type);
-
-    s32 result = base_resistance + flat_bonus;
 
     return result;
 }
 
-static inline s64 calculate_damage_after_resistance(Damage damage, ResistanceStats resistances, DamageType dmg_type)
+static inline DamageValue get_total_resistance_of_type(ResistanceStats resistances, DamageKind type)
 {
-    s64 damage_amount = extract_damage_of_type(damage, dmg_type);
-    s32 total_resistance = get_total_resistance_of_type(resistances, dmg_type);
+    DamageValue base_resistance = get_damage_value_of_type(resistances.base_resistances, type);
+    DamageValue flat_bonus = get_damage_value_of_type(resistances.flat_bonuses, type);
+
+    DamageValue result = base_resistance + flat_bonus;
+
+    return result;
+}
+
+static inline DamageValue calculate_damage_of_type_after_resistance(Damage damage,
+    ResistanceStats resistances, DamageKind dmg_type)
+{
+    DamageValue damage_amount = get_damage_value_of_type(damage.values, dmg_type);
+    DamageValue total_resistance = get_total_resistance_of_type(resistances, dmg_type);
+
     // TODO: reduce total_resistance here by resistance penetration
 
     // TODO: round up or down?
-    s64 result = (s64)((f64)damage_amount * (1.0 - (f64)total_resistance / 100.0));
+    DamageValue result = (DamageValue)((f64)damage_amount * (1.0 - (f64)total_resistance / 100.0));
 
     return result;
 }
 
-static inline s64 calculate_damage_received(ResistanceStats resistances, Damage damage)
+static inline DamageValue calculate_damage_received(ResistanceStats resistances, Damage damage)
 {
-    s64 result = 0;
+    DamageValue result = 0;
 
-    result += calculate_damage_after_resistance(damage, resistances, DMG_TYPE_FIRE);
+    for (DamageKind dmg_kind = 0; dmg_kind < DMG_KIND_COUNT; ++dmg_kind) {
+	result += calculate_damage_of_type_after_resistance(damage, resistances, dmg_kind);
+    }
 
     return result;
 }

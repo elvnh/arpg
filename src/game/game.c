@@ -17,6 +17,7 @@
 #include "base/line.h"
 #include "game/camera.h"
 #include "game/component.h"
+#include "game/damage.h"
 #include "game/entity.h"
 #include "game/entity_system.h"
 #include "game/game_world.h"
@@ -526,7 +527,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
     collider->non_blocking = true;
 
     DamageFieldComponent *damage_field = es_add_component(entity, DamageFieldComponent);
-    damage_field->damage.fire_damage = 4;
+    damage_field->damage.values.damage_types[DMG_KIND_FIRE] = 4;
 
     SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
     sprite->size = v2(16.0f, 16.0f);
@@ -986,7 +987,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         sprite->size = v2(32, 32);
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
-        stats->resistances.base_resistances.fire_resistance = 10;
-        stats->resistances.flat_bonuses.fire_resistance = 5;
+        stats->resistances.base_resistances.damage_types[DMG_KIND_FIRE] = 10;
+        stats->resistances.flat_bonuses.damage_types[DMG_KIND_FIRE] = 5;
     }
 }

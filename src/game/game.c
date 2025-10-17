@@ -527,7 +527,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
     collider->non_blocking = true;
 
     DamageFieldComponent *damage_field = es_add_component(entity, DamageFieldComponent);
-    damage_field->damage.values.damage_types[DMG_KIND_FIRE] = 4;
+    damage_field->damage.types.values[DMG_KIND_FIRE] = 4;
 
     SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
     sprite->size = v2(16.0f, 16.0f);
@@ -987,7 +987,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         sprite->size = v2(32, 32);
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
-        stats->resistances.base_resistances.damage_types[DMG_KIND_FIRE] = 10;
-        stats->resistances.flat_bonuses.damage_types[DMG_KIND_FIRE] = 5;
+        stats->resistances.base_resistances.values[DMG_KIND_FIRE] = 10;
+        stats->resistances.flat_bonuses.values[DMG_KIND_FIRE] = 5;
     }
 }

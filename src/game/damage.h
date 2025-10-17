@@ -18,7 +18,7 @@ typedef enum {
 } DamageKind;
 
 typedef struct {
-    DamageValue damage_types[DMG_KIND_COUNT]; // Use DamageKind as index
+    DamageValue values[DMG_KIND_COUNT]; // Use DamageKind as index
 } DamageTypes;
 
 typedef struct {
@@ -27,7 +27,7 @@ typedef struct {
 } ResistanceStats;
 
 typedef struct {
-    DamageTypes values;
+    DamageTypes types;
 } Damage;
 
 static inline DamageValue get_damage_value_of_type(DamageTypes damages, DamageKind type)
@@ -35,7 +35,7 @@ static inline DamageValue get_damage_value_of_type(DamageTypes damages, DamageKi
     ssize index = (ssize)type;
     ASSERT((index >= 0) && (index < DMG_KIND_COUNT));
 
-    DamageValue result = damages.damage_types[index];
+    DamageValue result = damages.values[index];
 
     return result;
 }
@@ -45,7 +45,7 @@ static inline DamageValue damage_sum(Damage damage)
     DamageValue result = 0;
 
     for (DamageKind kind = 0; kind < DMG_KIND_COUNT; ++kind) {
-	result += get_damage_value_of_type(damage.values, kind);
+	result += get_damage_value_of_type(damage.types, kind);
     }
 
     return result;
@@ -64,7 +64,7 @@ static inline DamageValue get_total_resistance_of_type(ResistanceStats resistanc
 static inline DamageValue calculate_damage_of_type_after_resistance(Damage damage,
     ResistanceStats resistances, DamageKind dmg_type)
 {
-    DamageValue damage_amount = get_damage_value_of_type(damage.values, dmg_type);
+    DamageValue damage_amount = get_damage_value_of_type(damage.types, dmg_type);
     DamageValue total_resistance = get_total_resistance_of_type(resistances, dmg_type);
 
     // TODO: reduce total_resistance here by resistance penetration

@@ -5,7 +5,7 @@
 
 // ID is only needed if interacting with widget
 
-static Widget *ui_internal_text(UIState *ui, String text, RGBA32 color)
+static Widget *ui_internal_text(UIState *ui, String text, Vector2 offset, RGBA32 color)
 {
     Widget *widget = ui_core_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID);
 
@@ -15,18 +15,19 @@ static Widget *ui_internal_text(UIState *ui, String text, RGBA32 color)
     widget->text.font = ui->current_style.font;
     widget->text.size = 18; // TODO: allow changing text size
     widget->color = color;
+    widget->offset_from_parent = offset;
 
     return widget;
 }
 
 void ui_text(UIState *ui, String text)
 {
-    ui_internal_text(ui, text, RGBA32_WHITE);
+    ui_internal_text(ui, text, V2_ZERO, RGBA32_WHITE);
 }
 
 WidgetInteraction ui_button(UIState *ui, String text)
 {
-    Widget *widget = ui_core_colored_box(ui, v2(0, 64.0f), RGBA32_BLUE, ui_core_hash_string(text));
+    Widget *widget = ui_core_colored_box(ui, v2(0, 32.0f), RGBA32_BLUE, ui_core_hash_string(text));
     widget_add_flag(widget, WIDGET_CLICKABLE);
 
     // TODO: allow changing
@@ -35,9 +36,9 @@ WidgetInteraction ui_button(UIState *ui, String text)
 
     widget->child_padding = 8.0f;
 
-    // TODO: center text vertically
+    // TODO: center_next_widget
     ui_core_push_container(ui, widget);
-    ui_text(ui, text);
+    ui_internal_text(ui, text, v2(0, widget->preliminary_size.y / 2.0f - widget->child_padding * 2), RGBA32_WHITE);
     ui_core_pop_container(ui);
 
     WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
@@ -103,7 +104,7 @@ void ui_textbox(UIState *ui, StringBuilder *sb)
     widget->text_input_buffer = sb;
 
     ui_core_push_container(ui, widget);
-    ui_internal_text(ui, sb->buffer, RGBA32_BLACK);
+    ui_internal_text(ui, sb->buffer, V2_ZERO, RGBA32_BLACK);
     ui_core_pop_container(ui);
 }
 

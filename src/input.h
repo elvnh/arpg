@@ -44,6 +44,12 @@ typedef struct Input {
     Vector2 mouse_click_position;
 } Input;
 
+typedef struct {
+    f32 dt;
+    const Input *input;
+    Vector2i window_size;
+} FrameData;
+
 static inline void input_initialize(Input *input)
 {
     input->mouse_click_position = v2(-1.0f, -1.0f);

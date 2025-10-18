@@ -25,6 +25,7 @@ src/asset_manager.c
 
 GAME_SOURCES="
 src/game/game.c
+src/game/world.c
 src/game/collision.c
 src/game/quad_tree.c
 src/game/entity_system.c

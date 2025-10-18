@@ -5,8 +5,9 @@
 #include "ui/ui_core.h"
 #include "platform.h"
 #include "renderer/render_batch.h"
-#include "game_world.h"
+#include "world.h"
 #include "input.h"
+#include "debug.h"
 
 /*
   TODO:
@@ -14,30 +15,13 @@
  */
 
 typedef struct {
-    b32 debug_menu_active;
-    b32 quad_tree_overlay;
-    b32 render_colliders;
-    b32 render_origin;
-    b32 render_entity_bounds;
-    f32 average_fps;
-
-    EntityID hovered_entity;
-} DebugState;
-
-typedef struct {
-    GameWorld world;
+    World world;
     UIState ui;
     AssetList asset_list;
     DebugState debug_state;
 
     StringBuilder sb;
 } GameState;
-
-typedef struct {
-    f32 dt;
-    const Input *input;
-    Vector2i window_size;
-} FrameData;
 
 typedef struct {
     LinearArena permanent_memory;

@@ -1,10 +1,16 @@
-#ifndef GAME_WORLD_H
-#define GAME_WORLD_H
+#ifndef WORLD_H
+#define WORLD_H
 
 #include "entity_system.h"
 #include "tilemap.h"
 #include "camera.h"
 #include "collision.h"
+#include "input.h"
+
+struct Input;
+struct DebugState;
+struct RenderBatch;
+struct AssetList;
 
 typedef struct CollisionEvent {
     struct CollisionEvent *next;
@@ -30,6 +36,11 @@ typedef struct {
     CollisionExceptionTable collision_rules;
     CollisionTable  previous_frame_collisions;
     CollisionTable  current_frame_collisions;
-} GameWorld;
+} World;
 
-#endif //GAME_WORLD_H
+void world_initialize(World *world, const struct AssetList *assets, LinearArena *arena);
+void world_update(World *world, const struct Input *input, f32 dt, const AssetList *assets, LinearArena *frame_arena);
+void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list, FrameData frame_data,
+    LinearArena *frame_arena, struct DebugState *debug_state);
+
+#endif //WORLD_H

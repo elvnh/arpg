@@ -12,7 +12,7 @@
 // TODO: reduce amount of parameters, eg. create specialization for push_sprite in case
 // color needs to be provided, otherwise default to white
 
-typedef struct {
+typedef struct RenderEntry {
     RenderKey         key;
     RenderCmdHeader  *data;
 } RenderEntry;

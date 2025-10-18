@@ -4,8 +4,6 @@
 #include "renderer/render_batch.h"
 
 #define WORLD_ARENA_SIZE MB(64)
-#define INTERSECTION_TABLE_ARENA_SIZE (128 * SIZEOF(CollisionEvent))
-#define INTERSECTION_TABLE_SIZE 512
 
 static Vector2i world_to_tile_coords(Vector2 world_coords)
 {
@@ -65,8 +63,6 @@ static b32 entity_should_die(Entity *entity)
     return false;
 }
 
-
-
 // TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
 static void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vector2 position, f32 dt)
 {
@@ -124,7 +120,6 @@ static void component_update_particle_spawner(Entity *entity, ParticleSpawner *p
         es_remove_component(entity, ParticleSpawner);
     }
 }
-
 
 static void entity_update(World *world, Entity *entity, f32 dt)
 {
@@ -211,56 +206,9 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
     }
 }
 
-
-
-static CollisionTable collision_table_create(LinearArena *parent_arena)
-{
-    CollisionTable result = {0};
-    result.table = la_allocate_array(parent_arena, CollisionList, INTERSECTION_TABLE_SIZE);
-    result.table_size = INTERSECTION_TABLE_SIZE;
-    result.arena = la_create(la_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
-
-    return result;
-}
-
-static CollisionEvent *collision_table_find(CollisionTable *table, EntityID a, EntityID b)
-{
-    EntityPair searched_pair = entity_pair_create(a, b);
-    u64 hash = entity_pair_hash(searched_pair);
-    ssize index = mod_index(hash, table->table_size);
-
-    CollisionList *list = &table->table[index];
-
-    CollisionEvent *node = 0;
-    for (node = sl_list_head(list); node; node = sl_list_next(node)) {
-        if (entity_pair_equal(searched_pair, node->entity_pair)) {
-            break;
-        }
-    }
-
-    return node;
-}
-
-static void collision_table_insert(CollisionTable *table, EntityID a, EntityID b)
-{
-    if (!collision_table_find(table, a, b)) {
-        EntityPair entity_pair = entity_pair_create(a, b);
-        u64 hash = entity_pair_hash(entity_pair);
-        ssize index = mod_index(hash, table->table_size);
-
-        CollisionEvent *new_node = la_allocate_item(&table->arena, CollisionEvent);
-        new_node->entity_pair = entity_pair;
-
-        CollisionList *list = &table->table[index];
-        sl_list_push_back(list, new_node);
-    } else {
-        ASSERT(0);
-    }
-}
-
 static void swap_and_reset_collision_tables(World *world)
 {
-    CollisionTable tmp = world->previous_frame_collisions;
+    CollisionEventTable tmp = world->previous_frame_collisions;
     world->previous_frame_collisions = world->current_frame_collisions;
     world->current_frame_collisions = tmp;
 
@@ -268,14 +216,14 @@ static void swap_and_reset_collision_tables(World *world)
 
     // TODO: this can just be a mem_zero to reset head and tail pointers
     for (ssize i = 0; i < world->current_frame_collisions.table_size; ++i) {
-        CollisionList *list = &world->current_frame_collisions.table[i];
+        CollisionEventList *list = &world->current_frame_collisions.table[i];
         sl_list_clear(list);
     }
 }
 
 static b32 entities_intersected_this_frame(World *world, EntityID a, EntityID b)
 {
-    b32 result = collision_table_find(&world->current_frame_collisions, a, b) != 0;
+    b32 result = collision_event_table_find(&world->current_frame_collisions, a, b) != 0;
 
     return result;
 }
@@ -283,7 +231,7 @@ static b32 entities_intersected_this_frame(World *world, EntityID a, EntityID b)
 
 static b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b)
 {
-    b32 result = collision_table_find(&world->previous_frame_collisions, a, b) != 0;
+    b32 result = collision_event_table_find(&world->previous_frame_collisions, a, b) != 0;
 
     return result;
 }
@@ -472,7 +420,7 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
             execute_collision_effects(world, a, b, collider_a, collision, ENTITY_PAIR_INDEX_FIRST, OBJECT_KIND_ENTITIES);
             execute_collision_effects(world, b, a, collider_b, collision, ENTITY_PAIR_INDEX_SECOND, OBJECT_KIND_ENTITIES);
 
-            collision_table_insert(&world->current_frame_collisions, id_a, id_b);
+            collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);
         }
     }
 
@@ -539,7 +487,6 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
 
     return movement_fraction_left;
 }
-
 
 static Rectangle get_entity_collision_area(const Entity *entity, ColliderComponent *collider)
 {
@@ -746,15 +693,12 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     }
 }
 
-
-
-
 void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena)
 {
     world->world_arena = la_create(la_allocator(arena), WORLD_ARENA_SIZE);
 
-    world->previous_frame_collisions = collision_table_create(&world->world_arena);
-    world->current_frame_collisions = collision_table_create(&world->world_arena);
+    world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
+    world->current_frame_collisions = collision_event_table_create(&world->world_arena);
 
     for (s32 y = 0; y < 8; ++y) {
 	for (s32 x = 0; x < 8; ++x) {

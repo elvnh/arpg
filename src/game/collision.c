@@ -1,6 +1,9 @@
 #include "collision.h"
 #include "base/list.h"
+#include "base/sl_list.h"
 
+#define INTERSECTION_TABLE_ARENA_SIZE (128 * SIZEOF(CollisionEvent))
+#define INTERSECTION_TABLE_SIZE 512
 #define INTERSECTION_EPSILON   0.00001f
 #define COLLISION_MARGIN       0.015f
 
@@ -177,5 +180,50 @@ void remove_collision_exceptions_with_entity(CollisionExceptionTable *table, Ent
 
             rule = next;
         }
+    }
+}
+
+CollisionEventTable collision_event_table_create(LinearArena *parent_arena)
+{
+    CollisionEventTable result = {0};
+    result.table = la_allocate_array(parent_arena, CollisionEventList, INTERSECTION_TABLE_SIZE);
+    result.table_size = INTERSECTION_TABLE_SIZE;
+    result.arena = la_create(la_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
+
+    return result;
+}
+
+CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID a, EntityID b)
+{
+    EntityPair searched_pair = entity_pair_create(a, b);
+    u64 hash = entity_pair_hash(searched_pair);
+    ssize index = mod_index(hash, table->table_size);
+
+    CollisionEventList *list = &table->table[index];
+
+    CollisionEvent *node = 0;
+    for (node = sl_list_head(list); node; node = sl_list_next(node)) {
+        if (entity_pair_equal(searched_pair, node->entity_pair)) {
+            break;
+        }
+    }
+
+    return node;
+}
+
+void collision_event_table_insert(CollisionEventTable *table, EntityID a, EntityID b)
+{
+    if (!collision_event_table_find(table, a, b)) {
+        EntityPair entity_pair = entity_pair_create(a, b);
+        u64 hash = entity_pair_hash(entity_pair);
+        ssize index = mod_index(hash, table->table_size);
+
+        CollisionEvent *new_node = la_allocate_item(&table->arena, CollisionEvent);
+        new_node->entity_pair = entity_pair;
+
+        CollisionEventList *list = &table->table[index];
+        sl_list_push_back(list, new_node);
+    } else {
+        ASSERT(0);
     }
 }

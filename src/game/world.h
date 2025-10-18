@@ -12,30 +12,14 @@ struct DebugState;
 struct RenderBatch;
 struct AssetList;
 
-typedef struct CollisionEvent {
-    struct CollisionEvent *next;
-    EntityPair entity_pair;
-} CollisionEvent;
-
-typedef struct {
-    CollisionEvent *head;
-    CollisionEvent *tail;
-} CollisionList;
-
-typedef struct {
-    CollisionList    *table;
-    ssize             table_size;
-    LinearArena       arena;
-} CollisionTable;
-
 typedef struct {
     LinearArena world_arena;
     Camera camera;
     Tilemap tilemap;
     EntitySystem entities;
     CollisionExceptionTable collision_rules;
-    CollisionTable  previous_frame_collisions;
-    CollisionTable  current_frame_collisions;
+    CollisionEventTable  previous_frame_collisions;
+    CollisionEventTable  current_frame_collisions;
 } World;
 
 void world_initialize(World *world, const struct AssetList *assets, LinearArena *arena);

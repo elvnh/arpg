@@ -8,14 +8,28 @@
 
 /*
   TODO:
-  - Arbitrary collision responses, eg. bounce, pass through, block, etc.
   - Make collision rule able to match criteria other than entity ID, eg. all entities from
     the same faction don't collide with eachother
   - Collision rule with entity vs tilemap collision?
-  - Keep track of previous and current frame intersections for registering projectile damage etc.
   - Time to live on collision rules to remove them automatically once time runs out, to be used
-    for projectiles with cooldown before they can hit again for etc.
+    for projectiles with cooldown before they can hit again etc.
  */
+
+typedef enum {
+    COLL_NOT_COLLIDING,
+    COLL_ARE_INTERSECTING,
+    COLL_WILL_COLLIDE_THIS_FRAME,
+} CollisionState; // TODO: better name
+
+typedef struct {
+    CollisionState collision_state;
+    Vector2  new_position_a;
+    Vector2  new_position_b;
+    Vector2  new_velocity_a;
+    Vector2  new_velocity_b;
+    f32      movement_fraction_left;
+    Vector2  collision_normal; // TODO: separate normals for A and B?
+} CollisionInfo;
 
 typedef struct CollisionRule {
     struct CollisionRule  *next;
@@ -34,27 +48,35 @@ typedef struct {
     CollisionExceptionList  free_node_list;
 } CollisionExceptionTable;
 
-typedef enum {
-    COLL_NOT_COLLIDING,
-    COLL_ARE_INTERSECTING,
-    COLL_WILL_COLLIDE_THIS_FRAME,
-} CollisionState; // TODO: better name
+typedef struct CollisionEvent {
+    struct CollisionEvent *next;
+    EntityPair entity_pair;
+} CollisionEvent;
 
 typedef struct {
-    CollisionState collision_state;
-    Vector2  new_position_a;
-    Vector2  new_position_b;
-    Vector2  new_velocity_a;
-    Vector2  new_velocity_b;
-    f32      movement_fraction_left;
-    Vector2  collision_normal; // TODO: separate normals for A and B?
-} CollisionInfo;
+    CollisionEvent *head;
+    CollisionEvent *tail;
+} CollisionEventList;
 
+typedef struct {
+    CollisionEventList *table;
+    ssize               table_size;
+    LinearArena         arena;
+} CollisionEventTable;
+
+/* Collision algorithms */
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,
     Vector2 velocity_a, Vector2 velocity_b, f32 dt);
+
+/* Collision exception table */
 CollisionException *collision_exception_find(CollisionExceptionTable *table, EntityID a, EntityID b);
 void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b, b32 should_collide,
     LinearArena *arena);
 void remove_collision_exceptions_with_entity(CollisionExceptionTable *table, EntityID a);
+
+/* Collision event table */
+CollisionEventTable collision_event_table_create(LinearArena *parent_arena);
+CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID a, EntityID b);
+void collision_event_table_insert(CollisionEventTable *table, EntityID a, EntityID b);
 
 #endif //COLLISION_H

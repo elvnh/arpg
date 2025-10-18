@@ -7,7 +7,6 @@
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
-    COMPONENT(DamageFieldComponent)             \
     COMPONENT(HealthComponent)                  \
     COMPONENT(ParticleSpawner)                  \
     COMPONENT(SpriteComponent)                  \
@@ -33,6 +32,7 @@ typedef enum {
 typedef enum {
     ON_COLLIDE_PASS_THROUGH,
     ON_COLLIDE_BOUNCE,
+    ON_COLLIDE_DEAL_DAMAGE,
     //ON_COLLIDE_EXPLODE,
 } CollideEffectKind;
 
@@ -45,12 +45,17 @@ typedef enum {
 typedef struct {
     CollideEffectKind kind;
     ObjectKind affects_object_kinds;
+
+    union {
+        struct {
+            Damage damage;
+        } deal_damage;
+    } as;
 } OnCollisionEffect;
 
 typedef struct {
-    Vector2 size;
     // TODO: offset from pos
-    b32 non_blocking; // TODO: get rid of this, use collision effects instead
+    Vector2 size;
 
     struct {
         OnCollisionEffect effects[4];
@@ -64,10 +69,6 @@ static inline void add_collide_effect(ColliderComponent *c, OnCollisionEffect ef
     ssize index = c->on_collide_effects.count++;
     c->on_collide_effects.effects[index] = effect;
 }
-
-typedef struct {
-    Damage damage;
-} DamageFieldComponent;
 
 typedef struct {
     Health health;

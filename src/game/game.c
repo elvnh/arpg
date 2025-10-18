@@ -329,22 +329,38 @@ static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damag
     health->health.hitpoints -= damage_taken;
 }
 
-static void try_deal_damage_field_damage(Entity *a, Entity *b)
+static void try_deal_damage_to_entity(Entity *receiver, Entity *sender, Damage damage)
 {
-    HealthComponent *receiver_health = es_get_component(a, HealthComponent);
-    DamageFieldComponent *sender_damage_field = es_get_component(b, DamageFieldComponent);
+    (void)sender;
 
-    if (receiver_health && sender_damage_field) {
-        deal_damage_to_entity(a, receiver_health, sender_damage_field->damage);
+    HealthComponent *receiver_health = es_get_component(receiver, HealthComponent);
+
+    if (receiver_health) {
+        deal_damage_to_entity(receiver, receiver_health, damage);
     }
 }
 
-static void execute_collision_effects(Entity *entity, ColliderComponent *collider,
+static void execute_collision_effects(GameWorld *world, Entity *entity, Entity *other, ColliderComponent *collider,
     CollisionInfo collision, s32 index, ObjectKind colliding_with_obj_kind)
 {
+    // TODO: clean up this function
+
+    ASSERT(entity);
     ASSERT((index == 0) || (index == 1));
 
     b32 effect_executed = false;
+    b32 should_pass_through = false;
+
+    if (other) {
+        ColliderComponent *other_collider = es_get_component(other, ColliderComponent);
+        for (s32 i = 0; i < other_collider->on_collide_effects.count; ++i) {
+            OnCollisionEffect effect = other_collider->on_collide_effects.effects[i];
+            if ((effect.affects_object_kinds & colliding_with_obj_kind)
+                && (effect.kind == ON_COLLIDE_PASS_THROUGH)) {
+                should_pass_through = true;
+            }
+        }
+    }
 
     for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
         OnCollisionEffect effect = collider->on_collide_effects.effects[i];
@@ -354,21 +370,40 @@ static void execute_collision_effects(Entity *entity, ColliderComponent *collide
 
             switch (effect.kind) {
                 case ON_COLLIDE_BOUNCE: {
-                    if (index == 0) {
-                        entity->position = collision.new_position_a;
-                        entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
-                    } else {
-                        entity->position = collision.new_position_b;
-                        entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
+                    if (!should_pass_through) {
+                        if (index == 0) {
+                            entity->position = collision.new_position_a;
+                            entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
+                        } else {
+                            entity->position = collision.new_position_b;
+                            entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
+                        }
+                    }
+                } break;
+
+                case ON_COLLIDE_DEAL_DAMAGE: {
+                    ASSERT(other);
+                    ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
+
+                    EntityID id_a = es_get_id_of_entity(&world->entities, entity);
+                    EntityID id_b = es_get_id_of_entity(&world->entities, other);
+
+                    // TODO: make this customizable so that some projectiles can only hit again
+                    // after leaving hitbox, some can hit multiple frames in a row etc
+                    if (!entities_intersected_previous_frame(world, id_a, id_b)) {
+                        printf("Damage\n");
+                        try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
                     }
                 } break;
 
                 case ON_COLLIDE_PASS_THROUGH: {} break;
+
+                INVALID_DEFAULT_CASE;
             }
         }
     }
 
-    if (!effect_executed) {
+    if (!effect_executed && !should_pass_through) {
         if (index == 0) {
             entity->position = collision.new_position_a;
             entity->velocity = collision.new_velocity_a;
@@ -400,14 +435,8 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
             // TODO: only handle closest collision
             movement_fraction_left = collision.movement_fraction_left;
 
-            execute_collision_effects(a, collider_a, collision, 0, OBJECT_KIND_ENTITIES);
-            execute_collision_effects(b, collider_b, collision, 1, OBJECT_KIND_ENTITIES);
-
-            // TODO: it should be possible to collide multiple frames in a row
-            if (!entities_intersected_previous_frame(world, id_a, id_b)) {
-                try_deal_damage_field_damage(a, b);
-                try_deal_damage_field_damage(b, a);
-            }
+            execute_collision_effects(world, a, b, collider_a, collision, 0, OBJECT_KIND_ENTITIES);
+            execute_collision_effects(world, b, a, collider_b, collision, 1, OBJECT_KIND_ENTITIES);
 
             collision_table_insert(&world->current_frame_collisions, id_a, id_b);
         }
@@ -470,7 +499,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     if (closest_collision.collision_state != COLL_NOT_COLLIDING) {
         movement_fraction_left = closest_collision.movement_fraction_left;
 
-        execute_collision_effects(entity, collider, closest_collision, 0, OBJECT_KIND_TILES);
+        execute_collision_effects(world, entity, 0, collider, closest_collision, 0, OBJECT_KIND_TILES);
     }
 
     return movement_fraction_left;
@@ -545,22 +574,30 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
 
     ColliderComponent *collider = es_add_component(entity, ColliderComponent);
     collider->size = v2(16.0f, 16.0f);
-    collider->non_blocking = true;
 
     add_collide_effect(collider, (OnCollisionEffect){
-            .kind = ON_COLLIDE_BOUNCE,
+            .kind = ON_COLLIDE_PASS_THROUGH,
             .affects_object_kinds = OBJECT_KIND_ENTITIES// | OBJECT_KIND_TILES
         });
 
-    DamageFieldComponent *damage_field = es_add_component(entity, DamageFieldComponent);
-    damage_field->damage.types.values[DMG_KIND_FIRE] = 4;
+    add_collide_effect(collider, (OnCollisionEffect){
+            .kind = ON_COLLIDE_BOUNCE,
+            .affects_object_kinds = OBJECT_KIND_TILES
+        });
+
+    Damage damage = {.types.values[DMG_KIND_FIRE] = 10};
+    add_collide_effect(collider, (OnCollisionEffect){
+            .kind = ON_COLLIDE_DEAL_DAMAGE,
+            .affects_object_kinds = OBJECT_KIND_ENTITIES,
+            .as.deal_damage = {damage}
+        });
 
     SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
     sprite->size = v2(16.0f, 16.0f);
     sprite->texture = assets->default_texture;
 
     LifetimeComponent *lifetime = es_add_component(entity, LifetimeComponent);
-    lifetime->time_to_live = 2.0f;
+    lifetime->time_to_live = 200.0f;
 
     OnDeathComponent *on_death = es_add_component(entity, OnDeathComponent);
     on_death->kind = DEATH_EFFECT_SPAWN_PARTICLES;
@@ -572,7 +609,6 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
         .total_particles_to_spawn = 50,
         .particle_speed = 100.0f,
     };
-    // TODO: configure particles
 
     collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
 }

@@ -76,12 +76,6 @@
         }                                                               \
     } while (0)
 
-#define list_clear(list)                        \
-    do {                                        \
-    (list)->head = 0;                           \
-    (list)->tail = 0;                           \
-    } while (0);
-
 #define list_pop_head(list) list_remove((list), (list)->head)
 #define list_pop_tail(list) list_remove((list), (list)->tail)
 
@@ -90,6 +84,7 @@
 #define list_next(node) ((node)->next)
 #define list_prev(node) ((node)->prev)
 #define list_is_empty(list) (!((list)->head))
+#define list_clear(list) ((list)->head = (list)->tail = 0)
 
 #define LIST_LINKS(type) struct type *next; struct type *prev
 #define LIST_HEAD_TAIL(type) struct type *head; struct type *tail

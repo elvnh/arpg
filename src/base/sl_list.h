@@ -1,6 +1,7 @@
 #ifndef SL_LIST_H
 #define SL_LIST_H
 
+#include "base/list.h"
 
 #define sl_list_push_front_x(list, node, name)  \
     do {                                        \
@@ -25,7 +26,7 @@
 
 #define sl_list_pop(list)                       \
     do {                                        \
-        ASSERT(!sl_list_is_empty(list));        \
+        ASSERT(!list_is_empty(list));        \
         (list)->head = (list)->head->next;      \
         if (!(list)->head) {                    \
             (list)->tail = 0;                   \
@@ -34,11 +35,5 @@
 
 #define sl_list_push_front(list, node) sl_list_push_front_x(list, node, next)
 #define sl_list_push_back(list, node) sl_list_push_back_x(list, node, next)
-
-#define sl_list_head(list) ((list)->head)
-#define sl_list_tail(list) ((list)->tail)
-#define sl_list_next(node) ((node)->next)
-#define sl_list_is_empty(list) (!(list)->head)
-#define sl_list_clear(list) ((list)->head = (list)->tail = 0)
 
 #endif //SL_LIST_H

@@ -217,8 +217,8 @@ void debug_update(GameState *game_state, FrameData frame_data, LinearArena *fram
     Rectangle hovered_rect = {hovered_coords, {1, 1}};
     EntityIDList hovered_entities = es_get_entities_in_area(&game_state->world.entities, hovered_rect, frame_arena);
 
-    if (!sl_list_is_empty(&hovered_entities)) {
-        game_state->debug_state.hovered_entity = sl_list_head(&hovered_entities)->id;
+    if (!list_is_empty(&hovered_entities)) {
+        game_state->debug_state.hovered_entity = list_head(&hovered_entities)->id;
     } else {
         game_state->debug_state.hovered_entity = NULL_ENTITY_ID;
     }

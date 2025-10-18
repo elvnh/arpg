@@ -202,7 +202,7 @@ CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID 
     CollisionEventList *list = &table->table[index];
 
     CollisionEvent *node = 0;
-    for (node = sl_list_head(list); node; node = sl_list_next(node)) {
+    for (node = list_head(list); node; node = list_next(node)) {
         if (entity_pair_equal(searched_pair, node->entity_pair)) {
             break;
         }

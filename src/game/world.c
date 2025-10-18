@@ -217,7 +217,7 @@ static void swap_and_reset_collision_tables(World *world)
     // TODO: this can just be a mem_zero to reset head and tail pointers
     for (ssize i = 0; i < world->current_frame_collisions.table_size; ++i) {
         CollisionEventList *list = &world->current_frame_collisions.table[i];
-        sl_list_clear(list);
+        list_clear(list);
     }
 }
 
@@ -524,7 +524,7 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
             Rectangle collision_area = get_entity_collision_area(a, collider_a);
             EntityIDList entities_in_area = es_get_entities_in_area(&world->entities, collision_area, frame_arena);
 
-            for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {
+            for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
                 if (!entity_id_equal(node->id, id_a)) {
                     Entity *b = es_get_entity(&world->entities, node->id);
 
@@ -686,7 +686,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     // TODO: debug camera that is detached from regular camera
     EntityIDList entities_in_area = qt_get_entities_in_area(&world->entities.quad_tree, visible_area, frame_arena);
 
-    for (EntityIDNode *node = sl_list_head(&entities_in_area); node; node = sl_list_next(node)) {
+    for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(&world->entities, node->id);
 
         entity_render(entity, rb, assets, frame_arena, debug_state);

@@ -35,7 +35,7 @@ static Widget *widget_frame_table_find(WidgetFrameTable *table, WidgetID id)
     WidgetList *list = &table->entries[index];
 
     Widget *result = 0;
-    for (Widget *widget = sl_list_head(list); widget; widget = widget->next_in_hash) {
+    for (Widget *widget = list_head(list); widget; widget = widget->next_in_hash) {
         if (widget->id == id) {
             result = widget;
             break;
@@ -119,7 +119,7 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
     Vector2 next_child_pos = v2_add(widget->final_position, v2(widget->child_padding, widget->child_padding));
     f32 current_row_size = 0.0f;
 
-    for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
+    for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         calculate_widget_layout(child, next_child_pos, platform_code, widget);
         current_row_size = MAX(current_row_size, child->final_size.y);
 
@@ -154,7 +154,7 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
             f32 max_x = 0.0f;
             f32 max_y = 0.0f;
 
-            for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
+            for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
                 max_x = MAX(max_x, child->final_position.x + child->final_size.x - offset.x);
                 max_y = MAX(max_y, child->final_position.y + child->final_size.y - offset.y);
             }
@@ -196,7 +196,7 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 
 static void calculate_widget_interactions(UIState *ui, Widget *widget, const Input *input)
 {
-    for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
+    for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         calculate_widget_interactions(ui, child, input);
 
         // If child widget is being interacted with, don't consider input further up the tree
@@ -316,7 +316,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     }
 #endif
 
-    for (Widget *child = sl_list_head(&widget->children); child; child = child->next_sibling) {
+    for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         render_widget(ui, child, rb, assets, depth + 1);
     }
 }
@@ -332,7 +332,7 @@ void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, 
     PlatformCode platform_code)
 {
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
-    ASSERT(sl_list_is_empty(&ui->container_stack));
+    ASSERT(list_is_empty(&ui->container_stack));
 
     if (ui->root_widget) {
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
@@ -351,7 +351,7 @@ void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, 
 
 static Widget *get_top_container(UIState *ui)
 {
-    WidgetContainer *container = sl_list_head(&ui->container_stack);
+    WidgetContainer *container = list_head(&ui->container_stack);
 
     Widget *result = 0;
     if (container) {
@@ -408,7 +408,7 @@ void ui_core_push_container(UIState *ui, Widget *widget)
 
 void ui_core_pop_container(UIState *ui)
 {
-    ASSERT(!sl_list_is_empty(&ui->container_stack));
+    ASSERT(!list_is_empty(&ui->container_stack));
     sl_list_pop(&ui->container_stack);
 }
 

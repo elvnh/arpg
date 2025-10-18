@@ -1054,18 +1054,18 @@ static void tests_sl_list()
         s32_list list = {0};
         s32_node *node1 = la_allocate_item(&arena, s32_node);
         sl_list_push_front(&list, node1);
-        ASSERT(sl_list_head(&list) == node1);
-        ASSERT(sl_list_tail(&list) == node1);
-        ASSERT(!sl_list_is_empty(&list));
+        ASSERT(list_head(&list) == node1);
+        ASSERT(list_tail(&list) == node1);
+        ASSERT(!list_is_empty(&list));
     }
 
     {
         s32_list list = {0};
         s32_node *node1 = la_allocate_item(&arena, s32_node);
         sl_list_push_back(&list, node1);
-        ASSERT(sl_list_head(&list) == node1);
-        ASSERT(sl_list_tail(&list) == node1);
-        ASSERT(!sl_list_is_empty(&list));
+        ASSERT(list_head(&list) == node1);
+        ASSERT(list_tail(&list) == node1);
+        ASSERT(!list_is_empty(&list));
     }
 
     {
@@ -1073,9 +1073,9 @@ static void tests_sl_list()
         s32_node *node1 = la_allocate_item(&arena, s32_node);
         sl_list_push_front(&list, node1);
         sl_list_pop(&list);
-        ASSERT(sl_list_head(&list) == 0);
-        ASSERT(sl_list_tail(&list) == 0);
-        ASSERT(sl_list_is_empty(&list));
+        ASSERT(list_head(&list) == 0);
+        ASSERT(list_tail(&list) == 0);
+        ASSERT(list_is_empty(&list));
     }
 
     {
@@ -1085,16 +1085,16 @@ static void tests_sl_list()
         sl_list_push_back(&list, node1);
         sl_list_push_back(&list, node2);
 
-        ASSERT(sl_list_head(&list) == node1);
-        ASSERT(sl_list_tail(&list) == node2);
+        ASSERT(list_head(&list) == node1);
+        ASSERT(list_tail(&list) == node2);
 
         sl_list_pop(&list);
-        ASSERT(sl_list_head(&list) == node2);
-        ASSERT(sl_list_tail(&list) == node2);
-        ASSERT(!sl_list_is_empty(&list));
+        ASSERT(list_head(&list) == node2);
+        ASSERT(list_tail(&list) == node2);
+        ASSERT(!list_is_empty(&list));
 
         sl_list_pop(&list);
-        ASSERT(sl_list_is_empty(&list));
+        ASSERT(list_is_empty(&list));
     }
 
     {
@@ -1104,8 +1104,8 @@ static void tests_sl_list()
 
         sl_list_push_front(&list, node1);
         sl_list_push_front(&list, node2);
-        ASSERT(sl_list_head(&list) == node2);
-        ASSERT(sl_list_tail(&list) == node1);
+        ASSERT(list_head(&list) == node2);
+        ASSERT(list_tail(&list) == node1);
     }
 
     {
@@ -1124,7 +1124,7 @@ static void tests_sl_list()
         sl_list_push_back(&list, node3);
 
         s32 i = 0;
-        for (s32_node *node = sl_list_head(&list); node; node = sl_list_next(node)) {
+        for (s32_node *node = list_head(&list); node; node = list_next(node)) {
             ASSERT(node->data == i);
             ++i;
         }
@@ -1146,7 +1146,7 @@ static void tests_sl_list()
         sl_list_push_front(&list, node3);
 
         s32 i = 2;
-        for (s32_node *node = sl_list_head(&list); node; node = sl_list_next(node)) {
+        for (s32_node *node = list_head(&list); node; node = list_next(node)) {
             ASSERT(node->data == i);
             --i;
         }

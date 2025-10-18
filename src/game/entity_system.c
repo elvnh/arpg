@@ -267,7 +267,7 @@ void es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch)
 {
     EntityIDList to_remove = es_get_inactive_entities(es, scratch);
 
-    for (EntityIDNode *node = sl_list_head(&to_remove); node; node = sl_list_next(node)) {
+    for (EntityIDNode *node = list_head(&to_remove); node; node = list_next(node)) {
         es_remove_entity(es, node->id);
     }
 }

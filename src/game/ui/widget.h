@@ -24,10 +24,23 @@ typedef enum {
 } UILayoutKind;
 
 typedef enum {
+    AXIS_HORIZONTAL,
+    AXIS_VERTICAL,
+    AXIS_COUNT,
+} Axis;
+
+typedef enum {
     UI_SIZE_KIND_ABSOLUTE,
     UI_SIZE_KIND_SUM_OF_CHILDREN,
     UI_SIZE_KIND_PERCENT_OF_PARENT,
 } UISizeKind;
+
+#if 0
+typedef struct {
+    UISizeKind kind;
+    f32 size_value;
+} WidgetSize;
+#endif
 
 typedef struct {
     b32 clicked;
@@ -44,9 +57,11 @@ typedef struct Widget {
     WidgetInteraction interaction_state; // TODO: should this be in separate struct?
     WidgetFlag flags;
 
-    UISizeKind size_kind;
     Vector2    preliminary_size;
     Vector2    offset_from_parent;
+
+    UISizeKind horizontal_size_kind;
+    UISizeKind vertical_size_kind;
 
     // NOTE: these are always absolute
     Vector2    final_size;

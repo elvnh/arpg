@@ -26,13 +26,16 @@ void ui_text(UIState *ui, String text)
 
 WidgetInteraction ui_button(UIState *ui, String text)
 {
-    Widget *widget = ui_core_colored_box(ui, V2_ZERO, RGBA32_BLUE, ui_core_hash_string(text));
+    Widget *widget = ui_core_colored_box(ui, v2(0, 64.0f), RGBA32_BLUE, ui_core_hash_string(text));
     widget_add_flag(widget, WIDGET_CLICKABLE);
 
     // TODO: allow changing
-    widget->size_kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+    widget->horizontal_size_kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+    widget->vertical_size_kind = UI_SIZE_KIND_ABSOLUTE;
+
     widget->child_padding = 8.0f;
 
+    // TODO: center text vertically
     ui_core_push_container(ui, widget);
     ui_text(ui, text);
     ui_core_pop_container(ui);
@@ -54,7 +57,8 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     ui_core_push_container(ui, widget);
 
     Widget *child_box = ui_core_colored_box(ui, v2(1.0f, 1.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID);
-    child_box->size_kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
+    child_box->horizontal_size_kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
+    child_box->vertical_size_kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
 
     ui_pop_container(ui);
 
@@ -89,7 +93,9 @@ void ui_spacing(UIState *ui, f32 amount)
 void ui_textbox(UIState *ui, StringBuilder *sb)
 {
     Widget *widget = ui_core_colored_box(ui, v2(128, 32), RGBA32_WHITE, (u64)sb);
-    widget->size_kind = UI_SIZE_KIND_ABSOLUTE;
+    widget->horizontal_size_kind = UI_SIZE_KIND_ABSOLUTE;
+    widget->vertical_size_kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_TEXT_INPUT);
     widget_add_flag(widget, WIDGET_STAY_ACTIVE);
@@ -106,7 +112,8 @@ WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, UI
     Widget *widget = ui_core_create_widget(ui, size, ui_core_hash_string(title));
 
     widget->child_padding = child_padding;
-    widget->size_kind = size_kind;
+    widget->horizontal_size_kind = size_kind;
+    widget->vertical_size_kind = size_kind;
 
     ui_core_push_container(ui, widget);
 

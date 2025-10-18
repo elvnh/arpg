@@ -136,42 +136,63 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
     }
 }
 
-static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent)
+static void calculate_widget_layout_helper(Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent,
+    Axis axis)
 {
-    widget->final_position = v2_add(offset, widget->offset_from_parent);
+    UISizeKind size_kind = 0;
+    if (axis == AXIS_HORIZONTAL) {
+        size_kind = widget->horizontal_size_kind;
+    } else {
+        size_kind = widget->vertical_size_kind;
+    }
 
-    TraversalOrder order = get_layout_traversal_order(widget->size_kind);
+    TraversalOrder order = get_layout_traversal_order(size_kind);
 
     if (order == TRAVERSAL_ORDER_POSTORDER) {
         calculate_layout_of_children(widget, platform_code);
     }
 
-    switch (widget->size_kind) {
+    // TODO: reduce code duplication
+    switch (size_kind) {
         case UI_SIZE_KIND_ABSOLUTE: {
-            widget->final_size = widget->preliminary_size;
+            if (axis == AXIS_HORIZONTAL) {
+                widget->final_size.x = widget->preliminary_size.x;
+            } else {
+                widget->final_size.y = widget->preliminary_size.y;
+            }
         } break;
         case UI_SIZE_KIND_SUM_OF_CHILDREN: {
             f32 max_x = 0.0f;
             f32 max_y = 0.0f;
 
             for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-                max_x = MAX(max_x, child->final_position.x + child->final_size.x - offset.x);
-                max_y = MAX(max_y, child->final_position.y + child->final_size.y - offset.y);
+                if (axis == AXIS_HORIZONTAL) {
+                    max_x = MAX(max_x, child->final_position.x + child->final_size.x - offset.x);
+                } else {
+                    max_y = MAX(max_y, child->final_position.y + child->final_size.y - offset.y);
+                }
             }
 
-            widget->final_size = v2(max_x + widget->child_padding, max_y + widget->child_padding);
+            if (axis == AXIS_HORIZONTAL) {
+                widget->final_size.x = max_x + widget->child_padding;
+            } else {
+                widget->final_size.y = max_y + widget->child_padding;
+            }
+
         } break;
 
         case UI_SIZE_KIND_PERCENT_OF_PARENT: {
             ASSERT(parent);
-            ASSERT(parent->size_kind != UI_SIZE_KIND_SUM_OF_CHILDREN);
             ASSERT(f32_in_range(widget->preliminary_size.x, 0.0f, 1.0f, 0.0f));
             ASSERT(f32_in_range(widget->preliminary_size.y, 0.0f, 1.0f, 0.0f));
 
-            widget->final_size = v2(
-                (parent->final_size.x - parent->child_padding * 2) * widget->preliminary_size.x,
-                (parent->final_size.y - parent->child_padding * 2) * widget->preliminary_size.y
-            );
+            if (axis == AXIS_HORIZONTAL) {
+                ASSERT(parent->horizontal_size_kind != UI_SIZE_KIND_SUM_OF_CHILDREN);
+                widget->final_size.x = (parent->final_size.x - parent->child_padding * 2) * widget->preliminary_size.x;
+            } else {
+                ASSERT(parent->vertical_size_kind != UI_SIZE_KIND_SUM_OF_CHILDREN);
+                widget->final_size.y = (parent->final_size.y - parent->child_padding * 2) * widget->preliminary_size.y;
+            }
         } break;
 
         INVALID_DEFAULT_CASE;
@@ -189,6 +210,16 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
         widget->final_size = text_dims;
         widget->text.baseline_y_offset = baseline;
     }
+
+}
+
+static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent)
+{
+    widget->final_position = v2_add(offset, widget->offset_from_parent);
+
+    calculate_widget_layout_helper(widget, offset, platform_code, parent, AXIS_HORIZONTAL);
+    calculate_widget_layout_helper(widget, offset, platform_code, parent, AXIS_VERTICAL);
+
 
     /* ASSERT(widget->final_size.x > 0.0f); */
     /* ASSERT(widget->final_size.y > 0.0f); */

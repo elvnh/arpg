@@ -30,6 +30,11 @@ typedef struct {
     EntityID   entity_b;
 } EntityPair;
 
+typedef enum {
+    ENTITY_PAIR_INDEX_FIRST,
+    ENTITY_PAIR_INDEX_SECOND,
+} EntityPairIndex;
+
 static inline b32 entity_id_equal(EntityID lhs, EntityID rhs)
 {
     b32 result = (lhs.slot_id == rhs.slot_id) && (lhs.generation == rhs.generation);

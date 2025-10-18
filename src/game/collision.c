@@ -111,7 +111,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
     return result;
 }
 
-static inline ssize collision_rule_hashed_index(EntityPair pair, const CollisionRuleTable *table)
+static inline ssize collision_rule_hashed_index(EntityPair pair, const CollisionExceptionTable *table)
 {
     u64 hash = entity_pair_hash(pair);
     ssize result = mod_index(hash, ARRAY_COUNT(table->table));
@@ -119,13 +119,13 @@ static inline ssize collision_rule_hashed_index(EntityPair pair, const Collision
     return result;
 }
 
-CollisionRule *collision_rule_find(CollisionRuleTable *table, EntityID a, EntityID b)
+CollisionException *collision_exception_find(CollisionExceptionTable *table, EntityID a, EntityID b)
 {
     EntityPair searched_pair = entity_pair_create(a, b);
     ssize index = collision_rule_hashed_index(searched_pair, table);
 
-    CollisionRuleList *list = &table->table[index];
-    CollisionRule *current_rule;
+    CollisionExceptionList *list = &table->table[index];
+    CollisionException *current_rule;
     for (current_rule = list_head(list); current_rule; current_rule = list_next(current_rule)) {
         if (entity_id_equal(current_rule->entity_pair.entity_a, searched_pair.entity_a)
 	 && entity_id_equal(current_rule->entity_pair.entity_b, searched_pair.entity_b)) {
@@ -136,36 +136,36 @@ CollisionRule *collision_rule_find(CollisionRuleTable *table, EntityID a, Entity
     return current_rule;
 }
 
-void collision_rule_add(CollisionRuleTable *table, EntityID a, EntityID b, b32 should_collide,
+void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b, b32 should_collide,
     LinearArena *arena)
 {
     // TODO: remove collision rules when entity dies
     ASSERT(!entity_id_equal(a, b));
 
-    CollisionRule *rule = list_head(&table->free_node_list);
+    CollisionException *rule = list_head(&table->free_node_list);
     if (!rule) {
-	rule = la_allocate_item(arena, CollisionRule);
+	rule = la_allocate_item(arena, CollisionException);
     } else {
 	list_pop_head(&table->free_node_list);
     }
 
-    *rule = (CollisionRule){0};
+    *rule = (CollisionException){0};
     rule->entity_pair = entity_pair_create(a, b);
     rule->should_collide = should_collide;
 
-    ASSERT(!collision_rule_find(table, rule->entity_pair.entity_a, rule->entity_pair.entity_b));
+    ASSERT(!collision_exception_find(table, rule->entity_pair.entity_a, rule->entity_pair.entity_b));
 
     ssize index = collision_rule_hashed_index(rule->entity_pair, table);
     list_push_back(&table->table[index], rule);
 }
 
-void collision_rule_remove_rules_with_entity(CollisionRuleTable *table, EntityID a)
+void remove_collision_exceptions_with_entity(CollisionExceptionTable *table, EntityID a)
 {
     for (s32 i = 0; i < ARRAY_COUNT(table->table); ++i) {
-        CollisionRuleList *list = &table->table[i];
+        CollisionExceptionList *list = &table->table[i];
 
-        for (CollisionRule *rule = list_head(list); rule;) {
-            CollisionRule *next = list_next(rule);
+        for (CollisionException *rule = list_head(list); rule;) {
+            CollisionException *next = list_next(rule);
 
 	    if (entity_id_equal(rule->entity_pair.entity_a, a)
 	     || entity_id_equal(rule->entity_pair.entity_b, a)) {

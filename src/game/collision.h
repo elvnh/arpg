@@ -22,17 +22,17 @@ typedef struct CollisionRule {
     struct CollisionRule  *prev;
     EntityPair		   entity_pair;
     b32			   should_collide;
-} CollisionRule;
+} CollisionException;
 
 typedef struct {
-    CollisionRule *head;
-    CollisionRule *tail;
-} CollisionRuleList;
+    CollisionException *head;
+    CollisionException *tail;
+} CollisionExceptionList;
 
 typedef struct {
-    CollisionRuleList  table[512];
-    CollisionRuleList  free_node_list;
-} CollisionRuleTable;
+    CollisionExceptionList  table[512];
+    CollisionExceptionList  free_node_list;
+} CollisionExceptionTable;
 
 typedef enum {
     COLL_NOT_COLLIDING,
@@ -52,9 +52,9 @@ typedef struct {
 
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,
     Vector2 velocity_a, Vector2 velocity_b, f32 dt);
-CollisionRule *collision_rule_find(CollisionRuleTable *table, EntityID a, EntityID b);
-void collision_rule_add(CollisionRuleTable *table, EntityID a, EntityID b, b32 should_collide,
+CollisionException *collision_exception_find(CollisionExceptionTable *table, EntityID a, EntityID b);
+void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b, b32 should_collide,
     LinearArena *arena);
-void collision_rule_remove_rules_with_entity(CollisionRuleTable *table, EntityID a);
+void remove_collision_exceptions_with_entity(CollisionExceptionTable *table, EntityID a);
 
 #endif //COLLISION_H

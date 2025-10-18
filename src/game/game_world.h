@@ -27,7 +27,7 @@ typedef struct {
     Camera camera;
     Tilemap tilemap;
     EntitySystem entities;
-    CollisionRuleTable collision_rules;
+    CollisionExceptionTable collision_rules;
     CollisionTable  previous_frame_collisions;
     CollisionTable  current_frame_collisions;
 } GameWorld;

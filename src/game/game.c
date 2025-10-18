@@ -340,13 +340,13 @@ static void try_deal_damage_to_entity(Entity *receiver, Entity *sender, Damage d
     }
 }
 
+// TODO: make this take entitypair as parameter
 static void execute_collision_effects(GameWorld *world, Entity *entity, Entity *other, ColliderComponent *collider,
-    CollisionInfo collision, s32 index, ObjectKind colliding_with_obj_kind)
+    CollisionInfo collision, EntityPairIndex collision_index, ObjectKind colliding_with_obj_kind)
 {
     // TODO: clean up this function
 
     ASSERT(entity);
-    ASSERT((index == 0) || (index == 1));
 
     b32 effect_executed = false;
     b32 should_pass_through = false;
@@ -371,7 +371,7 @@ static void execute_collision_effects(GameWorld *world, Entity *entity, Entity *
             switch (effect.kind) {
                 case ON_COLLIDE_BOUNCE: {
                     if (!should_pass_through) {
-                        if (index == 0) {
+                        if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
                             entity->position = collision.new_position_a;
                             entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
                         } else {
@@ -404,7 +404,7 @@ static void execute_collision_effects(GameWorld *world, Entity *entity, Entity *
     }
 
     if (!effect_executed && !should_pass_through) {
-        if (index == 0) {
+        if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
             entity->position = collision.new_position_a;
             entity->velocity = collision.new_velocity_a;
         } else {
@@ -421,7 +421,7 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
     EntityID id_a = es_get_id_of_entity(&world->entities, a);
     EntityID id_b = es_get_id_of_entity(&world->entities, b);
 
-    CollisionRule *rule_for_entities = collision_rule_find(&world->collision_rules, id_a, id_b);
+    CollisionException *rule_for_entities = collision_exception_find(&world->collision_rules, id_a, id_b);
     b32 should_collide = !rule_for_entities || rule_for_entities->should_collide;
 
     if (should_collide) {
@@ -435,8 +435,8 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
             // TODO: only handle closest collision
             movement_fraction_left = collision.movement_fraction_left;
 
-            execute_collision_effects(world, a, b, collider_a, collision, 0, OBJECT_KIND_ENTITIES);
-            execute_collision_effects(world, b, a, collider_b, collision, 1, OBJECT_KIND_ENTITIES);
+            execute_collision_effects(world, a, b, collider_a, collision, ENTITY_PAIR_INDEX_FIRST, OBJECT_KIND_ENTITIES);
+            execute_collision_effects(world, b, a, collider_b, collision, ENTITY_PAIR_INDEX_SECOND, OBJECT_KIND_ENTITIES);
 
             collision_table_insert(&world->current_frame_collisions, id_a, id_b);
         }
@@ -499,7 +499,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     if (closest_collision.collision_state != COLL_NOT_COLLIDING) {
         movement_fraction_left = closest_collision.movement_fraction_left;
 
-        execute_collision_effects(world, entity, 0, collider, closest_collision, 0, OBJECT_KIND_TILES);
+        execute_collision_effects(world, entity, 0, collider, closest_collision, ENTITY_PAIR_INDEX_FIRST, OBJECT_KIND_TILES);
     }
 
     return movement_fraction_left;
@@ -610,7 +610,7 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
         .particle_speed = 100.0f,
     };
 
-    collision_rule_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
+    collision_exception_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
 }
 
 static void world_update(GameWorld *world, const Input *input, f32 dt, const AssetList *assets, LinearArena *frame_arena)
@@ -697,7 +697,7 @@ static void world_update(GameWorld *world, const Input *input, f32 dt, const Ass
 
     // NOTE: wait until after all updates have ran before removing collision rules
     for (EntityIDNode *node = list_head(&inactive_entities); node; node = list_next(node)) {
-        collision_rule_remove_rules_with_entity(&world->collision_rules, node->id);
+        remove_collision_exceptions_with_entity(&world->collision_rules, node->id);
     }
 
     // TODO: should this be done at beginning of each frame so inactive entities are rendered?

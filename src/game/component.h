@@ -30,11 +30,40 @@ typedef enum {
     #undef COMPONENT
 } ComponentType;
 
+typedef enum {
+    ON_COLLIDE_PASS_THROUGH,
+    ON_COLLIDE_BOUNCE,
+    //ON_COLLIDE_EXPLODE,
+} CollideEffectKind;
+
+typedef enum {
+    OBJECT_KIND_ENTITIES = (1 << 0),
+    OBJECT_KIND_TILES = (1 << 1),
+} ObjectKind;
+
+// TODO: make possible to only effect collisions with tiles/entities
+typedef struct {
+    CollideEffectKind kind;
+    ObjectKind affects_object_kinds;
+} OnCollisionEffect;
+
 typedef struct {
     Vector2 size;
     // TODO: offset from pos
-    b32 non_blocking;
+    b32 non_blocking; // TODO: get rid of this, use collision effects instead
+
+    struct {
+        OnCollisionEffect effects[4];
+        s32 count;
+    } on_collide_effects;
 } ColliderComponent;
+
+static inline void add_collide_effect(ColliderComponent *c, OnCollisionEffect effect)
+{
+    ASSERT(c->on_collide_effects.count < ARRAY_COUNT(c->on_collide_effects.effects));
+    ssize index = c->on_collide_effects.count++;
+    c->on_collide_effects.effects[index] = effect;
+}
 
 typedef struct {
     Damage damage;

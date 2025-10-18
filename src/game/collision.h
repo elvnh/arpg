@@ -47,7 +47,7 @@ typedef struct {
     Vector2  new_velocity_a;
     Vector2  new_velocity_b;
     f32      movement_fraction_left;
-    Vector2  collision_normal;
+    Vector2  collision_normal; // TODO: separate normals for A and B?
 } CollisionInfo;
 
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,

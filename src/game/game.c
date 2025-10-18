@@ -339,13 +339,44 @@ static void try_deal_damage_field_damage(Entity *a, Entity *b)
     }
 }
 
-static void handle_collision_side_effects(Entity *a, Entity *b)
+static void execute_collision_effects(Entity *entity, ColliderComponent *collider,
+    CollisionInfo collision, s32 index, ObjectKind colliding_with_obj_kind)
 {
-    ASSERT(a);
-    ASSERT(b);
+    ASSERT((index == 0) || (index == 1));
 
-    try_deal_damage_field_damage(a, b);
-    try_deal_damage_field_damage(b, a);
+    b32 effect_executed = false;
+
+    for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
+        OnCollisionEffect effect = collider->on_collide_effects.effects[i];
+
+        if (effect.affects_object_kinds & colliding_with_obj_kind) {
+            effect_executed = true;
+
+            switch (effect.kind) {
+                case ON_COLLIDE_BOUNCE: {
+                    if (index == 0) {
+                        entity->position = collision.new_position_a;
+                        entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
+                    } else {
+                        entity->position = collision.new_position_b;
+                        entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
+                    }
+                } break;
+
+                case ON_COLLIDE_PASS_THROUGH: {} break;
+            }
+        }
+    }
+
+    if (!effect_executed) {
+        if (index == 0) {
+            entity->position = collision.new_position_a;
+            entity->velocity = collision.new_velocity_a;
+        } else {
+            entity->position = collision.new_position_b;
+            entity->velocity = collision.new_velocity_b;
+        }
+    }
 }
 
 static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
@@ -366,22 +397,19 @@ static f32 entity_vs_entity_collision(GameWorld *world, Entity *a,
             a->velocity, b->velocity, dt);
 
         if ((collision.collision_state != COLL_NOT_COLLIDING) && !entities_intersected_this_frame(world, id_a, id_b)) {
+            // TODO: only handle closest collision
+            movement_fraction_left = collision.movement_fraction_left;
+
+            execute_collision_effects(a, collider_a, collision, 0, OBJECT_KIND_ENTITIES);
+            execute_collision_effects(b, collider_b, collision, 1, OBJECT_KIND_ENTITIES);
+
+            // TODO: it should be possible to collide multiple frames in a row
             if (!entities_intersected_previous_frame(world, id_a, id_b)) {
-                handle_collision_side_effects(a, b);
+                try_deal_damage_field_damage(a, b);
+                try_deal_damage_field_damage(b, a);
             }
 
             collision_table_insert(&world->current_frame_collisions, id_a, id_b);
-
-            if (!collider_a->non_blocking && !collider_b->non_blocking) {
-                // TODO: allow entities to bounce off eachother too
-                a->position = collision.new_position_a;
-                b->position = collision.new_position_b;
-
-                a->velocity = collision.new_velocity_a;
-                b->velocity = collision.new_velocity_b;
-
-                movement_fraction_left = collision.movement_fraction_left;
-            }
         }
     }
 
@@ -440,16 +468,9 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     }
 
     if (closest_collision.collision_state != COLL_NOT_COLLIDING) {
-        entity->position = closest_collision.new_position_a;
-
-#if 0
-        entity->velocity = closest_collision.new_velocity_a;
         movement_fraction_left = closest_collision.movement_fraction_left;
-#else
-        // TODO: fix this properly
-        entity->velocity = v2_reflect(entity->velocity, closest_collision.collision_normal);
-        movement_fraction_left = 0.0f;
-#endif
+
+        execute_collision_effects(entity, collider, closest_collision, 0, OBJECT_KIND_TILES);
     }
 
     return movement_fraction_left;
@@ -525,6 +546,11 @@ static void spawn_projectile(GameWorld *world, Vector2 pos, EntityID spawner_id,
     ColliderComponent *collider = es_add_component(entity, ColliderComponent);
     collider->size = v2(16.0f, 16.0f);
     collider->non_blocking = true;
+
+    add_collide_effect(collider, (OnCollisionEffect){
+            .kind = ON_COLLIDE_BOUNCE,
+            .affects_object_kinds = OBJECT_KIND_ENTITIES// | OBJECT_KIND_TILES
+        });
 
     DamageFieldComponent *damage_field = es_add_component(entity, DamageFieldComponent);
     damage_field->damage.types.values[DMG_KIND_FIRE] = 4;

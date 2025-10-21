@@ -157,49 +157,16 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 Rectangle viewport = cmd->viewport_rect;
                 RGBA32 color = cmd->color;
 
-                Rectangle overlap = rect_overlap_area(rect, viewport);
+                ClippedRectangleVertices verts = rect_get_clipped_vertices(rect, viewport, color, rb->y_direction);
 
-                if (rect_is_valid(overlap)) {
-                    f32 rel_left = rect_top_left(overlap).x - rect.position.x;
-                    f32 rel_right = rect_top_right(overlap).x - rect.position.x;
-                    f32 rel_bottom = rect_bottom_left(overlap).y - rect.position.y;
-                    f32 rel_top = rect_top_left(overlap).y - rect.position.y;
-
-                    f32 uv_left = rel_left / rect.size.x;
-                    f32 uv_right = rel_right / rect.size.x;
-                    f32 uv_top = rel_top / rect.size.y;
-                    f32 uv_bottom = rel_bottom / rect.size.y;
-
-		    if (rb->y_direction == Y_IS_UP) {
-			uv_top = 1.0f - uv_top;
-			uv_bottom = 1.0f - uv_bottom;
-		    }
-
-                    Vertex a = {
-                        rect_top_left(overlap),
-                        {uv_left, uv_top},
-                        color
-                    };
-
-                    Vertex b = {
-                        rect_top_right(overlap),
-                        {uv_right, uv_top},
-                        color
-                    };
-
-                    Vertex c = {
-                        rect_bottom_right(overlap),
-                        {uv_right, uv_bottom},
-                        color
-                    };
-
-                    Vertex d = {
-                        rect_bottom_left(overlap),
-                        {uv_left, uv_bottom},
-                        color
-                    };
-
-                    renderer_backend_draw_quad(backend, a, b, c, d);
+                if (verts.is_visible) {
+                    renderer_backend_draw_quad(
+                        backend,
+                        verts.vertices.top_left,
+                        verts.vertices.top_right,
+                        verts.vertices.bottom_right,
+                        verts.vertices.bottom_left
+                    );
                 }
             } break;
 

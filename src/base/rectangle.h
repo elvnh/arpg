@@ -32,11 +32,21 @@ typedef struct {
 } RectangleVertices;
 
 typedef struct {
+    RectangleVertices vertices;
+    b32 is_visible;
+} ClippedRectangleVertices;
+
+typedef struct {
     Rectangle top_left;
     Rectangle top_right;
     Rectangle bottom_right;
     Rectangle bottom_left;
 } RectangleQuadrants;
+
+typedef struct {
+    Vector2 point;
+    RectangleSide side;
+} RectanglePoint;
 
 static inline Vector2 rect_top_left(Rectangle rect)
 {
@@ -69,6 +79,41 @@ static inline Vector2 rect_bottom_left(Rectangle rect)
 static inline b32 rect_is_valid(Rectangle rect)
 {
     b32 result = (rect.size.x > 0.0f) && (rect.size.y > 0.0f);
+    return result;
+}
+
+static inline b32 rect_intersects(Rectangle a, Rectangle b)
+{
+    b32 result =
+            (a.position.x < (b.position.x + b.size.x))
+        && ((a.position.x + a.size.x) > b.position.x)
+        && (a.position.y < (b.position.y + b.size.y))
+        && ((a.position.y + a.size.y) > b.position.y);
+
+    return result;
+}
+
+static inline Rectangle rect_overlap_area(Rectangle a, Rectangle b)
+{
+    // TODO: fix for when y direction is down
+    f32 l1 = a.position.x;
+    f32 l2 = b.position.x;
+    f32 r1 = a.position.x + a.size.x;
+    f32 r2 = b.position.x + b.size.x;
+    f32 t1 = a.position.y + a.size.y;
+    f32 t2 = b.position.y + b.size.y;
+    f32 b1 = a.position.y;
+    f32 b2 = b.position.y;
+
+    f32 left = MAX(l1, l2);
+    f32 right = MIN(r1, r2);
+    f32 top = MIN(t1, t2);
+    f32 bottom = MAX(b1, b2);
+
+    f32 width = right - left;
+    f32 height = top - bottom;
+
+    Rectangle result = {{left, bottom}, {width, height}};
     return result;
 }
 
@@ -110,10 +155,63 @@ static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color, 
     return result;
 }
 
-typedef struct {
-    Vector2 point;
-    RectangleSide side;
-} RectanglePoint;
+static inline ClippedRectangleVertices rect_get_clipped_vertices(Rectangle rect, Rectangle bounds, RGBA32 color,
+    YDirection y_dir)
+{
+    ClippedRectangleVertices result = {0};
+
+    Rectangle overlap = rect_overlap_area(rect, bounds);
+
+    if (rect_is_valid(overlap)) {
+        result.is_visible = true;
+
+        f32 rel_left = rect_top_left(overlap).x - rect.position.x;
+        f32 rel_right = rect_top_right(overlap).x - rect.position.x;
+        f32 rel_bottom = rect_bottom_left(overlap).y - rect.position.y;
+        f32 rel_top = rect_top_left(overlap).y - rect.position.y;
+
+        f32 uv_left = rel_left / rect.size.x;
+        f32 uv_right = rel_right / rect.size.x;
+        f32 uv_top = rel_top / rect.size.y;
+        f32 uv_bottom = rel_bottom / rect.size.y;
+
+        if (y_dir == Y_IS_UP) {
+            uv_top = 1.0f - uv_top;
+            uv_bottom = 1.0f - uv_bottom;
+        }
+
+        Vertex a = {
+            rect_top_left(overlap),
+            {uv_left, uv_top},
+            color
+        };
+
+        Vertex b = {
+            rect_top_right(overlap),
+            {uv_right, uv_top},
+            color
+        };
+
+        Vertex c = {
+            rect_bottom_right(overlap),
+            {uv_right, uv_bottom},
+            color
+        };
+
+        Vertex d = {
+            rect_bottom_left(overlap),
+            {uv_left, uv_bottom},
+            color
+        };
+
+        result.vertices.top_left = a;
+        result.vertices.top_right = b;
+        result.vertices.bottom_right = c;
+        result.vertices.bottom_left = d;
+    }
+
+    return result;
+}
 
 static inline RectanglePoint rect_bounds_point_closest_to_point(Rectangle rect, Vector2 point)
 {
@@ -179,16 +277,6 @@ static inline Rectangle rect_move_to(Rectangle rect, Vector2 v)
     return rect;
 }
 
-static inline b32 rect_intersects(Rectangle a, Rectangle b)
-{
-    b32 result =
-            (a.position.x < (b.position.x + b.size.x))
-        && ((a.position.x + a.size.x) > b.position.x)
-        && (a.position.y < (b.position.y + b.size.y))
-        && ((a.position.y + a.size.y) > b.position.y);
-
-    return result;
-}
 
 static inline Rectangle rect_minkowski_diff(Rectangle a, Rectangle b)
 {
@@ -201,29 +289,6 @@ static inline Rectangle rect_minkowski_diff(Rectangle a, Rectangle b)
     return result;
 }
 
-static inline Rectangle rect_overlap_area(Rectangle a, Rectangle b)
-{
-    // TODO: fix for when y direction is down
-    f32 l1 = a.position.x;
-    f32 l2 = b.position.x;
-    f32 r1 = a.position.x + a.size.x;
-    f32 r2 = b.position.x + b.size.x;
-    f32 t1 = a.position.y + a.size.y;
-    f32 t2 = b.position.y + b.size.y;
-    f32 b1 = a.position.y;
-    f32 b2 = b.position.y;
-
-    f32 left = MAX(l1, l2);
-    f32 right = MIN(r1, r2);
-    f32 top = MIN(t1, t2);
-    f32 bottom = MAX(b1, b2);
-
-    f32 width = right - left;
-    f32 height = top - bottom;
-
-    Rectangle result = {{left, bottom}, {width, height}};
-    return result;
-}
 
 static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect, Line ray_line,
     f32 epsilon)

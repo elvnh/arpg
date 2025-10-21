@@ -193,6 +193,14 @@ static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, Plat
 
 }
 
+static Rectangle widget_get_clipped_bounding_box(Widget *widget, Rectangle parent_bounds)
+{
+    Rectangle unclipped = widget_get_bounding_box(widget);
+    Rectangle result  = rect_overlap_area(unclipped, parent_bounds);
+
+    return result;
+}
+
 static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent)
 {
     widget->final_position = v2_add(offset, widget->offset_from_parent);
@@ -263,15 +271,17 @@ static LinearArena *get_frame_arena(UIState *ui)
     return result;
 }
 
-static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const AssetList *assets, ssize depth)
+static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const AssetList *assets, ssize depth,
+    Rectangle parent_bounds)
 {
     // TODO: depth isn't needed once a stable sort is implemented for render commands
 #if 1
+    Rectangle widget_rect = widget_get_clipped_bounding_box(widget, parent_bounds);
+
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
         LinearArena *arena = get_frame_arena(ui);
 
         if (widget_has_flag(widget, WIDGET_COLORED)) {
-            Rectangle widget_rect = widget_get_bounding_box(widget);
             RGBA32 color = widget->color;
 
             if (widget_is_hot(ui, widget)) {
@@ -336,10 +346,12 @@ void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, 
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
 
+    // TODO: take as parameter
+    Rectangle window_bounds = {v2(0, 0), v2(2000, 2000)};
     if (ui->root_widget) {
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
-        calculate_widget_interactions(ui, ui->root_widget, input);
-        render_widget(ui, ui->root_widget, rb, assets, 0);
+        calculate_widget_interactions(ui, ui->root_widget, input, window_bounds);
+        render_widget(ui, ui->root_widget, rb, assets, 0, window_bounds);
     }
 }
 

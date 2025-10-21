@@ -155,7 +155,8 @@ static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, Plat
             f32 max_bounds = 0.0f;
 
             for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-                f32 child_bounds = *v2_index(&child->final_position, axis) + *v2_index(&child->final_size, axis) - offset.x;
+                f32 child_bounds = *v2_index(&child->final_position, axis) + *v2_index(&child->final_size, axis)
+                    - *v2_index(&offset, axis);
 
                 max_bounds = MAX(max_bounds, child_bounds);
             }
@@ -327,13 +328,6 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         render_widget(ui, child, rb, assets, depth + 1);
     }
-}
-
-static Widget *get_active_widget(UIState *ui)
-{
-    Widget *result = widget_frame_table_find(&ui->previous_frame_widgets, ui->active_widget);
-
-    return result;
 }
 
 void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets,

@@ -1,4 +1,5 @@
 #include "ui_builder.h"
+#include "base/vector.h"
 #include "ui_core.h"
 #include "widget.h"
 #include "base/rgba.h"
@@ -105,6 +106,33 @@ void ui_textbox(UIState *ui, StringBuilder *sb)
 
     ui_core_push_container(ui, widget);
     ui_internal_text(ui, sb->buffer, V2_ZERO, RGBA32_BLACK);
+    ui_core_pop_container(ui);
+}
+
+void ui_begin_list(UIState *ui, String name)
+{
+    Widget *container = ui_core_colored_box(ui, v2(256, 256), RGBA32_WHITE, ui_core_hash_string(name));
+    container->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_ABSOLUTE;
+    container->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_ABSOLUTE;
+
+    ui_core_push_container(ui, container);
+}
+
+void ui_end_list(UIState *ui)
+{
+    ui_core_pop_container(ui);
+}
+
+void ui_selectable(UIState *ui, String text)
+{
+    Widget *container = ui_core_colored_box(ui, v2(1.0f, 0.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID);
+    container->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
+    container->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+
+    // TODO: combine the hash of selectable text with hash of listbox text
+
+    ui_core_push_container(ui, container);
+    ui_text(ui, text);
     ui_core_pop_container(ui);
 }
 

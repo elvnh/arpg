@@ -249,7 +249,7 @@ static void spawn_projectile(World *world, Vector2 pos, EntityID spawner_id, con
     collider->size = v2(16.0f, 16.0f);
 
     add_collide_effect(collider, (OnCollisionEffect){
-            .kind = ON_COLLIDE_PASS_THROUGH,
+            .kind = ON_COLLIDE_BOUNCE,
             .affects_object_kinds = OBJECT_KIND_ENTITIES// | OBJECT_KIND_TILES
         });
 

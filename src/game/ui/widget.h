@@ -24,12 +24,6 @@ typedef enum {
 } UILayoutKind;
 
 typedef enum {
-    AXIS_HORIZONTAL = 0,
-    AXIS_VERTICAL   = 1,
-    AXIS_COUNT,
-} UIAxis;
-
-typedef enum {
     UI_SIZE_KIND_ABSOLUTE,
     UI_SIZE_KIND_SUM_OF_CHILDREN,
     UI_SIZE_KIND_PERCENT_OF_PARENT,
@@ -55,8 +49,7 @@ typedef struct Widget {
     WidgetInteraction interaction_state; // TODO: should this be in separate struct?
     WidgetFlag flags;
 
-    //Vector2    preliminary_size;
-    WidgetSize sizes[AXIS_COUNT];
+    WidgetSize semantic_size[AXIS_COUNT];
     Vector2    offset_from_parent;
 
     // NOTE: these are always absolute

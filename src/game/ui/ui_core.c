@@ -137,56 +137,41 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
 }
 
 static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, PlatformCode platform_code,
-    Widget *parent, UIAxis axis)
+    Widget *parent, Axis axis)
 {
-    UISizeKind size_kind = widget->sizes[axis].kind;
+    UISizeKind size_kind = widget->semantic_size[axis].kind;
     TraversalOrder order = get_layout_traversal_order(size_kind);
 
     if (order == TRAVERSAL_ORDER_POSTORDER) {
         calculate_layout_of_children(widget, platform_code);
     }
 
-    // TODO: reduce code duplication
     switch (size_kind) {
         case UI_SIZE_KIND_ABSOLUTE: {
-            // TODO: make it possible to index in vector2
-            if (axis == AXIS_HORIZONTAL) {
-                widget->final_size.x = widget->sizes[axis].value;
-            } else {
-                widget->final_size.y = widget->sizes[axis].value;
-            }
+            *v2_index(&widget->final_size, axis) = widget->semantic_size[axis].value;
         } break;
+
         case UI_SIZE_KIND_SUM_OF_CHILDREN: {
-            f32 max_x = 0.0f;
-            f32 max_y = 0.0f;
+            f32 max_bounds = 0.0f;
 
             for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-                if (axis == AXIS_HORIZONTAL) {
-                    max_x = MAX(max_x, child->final_position.x + child->final_size.x - offset.x);
-                } else {
-                    max_y = MAX(max_y, child->final_position.y + child->final_size.y - offset.y);
-                }
+                f32 child_bounds = *v2_index(&child->final_position, axis) + *v2_index(&child->final_size, axis) - offset.x;
+
+                max_bounds = MAX(max_bounds, child_bounds);
             }
 
-            if (axis == AXIS_HORIZONTAL) {
-                widget->final_size.x = max_x + widget->child_padding;
-            } else {
-                widget->final_size.y = max_y + widget->child_padding;
-            }
-
+            *v2_index(&widget->final_size, axis) = max_bounds + widget->child_padding;
         } break;
 
         case UI_SIZE_KIND_PERCENT_OF_PARENT: {
             ASSERT(parent);
-            ASSERT(f32_in_range(widget->sizes[axis].value, 0.0f, 1.0f, 0.0f));
+            ASSERT(f32_in_range(widget->semantic_size[axis].value, 0.0f, 1.0f, 0.0f));
 
-            ASSERT(parent->sizes[axis].kind != UI_SIZE_KIND_SUM_OF_CHILDREN);
+            ASSERT(parent->semantic_size[axis].kind != UI_SIZE_KIND_SUM_OF_CHILDREN);
 
-            if (axis == AXIS_HORIZONTAL) {
-                widget->final_size.x = (parent->final_size.x - parent->child_padding * 2) * widget->sizes[axis].value;
-            } else {
-                widget->final_size.y = (parent->final_size.y - parent->child_padding * 2) * widget->sizes[axis].value;
-            }
+            f32 parent_size_on_axis = *v2_index(&parent->final_size, axis) - parent->child_padding * 2;
+
+            *v2_index(&widget->final_size, axis) = widget->semantic_size[axis].value * parent_size_on_axis;
         } break;
 
         INVALID_DEFAULT_CASE;
@@ -211,7 +196,7 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 {
     widget->final_position = v2_add(offset, widget->offset_from_parent);
 
-    for (UIAxis axis = 0; axis < AXIS_COUNT; ++axis) {
+    for (Axis axis = 0; axis < AXIS_COUNT; ++axis) {
         calculate_widget_layout_on_axis(widget, offset, platform_code, parent, axis);
     }
 
@@ -362,14 +347,6 @@ void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, 
         calculate_widget_interactions(ui, ui->root_widget, input);
         render_widget(ui, ui->root_widget, rb, assets, 0);
     }
-
-    //ui->hot_widget = UI_NULL_WIDGET_ID;
-
-    Widget *active_widget = get_active_widget(ui);
-
-    if (active_widget && widget_has_flag(active_widget, WIDGET_CLICKABLE)) {
-        //ui->active_widget = UI_NULL_WIDGET_ID;
-    }
 }
 
 static Widget *get_top_container(UIState *ui)
@@ -407,8 +384,8 @@ Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id)
     Widget *widget = la_allocate_item(get_frame_arena(ui), Widget);
     widget->id = id;
 
-    widget->sizes[AXIS_HORIZONTAL] = (WidgetSize){ .value = size.x };
-    widget->sizes[AXIS_VERTICAL] = (WidgetSize){ .value = size.y };
+    widget->semantic_size[AXIS_HORIZONTAL] = (WidgetSize){ .value = size.x };
+    widget->semantic_size[AXIS_VERTICAL] = (WidgetSize){ .value = size.y };
 
     ui_core_push_widget(ui, widget);
 

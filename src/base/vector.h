@@ -150,6 +150,26 @@ static inline Vector2 v2_reflect(Vector2 v, Vector2 normal)
     return result;
 }
 
+typedef enum {
+    AXIS_HORIZONTAL,
+    AXIS_VERTICAL,
+    AXIS_COUNT,
+} Axis;
+
+static inline f32 *v2_index(Vector2 *v, Axis index)
+{
+    ASSERT((index == AXIS_HORIZONTAL) || (index == AXIS_VERTICAL));
+
+    f32 *result = 0;
+    if (index == AXIS_HORIZONTAL) {
+        result = &v->x;
+    } else {
+        result = &v->y;
+    }
+
+    return result;
+}
+
 static inline Vector2 v2i_to_v2(Vector2i from)
 {
     Vector2 result = {(f32)from.x, (f32)from.y};

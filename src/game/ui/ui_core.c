@@ -136,16 +136,10 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
     }
 }
 
-static void calculate_widget_layout_helper(Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent,
-    Axis axis)
+static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, PlatformCode platform_code,
+    Widget *parent, UIAxis axis)
 {
-    UISizeKind size_kind = 0;
-    if (axis == AXIS_HORIZONTAL) {
-        size_kind = widget->horizontal_size_kind;
-    } else {
-        size_kind = widget->vertical_size_kind;
-    }
-
+    UISizeKind size_kind = widget->sizes[axis].kind;
     TraversalOrder order = get_layout_traversal_order(size_kind);
 
     if (order == TRAVERSAL_ORDER_POSTORDER) {
@@ -155,10 +149,11 @@ static void calculate_widget_layout_helper(Widget *widget, Vector2 offset, Platf
     // TODO: reduce code duplication
     switch (size_kind) {
         case UI_SIZE_KIND_ABSOLUTE: {
+            // TODO: make it possible to index in vector2
             if (axis == AXIS_HORIZONTAL) {
-                widget->final_size.x = widget->preliminary_size.x;
+                widget->final_size.x = widget->sizes[axis].value;
             } else {
-                widget->final_size.y = widget->preliminary_size.y;
+                widget->final_size.y = widget->sizes[axis].value;
             }
         } break;
         case UI_SIZE_KIND_SUM_OF_CHILDREN: {
@@ -183,15 +178,14 @@ static void calculate_widget_layout_helper(Widget *widget, Vector2 offset, Platf
 
         case UI_SIZE_KIND_PERCENT_OF_PARENT: {
             ASSERT(parent);
-            ASSERT(f32_in_range(widget->preliminary_size.x, 0.0f, 1.0f, 0.0f));
-            ASSERT(f32_in_range(widget->preliminary_size.y, 0.0f, 1.0f, 0.0f));
+            ASSERT(f32_in_range(widget->sizes[axis].value, 0.0f, 1.0f, 0.0f));
+
+            ASSERT(parent->sizes[axis].kind != UI_SIZE_KIND_SUM_OF_CHILDREN);
 
             if (axis == AXIS_HORIZONTAL) {
-                ASSERT(parent->horizontal_size_kind != UI_SIZE_KIND_SUM_OF_CHILDREN);
-                widget->final_size.x = (parent->final_size.x - parent->child_padding * 2) * widget->preliminary_size.x;
+                widget->final_size.x = (parent->final_size.x - parent->child_padding * 2) * widget->sizes[axis].value;
             } else {
-                ASSERT(parent->vertical_size_kind != UI_SIZE_KIND_SUM_OF_CHILDREN);
-                widget->final_size.y = (parent->final_size.y - parent->child_padding * 2) * widget->preliminary_size.y;
+                widget->final_size.y = (parent->final_size.y - parent->child_padding * 2) * widget->sizes[axis].value;
             }
         } break;
 
@@ -217,12 +211,10 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 {
     widget->final_position = v2_add(offset, widget->offset_from_parent);
 
-    calculate_widget_layout_helper(widget, offset, platform_code, parent, AXIS_HORIZONTAL);
-    calculate_widget_layout_helper(widget, offset, platform_code, parent, AXIS_VERTICAL);
+    for (UIAxis axis = 0; axis < AXIS_COUNT; ++axis) {
+        calculate_widget_layout_on_axis(widget, offset, platform_code, parent, axis);
+    }
 
-
-    /* ASSERT(widget->final_size.x > 0.0f); */
-    /* ASSERT(widget->final_size.y > 0.0f); */
 }
 
 static void calculate_widget_interactions(UIState *ui, Widget *widget, const Input *input)
@@ -414,7 +406,9 @@ Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id)
 {
     Widget *widget = la_allocate_item(get_frame_arena(ui), Widget);
     widget->id = id;
-    widget->preliminary_size = size;
+
+    widget->sizes[AXIS_HORIZONTAL] = (WidgetSize){ .value = size.x };
+    widget->sizes[AXIS_VERTICAL] = (WidgetSize){ .value = size.y };
 
     ui_core_push_widget(ui, widget);
 

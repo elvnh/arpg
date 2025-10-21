@@ -31,14 +31,14 @@ WidgetInteraction ui_button(UIState *ui, String text)
     widget_add_flag(widget, WIDGET_CLICKABLE);
 
     // TODO: allow changing
-    widget->horizontal_size_kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
-    widget->vertical_size_kind = UI_SIZE_KIND_ABSOLUTE;
+    widget->sizes[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+    widget->sizes[AXIS_VERTICAL].kind = UI_SIZE_KIND_ABSOLUTE;
 
     widget->child_padding = 8.0f;
 
     // TODO: center_next_widget
     ui_core_push_container(ui, widget);
-    ui_internal_text(ui, text, v2(0, widget->preliminary_size.y / 2.0f - widget->child_padding * 2), RGBA32_WHITE);
+    ui_internal_text(ui, text, v2(0, widget->sizes[AXIS_VERTICAL].value / 2.0f - widget->child_padding * 2), RGBA32_WHITE);
     ui_core_pop_container(ui);
 
     WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
@@ -58,8 +58,8 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     ui_core_push_container(ui, widget);
 
     Widget *child_box = ui_core_colored_box(ui, v2(1.0f, 1.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID);
-    child_box->horizontal_size_kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
-    child_box->vertical_size_kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
+    child_box->sizes[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
+    child_box->sizes[AXIS_VERTICAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
 
     ui_pop_container(ui);
 
@@ -85,17 +85,17 @@ void ui_spacing(UIState *ui, f32 amount)
     widget_add_flag(widget, WIDGET_HIDDEN);
 
     if (widget->layout_direction == UI_LAYOUT_VERTICAL) {
-        widget->preliminary_size.x = 1.0f;
+        widget->sizes[AXIS_HORIZONTAL].value = 1.0f;
     } else {
-        widget->preliminary_size.y = 1.0f;
+        widget->sizes[AXIS_VERTICAL].value = 1.0f;
     }
 }
 
 void ui_textbox(UIState *ui, StringBuilder *sb)
 {
     Widget *widget = ui_core_colored_box(ui, v2(128, 32), RGBA32_WHITE, (u64)sb);
-    widget->horizontal_size_kind = UI_SIZE_KIND_ABSOLUTE;
-    widget->vertical_size_kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+    widget->sizes[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_ABSOLUTE;
+    widget->sizes[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
 
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_TEXT_INPUT);
@@ -113,8 +113,8 @@ WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, UI
     Widget *widget = ui_core_create_widget(ui, size, ui_core_hash_string(title));
 
     widget->child_padding = child_padding;
-    widget->horizontal_size_kind = size_kind;
-    widget->vertical_size_kind = size_kind;
+    widget->sizes[AXIS_HORIZONTAL].kind = size_kind;
+    widget->sizes[AXIS_VERTICAL].kind = size_kind;
 
     ui_core_push_container(ui, widget);
 

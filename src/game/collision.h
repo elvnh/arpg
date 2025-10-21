@@ -35,7 +35,7 @@ typedef struct CollisionRule {
     struct CollisionRule  *next;
     struct CollisionRule  *prev;
     EntityPair		   entity_pair;
-    b32			   should_collide;
+    b32			   should_collide; // TODO: should always be true so remove?
 } CollisionException;
 
 typedef struct {

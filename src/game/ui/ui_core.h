@@ -14,6 +14,7 @@
   - Centering?
   - Fill entire parent width/height
   - Separate size kinds for horizontal and vertical axis?
+  - Clipping widget inside parent bounds
  */
 
 #define UI_NULL_WIDGET_ID 0

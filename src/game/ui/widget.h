@@ -10,11 +10,11 @@
 typedef u64 WidgetID;
 
 typedef enum {
-    WIDGET_CLICKABLE  = (1u << 0),
-    WIDGET_COLORED    = (1u << 1),
-    WIDGET_TEXT       = (1u << 2),
-    WIDGET_HIDDEN     = (1u << 3),
-    WIDGET_TEXT_INPUT = (1u << 4),
+    WIDGET_CLICKABLE   = (1u << 0),
+    WIDGET_COLORED     = (1u << 1),
+    WIDGET_TEXT        = (1u << 2),
+    WIDGET_HIDDEN      = (1u << 3),
+    WIDGET_TEXT_INPUT  = (1u << 4),
     WIDGET_STAY_ACTIVE = (1u << 5),
 } WidgetFlag;
 
@@ -24,10 +24,10 @@ typedef enum {
 } UILayoutKind;
 
 typedef enum {
-    AXIS_HORIZONTAL,
-    AXIS_VERTICAL,
+    AXIS_HORIZONTAL = 0,
+    AXIS_VERTICAL   = 1,
     AXIS_COUNT,
-} Axis;
+} UIAxis;
 
 typedef enum {
     UI_SIZE_KIND_ABSOLUTE,
@@ -35,12 +35,10 @@ typedef enum {
     UI_SIZE_KIND_PERCENT_OF_PARENT,
 } UISizeKind;
 
-#if 0
 typedef struct {
     UISizeKind kind;
-    f32 size_value;
+    f32        value;
 } WidgetSize;
-#endif
 
 typedef struct {
     b32 clicked;
@@ -52,29 +50,27 @@ typedef struct {
 } WidgetList;
 
 typedef struct Widget {
-    /* Common variables */
+    /* Common members */
     WidgetID id;
     WidgetInteraction interaction_state; // TODO: should this be in separate struct?
     WidgetFlag flags;
 
-    Vector2    preliminary_size;
+    //Vector2    preliminary_size;
+    WidgetSize sizes[AXIS_COUNT];
     Vector2    offset_from_parent;
-
-    UISizeKind horizontal_size_kind;
-    UISizeKind vertical_size_kind;
 
     // NOTE: these are always absolute
     Vector2    final_size;
     Vector2    final_position;
 
-    UILayoutKind     layout_direction; // TODO: rename to layout_direction
+    UILayoutKind     layout_direction;
 
     f32              child_padding;
     WidgetList       children;
     struct Widget   *next_in_hash;
     struct Widget   *next_sibling;
 
-    /* Flag specific variables */
+    /* Flag specific members */
     struct {
         String string;
         FontHandle font;

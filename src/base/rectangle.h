@@ -48,6 +48,14 @@ typedef struct {
     RectangleSide side;
 } RectanglePoint;
 
+// TODO: use this struct in more places
+typedef struct {
+    Vector2 top_left;
+    Vector2 top_right;
+    Vector2 bottom_right;
+    Vector2 bottom_left;
+} RectangleUVCoords;
+
 static inline Vector2 rect_top_left(Rectangle rect)
 {
     Vector2 result = v2_add(rect.position, v2(0.0f, rect.size.y));
@@ -155,8 +163,20 @@ static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color, 
     return result;
 }
 
-static inline ClippedRectangleVertices rect_get_clipped_vertices(Rectangle rect, Rectangle bounds, RGBA32 color,
-    YDirection y_dir)
+static inline RectangleUVCoords rect_default_uvs(YDirection y_dir)
+{
+    RectangleUVCoords result = {
+        .top_left = {0, 0},
+        .top_right = {1, 0},
+        .bottom_right = {1, (y_dir == Y_IS_UP) ? 0 : 1},
+        .bottom_left = {1, (y_dir == Y_IS_UP) ? 1 : 0}
+    };
+
+    return result;
+}
+
+static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectangle rect, Rectangle bounds, RGBA32 color,
+    YDirection y_dir, RectangleUVCoords uvs)
 {
     ClippedRectangleVertices result = {0};
 
@@ -170,14 +190,24 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices(Rectangle rect,
         f32 rel_bottom = rect_bottom_left(overlap).y - rect.position.y;
         f32 rel_top = rect_top_left(overlap).y - rect.position.y;
 
-        f32 uv_left = rel_left / rect.size.x;
-        f32 uv_right = rel_right / rect.size.x;
-        f32 uv_top = rel_top / rect.size.y;
-        f32 uv_bottom = rel_bottom / rect.size.y;
+        f32 uv_base_left = uvs.top_left.x;
+        f32 uv_base_right = uvs.top_right.x;
+        f32 uv_base_top = uvs.top_left.y;
+        f32 uv_base_bottom = uvs.bottom_right.y;
+
+
+        f32 uv_width = uv_base_right - uv_base_left;
+        f32 uv_height = abs_f32(uv_base_bottom - uv_base_top);
+
+        f32 uv_left = (rel_left / rect.size.x) * uv_width;
+        f32 uv_right = (rel_right / rect.size.x) * uv_width;
+
+        f32 uv_top = (rel_top / rect.size.y) * 1.0f;
+        f32 uv_bottom = (rel_bottom / rect.size.y) * 1.0f;
 
         if (y_dir == Y_IS_UP) {
-            uv_top = 1.0f - uv_top;
-            uv_bottom = 1.0f - uv_bottom;
+            uv_top = uv_height - uv_top;
+            uv_bottom = uv_height - uv_bottom;
         }
 
         Vertex a = {
@@ -209,6 +239,15 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices(Rectangle rect,
         result.vertices.bottom_right = c;
         result.vertices.bottom_left = d;
     }
+
+    return result;
+}
+
+static inline ClippedRectangleVertices rect_get_clipped_vertices(Rectangle rect, Rectangle bounds, RGBA32 color,
+    YDirection y_dir)
+{
+    RectangleUVCoords default_uvs = rect_default_uvs(y_dir);
+    ClippedRectangleVertices result = rect_get_clipped_vertices_with_uvs(rect, bounds, color, y_dir, default_uvs);
 
     return result;
 }

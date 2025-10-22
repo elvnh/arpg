@@ -181,8 +181,8 @@ static inline RectangleUVCoords rect_default_uvs(YDirection y_dir)
     return result;
 }
 
-static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectangle rect, Rectangle bounds, RGBA32 color,
-    YDirection y_dir, RectangleUVCoords uvs)
+static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectangle rect,
+    Rectangle bounds, RGBA32 color, YDirection y_dir, RectangleUVCoords uvs)
 {
     ClippedRectangleVertices result = {0};
 
@@ -206,15 +206,18 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectan
 
         f32 uv_left = uv_base_left + (rel_left / rect.size.x) * uv_width;
         f32 uv_right = uv_base_left + (rel_right / rect.size.x) * uv_width;
-        f32 uv_top = uv_base_bottom + (rel_top / rect.size.y) * uv_height;
-        f32 uv_bottom = uv_base_bottom + (rel_bottom / rect.size.y) * uv_height;
 
-        if (y_dir == Y_IS_UP) {
-            uv_top = uv_height - uv_top;
-            uv_bottom = uv_height - uv_bottom;
-        }
+	f32 uv_top = 0.0f;
+	f32 uv_bottom = 0.0f;
 
-        // TODO: use rect_get_vertices for this
+	if (y_dir == Y_IS_DOWN) {
+	    uv_top = uv_base_bottom + (rel_top / rect.size.y) * uv_height;
+	    uv_bottom = uv_base_bottom + (rel_bottom / rect.size.y) * uv_height;
+	} else {
+	    uv_top = uv_base_top + (rel_bottom / rect.size.y) * uv_height;
+	    uv_bottom = uv_base_top + (rel_top / rect.size.y) * uv_height;
+	}
+
         Vertex a = {
             rect_top_left(overlap),
             {uv_left, uv_top},
@@ -248,11 +251,12 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectan
     return result;
 }
 
-static inline ClippedRectangleVertices rect_get_clipped_vertices(Rectangle rect, Rectangle bounds, RGBA32 color,
-    YDirection y_dir)
+static inline ClippedRectangleVertices rect_get_clipped_vertices(Rectangle rect, Rectangle bounds,
+    RGBA32 color, YDirection y_dir)
 {
     RectangleUVCoords default_uvs = rect_default_uvs(y_dir);
-    ClippedRectangleVertices result = rect_get_clipped_vertices_with_uvs(rect, bounds, color, y_dir, default_uvs);
+    ClippedRectangleVertices result = rect_get_clipped_vertices_with_uvs(rect, bounds, color,
+	y_dir, default_uvs);
 
     return result;
 }

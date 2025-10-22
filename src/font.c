@@ -208,7 +208,6 @@ RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vec
 
     Rectangle glyph_rect = {glyph_bottom_left, glyph_size};
 
-
     f32 uv_left = glyph_info.uv_top_left.x;
     f32 uv_right = glyph_info.uv_top_right.x;
     f32 uv_top = (y_dir == Y_IS_UP) ? glyph_info.uv_top_left.y : glyph_info.uv_bottom_left.y;
@@ -237,10 +236,9 @@ RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vec
 
 RenderedGlyphInfo font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 text_size, RGBA32 color, YDirection y_dir)
 {
-    // TODO: don't set this arbitrary value
-    Vector2 text_dimensions = v2(10000, 10000);
-    // TODO: fix for y is up
-    Rectangle glyph_bounds = {{position.x, position.y - text_dimensions.y}, text_dimensions};
+    // TODO: don't set this arbitrary value, use the window bounds
+    Rectangle glyph_bounds = {{0, 0}, {100000, 100000}};
+
     RenderedGlyphInfo result = font_get_clipped_glyph_vertices(
 	asset, ch, position, glyph_bounds, text_size, color, y_dir);
 

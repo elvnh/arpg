@@ -34,7 +34,7 @@ void load_game_code(GameCode *game_code, LinearArena *scratch)
     // NOTE: this loop should only be entered if game was recompiled since checking
     // this before the call
     while (platform_file_exists(game_code->lock_file_path, scratch));
-
+    ASSERT(dlopen(game_code->game_library_path.data, RTLD_NOLOAD) == 0);
     void *handle = dlopen(game_code->game_library_path.data, RTLD_NOW);
 
     if (!handle) {

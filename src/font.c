@@ -242,52 +242,18 @@ ClippedGlyphVertices font_get_clipped_glyph_vertices(FontAsset *asset, char ch, 
     return result;
 }
 
-
 GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 text_size, RGBA32 color,
     YDirection y_dir)
 {
-    GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
+    // TODO: don't set this arbitrary value
+    Vector2 text_dimensions = v2(10000, 10000);
+    // TODO: fix for y is up
+    Rectangle glyph_bounds = {{position.x, position.y - text_dimensions.y}, text_dimensions};
+    ClippedGlyphVertices clipped_vertices = font_get_clipped_glyph_vertices(
+	asset, ch, position, glyph_bounds, text_size, color, y_dir);
 
-    f32 scale = get_text_scale(asset, text_size);
-
-    f32 advance_x = roundf(glyph_info.advance_x * scale);
-    f32 lsb = roundf(glyph_info.left_side_bearing * scale);
-
-    s32 x0, y0, x1, y1;
-    stbtt_GetCodepointBitmapBox(&asset->font_info, ch, scale, scale, &x0, &y0, &x1, &y1);
-
-    Vector2 glyph_size = {(f32)(x1 - x0), (f32)(y1 - y0)};
-    Vector2 glyph_bottom_left;
-
-    if (y_dir == Y_IS_DOWN) {
-        glyph_bottom_left = v2(position.x + lsb, position.y + (f32)y0);
-    } else {
-        glyph_bottom_left = v2(position.x + lsb, position.y - (f32)y1);
-    }
-
-    Rectangle glyph_rect = {glyph_bottom_left, glyph_size};
-    RectangleVertices verts = {0};
-
-    if (ch != ' ') {
-        verts = rect_get_vertices(glyph_rect, color, y_dir);
-    }
-
-    verts.top_left.uv = v2(glyph_info.uv_top_left.x,
-        (y_dir == Y_IS_UP) ? glyph_info.uv_top_left.y : glyph_info.uv_bottom_left.y);
-    verts.top_right.uv = v2(glyph_info.uv_top_right.x,
-        (y_dir == Y_IS_UP) ? glyph_info.uv_top_right.y : glyph_info.uv_bottom_right.y);
-    verts.bottom_right.uv = v2(glyph_info.uv_bottom_right.x,
-        (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_right.y : glyph_info.uv_top_right.y);
-    verts.bottom_left.uv = v2(glyph_info.uv_bottom_left.x,
-        (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_left.y : glyph_info.uv_top_left.y);
-
-    GlyphVertices result = {
-        .top_left = verts.top_left,
-        .top_right = verts.top_right,
-        .bottom_right = verts.bottom_right,
-        .bottom_left = verts.bottom_left,
-        .advance_x = advance_x
-    };
+    ASSERT(clipped_vertices.is_visible || ch == ' ');
+    GlyphVertices result = clipped_vertices.vertices;
 
     return result;
 }

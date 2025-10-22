@@ -2,6 +2,7 @@
 
 #include "base/linear_arena.h"
 #include "base/matrix.h"
+#include "base/rectangle.h"
 #include "base/utils.h"
 #include "font.h"
 #include "asset_manager.h"
@@ -197,7 +198,6 @@ GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 positio
     stbtt_GetCodepointBitmapBox(&asset->font_info, ch, scale, scale, &x0, &y0, &x1, &y1);
 
     Vector2 glyph_size = {(f32)(x1 - x0), (f32)(y1 - y0)};
-
     Vector2 glyph_bottom_left;
 
     if (y_dir == Y_IS_DOWN) {
@@ -206,35 +206,27 @@ GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 positio
         glyph_bottom_left = v2(position.x + lsb, position.y - (f32)y1);
     }
 
-    Vertex tl = {
-        v2_add(glyph_bottom_left, v2(0.0f, glyph_size.y)),
-        {glyph_info.uv_top_left.x, (y_dir == Y_IS_UP) ? glyph_info.uv_top_left.y : glyph_info.uv_bottom_left.y},
-        color
-    };
+    Rectangle glyph_rect = {glyph_bottom_left, glyph_size};
+    RectangleVertices verts = {0};
 
-    Vertex tr = {
-        v2_add(glyph_bottom_left, glyph_size),
-        {glyph_info.uv_top_right.x, (y_dir == Y_IS_UP) ? glyph_info.uv_top_right.y : glyph_info.uv_bottom_right.y},
-        color
-    };
+    if (ch != ' ') {
+        verts = rect_get_vertices(glyph_rect, color, y_dir);
+    }
 
-    Vertex br = {
-        v2_add(glyph_bottom_left, v2(glyph_size.x, 0.0f)),
-        {glyph_info.uv_bottom_right.x, (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_right.y : glyph_info.uv_top_right.y},
-        color
-    };
-
-    Vertex bl = {
-        glyph_bottom_left,
-        {glyph_info.uv_bottom_left.x, (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_left.y : glyph_info.uv_top_left.y},
-        color
-    };
+    verts.top_left.uv = v2(glyph_info.uv_top_left.x,
+        (y_dir == Y_IS_UP) ? glyph_info.uv_top_left.y : glyph_info.uv_bottom_left.y);
+    verts.top_right.uv = v2(glyph_info.uv_top_right.x,
+        (y_dir == Y_IS_UP) ? glyph_info.uv_top_right.y : glyph_info.uv_bottom_right.y);
+    verts.bottom_right.uv = v2(glyph_info.uv_bottom_right.x,
+        (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_right.y : glyph_info.uv_top_right.y);
+    verts.bottom_left.uv = v2(glyph_info.uv_bottom_left.x,
+        (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_left.y : glyph_info.uv_top_left.y);
 
     GlyphVertices result = {
-        .top_left = tl,
-        .top_right = tr,
-        .bottom_right = br,
-        .bottom_left = bl,
+        .top_left = verts.top_left,
+        .top_right = verts.top_right,
+        .bottom_right = verts.bottom_right,
+        .bottom_left = verts.bottom_left,
         .advance_x = advance_x
     };
 

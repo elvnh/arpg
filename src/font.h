@@ -24,6 +24,7 @@ struct AssetManager;
   - Include stb_rect_pack?
  */
 
+// TODO: rename
 typedef struct {
     Vertex top_left;
     Vertex top_right;

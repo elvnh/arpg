@@ -194,6 +194,23 @@ RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vect
     return result;
 }
 
+RenderEntry *rb_push_clipped_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
+    Rectangle clip_rect, RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer)
+{
+    TextCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_TEXT);
+    cmd->text = text;
+    cmd->position = position;
+    cmd->color = color;
+    cmd->size = size;
+    cmd->is_clipped = true;
+    cmd->clip_rect = clip_rect;
+
+    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, font, 0);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
 RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, ParticleBuffer *particles,
     RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {

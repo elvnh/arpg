@@ -76,6 +76,8 @@ typedef struct {
     RGBA32 color;
     s32 size;
     FontHandle font;
+    b32 is_clipped; // TODO: should clipped text be a different command?
+    Rectangle clip_rect;
 } TextCmd;
 
 typedef struct {

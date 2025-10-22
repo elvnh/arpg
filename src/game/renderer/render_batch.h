@@ -52,6 +52,8 @@ RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Ve
     RGBA32 color, f32 thickness, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer);
+RenderEntry *rb_push_clipped_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
+    Rectangle clip_rect, RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer);
 RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
     RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,

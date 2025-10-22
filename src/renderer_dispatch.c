@@ -239,6 +239,8 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 RGBA32 color = cmd->color;
                 s32 text_size = cmd->size;
                 String text = cmd->text;
+		b32 is_clipped = cmd->is_clipped;
+		Rectangle clip_rect = cmd->clip_rect;
 
                 f32 newline_advance = font_get_newline_advance(font_asset, text_size);
 
@@ -262,11 +264,26 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
                         cursor.x += verts.advance_x * 4;
                     } else {
-                        GlyphVertices verts = font_get_glyph_vertices(font_asset, glyph, cursor,
-                            text_size, color, rb->y_direction);
+                        GlyphVertices verts = {0};
+			b32 is_visible = true;
 
-                        renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
-                            verts.bottom_right, verts.bottom_left);
+			if (is_clipped) {
+			    ClippedGlyphVertices clipped_verts =
+				font_get_clipped_glyph_vertices(
+				    font_asset, glyph, cursor, clip_rect, text_size, color, rb->y_direction
+				);
+
+			    verts = clipped_verts.vertices;
+			    is_visible = clipped_verts.is_visible;
+			} else {
+			    verts = font_get_glyph_vertices(font_asset, glyph, cursor,
+				text_size, color, rb->y_direction);
+			}
+
+			if (is_visible) {
+			    renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+				verts.bottom_right, verts.bottom_left);
+			}
 
                         cursor.x += verts.advance_x;
                     }

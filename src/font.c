@@ -184,6 +184,65 @@ f32 font_get_newline_advance(FontAsset *asset, s32 text_size)
     return result;
 }
 
+ClippedGlyphVertices font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vector2 position,
+    Rectangle bounds, s32 text_size, RGBA32 color, YDirection y_dir)
+{
+    GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
+
+    f32 scale = get_text_scale(asset, text_size);
+
+    f32 advance_x = roundf(glyph_info.advance_x * scale);
+    f32 lsb = roundf(glyph_info.left_side_bearing * scale);
+
+    s32 x0, y0, x1, y1;
+    stbtt_GetCodepointBitmapBox(&asset->font_info, ch, scale, scale, &x0, &y0, &x1, &y1);
+
+    Vector2 glyph_size = {(f32)(x1 - x0), (f32)(y1 - y0)};
+    Vector2 glyph_bottom_left;
+
+    if (y_dir == Y_IS_DOWN) {
+        glyph_bottom_left = v2(position.x + lsb, position.y + (f32)y0);
+    } else {
+        glyph_bottom_left = v2(position.x + lsb, position.y - (f32)y1);
+    }
+
+    Rectangle glyph_rect = {glyph_bottom_left, glyph_size};
+
+
+    f32 uv_left = glyph_info.uv_top_left.x;
+    f32 uv_right = glyph_info.uv_top_right.x;
+    f32 uv_top = (y_dir == Y_IS_UP) ? glyph_info.uv_top_left.y : glyph_info.uv_bottom_left.y;
+    f32 uv_bottom = (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_left.y : glyph_info.uv_top_left.y;
+
+    RectangleUVCoords uv_coords = {
+	.top_left = {uv_left, uv_top},
+	.top_right = {uv_right, uv_top},
+	.bottom_right = {uv_right, uv_bottom},
+	.bottom_left = {uv_left, uv_bottom},
+    };
+
+    ClippedRectangleVertices clipped_vertices = {0};
+    if (ch != ' ') {
+        clipped_vertices = rect_get_clipped_vertices_with_uvs(glyph_rect, bounds, color, y_dir, uv_coords);
+    }
+
+    GlyphVertices vertices = {
+        .top_left = clipped_vertices.vertices.top_left,
+        .top_right = clipped_vertices.vertices.top_right,
+        .bottom_right = clipped_vertices.vertices.bottom_right,
+        .bottom_left = clipped_vertices.vertices.bottom_left,
+        .advance_x = advance_x
+    };
+
+    ClippedGlyphVertices result = {
+	.vertices = vertices,
+	.is_visible = clipped_vertices.is_visible
+    };
+
+    return result;
+}
+
+
 GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 text_size, RGBA32 color,
     YDirection y_dir)
 {

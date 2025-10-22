@@ -299,9 +299,15 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
         if (widget_has_flag(widget, WIDGET_TEXT)) {
             Vector2 text_position = v2_add(widget->final_position, v2(0.0f, widget->text.baseline_y_offset));
 
+#if 1
             rb_push_clipped_text(rb, arena, widget->text.string, text_position,
 		widget_rect, widget->color, widget->text.size,
                 assets->texture_shader, widget->text.font, depth);
+#else
+            rb_push_text(rb, arena, widget->text.string, text_position,
+		widget->color, widget->text.size,
+                assets->texture_shader, widget->text.font, depth);
+#endif
         }
     }
 #else

@@ -106,10 +106,13 @@ static inline Rectangle rect_overlap_area(Rectangle a, Rectangle b)
     // TODO: fix for when y direction is down
     f32 l1 = a.position.x;
     f32 l2 = b.position.x;
+
     f32 r1 = a.position.x + a.size.x;
     f32 r2 = b.position.x + b.size.x;
+
     f32 t1 = a.position.y + a.size.y;
     f32 t2 = b.position.y + b.size.y;
+
     f32 b1 = a.position.y;
     f32 b2 = b.position.y;
 
@@ -165,11 +168,14 @@ static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color, 
 
 static inline RectangleUVCoords rect_default_uvs(YDirection y_dir)
 {
+    f32 top = (y_dir == Y_IS_UP) ? 0 : 1;
+    f32 bottom = (y_dir == Y_IS_UP) ? 1 : 0;
+
     RectangleUVCoords result = {
-        .top_left = {0, 0},
-        .top_right = {1, 0},
-        .bottom_right = {1, (y_dir == Y_IS_UP) ? 0 : 1},
-        .bottom_left = {1, (y_dir == Y_IS_UP) ? 1 : 0}
+        .top_left = {0, top},
+        .top_right = {1, top},
+        .bottom_right = {1, bottom},
+        .bottom_left = {0, bottom}
     };
 
     return result;
@@ -195,21 +201,20 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectan
         f32 uv_base_top = uvs.top_left.y;
         f32 uv_base_bottom = uvs.bottom_right.y;
 
-
         f32 uv_width = uv_base_right - uv_base_left;
         f32 uv_height = abs_f32(uv_base_bottom - uv_base_top);
 
-        f32 uv_left = (rel_left / rect.size.x) * uv_width;
-        f32 uv_right = (rel_right / rect.size.x) * uv_width;
-
-        f32 uv_top = (rel_top / rect.size.y) * 1.0f;
-        f32 uv_bottom = (rel_bottom / rect.size.y) * 1.0f;
+        f32 uv_left = uv_base_left + (rel_left / rect.size.x) * uv_width;
+        f32 uv_right = uv_base_left + (rel_right / rect.size.x) * uv_width;
+        f32 uv_top = uv_base_bottom + (rel_top / rect.size.y) * uv_height;
+        f32 uv_bottom = uv_base_bottom + (rel_bottom / rect.size.y) * uv_height;
 
         if (y_dir == Y_IS_UP) {
             uv_top = uv_height - uv_top;
             uv_bottom = uv_height - uv_bottom;
         }
 
+        // TODO: use rect_get_vertices for this
         Vertex a = {
             rect_top_left(overlap),
             {uv_left, uv_top},

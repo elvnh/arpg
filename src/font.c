@@ -184,7 +184,7 @@ f32 font_get_newline_advance(FontAsset *asset, s32 text_size)
     return result;
 }
 
-ClippedGlyphVertices font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vector2 position,
+RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vector2 position,
     Rectangle bounds, s32 text_size, RGBA32 color, YDirection y_dir)
 {
     GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
@@ -226,34 +226,25 @@ ClippedGlyphVertices font_get_clipped_glyph_vertices(FontAsset *asset, char ch, 
         clipped_vertices = rect_get_clipped_vertices_with_uvs(glyph_rect, bounds, color, y_dir, uv_coords);
     }
 
-    GlyphVertices vertices = {
-        .top_left = clipped_vertices.vertices.top_left,
-        .top_right = clipped_vertices.vertices.top_right,
-        .bottom_right = clipped_vertices.vertices.bottom_right,
-        .bottom_left = clipped_vertices.vertices.bottom_left,
-        .advance_x = advance_x
-    };
-
-    ClippedGlyphVertices result = {
-	.vertices = vertices,
+    RenderedGlyphInfo result = {
+	.vertices = clipped_vertices.vertices,
+	.advance_x = advance_x,
 	.is_visible = clipped_vertices.is_visible
     };
 
     return result;
 }
 
-GlyphVertices font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 text_size, RGBA32 color,
-    YDirection y_dir)
+RenderedGlyphInfo font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 text_size, RGBA32 color, YDirection y_dir)
 {
     // TODO: don't set this arbitrary value
     Vector2 text_dimensions = v2(10000, 10000);
     // TODO: fix for y is up
     Rectangle glyph_bounds = {{position.x, position.y - text_dimensions.y}, text_dimensions};
-    ClippedGlyphVertices clipped_vertices = font_get_clipped_glyph_vertices(
+    RenderedGlyphInfo result = font_get_clipped_glyph_vertices(
 	asset, ch, position, glyph_bounds, text_size, color, y_dir);
 
-    ASSERT(clipped_vertices.is_visible || ch == ' ');
-    GlyphVertices result = clipped_vertices.vertices;
+    ASSERT(result.is_visible || ch == ' ');
 
     return result;
 }

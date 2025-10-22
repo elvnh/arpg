@@ -259,30 +259,32 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                             cursor.y += newline_advance;
                         }
                     } else if (glyph == '\t') {
-                        GlyphVertices verts = font_get_glyph_vertices(font_asset, ' ', cursor,
+                        RenderedGlyphInfo verts = font_get_glyph_vertices(font_asset, ' ', cursor,
                             text_size, color, rb->y_direction);
 
                         cursor.x += verts.advance_x * 4;
                     } else {
-                        GlyphVertices verts = {0};
-			b32 is_visible = true;
+                        RenderedGlyphInfo verts = {0};
 
 			if (is_clipped) {
-			    ClippedGlyphVertices clipped_verts =
-				font_get_clipped_glyph_vertices(
-				    font_asset, glyph, cursor, clip_rect, text_size, color, rb->y_direction
-				);
-
-			    verts = clipped_verts.vertices;
-			    is_visible = clipped_verts.is_visible;
+			    verts = font_get_clipped_glyph_vertices(
+				font_asset, glyph, cursor, clip_rect, text_size, color, rb->y_direction
+			    );
 			} else {
-			    verts = font_get_glyph_vertices(font_asset, glyph, cursor,
-				text_size, color, rb->y_direction);
+			    verts = font_get_glyph_vertices(
+				font_asset, glyph, cursor, text_size, color, rb->y_direction
+			    );
 			}
 
-			if (is_visible) {
-			    renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
-				verts.bottom_right, verts.bottom_left);
+			if (verts.is_visible) {
+			    // TODO: overload for this that takes RectangleVertices
+			    renderer_backend_draw_quad(
+				backend,
+				verts.vertices.top_left,
+				verts.vertices.top_right,
+				verts.vertices.bottom_right,
+				verts.vertices.bottom_left
+			    );
 			}
 
                         cursor.x += verts.advance_x;

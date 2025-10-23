@@ -2,6 +2,7 @@
 #define RECTANGLE_H
 
 #include "base/matrix.h"
+#include "base/utils.h"
 #include "base/vector.h"
 #include "base/vertex.h"
 #include "base/line.h"
@@ -214,8 +215,8 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectan
 	    uv_top = uv_base_bottom + (rel_top / rect.size.y) * uv_height;
 	    uv_bottom = uv_base_bottom + (rel_bottom / rect.size.y) * uv_height;
 	} else {
-	    uv_top = uv_base_top + (rel_bottom / rect.size.y) * uv_height;
-	    uv_bottom = uv_base_top + (rel_top / rect.size.y) * uv_height;
+            // TODO: fix for y is up
+            UNIMPLEMENTED;
 	}
 
         Vertex a = {

@@ -70,18 +70,15 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
     }
 }
 
-static Rectangle rect_a = {{0}, {128, 128}};
-static Rectangle rect_b = {{32, 64}, {128, 256}};
+
 
 static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData frame_data, LinearArena *frame_arena)
 {
     Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_size);
     RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_UP, frame_arena);
 
-#if 0
     world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena,
 	&game_state->debug_state);
-#endif
 
     if (game_state->debug_state.quad_tree_overlay) {
         render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
@@ -93,9 +90,12 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
     }
 
 
+#if 0
+    Rectangle rect_a = {{0}, {128, 128}};
+    Rectangle rect_b = {{32, 64}, {128, 256}};
+
     Rectangle overlap = rect_overlap_area(rect_a, rect_b);
 
-#if 1
     rb_push_rect(rb, frame_arena, rect_a, (RGBA32){0, 1, 0, 0.5f},
 	game_state->asset_list.shape_shader, 3);
     rb_push_rect(rb, frame_arena, rect_b, (RGBA32){0, 0, 1, 0.5f},
@@ -103,6 +103,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
     rb_push_clipped_sprite(rb, frame_arena, game_state->asset_list.default_texture, rect_a, overlap,
 	RGBA32_WHITE, game_state->asset_list.texture_shader, 4);
 #endif
+
     rb_sort_entries(rb);
 }
 
@@ -260,8 +261,8 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
         game_update_and_render_ui(&game_state->ui, game_state, game_memory, frame_data);
 
-        Matrix4 proj = mat4_orthographic(frame_data.window_size, Y_IS_UP);
-        RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_UP, &game_memory->temporary_memory);
+        Matrix4 proj = mat4_orthographic(frame_data.window_size, Y_IS_DOWN);
+        RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
         ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, &game_state->asset_list, platform_code);
     }
 }

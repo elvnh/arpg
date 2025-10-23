@@ -1514,6 +1514,23 @@ static void tests_ring()
     }
 }
 
+static void tests_maths()
+{
+    ASSERT(round_to_f32(9.3f, 0.5f) == 9.5f);
+    ASSERT(round_to_f32(9.6f, 0.5f) == 9.5f);
+    ASSERT(round_to_f32(9.2f, 0.5f) == 9.0f);
+
+    ASSERT(round_to_f32(9.2f, 0.25f) == 9.25f);
+    ASSERT(round_to_f32(9.6f, 0.25f) == 9.5f);
+
+    ASSERT(round_to_f32(0.0f, 0.25f) == 0.0f);
+    ASSERT(round_to_f32(0.1f, 0.25f) == 0.0f);
+    ASSERT(round_to_f32(0.2f, 0.25f) == 0.25f);
+
+    ASSERT(round_to_f32(-0.1f, 0.25f) == 0.0f);
+    ASSERT(round_to_f32(-0.2f, 0.25f) == -0.25f);
+}
+
 static void run_tests()
 {
     tests_arena();
@@ -1527,4 +1544,5 @@ static void run_tests()
     tests_format();
     tests_types();
     tests_ring();
+    tests_maths();
 }

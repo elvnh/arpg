@@ -23,12 +23,22 @@ static inline f32 sqrt_f32(f32 n)
 static inline f32 sin_f32(f32 n)
 {
     f32 result = (f32)sin((f64)n);
+
     return result;
 }
 
 static inline f32 cos_f32(f32 n)
 {
     f32 result = (f32)cos((f64)n);
+
+    return result;
+}
+
+static inline f32 round_to_f32(f32 n, f32 multiple)
+{
+    ASSERT(multiple > 0.0f);
+
+    f32 result = roundf(n / multiple) * multiple;
 
     return result;
 }

@@ -100,6 +100,8 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
+    ASSERT(rect_is_valid(rectangle));
+
     RectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_RECTANGLE);
     cmd->rect = rectangle;
     cmd->color = color;

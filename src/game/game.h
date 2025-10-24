@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "base/matrix.h"
+#include "game/magic.h"
 #include "ui/ui_core.h"
 #include "platform.h"
 #include "renderer/render_batch.h"
@@ -19,6 +20,7 @@ typedef struct {
     UIState ui;
     AssetList asset_list;
     DebugState debug_state;
+    Spells spells;
 
     StringBuilder sb;
 } GameState;

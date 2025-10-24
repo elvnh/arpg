@@ -290,12 +290,12 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
-    world_initialize(&game_state->world, &game_state->asset_list, &game_memory->permanent_memory);
+    magic_initialize(&game_state->spells, &game_state->asset_list);
+    world_initialize(&game_state->world, &game_state->asset_list, &game_state->spells, &game_memory->permanent_memory);
 
     game_state->sb = str_builder_allocate(32, la_allocator(&game_memory->permanent_memory));
     game_state->debug_state.average_fps = 60.0f;
 
-    magic_initialize(&game_state->asset_list);
 
     UIStyle default_ui_style = {
         .font = game_state->asset_list.default_font

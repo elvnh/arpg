@@ -741,9 +741,10 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     }
 }
 
-void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena)
+void world_initialize(World *world, const struct AssetList *asset_list, const struct Spells *spells, LinearArena *arena)
 {
     world->world_arena = la_create(la_allocator(arena), WORLD_ARENA_SIZE);
+    world->spells = spells;
 
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);

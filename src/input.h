@@ -1,6 +1,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include "base/matrix.h"
 #include "base/utils.h"
 #include "base/vector.h"
 
@@ -95,5 +96,32 @@ static inline b32 input_is_key_down(const Input *input, Key key)
 
     return result;
 }
+
+static inline Vector2 input_mouse_pos_in_y_direction(Vector2 position,
+    YDirection y_dir, Vector2i window_size)
+{
+    Vector2 result = position;
+
+    if (y_dir == Y_IS_UP) {
+	result.y = (f32)window_size.y - result.y;
+    }
+
+    return result;
+}
+
+static inline Vector2 input_get_mouse_pos(const Input *input, YDirection y_dir, Vector2i window_size)
+{
+    Vector2 result = input_mouse_pos_in_y_direction(input->mouse_position, y_dir, window_size);
+
+    return result;
+}
+
+static inline Vector2 input_get_mouse_click_pos(const Input *input, YDirection y_dir, Vector2i window_size)
+{
+    Vector2 result = input_mouse_pos_in_y_direction(input->mouse_click_position, y_dir, window_size);
+
+    return result;
+}
+
 
 #endif //INPUT_H

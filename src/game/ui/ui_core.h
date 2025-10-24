@@ -8,6 +8,7 @@
 #include "asset.h"
 #include "platform.h"
 #include "widget.h"
+#include "input.h"
 
 /*
   TODO:
@@ -61,7 +62,7 @@ typedef struct {
 
 void ui_core_initialize(UIState *ui, UIStyle style, LinearArena *arena);
 void ui_core_begin_frame(UIState *ui);
-void ui_core_end_frame(UIState *ui, const struct Input *input, struct RenderBatch *rb, const struct AssetList *assets,
+void ui_core_end_frame(UIState *ui, FrameData frame_data, struct RenderBatch *rb, const AssetList *assets,
     PlatformCode platform_code);
 void ui_core_set_style(UIState *ui, UIStyle style);
 void ui_core_push_container(UIState *ui, Widget *widget);

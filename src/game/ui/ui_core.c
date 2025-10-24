@@ -2,6 +2,7 @@
 
 #include "base/hash.h"
 #include "base/matrix.h"
+#include "base/vector.h"
 #include "game/ui/widget.h"
 #include "ui_core.h"
 #include "base/linear_arena.h"
@@ -212,12 +213,13 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 
 }
 
-static void calculate_widget_interactions(UIState *ui, Widget *widget, const Input *input, Rectangle parent_bounds)
+static void calculate_widget_interactions(UIState *ui, Widget *widget, FrameData frame_data,
+    Rectangle parent_bounds, YDirection y_dir)
 {
     Rectangle clipped_bounds = widget_get_clipped_bounding_box(widget, parent_bounds);
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        calculate_widget_interactions(ui, child, input, clipped_bounds);
+        calculate_widget_interactions(ui, child, frame_data, clipped_bounds, y_dir);
 
         // If child widget is being interacted with, don't consider input further up the tree
         if (widget_is_hot(ui, child)) {
@@ -229,15 +231,17 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Inp
         return;
     }
 
-    b32 mouse_inside = rect_contains_point(clipped_bounds, input->mouse_position);
+    Vector2 mouse_pos = input_get_mouse_pos(frame_data.input, y_dir, frame_data.window_size);
+    b32 mouse_inside = rect_contains_point(clipped_bounds, mouse_pos);
 
     if (mouse_inside) {
         ui->hot_widget = widget->id;
     }
 
     if (widget_is_hot(ui, widget)) {
-        b32 clicked_inside = input_is_key_down(input, MOUSE_LEFT)
-            && rect_contains_point(clipped_bounds, input->mouse_click_position);
+	Vector2 mouse_click_pos = input_get_mouse_click_pos(frame_data.input, y_dir, frame_data.window_size);
+        b32 clicked_inside = input_is_key_down(frame_data.input, MOUSE_LEFT)
+            && rect_contains_point(clipped_bounds, mouse_click_pos);
 
         if (widget_has_flag(widget, WIDGET_CLICKABLE) && clicked_inside) {
             ui->active_widget = widget->id;
@@ -247,7 +251,7 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Inp
     if (widget_is_active(ui, widget)) {
         if (!mouse_inside && !widget_has_flag(widget, WIDGET_STAY_ACTIVE)) {
             ui->active_widget = UI_NULL_WIDGET_ID;
-        } else if (input_is_key_released(input, MOUSE_LEFT)) {
+        } else if (input_is_key_released(frame_data.input, MOUSE_LEFT)) {
             widget->interaction_state.clicked = true;
 
             if (!widget_has_flag(widget, WIDGET_STAY_ACTIVE)) {
@@ -257,7 +261,7 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Inp
 
         // TODO: proper text input
         if (widget_has_flag(widget, WIDGET_TEXT_INPUT)) {
-            if (input_is_key_pressed(input, KEY_A)) {
+            if (input_is_key_pressed(frame_data.input, KEY_A)) {
                 if (str_builder_has_capacity_for(widget->text_input_buffer, str_lit("A"))) {
                     str_builder_append(widget->text_input_buffer, str_lit("A"));
                 }
@@ -294,13 +298,15 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
                 color = RGBA32_RED;
             }
 
-            rb_push_rect(rb, &ui->current_frame_widgets.arena, widget_rect, color, assets->shape_shader, depth);
+            rb_push_rect(rb, &ui->current_frame_widgets.arena, widget_rect, color,
+		assets->shape_shader, depth);
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
             Vector2 text_position = widget->final_position;
 
 	    if (rb->y_direction == Y_IS_DOWN) {
+		// TODO: this offset doesn't seem quite right
 		text_position = v2_add(text_position, v2(0.0f, widget->text.baseline_y_offset));
 	    }
 
@@ -347,19 +353,17 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     }
 }
 
-void ui_core_end_frame(UIState *ui, const struct Input *input, RenderBatch *rb, const AssetList *assets,
+void ui_core_end_frame(UIState *ui, FrameData frame_data, RenderBatch *rb, const AssetList *assets,
     PlatformCode platform_code)
 {
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
 
-    // TODO: take as parameter
-    Rectangle window_bounds = {v2(0, 0), v2(2000, 2000)};
-
+    Rectangle window_rect = {{0, 0}, v2i_to_v2(frame_data.window_size)};
     if (ui->root_widget) {
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
-        calculate_widget_interactions(ui, ui->root_widget, input, window_bounds);
-        render_widget(ui, ui->root_widget, rb, assets, 0, window_bounds);
+        calculate_widget_interactions(ui, ui->root_widget, frame_data, window_rect, rb->y_direction);
+        render_widget(ui, ui->root_widget, rb, assets, 0, window_rect);
     }
 }
 

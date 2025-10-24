@@ -39,6 +39,7 @@ EntityWithID es_spawn_entity(EntitySystem *es, EntityFaction faction);
 
 void       es_initialize(EntitySystem *es, Rectangle world_area);
 Entity    *es_get_entity(EntitySystem *es, EntityID id);
+Entity    *es_try_get_entity(EntitySystem *es, EntityID id);
 EntityID   es_get_id_of_entity(EntitySystem *es, Entity *entity);
 b32        es_entity_exists(EntitySystem *es, EntityID entity_id);
 void       es_schedule_entity_for_removal(Entity *entity);

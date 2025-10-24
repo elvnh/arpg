@@ -226,9 +226,20 @@ void es_remove_entity(EntitySystem *es, EntityID id)
 
 Entity *es_get_entity(EntitySystem *es, EntityID id)
 {
-    ASSERT(entity_id_is_valid(es, id));
-    EntitySlot *slot = es_get_entity_slot_by_id(es, id);
-    Entity *result = &slot->entity;
+    Entity *result = es_try_get_entity(es, id);
+
+    ASSERT(result);
+
+    return result;
+}
+
+Entity *es_try_get_entity(EntitySystem *es, EntityID id)
+{
+    Entity *result = 0;
+    if (entity_id_is_valid(es, id)) {
+        EntitySlot *slot = es_get_entity_slot_by_id(es, id);
+        result = &slot->entity;
+    }
 
     return result;
 }

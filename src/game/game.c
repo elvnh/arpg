@@ -194,38 +194,40 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
     // TODO: display more stats about hovered entity
     if (!entity_id_equal(game_state->debug_state.hovered_entity, NULL_ENTITY_ID)) {
-        const Entity *entity = es_get_entity(&game_state->world.entities, game_state->debug_state.hovered_entity);
+        const Entity *entity = es_try_get_entity(&game_state->world.entities, game_state->debug_state.hovered_entity);
 
-        String entity_str = str_concat(
-            str_lit("Hovered entity: "),
-            ssize_to_string(game_state->debug_state.hovered_entity.slot_id, temp_alloc),
-            temp_alloc
-        );
+        if (entity) {
+            String entity_str = str_concat(
+                str_lit("Hovered entity: "),
+                ssize_to_string(game_state->debug_state.hovered_entity.slot_id, temp_alloc),
+                temp_alloc
+            );
 
-        String entity_pos_str = str_concat(
-            str_lit("Position: "), v2_to_string(entity->position, temp_alloc), temp_alloc
-        );
+            String entity_pos_str = str_concat(
+                str_lit("Position: "), v2_to_string(entity->position, temp_alloc), temp_alloc
+            );
 
-        String entity_faction_str = {0};
-        switch (entity->faction) {
-            case FACTION_NEUTRAL: {
-                entity_faction_str = str_lit("Neutral");
-            } break;
+            String entity_faction_str = {0};
+            switch (entity->faction) {
+                case FACTION_NEUTRAL: {
+                    entity_faction_str = str_lit("Neutral");
+                } break;
 
-            case FACTION_PLAYER: {
-                entity_faction_str = str_lit("Player");
-            } break;
+                case FACTION_PLAYER: {
+                    entity_faction_str = str_lit("Player");
+                } break;
 
-            case FACTION_ENEMY: {
-                entity_faction_str = str_lit("Enemy");
-            } break;
+                case FACTION_ENEMY: {
+                    entity_faction_str = str_lit("Enemy");
+                } break;
+            }
+
+            entity_faction_str = str_concat(str_lit("Faction: "), entity_faction_str, temp_alloc);
+
+            ui_text(ui, entity_str);
+            ui_text(ui, entity_pos_str);
+            ui_text(ui, entity_faction_str);
         }
-
-        entity_faction_str = str_concat(str_lit("Faction: "), entity_faction_str, temp_alloc);
-
-        ui_text(ui, entity_str);
-        ui_text(ui, entity_pos_str);
-        ui_text(ui, entity_faction_str);
     }
 
     ui_button(ui, str_lit("ABCDEFG"));

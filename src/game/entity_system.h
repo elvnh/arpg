@@ -35,8 +35,12 @@ typedef struct EntityStorage {
     QuadTree       quad_tree;
 } EntitySystem;
 
-void       es_initialize(EntitySystem *es, Rectangle world_area);
+EntityWithID es_spawn_entity(EntitySystem *es);
+
+// TODO: remove
 EntityID   es_create_entity(EntitySystem *es);
+
+void       es_initialize(EntitySystem *es, Rectangle world_area);
 Entity    *es_get_entity(EntitySystem *es, EntityID id);
 EntityID   es_get_id_of_entity(EntitySystem *es, Entity *entity);
 b32        es_entity_exists(EntitySystem *es, EntityID entity_id);

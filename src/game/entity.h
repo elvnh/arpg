@@ -13,7 +13,7 @@ typedef struct {
     EntityGeneration generation;
 } EntityID;
 
-typedef struct {
+typedef struct Entity {
     ComponentBitset active_components;
     b32 is_inactive;
 
@@ -24,6 +24,11 @@ typedef struct {
         COMPONENT_LIST
     #undef COMPONENT
 } Entity;
+
+typedef struct {
+    Entity *entity;
+    EntityID id;
+} EntityWithID;
 
 typedef struct {
     EntityID   entity_a;

@@ -2,6 +2,7 @@
 #define DAMAGE_H
 
 #include "health.h"
+#include "base/utils.h"
 
 /*
   TODO:

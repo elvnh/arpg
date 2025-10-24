@@ -4,6 +4,7 @@
 #include "damage.h"
 #include "particle.h"
 #include "asset.h"
+#include "base/rgba.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
@@ -33,6 +34,7 @@ typedef enum {
     ON_COLLIDE_PASS_THROUGH,
     ON_COLLIDE_BOUNCE,
     ON_COLLIDE_DEAL_DAMAGE,
+    ON_COLLIDE_DIE,
     //ON_COLLIDE_EXPLODE,
 } CollideEffectKind;
 
@@ -63,11 +65,31 @@ typedef struct {
     } on_collide_effects;
 } ColliderComponent;
 
+
 static inline void add_collide_effect(ColliderComponent *c, OnCollisionEffect effect)
 {
     ASSERT(c->on_collide_effects.count < ARRAY_COUNT(c->on_collide_effects.effects));
     ssize index = c->on_collide_effects.count++;
     c->on_collide_effects.effects[index] = effect;
+}
+
+static inline void add_damage_collision_effect(ColliderComponent *c, Damage damage, ObjectKind affected_objects)
+{
+    OnCollisionEffect effect = {0};
+    effect.kind = ON_COLLIDE_DEAL_DAMAGE;
+    effect.affects_object_kinds = affected_objects;
+    effect.as.deal_damage.damage = damage;
+
+    add_collide_effect(c, effect);
+}
+
+static inline void add_die_collision_effect(ColliderComponent *c, ObjectKind affected_objects)
+{
+    OnCollisionEffect effect = {0};
+    effect.kind = ON_COLLIDE_DIE;
+    effect.affects_object_kinds = affected_objects;
+
+    add_collide_effect(c, effect);
 }
 
 typedef struct {

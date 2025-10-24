@@ -1,6 +1,8 @@
 #include "world.h"
 #include "debug.h"
 #include "base/sl_list.h"
+#include "game/entity_system.h"
+#include "game/magic.h"
 #include "renderer/render_batch.h"
 
 #define WORLD_ARENA_SIZE MB(64)
@@ -236,54 +238,9 @@ static b32 entities_intersected_previous_frame(World *world, EntityID a, EntityI
     return result;
 }
 
-static void spawn_projectile(World *world, Vector2 pos, EntityID spawner_id, const AssetList *assets)
+void world_add_collision_exception(World *world, EntityID a, EntityID b)
 {
-    // TODO: return id and entity pointer when creating
-    EntityID id = es_create_entity(&world->entities);
-    Entity *entity = es_get_entity(&world->entities, id);
-
-    entity->position = pos;
-    entity->velocity = v2(250.f, 0.0f);
-
-    ColliderComponent *collider = es_add_component(entity, ColliderComponent);
-    collider->size = v2(16.0f, 16.0f);
-
-    add_collide_effect(collider, (OnCollisionEffect){
-            .kind = ON_COLLIDE_BOUNCE,
-            .affects_object_kinds = OBJECT_KIND_ENTITIES// | OBJECT_KIND_TILES
-        });
-
-    add_collide_effect(collider, (OnCollisionEffect){
-            .kind = ON_COLLIDE_BOUNCE,
-            .affects_object_kinds = OBJECT_KIND_TILES
-        });
-
-    Damage damage = {.types.values[DMG_KIND_FIRE] = 10};
-    add_collide_effect(collider, (OnCollisionEffect){
-            .kind = ON_COLLIDE_DEAL_DAMAGE,
-            .affects_object_kinds = OBJECT_KIND_ENTITIES,
-            .as.deal_damage = {damage}
-        });
-
-    SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
-    sprite->size = v2(16.0f, 16.0f);
-    sprite->texture = assets->default_texture;
-
-    LifetimeComponent *lifetime = es_add_component(entity, LifetimeComponent);
-    lifetime->time_to_live = 200.0f;
-
-    OnDeathComponent *on_death = es_add_component(entity, OnDeathComponent);
-    on_death->kind = DEATH_EFFECT_SPAWN_PARTICLES;
-    on_death->as.spawn_particles.config = (ParticleSpawnerConfig) {
-        .kind = PS_SPAWN_ALL_AT_ONCE,
-        .particle_color = (RGBA32){1.0f, 0.2f, 0.1f, 0.7f},
-        .particle_size = 4.0f,
-        .particle_lifetime = 1.0f,
-        .total_particles_to_spawn = 50,
-        .particle_speed = 100.0f,
-    };
-
-    collision_exception_add(&world->collision_rules, spawner_id, id, false, &world->world_arena);
+    collision_exception_add(&world->collision_rules, a, b, false, &world->world_arena);
 }
 
 static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damage damage)
@@ -366,6 +323,10 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
                         printf("Damage\n");
                         try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
                     }
+                } break;
+
+                case ON_COLLIDE_DIE: {
+                    es_schedule_entity_for_removal(entity);
                 } break;
 
                 case ON_COLLIDE_PASS_THROUGH: {} break;
@@ -565,7 +526,7 @@ void world_update(World *world, const Input *input, f32 dt, const AssetList *ass
         }
 
         if (input_is_key_pressed(input, KEY_G)) {
-            spawn_projectile(world, player->position, player_id, assets);
+            magic_cast_spell(world, SPELL_FIREBALL, player);
         }
 
         camera_set_target(&world->camera, target);
@@ -691,6 +652,16 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
 
         entity_render(entity, rb, assets, frame_arena, debug_state);
     }
+}
+
+Entity *world_spawn_entity(World *world)
+{
+    // TODO: this function is unnecessary, let users use entity system directly, and return entity ptr together with
+    // id so we don't have to immediately get id
+    EntityID id = es_create_entity(&world->entities);
+    Entity *entity = es_get_entity(&world->entities, id);
+
+    return entity;
 }
 
 void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena)

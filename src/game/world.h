@@ -12,7 +12,7 @@ struct DebugState;
 struct RenderBatch;
 struct AssetList;
 
-typedef struct {
+typedef struct World {
     LinearArena world_arena;
     Camera camera;
     Tilemap tilemap;
@@ -26,5 +26,7 @@ void world_initialize(World *world, const struct AssetList *assets, LinearArena 
 void world_update(World *world, const struct Input *input, f32 dt, const AssetList *assets, LinearArena *frame_arena);
 void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list, FrameData frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
+Entity *world_spawn_entity(World *world);
+void world_add_collision_exception(World *world, EntityID a, EntityID b);
 
 #endif //WORLD_H

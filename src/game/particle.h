@@ -3,6 +3,7 @@
 
 #include "base/ring_buffer.h"
 #include "base/typedefs.h"
+#include "base/vector.h"
 
 typedef struct Particle {
     f32 timer;

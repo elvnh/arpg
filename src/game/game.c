@@ -21,6 +21,7 @@
 #include "game/entity.h"
 #include "game/entity_system.h"
 #include "game/health.h"
+#include "game/magic.h"
 #include "game/quad_tree.h"
 #include "game/renderer/render_key.h"
 #include "game/tilemap.h"
@@ -263,7 +264,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
         Matrix4 proj = mat4_orthographic(frame_data.window_size, Y_IS_DOWN);
         RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
-        ui_core_end_frame(&game_state->ui, frame_data.input, ui_rb, &game_state->asset_list, platform_code);
+        ui_core_end_frame(&game_state->ui, frame_data, ui_rb, &game_state->asset_list, platform_code);
     }
 }
 
@@ -271,10 +272,10 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
     world_initialize(&game_state->world, &game_state->asset_list, &game_memory->permanent_memory);
 
-    game_state->debug_state.debug_menu_active = true;
-
     game_state->sb = str_builder_allocate(32, la_allocator(&game_memory->permanent_memory));
     game_state->debug_state.average_fps = 60.0f;
+
+    magic_initialize(&game_state->asset_list);
 
     UIStyle default_ui_style = {
         .font = game_state->asset_list.default_font

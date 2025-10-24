@@ -165,6 +165,19 @@ EntityID es_create_entity(EntitySystem *es)
     return id;
 }
 
+EntityWithID es_spawn_entity(EntitySystem *es)
+{
+    EntityID id = es_create_entity(es);
+    Entity *entity = es_get_entity(es, id);
+
+    EntityWithID result = {
+        .entity = entity,
+        .id = id
+    };
+
+    return result;
+}
+
 static void es_remove_entity_from_quad_tree(QuadTree *qt, EntitySystem *es, Entity *entity)
 {
     EntitySlot *slot = es_get_entity_slot(entity);

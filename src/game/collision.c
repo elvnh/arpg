@@ -1,4 +1,6 @@
 #include "collision.h"
+#include "game/entity_system.h"
+#include "world.h"
 #include "base/list.h"
 #include "base/sl_list.h"
 
@@ -139,8 +141,8 @@ CollisionException *collision_exception_find(CollisionExceptionTable *table, Ent
     return current_rule;
 }
 
-void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b, b32 should_collide,
-    LinearArena *arena)
+void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b,
+    CollisionExceptionExpiry expiry_kind, LinearArena *arena)
 {
     // TODO: remove collision rules when entity dies
     ASSERT(!entity_id_equal(a, b));
@@ -154,7 +156,7 @@ void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityI
 
     *rule = (CollisionException){0};
     rule->entity_pair = entity_pair_create(a, b);
-    rule->should_collide = should_collide;
+    rule->expiry_kind = expiry_kind;
 
     ASSERT(!collision_exception_find(table, rule->entity_pair.entity_a, rule->entity_pair.entity_b));
 
@@ -162,23 +164,30 @@ void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityI
     list_push_back(&table->table[index], rule);
 }
 
-void remove_collision_exceptions_with_entity(CollisionExceptionTable *table, EntityID a)
+void remove_expired_collision_exceptions(struct World *world)
 {
-    for (s32 i = 0; i < ARRAY_COUNT(table->table); ++i) {
-        CollisionExceptionList *list = &table->table[i];
+    for (ssize i = 0; i < ARRAY_COUNT(world->collision_rules.table); ++i) {
+        CollisionExceptionList *exception_list = &world->collision_rules.table[i];
 
-        for (CollisionException *rule = list_head(list); rule;) {
-            CollisionException *next = list_next(rule);
+        for (CollisionException *exc = list_head(exception_list); exc;) {
+            CollisionException *next = exc->next;
 
-	    if (entity_id_equal(rule->entity_pair.entity_a, a)
-	     || entity_id_equal(rule->entity_pair.entity_b, a)) {
+            Entity *entity_a = es_get_entity(&world->entities, exc->entity_pair.entity_a);
+            Entity *entity_b = es_get_entity(&world->entities, exc->entity_pair.entity_b);
 
-                list_remove(list, rule);
-                list_push_back(&table->free_node_list, rule);
+            EntityID id_a = es_get_id_of_entity(&world->entities, entity_a);
+            EntityID id_b = es_get_id_of_entity(&world->entities, entity_b);
 
-	    }
+            b32 should_remove = (entity_a->is_inactive || entity_b->is_inactive)
+                || ((exc->expiry_kind == COLL_EXC_EXPIRE_ON_NON_CONTACT)
+                    && !entities_intersected_this_frame(world, id_a, id_b));
 
-            rule = next;
+            if (should_remove) {
+                list_remove(exception_list, exc);
+                list_push_back(&world->collision_rules.free_node_list, exc);
+            }
+
+            exc = next;
         }
     }
 }

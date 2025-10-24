@@ -25,7 +25,7 @@ static Spell g_spells[SPELL_COUNT] = {0};
 void magic_initialize(const AssetList *asset_list)
 {
     Damage fireball_damage = {0};
-    fireball_damage.types.values[DMG_KIND_FIRE] = 10;
+    fireball_damage.types.values[DMG_KIND_FIRE] = 1;
 
     g_spells[SPELL_FIREBALL].texture = asset_list->default_texture;
     g_spells[SPELL_FIREBALL].base_damage = fireball_damage;
@@ -52,13 +52,14 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
     Entity *spell_entity = spell_entity_with_id.entity;
     spell_entity->faction = caster->faction;
 
-    world_add_collision_exception(world, spell_entity_with_id.id, caster_id);
+    world_add_collision_exception(world, spell_entity_with_id.id, caster_id, COLL_EXC_EXPIRE_ON_DEATH);
 
     ColliderComponent *collider =  es_add_component(spell_entity, ColliderComponent);
     collider->size = v2(32, 32);
 
     add_damage_collision_effect(collider, damage_dealt, OBJECT_KIND_ENTITIES, false);
-    add_die_collision_effect(collider, (OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES), false);
+    add_bounce_collision_effect(collider, OBJECT_KIND_TILES, false);
+    //add_die_collision_effect(collider, (OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES), false);
     add_passthrough_collision_effect(collider, OBJECT_KIND_ENTITIES);
 
     SpriteComponent *sprite = es_add_component(spell_entity, SpriteComponent);

@@ -3,6 +3,7 @@
 #include "debug.h"
 #include "base/sl_list.h"
 #include "game/camera.h"
+#include "game/collision.h"
 #include "game/component.h"
 #include "game/entity.h"
 #include "game/entity_system.h"
@@ -228,24 +229,23 @@ static void swap_and_reset_collision_tables(World *world)
     }
 }
 
-static b32 entities_intersected_this_frame(World *world, EntityID a, EntityID b)
+b32 entities_intersected_this_frame(World *world, EntityID a, EntityID b)
 {
     b32 result = collision_event_table_find(&world->current_frame_collisions, a, b) != 0;
 
     return result;
 }
 
-
-static b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b)
+b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b)
 {
     b32 result = collision_event_table_find(&world->previous_frame_collisions, a, b) != 0;
 
     return result;
 }
 
-void world_add_collision_exception(World *world, EntityID a, EntityID b)
+void world_add_collision_exception(World *world, EntityID a, EntityID b, CollisionExceptionExpiry expiry_kind)
 {
-    collision_exception_add(&world->collision_rules, a, b, false, &world->world_arena);
+    collision_exception_add(&world->collision_rules, a, b, expiry_kind, &world->world_arena);
 }
 
 static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damage damage)
@@ -274,13 +274,22 @@ static void try_deal_damage_to_entity(Entity *receiver, Entity *sender, Damage d
     }
 }
 
-static b32 should_execute_collision_effect(Entity *entity, Entity *other, OnCollisionEffect effect,
+static b32 should_execute_collision_effect(World *world, Entity *entity, Entity *other, OnCollisionEffect effect,
     ObjectKind colliding_with_obj_kind)
 {
-    b32 is_same_faction = other && (entity->faction == other->faction);
+    EntityID entity_id = es_get_id_of_entity(&world->entities, entity);
+    b32 result = (effect.affects_object_kinds & colliding_with_obj_kind) != 0;
 
-    b32 result = (effect.affects_object_kinds & colliding_with_obj_kind)
-        && (!is_same_faction || (effect.affects_same_faction_entities));
+    if (result && other) {
+        EntityID other_id = es_get_id_of_entity(&world->entities, other);
+        b32 is_same_faction = entity->faction == other->faction;
+
+        b32 can_retrigger = (effect.retrigger_behaviour == COLL_RETRIGGER_WHENEVER)
+            || ((effect.retrigger_behaviour == COLL_RETRIGGER_AFTER_NON_CONTACT)
+                && !entities_intersected_this_frame(world, entity_id, other_id));
+
+        result = can_retrigger && (!is_same_faction || (effect.affects_same_faction_entities));
+    }
 
     return result;
 }
@@ -302,7 +311,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
         for (s32 i = 0; i < other_collider->on_collide_effects.count; ++i) {
             OnCollisionEffect effect = other_collider->on_collide_effects.effects[i];
 
-            b32 should_execute = should_execute_collision_effect(entity, other, effect, colliding_with_obj_kind);
+            b32 should_execute = should_execute_collision_effect(world, entity, other, effect, colliding_with_obj_kind);
 
             if (should_execute && (effect.kind == ON_COLLIDE_PASS_THROUGH)) {
                 should_pass_through = true;
@@ -313,7 +322,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
     for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
         OnCollisionEffect effect = collider->on_collide_effects.effects[i];
 
-        b32 should_execute = should_execute_collision_effect(entity, other, effect, colliding_with_obj_kind);
+        b32 should_execute = should_execute_collision_effect(world, entity, other, effect, colliding_with_obj_kind);
 
         if (!should_execute) {
             continue;
@@ -348,15 +357,8 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
                 ASSERT(other);
                 ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
 
-                EntityID id_a = es_get_id_of_entity(&world->entities, entity);
-                EntityID id_b = es_get_id_of_entity(&world->entities, other);
-
-                // TODO: make this customizable so that some projectiles can only hit again
-                // after leaving hitbox, some can hit multiple frames in a row etc
-                if (!entities_intersected_previous_frame(world, id_a, id_b)) {
-                    printf("Damage\n");
-                    try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
-                }
+                printf("Damage\n");
+                try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
             } break;
 
             case ON_COLLIDE_DIE: {
@@ -366,6 +368,14 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
             case ON_COLLIDE_PASS_THROUGH: {} break;
 
             INVALID_DEFAULT_CASE;
+        }
+
+        if (other && (effect.retrigger_behaviour != COLL_RETRIGGER_WHENEVER)) {
+            EntityID id_a = es_get_id_of_entity(&world->entities, entity);
+            EntityID id_b = es_get_id_of_entity(&world->entities, other);
+
+            CollisionExceptionExpiry expiry_kind = COLL_EXC_EXPIRE_ON_NON_CONTACT;
+            world_add_collision_exception(world, id_a, id_b, expiry_kind);
         }
     }
 }
@@ -387,25 +397,23 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
     EntityID id_a = es_get_id_of_entity(&world->entities, a);
     EntityID id_b = es_get_id_of_entity(&world->entities, b);
 
-    CollisionException *rule_for_entities = collision_exception_find(&world->collision_rules, id_a, id_b);
-    b32 should_collide = !rule_for_entities || rule_for_entities->should_collide;
+    Rectangle rect_a = get_entity_collider_rectangle(a, collider_a);
+    Rectangle rect_b = get_entity_collider_rectangle(b, collider_b);
 
-    if (should_collide) {
-        Rectangle rect_a = get_entity_collider_rectangle(a, collider_a);
-        Rectangle rect_b = get_entity_collider_rectangle(b, collider_b);
+    CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
+        a->velocity, b->velocity, dt);
 
-        CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
-            a->velocity, b->velocity, dt);
+    if ((collision.collision_state != COLL_NOT_COLLIDING) && !entities_intersected_this_frame(world, id_a, id_b)) {
+        CollisionException *exception_for_entities = collision_exception_find(&world->collision_rules, id_a, id_b);
 
-        if ((collision.collision_state != COLL_NOT_COLLIDING) && !entities_intersected_this_frame(world, id_a, id_b)) {
-            // TODO: only handle closest collision
+        if (!exception_for_entities) {
             movement_fraction_left = collision.movement_fraction_left;
 
             execute_collision_effects(world, a, b, collider_a, collision, ENTITY_PAIR_INDEX_FIRST, OBJECT_KIND_ENTITIES);
             execute_collision_effects(world, b, a, collider_b, collision, ENTITY_PAIR_INDEX_SECOND, OBJECT_KIND_ENTITIES);
-
-            collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);
         }
+
+        collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);
     }
 
     return movement_fraction_left;
@@ -615,17 +623,11 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         entity_update(world, entity, frame_data.dt);
     }
 
-    // TODO: don't use linked list for this
-    EntityIDList inactive_entities = es_get_inactive_entities(&world->entities, frame_arena);
-
-    // NOTE: wait until after all updates have ran before removing collision rules
-    for (EntityIDNode *node = list_head(&inactive_entities); node; node = list_next(node)) {
-        remove_collision_exceptions_with_entity(&world->collision_rules, node->id);
-    }
-
     // TODO: should this be done at beginning of each frame so inactive entities are rendered?
     // TODO: it would be better to pass list of entities to remove since we just retrieved inactive entities
     es_remove_inactive_entities(&world->entities, frame_arena);
+
+    remove_expired_collision_exceptions(world);
 
     swap_and_reset_collision_tables(world);
 }

@@ -44,10 +44,16 @@ typedef enum {
     OBJECT_KIND_TILES = (1 << 1),
 } ObjectKind;
 
+typedef enum {
+    COLL_RETRIGGER_WHENEVER,
+    COLL_RETRIGGER_AFTER_NON_CONTACT,
+} CollisionRetriggerBehaviour;
+
 typedef struct {
     CollideEffectKind kind;
     ObjectKind affects_object_kinds;
     b32 affects_same_faction_entities;
+    CollisionRetriggerBehaviour retrigger_behaviour;
 
     union {
         struct {
@@ -101,6 +107,16 @@ static inline void add_die_collision_effect(ColliderComponent *c, ObjectKind aff
 {
     OnCollisionEffect effect = {0};
     effect.kind = ON_COLLIDE_DIE;
+    effect.affects_object_kinds = affected_objects;
+    effect.affects_same_faction_entities = affect_same_faction;
+
+    add_collide_effect(c, effect);
+}
+
+static inline void add_bounce_collision_effect(ColliderComponent *c, ObjectKind affected_objects, b32 affect_same_faction)
+{
+    OnCollisionEffect effect = {0};
+    effect.kind = ON_COLLIDE_BOUNCE;
     effect.affects_object_kinds = affected_objects;
     effect.affects_same_faction_entities = affect_same_faction;
 

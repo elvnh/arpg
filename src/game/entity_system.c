@@ -69,6 +69,7 @@ static EntityID get_entity_id_from_slot(EntitySystem *es, EntitySlot *slot)
 
 EntityID es_get_id_of_entity(EntitySystem *es, Entity *entity)
 {
+    ASSERT(entity);
     EntitySlot *slot = es_get_entity_slot(entity);
     EntityID id = get_entity_id_from_slot(es, slot);
 

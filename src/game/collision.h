@@ -31,11 +31,17 @@ typedef struct {
     Vector2  collision_normal; // TODO: separate normals for A and B?
 } CollisionInfo;
 
+typedef enum {
+    COLL_EXC_EXPIRE_ON_DEATH,
+    COLL_EXC_EXPIRE_ON_NON_CONTACT,
+    //COLL_EXC_EXPIRE_AFTER_DURATION
+} CollisionExceptionExpiry;
+
 typedef struct CollisionRule {
     struct CollisionRule  *next;
     struct CollisionRule  *prev;
     EntityPair		   entity_pair;
-    b32			   should_collide; // TODO: should always be true so remove?
+    CollisionExceptionExpiry expiry_kind;
 } CollisionException;
 
 typedef struct {
@@ -64,15 +70,18 @@ typedef struct {
     LinearArena         arena;
 } CollisionEventTable;
 
+struct World;
+
 /* Collision algorithms */
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,
     Vector2 velocity_a, Vector2 velocity_b, f32 dt);
 
 /* Collision exception table */
 CollisionException *collision_exception_find(CollisionExceptionTable *table, EntityID a, EntityID b);
-void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b, b32 should_collide,
-    LinearArena *arena);
-void remove_collision_exceptions_with_entity(CollisionExceptionTable *table, EntityID a);
+void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b,
+    CollisionExceptionExpiry expiry_kind, LinearArena *arena);
+void remove_expired_collision_exceptions(struct World *world);
+//void remove_collision_exceptions_with_entity(CollisionExceptionTable *table, EntityID a);
 
 /* Collision event table */
 CollisionEventTable collision_event_table_create(LinearArena *parent_arena);

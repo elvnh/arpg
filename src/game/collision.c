@@ -178,8 +178,8 @@ void remove_expired_collision_cooldowns(struct World *world)
         for (CollisionEffectCooldown *exc = list_head(exception_list); exc;) {
             CollisionEffectCooldown *next = exc->next;
 
-            Entity *owning = es_get_entity(&world->entities, exc->owning_entity);
-            Entity *collided = es_get_entity(&world->entities, exc->collided_entity);
+            Entity *owning = es_get_entity(&world->entity_system, exc->owning_entity);
+            Entity *collided = es_get_entity(&world->entity_system, exc->collided_entity);
             ASSERT(owning);
             ASSERT(collided);
 

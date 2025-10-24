@@ -43,12 +43,12 @@ static const Spell *get_spell_by_id(SpellID id)
 
 void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 position, Vector2 velocity)
 {
-    EntityID caster_id = es_get_id_of_entity(&world->entities, caster);
+    EntityID caster_id = es_get_id_of_entity(&world->entity_system, caster);
 
     const Spell *spell = get_spell_by_id(id);
     Damage damage_dealt = spell->base_damage;
 
-    EntityWithID spell_entity_with_id = es_spawn_entity(&world->entities, caster->faction);
+    EntityWithID spell_entity_with_id = es_spawn_entity(&world->entity_system, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
     spell_entity->faction = caster->faction;
 

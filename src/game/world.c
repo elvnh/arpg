@@ -151,7 +151,7 @@ static void entity_update(World *world, Entity *entity, f32 dt)
 
             switch (on_death->kind) {
                 case DEATH_EFFECT_SPAWN_PARTICLES: {
-                    EntityWithID entity_with_id = es_spawn_entity(&world->entities, FACTION_NEUTRAL);
+                    EntityWithID entity_with_id = es_spawn_entity(&world->entity_system, FACTION_NEUTRAL);
                     Entity *spawner = entity_with_id.entity;
                     spawner->position = entity->position;
 
@@ -163,7 +163,7 @@ static void entity_update(World *world, Entity *entity, f32 dt)
         }
     }
 
-    es_update_entity_quad_tree_location(&world->entities, entity, &world->world_arena);
+    es_update_entity_quad_tree_location(&world->entity_system, entity, &world->world_arena);
 }
 
 static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
@@ -277,11 +277,11 @@ static void try_deal_damage_to_entity(Entity *receiver, Entity *sender, Damage d
 static b32 should_execute_collision_effect(World *world, Entity *entity, Entity *other, OnCollisionEffect effect,
     ObjectKind colliding_with_obj_kind, s32 effect_index)
 {
-    EntityID entity_id = es_get_id_of_entity(&world->entities, entity);
+    EntityID entity_id = es_get_id_of_entity(&world->entity_system, entity);
     b32 result = (effect.affects_object_kinds & colliding_with_obj_kind) != 0;
 
     if (result && other) {
-        EntityID other_id = es_get_id_of_entity(&world->entities, other);
+        EntityID other_id = es_get_id_of_entity(&world->entity_system, other);
         b32 in_same_faction = entity->faction == other->faction;
 
         b32 not_on_cooldown = !collision_cooldown_find(&world->collision_effect_cooldowns, entity_id, other_id, effect_index);
@@ -369,8 +369,8 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
         }
 
         if (other && (effect.retrigger_behaviour != COLL_RETRIGGER_WHENEVER)) {
-            EntityID entity_id = es_get_id_of_entity(&world->entities, entity);
-            EntityID other_id = es_get_id_of_entity(&world->entities, other);
+            EntityID entity_id = es_get_id_of_entity(&world->entity_system, entity);
+            EntityID other_id = es_get_id_of_entity(&world->entity_system, other);
 
             s32 effect_index = i;
             world_add_collision_exception(world, entity_id, other_id, effect_index);
@@ -392,8 +392,8 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
     ColliderComponent *collider_a, Entity *b, ColliderComponent *collider_b,
     f32 movement_fraction_left, f32 dt)
 {
-    EntityID id_a = es_get_id_of_entity(&world->entities, a);
-    EntityID id_b = es_get_id_of_entity(&world->entities, b);
+    EntityID id_a = es_get_id_of_entity(&world->entity_system, a);
+    EntityID id_b = es_get_id_of_entity(&world->entity_system, b);
 
     Rectangle rect_a = get_entity_collider_rectangle(a, collider_a);
     Rectangle rect_b = get_entity_collider_rectangle(b, collider_b);
@@ -494,11 +494,11 @@ static Rectangle get_entity_collision_area(const Entity *entity, ColliderCompone
 static void handle_collision_and_movement(World *world, f32 dt, LinearArena *frame_arena)
 {
     // TODO: don't access alive entity array directly
-    for (EntityIndex i = 0; i < world->entities.alive_entity_count; ++i) {
+    for (EntityIndex i = 0; i < world->entity_system.alive_entity_count; ++i) {
         // TODO: this seems bug prone
 
-        EntityID id_a = world->entities.alive_entity_ids[i];
-        Entity *a = es_get_entity(&world->entities, id_a);
+        EntityID id_a = world->entity_system.alive_entity_ids[i];
+        Entity *a = es_get_entity(&world->entity_system, id_a);
         ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
         ASSERT(a);
 
@@ -508,11 +508,11 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
             movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, world, movement_fraction_left, dt);
 
             Rectangle collision_area = get_entity_collision_area(a, collider_a);
-            EntityIDList entities_in_area = es_get_entities_in_area(&world->entities, collision_area, frame_arena);
+            EntityIDList entities_in_area = es_get_entities_in_area(&world->entity_system, collision_area, frame_arena);
 
             for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
                 if (!entity_id_equal(node->id, id_a)) {
-                    Entity *b = es_get_entity(&world->entities, node->id);
+                    Entity *b = es_get_entity(&world->entity_system, node->id);
 
                     ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
 
@@ -534,12 +534,12 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
 
 void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena)
 {
-    if (world->entities.alive_entity_count < 1) {
+    if (world->entity_system.alive_entity_count < 1) {
         return;
     }
 
-    EntityID player_id = world->entities.alive_entity_ids[0];
-    Entity *player = es_get_entity(&world->entities, player_id);
+    EntityID player_id = world->entity_system.alive_entity_ids[0];
+    Entity *player = es_get_entity(&world->entity_system, player_id);
     ASSERT(player);
 
     {
@@ -608,10 +608,10 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
     handle_collision_and_movement(world, frame_data.dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
-    EntityIndex entity_count = world->entities.alive_entity_count;
+    EntityIndex entity_count = world->entity_system.alive_entity_count;
     for (EntityIndex i = 0; i < entity_count; ++i) {
-        EntityID entity_id = world->entities.alive_entity_ids[i];
-        Entity *entity = es_get_entity(&world->entities, entity_id);
+        EntityID entity_id = world->entity_system.alive_entity_ids[i];
+        Entity *entity = es_get_entity(&world->entity_system, entity_id);
         ASSERT(entity);
 
         entity_update(world, entity, frame_data.dt);
@@ -619,11 +619,12 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
 
     // TODO: should this be done at beginning of each frame so inactive entities are rendered?
     // TODO: it would be better to pass list of entities to remove since we just retrieved inactive entities
-    es_remove_inactive_entities(&world->entities, frame_arena);
 
     remove_expired_collision_cooldowns(world);
 
     swap_and_reset_collision_tables(world);
+
+    es_remove_inactive_entities(&world->entity_system, frame_arena);
 }
 
 // TODO: this shouldn't need AssetList parameter?
@@ -670,10 +671,10 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     }
 
     // TODO: debug camera that is detached from regular camera
-    EntityIDList entities_in_area = qt_get_entities_in_area(&world->entities.quad_tree, visible_area, frame_arena);
+    EntityIDList entities_in_area = qt_get_entities_in_area(&world->entity_system.quad_tree, visible_area, frame_arena);
 
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
-        Entity *entity = es_get_entity(&world->entities, node->id);
+        Entity *entity = es_get_entity(&world->entity_system, node->id);
 
         entity_render(entity, rb, assets, frame_arena, debug_state);
     }
@@ -694,11 +695,11 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
     }
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
-    es_initialize(&world->entities, tilemap_area);
+    es_initialize(&world->entity_system, tilemap_area);
 
 
     for (s32 i = 0; i < 2; ++i) {
-        EntityWithID entity_with_id = es_spawn_entity(&world->entities, i + 1);
+        EntityWithID entity_with_id = es_spawn_entity(&world->entity_system, i + 1);
         Entity *entity = entity_with_id.entity;
         entity->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
 

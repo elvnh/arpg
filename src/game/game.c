@@ -82,7 +82,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
 	&game_state->debug_state);
 
     if (game_state->debug_state.quad_tree_overlay) {
-        render_tree(&game_state->world.entities.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
+        render_tree(&game_state->world.entity_system.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
     }
 
     if (game_state->debug_state.render_origin) {
@@ -149,12 +149,12 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena: "), perm_arena_memory_usage, temp_alloc);
     String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, temp_alloc);
 
-    ssize qt_nodes = qt_get_node_count(&game_state->world.entities.quad_tree);
+    ssize qt_nodes = qt_get_node_count(&game_state->world.entity_system.quad_tree);
     String node_string = str_concat(str_lit("Quad tree nodes: "), ssize_to_string(qt_nodes, temp_alloc), temp_alloc);
 
     String entity_string = str_concat(
         str_lit("Alive entity count: "),
-        ssize_to_string(game_state->world.entities.alive_entity_count, temp_alloc),
+        ssize_to_string(game_state->world.entity_system.alive_entity_count, temp_alloc),
         temp_alloc
     );
 
@@ -194,7 +194,7 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
     // TODO: display more stats about hovered entity
     if (!entity_id_equal(game_state->debug_state.hovered_entity, NULL_ENTITY_ID)) {
-        const Entity *entity = es_try_get_entity(&game_state->world.entities, game_state->debug_state.hovered_entity);
+        const Entity *entity = es_try_get_entity(&game_state->world.entity_system, game_state->debug_state.hovered_entity);
 
         if (entity) {
             String entity_str = str_concat(
@@ -255,7 +255,7 @@ void debug_update(GameState *game_state, FrameData frame_data, LinearArena *fram
     );
 
     Rectangle hovered_rect = {hovered_coords, {1, 1}};
-    EntityIDList hovered_entities = es_get_entities_in_area(&game_state->world.entities,
+    EntityIDList hovered_entities = es_get_entities_in_area(&game_state->world.entity_system,
 	hovered_rect, frame_arena);
 
     if (!list_is_empty(&hovered_entities)) {

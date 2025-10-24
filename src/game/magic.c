@@ -57,8 +57,8 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
     ColliderComponent *collider =  es_add_component(spell_entity, ColliderComponent);
     collider->size = v2(32, 32);
 
-    add_damage_collision_effect(collider, damage_dealt, OBJECT_KIND_ENTITIES, true);
-    add_die_collision_effect(collider, (OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES), true);
+    add_damage_collision_effect(collider, damage_dealt, OBJECT_KIND_ENTITIES, false);
+    add_die_collision_effect(collider, (OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES), false);
     add_passthrough_collision_effect(collider, OBJECT_KIND_ENTITIES);
 
     SpriteComponent *sprite = es_add_component(spell_entity, SpriteComponent);

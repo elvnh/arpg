@@ -274,83 +274,98 @@ static void try_deal_damage_to_entity(Entity *receiver, Entity *sender, Damage d
     }
 }
 
+static b32 should_execute_collision_effect(Entity *entity, Entity *other, OnCollisionEffect effect,
+    ObjectKind colliding_with_obj_kind)
+{
+    b32 is_same_faction = other && (entity->faction == other->faction);
+
+    b32 result = (effect.affects_object_kinds & colliding_with_obj_kind)
+        && (!is_same_faction || (effect.affects_same_faction_entities));
+
+    return result;
+}
+
 // TODO: make this take entitypair as parameter
 static void execute_collision_effects(World *world, Entity *entity, Entity *other, ColliderComponent *collider,
     CollisionInfo collision, EntityPairIndex collision_index, ObjectKind colliding_with_obj_kind)
 {
     // TODO: clean up this function
-
     ASSERT(entity);
 
     b32 should_pass_through = false;
 
+    // If other entity has a pass through effect, we shouldn't be blocked by that entity
     if (other) {
         ColliderComponent *other_collider = es_get_component(other, ColliderComponent);
+        ASSERT(other_collider);
+
         for (s32 i = 0; i < other_collider->on_collide_effects.count; ++i) {
             OnCollisionEffect effect = other_collider->on_collide_effects.effects[i];
-            if ((effect.affects_object_kinds & colliding_with_obj_kind)
-                && (effect.kind == ON_COLLIDE_PASS_THROUGH)) {
+
+            b32 should_execute = should_execute_collision_effect(entity, other, effect, colliding_with_obj_kind);
+
+            if (should_execute && (effect.kind == ON_COLLIDE_PASS_THROUGH)) {
                 should_pass_through = true;
             }
         }
     }
 
-    b32 is_same_faction = other && (other->faction == entity->faction);
-
     for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
         OnCollisionEffect effect = collider->on_collide_effects.effects[i];
 
-        if (effect.affects_object_kinds & colliding_with_obj_kind) {
-            if (!(effect.ignore_same_faction_entities && is_same_faction)) {
-                switch (effect.kind) {
-                    case ON_COLLIDE_STOP: {
-                        if (!should_pass_through) {
-                            if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
-                                entity->position = collision.new_position_a;
-                                entity->velocity = collision.new_velocity_a;
-                            } else {
-                                entity->position = collision.new_position_b;
-                                entity->velocity = collision.new_velocity_b;
-                            }
-                        }
-                    } break;
+        b32 should_execute = should_execute_collision_effect(entity, other, effect, colliding_with_obj_kind);
 
-                    case ON_COLLIDE_BOUNCE: {
-                        if (!should_pass_through) {
-                            if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
-                                entity->position = collision.new_position_a;
-                                entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
-                            } else {
-                                entity->position = collision.new_position_b;
-                                entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
-                            }
-                        }
-                    } break;
+        if (!should_execute) {
+            continue;
+        }
 
-                    case ON_COLLIDE_DEAL_DAMAGE: {
-                        ASSERT(other);
-                        ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
-
-                        EntityID id_a = es_get_id_of_entity(&world->entities, entity);
-                        EntityID id_b = es_get_id_of_entity(&world->entities, other);
-
-                        // TODO: make this customizable so that some projectiles can only hit again
-                        // after leaving hitbox, some can hit multiple frames in a row etc
-                        if (!entities_intersected_previous_frame(world, id_a, id_b)) {
-                            printf("Damage\n");
-                            try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
-                        }
-                    } break;
-
-                    case ON_COLLIDE_DIE: {
-                        es_schedule_entity_for_removal(entity);
-                    } break;
-
-                    case ON_COLLIDE_PASS_THROUGH: {} break;
-
-                        INVALID_DEFAULT_CASE;
+        switch (effect.kind) {
+            case ON_COLLIDE_STOP: {
+                if (!should_pass_through) {
+                    if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
+                        entity->position = collision.new_position_a;
+                        entity->velocity = collision.new_velocity_a;
+                    } else {
+                        entity->position = collision.new_position_b;
+                        entity->velocity = collision.new_velocity_b;
+                    }
                 }
-            }
+            } break;
+
+            case ON_COLLIDE_BOUNCE: {
+                if (!should_pass_through) {
+                    if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
+                        entity->position = collision.new_position_a;
+                        entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
+                    } else {
+                        entity->position = collision.new_position_b;
+                        entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
+                    }
+                }
+            } break;
+
+            case ON_COLLIDE_DEAL_DAMAGE: {
+                ASSERT(other);
+                ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
+
+                EntityID id_a = es_get_id_of_entity(&world->entities, entity);
+                EntityID id_b = es_get_id_of_entity(&world->entities, other);
+
+                // TODO: make this customizable so that some projectiles can only hit again
+                // after leaving hitbox, some can hit multiple frames in a row etc
+                if (!entities_intersected_previous_frame(world, id_a, id_b)) {
+                    printf("Damage\n");
+                    try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
+                }
+            } break;
+
+            case ON_COLLIDE_DIE: {
+                es_schedule_entity_for_removal(entity);
+            } break;
+
+            case ON_COLLIDE_PASS_THROUGH: {} break;
+
+            INVALID_DEFAULT_CASE;
         }
     }
 }
@@ -695,7 +710,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
         ColliderComponent *collider = es_add_component(entity, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
-        add_blocking_collide_effect(collider, OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES, false);
+        add_blocking_collide_effect(collider, OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES, true);
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->health.hitpoints = 10;

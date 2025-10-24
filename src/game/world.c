@@ -1,10 +1,13 @@
 #include "world.h"
+#include "base/matrix.h"
 #include "debug.h"
 #include "base/sl_list.h"
+#include "game/camera.h"
 #include "game/component.h"
 #include "game/entity.h"
 #include "game/entity_system.h"
 #include "game/magic.h"
+#include "input.h"
 #include "renderer/render_batch.h"
 
 #define WORLD_ARENA_SIZE MB(64)
@@ -512,7 +515,7 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
     }
 }
 
-void world_update(World *world, const Input *input, f32 dt, const AssetList *assets, LinearArena *frame_arena)
+void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena)
 {
     if (world->entities.alive_entity_count < 1) {
         return;
@@ -530,34 +533,40 @@ void world_update(World *world, const Input *input, f32 dt, const AssetList *ass
             target = v2_add(target, v2_div_s(collider->size, 2));
         }
 
-        if (input_is_key_pressed(input, KEY_G)) {
-            magic_cast_spell(world, SPELL_FIREBALL, player);
+        if (input_is_key_pressed(frame_data.input, MOUSE_LEFT)) {
+            Vector2 mouse_pos = frame_data.input->mouse_position;
+            mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data.window_size);
+
+            Vector2 mouse_dir = v2_sub(mouse_pos, player->position);
+            mouse_dir = v2_norm(mouse_dir);
+
+            magic_cast_spell(world, SPELL_FIREBALL, player, player->position, v2_mul_s(mouse_dir, 200.0f));
         }
 
         camera_set_target(&world->camera, target);
     }
 
-    camera_zoom(&world->camera, (s32)input->scroll_delta);
-    camera_update(&world->camera, dt);
+    camera_zoom(&world->camera, (s32)frame_data.input->scroll_delta);
+    camera_update(&world->camera, frame_data.dt);
 
     f32 speed = 350.0f;
 
-    if (input_is_key_held(input, KEY_LEFT_SHIFT)) {
+    if (input_is_key_held(frame_data.input, KEY_LEFT_SHIFT)) {
         speed *= 3.0f;
     }
 
     {
 	Vector2 acceleration = {0};
 
-	if (input_is_key_down(input, KEY_W)) {
+	if (input_is_key_down(frame_data.input, KEY_W)) {
 	    acceleration.y = 1.0f;
-	} else if (input_is_key_down(input, KEY_S)) {
+	} else if (input_is_key_down(frame_data.input, KEY_S)) {
 	    acceleration.y = -1.0f;
 	}
 
-	if (input_is_key_down(input, KEY_A)) {
+	if (input_is_key_down(frame_data.input, KEY_A)) {
 	    acceleration.x = -1.0f;
-	} else if (input_is_key_down(input, KEY_D)) {
+	} else if (input_is_key_down(frame_data.input, KEY_D)) {
 	    acceleration.x = 1.0f;
 	}
 
@@ -569,17 +578,17 @@ void world_update(World *world, const Input *input, f32 dt, const AssetList *ass
         acceleration = v2_add(acceleration, v2_mul_s(v, -3.5f));
 
         Vector2 new_pos = v2_add(
-            v2_add(v2_mul_s(v2_mul_s(acceleration, dt * dt), 0.5f), v2_mul_s(v, dt)),
+            v2_add(v2_mul_s(v2_mul_s(acceleration, frame_data.dt * frame_data.dt), 0.5f), v2_mul_s(v, frame_data.dt)),
             p
         );
 
-        Vector2 new_velocity = v2_add(v2_mul_s(acceleration, dt), v);
+        Vector2 new_velocity = v2_add(v2_mul_s(acceleration, frame_data.dt), v);
 
         player->position = new_pos;
         player->velocity = new_velocity;
     }
 
-    handle_collision_and_movement(world, dt, frame_arena);
+    handle_collision_and_movement(world, frame_data.dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
     EntityIndex entity_count = world->entities.alive_entity_count;
@@ -588,7 +597,7 @@ void world_update(World *world, const Input *input, f32 dt, const AssetList *ass
         Entity *entity = es_get_entity(&world->entities, entity_id);
         ASSERT(entity);
 
-        entity_update(world, entity, dt);
+        entity_update(world, entity, frame_data.dt);
     }
 
     // TODO: don't use linked list for this

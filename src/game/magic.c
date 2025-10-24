@@ -41,7 +41,7 @@ static const Spell *get_spell_by_id(SpellID id)
     return &g_spells[id];
 }
 
-void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster)
+void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 position, Vector2 velocity)
 {
     EntityID caster_id = es_get_id_of_entity(&world->entities, caster);
 
@@ -66,6 +66,6 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster)
     sprite->size = spell->sprite_size;
     // TODO: particle spawner
 
-    spell_entity->position = caster->position;
-    spell_entity->velocity = v2(100, 0);
+    spell_entity->position = position;
+    spell_entity->velocity = velocity;
 }

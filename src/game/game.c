@@ -32,15 +32,15 @@
 #include "collision.h"
 #include "renderer/render_batch.h"
 
-static void game_update(GameState *game_state, const Input *input, f32 dt, LinearArena *frame_arena)
+static void game_update(GameState *game_state, FrameData frame_data, LinearArena *frame_arena)
 {
     (void)frame_arena;
 
-    if (input_is_key_pressed(input, KEY_ESCAPE)) {
+    if (input_is_key_pressed(frame_data.input, KEY_ESCAPE)) {
         DEBUG_BREAK;
     }
 
-    world_update(&game_state->world, input, dt, &game_state->asset_list, frame_arena);
+    world_update(&game_state->world, frame_data, &game_state->asset_list, frame_arena);
 
 }
 
@@ -270,7 +270,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 {
     debug_update(game_state, frame_data, &game_memory->temporary_memory);
 
-    game_update(game_state, frame_data.input, frame_data.dt, &game_memory->temporary_memory);
+    game_update(game_state, frame_data, &game_memory->temporary_memory);
     game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);
 
     if (input_is_key_pressed(frame_data.input, KEY_T)) {

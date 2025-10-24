@@ -46,6 +46,7 @@ typedef enum {
 
 typedef enum {
     COLL_RETRIGGER_WHENEVER,
+    COLL_RETRIGGER_NEVER,
     COLL_RETRIGGER_AFTER_NON_CONTACT,
 } CollisionRetriggerBehaviour;
 

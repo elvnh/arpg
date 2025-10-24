@@ -27,10 +27,9 @@ void magic_initialize(const AssetList *asset_list)
     Damage fireball_damage = {0};
     fireball_damage.types.values[DMG_KIND_FIRE] = 1;
 
-    g_spells[SPELL_FIREBALL].texture = asset_list->default_texture;
+    g_spells[SPELL_FIREBALL].texture = asset_list->fireball_texture;
     g_spells[SPELL_FIREBALL].base_damage = fireball_damage;
     g_spells[SPELL_FIREBALL].sprite_size = v2(32, 32);
-
 }
 
 static const Spell *get_spell_by_id(SpellID id)

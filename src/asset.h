@@ -25,6 +25,7 @@ typedef struct AssetList {
     ShaderHandle texture_shader;
     ShaderHandle shape_shader;
     TextureHandle default_texture;
+    TextureHandle fireball_texture;
     FontHandle default_font;
 } AssetList;
 

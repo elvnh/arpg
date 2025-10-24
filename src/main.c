@@ -86,6 +86,7 @@ int main()
         .texture_shader = assets_register_shader(&asset_mgr, str_lit("shader.glsl"), &game_memory.temporary_memory),
         .shape_shader = assets_register_shader(&asset_mgr, str_lit("shader2.glsl"), &game_memory.temporary_memory),
         .default_texture = assets_register_texture(&asset_mgr, str_lit("test.png"), &game_memory.temporary_memory),
+        .fireball_texture = assets_register_texture(&asset_mgr, str_lit("fireball.png"), &game_memory.temporary_memory),
         .default_font = assets_register_font(&asset_mgr, str_lit("Ubuntu-M.ttf"), &game_memory.temporary_memory)
     };
 

@@ -374,6 +374,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
             EntityID id_a = es_get_id_of_entity(&world->entities, entity);
             EntityID id_b = es_get_id_of_entity(&world->entities, other);
 
+            // TODO: these need to be specific to collision effects
             CollisionExceptionExpiry expiry_kind = COLL_EXC_EXPIRE_ON_NON_CONTACT;
             world_add_collision_exception(world, id_a, id_b, expiry_kind);
         }

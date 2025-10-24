@@ -52,8 +52,6 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
     Entity *spell_entity = spell_entity_with_id.entity;
     spell_entity->faction = caster->faction;
 
-    world_add_collision_exception(world, spell_entity_with_id.id, caster_id, COLL_EXC_EXPIRE_ON_DEATH);
-
     ColliderComponent *collider =  es_add_component(spell_entity, ColliderComponent);
     collider->size = v2(32, 32);
 

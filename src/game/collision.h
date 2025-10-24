@@ -81,7 +81,6 @@ CollisionException *collision_exception_find(CollisionExceptionTable *table, Ent
 void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b,
     CollisionExceptionExpiry expiry_kind, LinearArena *arena);
 void remove_expired_collision_exceptions(struct World *world);
-//void remove_collision_exceptions_with_entity(CollisionExceptionTable *table, EntityID a);
 
 /* Collision event table */
 CollisionEventTable collision_event_table_create(LinearArena *parent_arena);

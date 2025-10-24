@@ -144,24 +144,26 @@ CollisionException *collision_exception_find(CollisionExceptionTable *table, Ent
 void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b,
     CollisionExceptionExpiry expiry_kind, LinearArena *arena)
 {
-    // TODO: remove collision rules when entity dies
     ASSERT(!entity_id_equal(a, b));
 
-    CollisionException *rule = list_head(&table->free_node_list);
-    if (!rule) {
-	rule = la_allocate_item(arena, CollisionException);
-    } else {
-	list_pop_head(&table->free_node_list);
+    EntityPair entity_pair = entity_pair_create(a, b);
+
+    if (!collision_exception_find(table, entity_pair.entity_a, entity_pair.entity_b)) {
+        CollisionException *rule = list_head(&table->free_node_list);
+
+        if (!rule) {
+            rule = la_allocate_item(arena, CollisionException);
+        } else {
+            list_pop_head(&table->free_node_list);
+        }
+
+        *rule = (CollisionException){0};
+        rule->entity_pair = entity_pair;
+        rule->expiry_kind = expiry_kind;
+
+        ssize index = collision_rule_hashed_index(rule->entity_pair, table);
+        list_push_back(&table->table[index], rule);
     }
-
-    *rule = (CollisionException){0};
-    rule->entity_pair = entity_pair_create(a, b);
-    rule->expiry_kind = expiry_kind;
-
-    ASSERT(!collision_exception_find(table, rule->entity_pair.entity_a, rule->entity_pair.entity_b));
-
-    ssize index = collision_rule_hashed_index(rule->entity_pair, table);
-    list_push_back(&table->table[index], rule);
 }
 
 void remove_expired_collision_exceptions(struct World *world)

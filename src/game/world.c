@@ -286,7 +286,7 @@ static b32 should_execute_collision_effect(World *world, Entity *entity, Entity 
 
         b32 can_retrigger = (effect.retrigger_behaviour == COLL_RETRIGGER_WHENEVER)
             || ((effect.retrigger_behaviour == COLL_RETRIGGER_AFTER_NON_CONTACT)
-                && !entities_intersected_this_frame(world, entity_id, other_id));
+                && !entities_intersected_previous_frame(world, entity_id, other_id));
 
         result = can_retrigger && (!is_same_faction || (effect.affects_same_faction_entities));
     }
@@ -404,14 +404,10 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
         a->velocity, b->velocity, dt);
 
     if ((collision.collision_state != COLL_NOT_COLLIDING) && !entities_intersected_this_frame(world, id_a, id_b)) {
-        CollisionException *exception_for_entities = collision_exception_find(&world->collision_rules, id_a, id_b);
+        execute_collision_effects(world, a, b, collider_a, collision, ENTITY_PAIR_INDEX_FIRST, OBJECT_KIND_ENTITIES);
+        execute_collision_effects(world, b, a, collider_b, collision, ENTITY_PAIR_INDEX_SECOND, OBJECT_KIND_ENTITIES);
 
-        if (!exception_for_entities) {
-            movement_fraction_left = collision.movement_fraction_left;
-
-            execute_collision_effects(world, a, b, collider_a, collision, ENTITY_PAIR_INDEX_FIRST, OBJECT_KIND_ENTITIES);
-            execute_collision_effects(world, b, a, collider_b, collision, ENTITY_PAIR_INDEX_SECOND, OBJECT_KIND_ENTITIES);
-        }
+        movement_fraction_left = collision.movement_fraction_left;
 
         collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);
     }

@@ -1,6 +1,8 @@
 #include "world.h"
 #include "debug.h"
 #include "base/sl_list.h"
+#include "game/component.h"
+#include "game/entity.h"
 #include "game/entity_system.h"
 #include "game/magic.h"
 #include "renderer/render_batch.h"
@@ -277,7 +279,6 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
 
     ASSERT(entity);
 
-    b32 effect_executed = false;
     b32 should_pass_through = false;
 
     if (other) {
@@ -291,16 +292,26 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
         }
     }
 
-    if (other && (entity->faction == other->faction)) {
-        effect_executed = true;
-    } else {
-        for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
-            OnCollisionEffect effect = collider->on_collide_effects.effects[i];
+    b32 is_same_faction = other && (other->faction == entity->faction);
 
-            if (effect.affects_object_kinds & colliding_with_obj_kind) {
-                effect_executed = true;
+    for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
+        OnCollisionEffect effect = collider->on_collide_effects.effects[i];
 
+        if (effect.affects_object_kinds & colliding_with_obj_kind) {
+            if (!(effect.ignore_same_faction_entities && is_same_faction)) {
                 switch (effect.kind) {
+                    case ON_COLLIDE_STOP: {
+                        if (!should_pass_through) {
+                            if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
+                                entity->position = collision.new_position_a;
+                                entity->velocity = collision.new_velocity_a;
+                            } else {
+                                entity->position = collision.new_position_b;
+                                entity->velocity = collision.new_velocity_b;
+                            }
+                        }
+                    } break;
+
                     case ON_COLLIDE_BOUNCE: {
                         if (!should_pass_through) {
                             if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
@@ -337,15 +348,6 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
                         INVALID_DEFAULT_CASE;
                 }
             }
-        }
-    }
-    if (!effect_executed && !should_pass_through) {
-        if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
-            entity->position = collision.new_position_a;
-            entity->velocity = collision.new_velocity_a;
-        } else {
-            entity->position = collision.new_position_b;
-            entity->velocity = collision.new_velocity_b;
         }
     }
 }
@@ -684,6 +686,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
         ColliderComponent *collider = es_add_component(entity, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
+        add_blocking_collide_effect(collider, OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES, false);
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->health.hitpoints = 10;

@@ -31,6 +31,7 @@ typedef enum {
 } ComponentType;
 
 typedef enum {
+    ON_COLLIDE_STOP,
     ON_COLLIDE_PASS_THROUGH,
     ON_COLLIDE_BOUNCE,
     ON_COLLIDE_DEAL_DAMAGE,
@@ -46,6 +47,7 @@ typedef enum {
 typedef struct {
     CollideEffectKind kind;
     ObjectKind affects_object_kinds;
+    b32 ignore_same_faction_entities;
 
     union {
         struct {
@@ -57,6 +59,7 @@ typedef struct {
 typedef struct {
     // TODO: offset from pos
     Vector2 size;
+
 
     struct {
         OnCollisionEffect effects[4];
@@ -70,22 +73,45 @@ static inline void add_collide_effect(ColliderComponent *c, OnCollisionEffect ef
     ASSERT(c->on_collide_effects.count < ARRAY_COUNT(c->on_collide_effects.effects));
     ssize index = c->on_collide_effects.count++;
     c->on_collide_effects.effects[index] = effect;
+
 }
 
-static inline void add_damage_collision_effect(ColliderComponent *c, Damage damage, ObjectKind affected_objects)
+static inline void add_blocking_collide_effect(ColliderComponent *c, ObjectKind affected_objects, b32 ignore_same_faction)
+{
+    OnCollisionEffect effect = {0};
+    effect.kind = ON_COLLIDE_STOP;
+    effect.affects_object_kinds = affected_objects;
+    effect.ignore_same_faction_entities = ignore_same_faction;
+
+    add_collide_effect(c, effect);
+}
+
+static inline void add_damage_collision_effect(ColliderComponent *c, Damage damage,
+    ObjectKind affected_objects, b32 ignore_same_faction)
 {
     OnCollisionEffect effect = {0};
     effect.kind = ON_COLLIDE_DEAL_DAMAGE;
     effect.affects_object_kinds = affected_objects;
     effect.as.deal_damage.damage = damage;
+    effect.ignore_same_faction_entities = ignore_same_faction;
 
     add_collide_effect(c, effect);
 }
 
-static inline void add_die_collision_effect(ColliderComponent *c, ObjectKind affected_objects)
+static inline void add_die_collision_effect(ColliderComponent *c, ObjectKind affected_objects, b32 ignore_same_faction)
 {
     OnCollisionEffect effect = {0};
     effect.kind = ON_COLLIDE_DIE;
+    effect.affects_object_kinds = affected_objects;
+    effect.ignore_same_faction_entities = ignore_same_faction;
+
+    add_collide_effect(c, effect);
+}
+
+static inline void add_passthrough_collision_effect(ColliderComponent *c, ObjectKind affected_objects)
+{
+    OnCollisionEffect effect = {0};
+    effect.kind = ON_COLLIDE_PASS_THROUGH;
     effect.affects_object_kinds = affected_objects;
 
     add_collide_effect(c, effect);

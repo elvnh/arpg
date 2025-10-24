@@ -43,7 +43,6 @@ typedef enum {
     OBJECT_KIND_TILES = (1 << 1),
 } ObjectKind;
 
-// TODO: make possible to only effect collisions with tiles/entities
 typedef struct {
     CollideEffectKind kind;
     ObjectKind affects_object_kinds;

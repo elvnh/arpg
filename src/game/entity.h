@@ -13,9 +13,17 @@ typedef struct {
     EntityGeneration generation;
 } EntityID;
 
+typedef enum {
+    FACTION_NEUTRAL, // TODO: implement neutral entities
+    FACTION_PLAYER,
+    FACTION_ENEMY,
+} EntityFaction;
+
 typedef struct Entity {
     ComponentBitset active_components;
     b32 is_inactive;
+
+    EntityFaction faction;
 
     Vector2 position;
     Vector2 velocity;

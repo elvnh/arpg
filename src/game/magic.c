@@ -48,8 +48,9 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster)
     const Spell *spell = get_spell_by_id(id);
     Damage damage_dealt = spell->base_damage;
 
-    EntityWithID spell_entity_with_id = es_spawn_entity(&world->entities);
+    EntityWithID spell_entity_with_id = es_spawn_entity(&world->entities, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
+    spell_entity->faction = caster->faction;
 
     world_add_collision_exception(world, spell_entity_with_id.id, caster_id);
 

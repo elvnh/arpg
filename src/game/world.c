@@ -145,8 +145,8 @@ static void entity_update(World *world, Entity *entity, f32 dt)
 
             switch (on_death->kind) {
                 case DEATH_EFFECT_SPAWN_PARTICLES: {
-                    EntityID id = es_create_entity(&world->entities);
-                    Entity *spawner = es_get_entity(&world->entities, id);
+                    EntityWithID entity_with_id = es_spawn_entity(&world->entities, FACTION_NEUTRAL);
+                    Entity *spawner = entity_with_id.entity;
                     spawner->position = entity->position;
 
                     ParticleSpawner *ps = es_add_component(spawner, ParticleSpawner);
@@ -291,51 +291,54 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
         }
     }
 
-    for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
-        OnCollisionEffect effect = collider->on_collide_effects.effects[i];
+    if (other && (entity->faction == other->faction)) {
+        effect_executed = true;
+    } else {
+        for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
+            OnCollisionEffect effect = collider->on_collide_effects.effects[i];
 
-        if (effect.affects_object_kinds & colliding_with_obj_kind) {
-            effect_executed = true;
+            if (effect.affects_object_kinds & colliding_with_obj_kind) {
+                effect_executed = true;
 
-            switch (effect.kind) {
-                case ON_COLLIDE_BOUNCE: {
-                    if (!should_pass_through) {
-                        if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
-                            entity->position = collision.new_position_a;
-                            entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
-                        } else {
-                            entity->position = collision.new_position_b;
-                            entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
+                switch (effect.kind) {
+                    case ON_COLLIDE_BOUNCE: {
+                        if (!should_pass_through) {
+                            if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
+                                entity->position = collision.new_position_a;
+                                entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
+                            } else {
+                                entity->position = collision.new_position_b;
+                                entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
+                            }
                         }
-                    }
-                } break;
+                    } break;
 
-                case ON_COLLIDE_DEAL_DAMAGE: {
-                    ASSERT(other);
-                    ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
+                    case ON_COLLIDE_DEAL_DAMAGE: {
+                        ASSERT(other);
+                        ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
 
-                    EntityID id_a = es_get_id_of_entity(&world->entities, entity);
-                    EntityID id_b = es_get_id_of_entity(&world->entities, other);
+                        EntityID id_a = es_get_id_of_entity(&world->entities, entity);
+                        EntityID id_b = es_get_id_of_entity(&world->entities, other);
 
-                    // TODO: make this customizable so that some projectiles can only hit again
-                    // after leaving hitbox, some can hit multiple frames in a row etc
-                    if (!entities_intersected_previous_frame(world, id_a, id_b)) {
-                        printf("Damage\n");
-                        try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
-                    }
-                } break;
+                        // TODO: make this customizable so that some projectiles can only hit again
+                        // after leaving hitbox, some can hit multiple frames in a row etc
+                        if (!entities_intersected_previous_frame(world, id_a, id_b)) {
+                            printf("Damage\n");
+                            try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
+                        }
+                    } break;
 
-                case ON_COLLIDE_DIE: {
-                    es_schedule_entity_for_removal(entity);
-                } break;
+                    case ON_COLLIDE_DIE: {
+                        es_schedule_entity_for_removal(entity);
+                    } break;
 
-                case ON_COLLIDE_PASS_THROUGH: {} break;
+                    case ON_COLLIDE_PASS_THROUGH: {} break;
 
-                INVALID_DEFAULT_CASE;
+                        INVALID_DEFAULT_CASE;
+                }
             }
         }
     }
-
     if (!effect_executed && !should_pass_through) {
         if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
             entity->position = collision.new_position_a;
@@ -654,16 +657,6 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     }
 }
 
-Entity *world_spawn_entity(World *world)
-{
-    // TODO: this function is unnecessary, let users use entity system directly, and return entity ptr together with
-    // id so we don't have to immediately get id
-    EntityID id = es_create_entity(&world->entities);
-    Entity *entity = es_get_entity(&world->entities, id);
-
-    return entity;
-}
-
 void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena)
 {
     world->world_arena = la_create(la_allocator(arena), WORLD_ARENA_SIZE);
@@ -683,8 +676,8 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
 
     for (s32 i = 0; i < 2; ++i) {
-        EntityID id = es_create_entity(&world->entities);
-        Entity *entity = es_get_entity(&world->entities, id);
+        EntityWithID entity_with_id = es_spawn_entity(&world->entities, i + 1);
+        Entity *entity = entity_with_id.entity;
         entity->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
 
         ASSERT(!es_has_component(entity, ColliderComponent));

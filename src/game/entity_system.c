@@ -148,7 +148,7 @@ static EntityID get_new_entity_id(EntitySystem *es)
 }
 
 
-EntityID es_create_entity(EntitySystem *es)
+static inline EntityID create_entity(EntitySystem *es)
 {
     EntityID id = get_new_entity_id(es);
 
@@ -165,10 +165,12 @@ EntityID es_create_entity(EntitySystem *es)
     return id;
 }
 
-EntityWithID es_spawn_entity(EntitySystem *es)
+EntityWithID es_spawn_entity(EntitySystem *es, EntityFaction faction)
 {
-    EntityID id = es_create_entity(es);
+    EntityID id = create_entity(es);
     Entity *entity = es_get_entity(es, id);
+
+    entity->faction = faction;
 
     EntityWithID result = {
         .entity = entity,

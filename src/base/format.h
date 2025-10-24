@@ -7,7 +7,7 @@
 #include "base/linear_arena.h"
 #include "base/string8.h"
 
-ssize digit_count_s64(s64 n)
+static inline ssize digit_count_s64(s64 n)
 {
     // TODO: other number bases
     if (n == 0) {

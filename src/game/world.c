@@ -1,10 +1,14 @@
 #include "world.h"
+#include "base/format.h"
 #include "base/matrix.h"
+#include "base/rgba.h"
+#include "base/utils.h"
 #include "debug.h"
 #include "base/sl_list.h"
 #include "game/camera.h"
 #include "game/collision.h"
 #include "game/component.h"
+#include "game/damage.h"
 #include "game/entity.h"
 #include "game/entity_system.h"
 #include "game/magic.h"
@@ -248,29 +252,49 @@ void world_add_collision_exception(World *world, EntityID a, EntityID b, s32 eff
     collision_cooldown_add(&world->collision_effect_cooldowns, a, b, effect_index, &world->world_arena);
 }
 
-static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damage damage)
+static void create_hitsplat(World *world, Vector2 position, Damage damage)
 {
-    (void)entity;
-    s64 damage_taken = 0;
+    ASSERT(world->hitsplat_count < ARRAY_COUNT(world->active_hitsplats));
+
+    // TODO: randomize velocity and position
+    Vector2 velocity = {0, 10.0f};
+
+    Hitsplat hitsplat = {
+        .damage = damage,
+        .position = position,
+        .velocity = velocity,
+        .lifetime = 2.0f,
+    };
+
+    s32 index = world->hitsplat_count++;
+    world->active_hitsplats[index] = hitsplat;
+}
+
+static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, Damage damage)
+{
+    Damage damage_taken = {0};
 
     if (es_has_component(entity, StatsComponent)) {
         StatsComponent *stats = es_get_component(entity, StatsComponent);
         damage_taken = calculate_damage_received(stats->resistances, damage);
     } else {
-        damage_taken = damage_sum(damage);
+        damage_taken = damage;
     }
 
-    health->health.hitpoints -= damage_taken;
+    DamageValue dmg_sum = damage_sum(damage_taken);
+
+    health->health.hitpoints -= dmg_sum;
+    create_hitsplat(world, entity->position, damage_taken);
 }
 
-static void try_deal_damage_to_entity(Entity *receiver, Entity *sender, Damage damage)
+static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, Damage damage)
 {
     (void)sender;
 
     HealthComponent *receiver_health = es_get_component(receiver, HealthComponent);
 
     if (receiver_health) {
-        deal_damage_to_entity(receiver, receiver_health, damage);
+        deal_damage_to_entity(world, receiver, receiver_health, damage);
     }
 }
 
@@ -356,7 +380,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
                 ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
 
                 printf("Damage\n");
-                try_deal_damage_to_entity(other, entity, effect.as.deal_damage.damage);
+                try_deal_damage_to_entity(world, other, entity, effect.as.deal_damage.damage);
             } break;
 
             case ON_COLLIDE_DIE: {
@@ -617,6 +641,18 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         entity_update(world, entity, frame_data.dt);
     }
 
+    for (s32 i = 0; i < world->hitsplat_count; ++i) {
+        Hitsplat *hitsplat = &world->active_hitsplats[i];
+
+        if (hitsplat->timer >= hitsplat->lifetime) {
+            world->active_hitsplats[i] = world->active_hitsplats[world->hitsplat_count - 1];
+            world->hitsplat_count -= 1;
+        }
+
+        hitsplat->position = v2_add(hitsplat->position, v2_mul_s(hitsplat->velocity, frame_data.dt));
+        hitsplat->timer += frame_data.dt;
+    }
+
     // TODO: should this be done at beginning of each frame so inactive entities are rendered?
     // TODO: it would be better to pass list of entities to remove since we just retrieved inactive entities
 
@@ -677,6 +713,31 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
         Entity *entity = es_get_entity(&world->entity_system, node->id);
 
         entity_render(entity, rb, assets, frame_arena, debug_state);
+    }
+
+    for (s32 i = 0; i < world->hitsplat_count; ++i) {
+        Hitsplat *hitsplat = &world->active_hitsplats[i];
+
+        DamageValue sum = damage_sum(hitsplat->damage);
+        String damage_str = ssize_to_string(sum, la_allocator(frame_arena));
+
+        DamageKind primary_type = get_primary_damage_type(hitsplat->damage);
+
+        f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
+        RGBA32 color = {0};
+
+        switch (primary_type) {
+            case DMG_KIND_FIRE: {
+                color = RGBA32_RED;
+            } break;
+
+            INVALID_DEFAULT_CASE;
+        }
+
+        color.a = alpha;
+
+        rb_push_text(rb, frame_arena, damage_str, hitsplat->position, color, 32, assets->texture_shader,
+            assets->default_font, 5);
     }
 }
 

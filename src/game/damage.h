@@ -76,13 +76,32 @@ static inline DamageValue calculate_damage_of_type_after_resistance(Damage damag
     return result;
 }
 
-static inline DamageValue calculate_damage_received(ResistanceStats resistances, Damage damage)
+static inline Damage calculate_damage_received(ResistanceStats resistances, Damage damage)
 {
-    DamageValue result = 0;
+    Damage result = {0};
 
     for (DamageKind dmg_kind = 0; dmg_kind < DMG_KIND_COUNT; ++dmg_kind) {
-	result += calculate_damage_of_type_after_resistance(damage, resistances, dmg_kind);
+        result.types.values[dmg_kind] = calculate_damage_of_type_after_resistance(damage, resistances, dmg_kind);
     }
+
+    return result;
+}
+
+static inline DamageKind get_primary_damage_type(Damage damage)
+{
+    DamageKind result = 0;
+    DamageValue max_value = -1;
+
+    for (DamageKind dmg_kind = 0; dmg_kind < DMG_KIND_COUNT; ++dmg_kind) {
+        DamageValue value = get_damage_value_of_type(damage.types, dmg_kind);
+
+        if (value > max_value) {
+            result = dmg_kind;
+            max_value = value;
+        }
+    }
+
+    ASSERT(max_value != -1);
 
     return result;
 }

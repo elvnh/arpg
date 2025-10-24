@@ -25,7 +25,7 @@ static Spell g_spells[SPELL_COUNT] = {0};
 void magic_initialize(const AssetList *asset_list)
 {
     Damage fireball_damage = {0};
-    fireball_damage.types.values[DMG_KIND_FIRE] = 1;
+    fireball_damage.types.values[DMG_KIND_FIRE] = 4;
 
     g_spells[SPELL_FIREBALL].texture = asset_list->fireball_texture;
     g_spells[SPELL_FIREBALL].base_damage = fireball_damage;

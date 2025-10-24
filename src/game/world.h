@@ -12,6 +12,16 @@ struct DebugState;
 struct RenderBatch;
 struct AssetList;
 
+// TODO: make size and velocity depend on damage number
+// TODO: make color depend on elemental types present
+typedef struct {
+    Damage damage;
+    Vector2 position;
+    Vector2 velocity;
+    f32 timer;
+    f32 lifetime;
+} Hitsplat;
+
 typedef struct World {
     LinearArena world_arena;
     Camera camera;
@@ -20,6 +30,8 @@ typedef struct World {
     CollisionCooldownTable collision_effect_cooldowns;
     CollisionEventTable  previous_frame_collisions;
     CollisionEventTable  current_frame_collisions;
+    Hitsplat active_hitsplats[128];
+    s32 hitsplat_count;
 } World;
 
 void world_initialize(World *world, const struct AssetList *assets, LinearArena *arena);

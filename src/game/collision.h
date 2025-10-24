@@ -7,15 +7,6 @@
 #include "entity.h"
 #include "game/component.h"
 
-/*
-  TODO:
-  - Make collision rule able to match criteria other than entity ID, eg. all entities from
-    the same faction don't collide with eachother
-  - Collision rule with entity vs tilemap collision?
-  - Time to live on collision rules to remove them automatically once time runs out, to be used
-    for projectiles with cooldown before they can hit again etc.
- */
-
 typedef enum {
     COLL_NOT_COLLIDING,
     COLL_ARE_INTERSECTING,
@@ -32,30 +23,23 @@ typedef struct {
     Vector2  collision_normal; // TODO: separate normals for A and B?
 } CollisionInfo;
 
-// typedef enum {
-//     COLL_EXC_EXPIRE_ON_DEATH,
-//     COLL_EXC_EXPIRE_ON_NON_CONTACT,
-//     //COLL_EXC_EXPIRE_AFTER_DURATION
-// } CollisionExceptionExpiry;
-
-// TODO: rename
-typedef struct CollisionRule {
-    struct CollisionRule  *next;
-    struct CollisionRule  *prev;
+typedef struct CollisionEffectCooldown {
+    struct CollisionEffectCooldown *next;
+    struct CollisionEffectCooldown *prev;
     EntityID owning_entity;
     EntityID collided_entity;
     s32 collision_effect_index;
-} CollisionException;
+} CollisionEffectCooldown;
 
 typedef struct {
-    CollisionException *head;
-    CollisionException *tail;
-} CollisionExceptionList;
+    CollisionEffectCooldown *head;
+    CollisionEffectCooldown *tail;
+} CollisionCooldownList;
 
 typedef struct {
-    CollisionExceptionList  table[512];
-    CollisionExceptionList  free_node_list;
-} CollisionExceptionTable;
+    CollisionCooldownList  table[512];
+    CollisionCooldownList  free_node_list;
+} CollisionCooldownTable;
 
 typedef struct CollisionEvent {
     struct CollisionEvent *next;
@@ -79,11 +63,11 @@ struct World;
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,
     Vector2 velocity_a, Vector2 velocity_b, f32 dt);
 
-/* Collision exception table */
-CollisionException *collision_exception_find(CollisionExceptionTable *table, EntityID a, EntityID b, s32 effect_index);
-void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b,
+/* Collision cooldown table */
+CollisionEffectCooldown *collision_cooldown_find(CollisionCooldownTable *table, EntityID a, EntityID b, s32 effect_index);
+void collision_cooldown_add(CollisionCooldownTable *table, EntityID a, EntityID b,
     s32 effect_index, LinearArena *arena);
-void remove_expired_collision_exceptions(struct World *world);
+void remove_expired_collision_cooldowns(struct World *world);
 
 /* Collision event table */
 CollisionEventTable collision_event_table_create(LinearArena *parent_arena);

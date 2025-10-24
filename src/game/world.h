@@ -17,7 +17,7 @@ typedef struct World {
     Camera camera;
     Tilemap tilemap;
     EntitySystem entities;
-    CollisionExceptionTable collision_rules;
+    CollisionCooldownTable collision_effect_cooldowns;
     CollisionEventTable  previous_frame_collisions;
     CollisionEventTable  current_frame_collisions;
 } World;

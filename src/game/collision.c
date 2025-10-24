@@ -117,7 +117,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
     return result;
 }
 
-static inline ssize collision_rule_hashed_index(const CollisionExceptionTable *table, EntityID self,
+static inline ssize collision_cooldown_hashed_index(const CollisionCooldownTable *table, EntityID self,
     EntityID other, s32 effect_index)
 {
     // TODO: better hash
@@ -127,55 +127,56 @@ static inline ssize collision_rule_hashed_index(const CollisionExceptionTable *t
     return result;
 }
 
-CollisionException *collision_exception_find(CollisionExceptionTable *table, EntityID self, EntityID other,
+CollisionEffectCooldown *collision_cooldown_find(CollisionCooldownTable *table, EntityID self, EntityID other,
     s32 effect_index)
 {
-    ssize index = collision_rule_hashed_index(table, self, other, effect_index);
+    ssize index = collision_cooldown_hashed_index(table, self, other, effect_index);
 
-    CollisionExceptionList *list = &table->table[index];
-    CollisionException *current_rule;
-    for (current_rule = list_head(list); current_rule; current_rule = list_next(current_rule)) {
-        if (entity_id_equal(current_rule->owning_entity, self)
-            && entity_id_equal(current_rule->collided_entity, other)
-            && (effect_index == current_rule->collision_effect_index)) {
+    CollisionCooldownList *list = &table->table[index];
+
+    CollisionEffectCooldown *current;
+    for (current = list_head(list); current; current = list_next(current)) {
+        if (entity_id_equal(current->owning_entity, self)
+            && entity_id_equal(current->collided_entity, other)
+            && (effect_index == current->collision_effect_index)) {
             break;
         }
     }
 
-    return current_rule;
+    return current;
 }
 
-void collision_exception_add(CollisionExceptionTable *table, EntityID self, EntityID other,
+void collision_cooldown_add(CollisionCooldownTable *table, EntityID self, EntityID other,
     s32 effect_index, LinearArena *arena)
 {
     ASSERT(!entity_id_equal(self, other));
 
-    if (!collision_exception_find(table, self, other, effect_index)) {
-        CollisionException *rule = list_head(&table->free_node_list);
+    if (!collision_cooldown_find(table, self, other, effect_index)) {
+        CollisionEffectCooldown *cooldown = list_head(&table->free_node_list);
 
-        if (!rule) {
-            rule = la_allocate_item(arena, CollisionException);
+        if (!cooldown) {
+            cooldown = la_allocate_item(arena, CollisionEffectCooldown);
         } else {
             list_pop_head(&table->free_node_list);
         }
 
-        *rule = (CollisionException){0};
-        rule->owning_entity = self;
-        rule->collided_entity = other;
-        rule->collision_effect_index = effect_index;
+        *cooldown = (CollisionEffectCooldown){0};
+        cooldown->owning_entity = self;
+        cooldown->collided_entity = other;
+        cooldown->collision_effect_index = effect_index;
 
-        ssize index = collision_rule_hashed_index(table, self, other, effect_index);
-        list_push_back(&table->table[index], rule);
+        ssize index = collision_cooldown_hashed_index(table, self, other, effect_index);
+        list_push_back(&table->table[index], cooldown);
     }
 }
 
-void remove_expired_collision_exceptions(struct World *world)
+void remove_expired_collision_cooldowns(struct World *world)
 {
-    for (ssize i = 0; i < ARRAY_COUNT(world->collision_rules.table); ++i) {
-        CollisionExceptionList *exception_list = &world->collision_rules.table[i];
+    for (ssize i = 0; i < ARRAY_COUNT(world->collision_effect_cooldowns.table); ++i) {
+        CollisionCooldownList *exception_list = &world->collision_effect_cooldowns.table[i];
 
-        for (CollisionException *exc = list_head(exception_list); exc;) {
-            CollisionException *next = exc->next;
+        for (CollisionEffectCooldown *exc = list_head(exception_list); exc;) {
+            CollisionEffectCooldown *next = exc->next;
 
             Entity *owning = es_get_entity(&world->entities, exc->owning_entity);
             Entity *collided = es_get_entity(&world->entities, exc->collided_entity);
@@ -198,7 +199,7 @@ void remove_expired_collision_exceptions(struct World *world)
 
             if (should_remove) {
                 list_remove(exception_list, exc);
-                list_push_back(&world->collision_rules.free_node_list, exc);
+                list_push_back(&world->collision_effect_cooldowns.free_node_list, exc);
             }
 
             exc = next;

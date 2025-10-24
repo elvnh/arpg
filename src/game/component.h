@@ -98,7 +98,7 @@ static inline void add_damage_collision_effect(ColliderComponent *c, Damage dama
     effect.affects_object_kinds = affected_objects;
     effect.as.deal_damage.damage = damage;
     effect.affects_same_faction_entities = affect_same_faction;
-    effect.retrigger_behaviour = COLL_RETRIGGER_WHENEVER;
+    effect.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;
 
     add_collide_effect(c, effect);
 }

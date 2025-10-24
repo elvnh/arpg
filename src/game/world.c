@@ -245,7 +245,7 @@ b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b)
 
 void world_add_collision_exception(World *world, EntityID a, EntityID b, s32 effect_index)
 {
-    collision_exception_add(&world->collision_rules, a, b, effect_index, &world->world_arena);
+    collision_cooldown_add(&world->collision_effect_cooldowns, a, b, effect_index, &world->world_arena);
 }
 
 static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damage damage)
@@ -284,7 +284,7 @@ static b32 should_execute_collision_effect(World *world, Entity *entity, Entity 
         EntityID other_id = es_get_id_of_entity(&world->entities, other);
         b32 in_same_faction = entity->faction == other->faction;
 
-        b32 not_on_cooldown = !collision_exception_find(&world->collision_rules, entity_id, other_id, effect_index);
+        b32 not_on_cooldown = !collision_cooldown_find(&world->collision_effect_cooldowns, entity_id, other_id, effect_index);
 
         result = not_on_cooldown && (!in_same_faction || (effect.affects_same_faction_entities));
     }
@@ -621,7 +621,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
     // TODO: it would be better to pass list of entities to remove since we just retrieved inactive entities
     es_remove_inactive_entities(&world->entities, frame_arena);
 
-    remove_expired_collision_exceptions(world);
+    remove_expired_collision_cooldowns(world);
 
     swap_and_reset_collision_tables(world);
 }

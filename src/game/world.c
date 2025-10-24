@@ -243,9 +243,9 @@ b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b)
     return result;
 }
 
-void world_add_collision_exception(World *world, EntityID a, EntityID b, CollisionExceptionExpiry expiry_kind)
+void world_add_collision_exception(World *world, EntityID a, EntityID b, s32 effect_index)
 {
-    collision_exception_add(&world->collision_rules, a, b, expiry_kind, &world->world_arena);
+    collision_exception_add(&world->collision_rules, a, b, effect_index, &world->world_arena);
 }
 
 static void deal_damage_to_entity(Entity *entity, HealthComponent *health, Damage damage)
@@ -275,20 +275,18 @@ static void try_deal_damage_to_entity(Entity *receiver, Entity *sender, Damage d
 }
 
 static b32 should_execute_collision_effect(World *world, Entity *entity, Entity *other, OnCollisionEffect effect,
-    ObjectKind colliding_with_obj_kind)
+    ObjectKind colliding_with_obj_kind, s32 effect_index)
 {
     EntityID entity_id = es_get_id_of_entity(&world->entities, entity);
     b32 result = (effect.affects_object_kinds & colliding_with_obj_kind) != 0;
 
     if (result && other) {
         EntityID other_id = es_get_id_of_entity(&world->entities, other);
-        b32 is_same_faction = entity->faction == other->faction;
+        b32 in_same_faction = entity->faction == other->faction;
 
-        b32 can_retrigger = (effect.retrigger_behaviour == COLL_RETRIGGER_WHENEVER)
-            || ((effect.retrigger_behaviour == COLL_RETRIGGER_AFTER_NON_CONTACT)
-                && !entities_intersected_previous_frame(world, entity_id, other_id));
+        b32 not_on_cooldown = !collision_exception_find(&world->collision_rules, entity_id, other_id, effect_index);
 
-        result = can_retrigger && (!is_same_faction || (effect.affects_same_faction_entities));
+        result = not_on_cooldown && (!in_same_faction || (effect.affects_same_faction_entities));
     }
 
     return result;
@@ -311,7 +309,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
         for (s32 i = 0; i < other_collider->on_collide_effects.count; ++i) {
             OnCollisionEffect effect = other_collider->on_collide_effects.effects[i];
 
-            b32 should_execute = should_execute_collision_effect(world, entity, other, effect, colliding_with_obj_kind);
+            b32 should_execute = should_execute_collision_effect(world, other, entity, effect, colliding_with_obj_kind, i);
 
             if (should_execute && (effect.kind == ON_COLLIDE_PASS_THROUGH)) {
                 should_pass_through = true;
@@ -322,7 +320,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
     for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
         OnCollisionEffect effect = collider->on_collide_effects.effects[i];
 
-        b32 should_execute = should_execute_collision_effect(world, entity, other, effect, colliding_with_obj_kind);
+        b32 should_execute = should_execute_collision_effect(world, entity, other, effect, colliding_with_obj_kind, i);
 
         if (!should_execute) {
             continue;
@@ -371,12 +369,11 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
         }
 
         if (other && (effect.retrigger_behaviour != COLL_RETRIGGER_WHENEVER)) {
-            EntityID id_a = es_get_id_of_entity(&world->entities, entity);
-            EntityID id_b = es_get_id_of_entity(&world->entities, other);
+            EntityID entity_id = es_get_id_of_entity(&world->entities, entity);
+            EntityID other_id = es_get_id_of_entity(&world->entities, other);
 
-            // TODO: these need to be specific to collision effects
-            CollisionExceptionExpiry expiry_kind = COLL_EXC_EXPIRE_ON_NON_CONTACT;
-            world_add_collision_exception(world, id_a, id_b, expiry_kind);
+            s32 effect_index = i;
+            world_add_collision_exception(world, entity_id, other_id, effect_index);
         }
     }
 }

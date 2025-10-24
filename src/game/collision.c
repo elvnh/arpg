@@ -1,4 +1,5 @@
 #include "collision.h"
+#include "game/component.h"
 #include "game/entity_system.h"
 #include "world.h"
 #include "base/list.h"
@@ -116,24 +117,27 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
     return result;
 }
 
-static inline ssize collision_rule_hashed_index(EntityPair pair, const CollisionExceptionTable *table)
+static inline ssize collision_rule_hashed_index(const CollisionExceptionTable *table, EntityID self,
+    EntityID other, s32 effect_index)
 {
-    u64 hash = entity_pair_hash(pair);
+    // TODO: better hash
+    u64 hash = (entity_id_hash(self) ^ entity_id_hash(other)) + (u64)(effect_index * 17);
     ssize result = mod_index(hash, ARRAY_COUNT(table->table));
 
     return result;
 }
 
-CollisionException *collision_exception_find(CollisionExceptionTable *table, EntityID a, EntityID b)
+CollisionException *collision_exception_find(CollisionExceptionTable *table, EntityID self, EntityID other,
+    s32 effect_index)
 {
-    EntityPair searched_pair = entity_pair_create(a, b);
-    ssize index = collision_rule_hashed_index(searched_pair, table);
+    ssize index = collision_rule_hashed_index(table, self, other, effect_index);
 
     CollisionExceptionList *list = &table->table[index];
     CollisionException *current_rule;
     for (current_rule = list_head(list); current_rule; current_rule = list_next(current_rule)) {
-        if (entity_id_equal(current_rule->entity_pair.entity_a, searched_pair.entity_a)
-	 && entity_id_equal(current_rule->entity_pair.entity_b, searched_pair.entity_b)) {
+        if (entity_id_equal(current_rule->owning_entity, self)
+            && entity_id_equal(current_rule->collided_entity, other)
+            && (effect_index == current_rule->collision_effect_index)) {
             break;
         }
     }
@@ -141,14 +145,12 @@ CollisionException *collision_exception_find(CollisionExceptionTable *table, Ent
     return current_rule;
 }
 
-void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityID b,
-    CollisionExceptionExpiry expiry_kind, LinearArena *arena)
+void collision_exception_add(CollisionExceptionTable *table, EntityID self, EntityID other,
+    s32 effect_index, LinearArena *arena)
 {
-    ASSERT(!entity_id_equal(a, b));
+    ASSERT(!entity_id_equal(self, other));
 
-    EntityPair entity_pair = entity_pair_create(a, b);
-
-    if (!collision_exception_find(table, entity_pair.entity_a, entity_pair.entity_b)) {
+    if (!collision_exception_find(table, self, other, effect_index)) {
         CollisionException *rule = list_head(&table->free_node_list);
 
         if (!rule) {
@@ -158,10 +160,11 @@ void collision_exception_add(CollisionExceptionTable *table, EntityID a, EntityI
         }
 
         *rule = (CollisionException){0};
-        rule->entity_pair = entity_pair;
-        rule->expiry_kind = expiry_kind;
+        rule->owning_entity = self;
+        rule->collided_entity = other;
+        rule->collision_effect_index = effect_index;
 
-        ssize index = collision_rule_hashed_index(rule->entity_pair, table);
+        ssize index = collision_rule_hashed_index(table, self, other, effect_index);
         list_push_back(&table->table[index], rule);
     }
 }
@@ -174,15 +177,24 @@ void remove_expired_collision_exceptions(struct World *world)
         for (CollisionException *exc = list_head(exception_list); exc;) {
             CollisionException *next = exc->next;
 
-            Entity *entity_a = es_get_entity(&world->entities, exc->entity_pair.entity_a);
-            Entity *entity_b = es_get_entity(&world->entities, exc->entity_pair.entity_b);
+            Entity *owning = es_get_entity(&world->entities, exc->owning_entity);
+            Entity *collided = es_get_entity(&world->entities, exc->collided_entity);
+            ASSERT(owning);
+            ASSERT(collided);
 
-            EntityID id_a = es_get_id_of_entity(&world->entities, entity_a);
-            EntityID id_b = es_get_id_of_entity(&world->entities, entity_b);
+            EntityID owning_id = exc->owning_entity;
+            EntityID collided_id = exc->collided_entity;
 
-            b32 should_remove = (entity_a->is_inactive || entity_b->is_inactive)
-                || ((exc->expiry_kind == COLL_EXC_EXPIRE_ON_NON_CONTACT)
-                    && !entities_intersected_this_frame(world, id_a, id_b));
+            ColliderComponent *collider = es_get_component(owning, ColliderComponent);
+            ASSERT(collider);
+            ASSERT(exc->collision_effect_index < ARRAY_COUNT(collider->on_collide_effects.effects));
+
+            const OnCollisionEffect *effect = &collider->on_collide_effects.effects[exc->collision_effect_index];
+            ASSERT(effect->retrigger_behaviour != COLL_RETRIGGER_WHENEVER);
+
+            b32 should_remove = (owning->is_inactive || collided->is_inactive)
+                || ((effect->retrigger_behaviour == COLL_RETRIGGER_AFTER_NON_CONTACT)
+                    && !entities_intersected_this_frame(world, owning_id, collided_id));
 
             if (should_remove) {
                 list_remove(exception_list, exc);

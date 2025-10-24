@@ -26,7 +26,7 @@ void world_initialize(World *world, const struct AssetList *assets, LinearArena 
 void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena);
 void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list, FrameData frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
-void world_add_collision_exception(World *world, EntityID a, EntityID b, CollisionExceptionExpiry expiry_kind);
+void world_add_collision_exception(World *world, EntityID owner, EntityID collided, s32 effect_index);
 
 b32 entities_intersected_this_frame(World *world, EntityID a, EntityID b);
 b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b);

@@ -93,4 +93,11 @@ static inline u64 entity_pair_hash(EntityPair pair)
     return result;
 }
 
+static inline u64 entity_id_hash(EntityID id)
+{
+    u64 result = (u64)id.slot_id ^ (u64)id.generation;
+
+    return result;
+}
+
 #endif //ENTITY_H

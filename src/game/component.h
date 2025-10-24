@@ -52,7 +52,7 @@ typedef enum {
 typedef struct {
     CollideEffectKind kind;
     ObjectKind affects_object_kinds;
-    b32 affects_same_faction_entities;
+    b32 affects_same_faction_entities; // TODO: make into bitset of ignored factions
     CollisionRetriggerBehaviour retrigger_behaviour;
 
     union {
@@ -71,7 +71,6 @@ typedef struct {
         s32 count;
     } on_collide_effects;
 } ColliderComponent;
-
 
 static inline void add_collide_effect(ColliderComponent *c, OnCollisionEffect effect)
 {
@@ -99,6 +98,7 @@ static inline void add_damage_collision_effect(ColliderComponent *c, Damage dama
     effect.affects_object_kinds = affected_objects;
     effect.as.deal_damage.damage = damage;
     effect.affects_same_faction_entities = affect_same_faction;
+    effect.retrigger_behaviour = COLL_RETRIGGER_WHENEVER;
 
     add_collide_effect(c, effect);
 }

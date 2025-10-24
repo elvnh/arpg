@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "base/hash.h"
+#include "base/matrix.h"
 #include "game/ui/widget.h"
 #include "ui_core.h"
 #include "base/linear_arena.h"
@@ -297,10 +298,14 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
-            Vector2 text_position = v2_add(widget->final_position, v2(0.0f, widget->text.baseline_y_offset));
+            Vector2 text_position = widget->final_position;
+
+	    if (rb->y_direction == Y_IS_DOWN) {
+		text_position = v2_add(text_position, v2(0.0f, widget->text.baseline_y_offset));
+	    }
 
             rb_push_clipped_text(rb, arena, widget->text.string, text_position,
-		widget_rect, widget->color, widget->text.size,
+		parent_bounds, widget->color, widget->text.size,
                 assets->texture_shader, widget->text.font, depth);
         }
     }

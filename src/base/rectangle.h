@@ -215,8 +215,8 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectan
 	    uv_top = uv_base_bottom + (rel_top / rect.size.y) * uv_height;
 	    uv_bottom = uv_base_bottom + (rel_bottom / rect.size.y) * uv_height;
 	} else {
-            // TODO: fix for y is up
-            UNIMPLEMENTED;
+	    uv_top = uv_base_bottom - (rel_top / rect.size.y) * uv_height;
+	    uv_bottom = uv_base_bottom - (rel_bottom / rect.size.y) * uv_height;
 	}
 
         Vertex a = {

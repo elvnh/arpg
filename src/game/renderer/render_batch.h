@@ -35,7 +35,7 @@ DEFINE_LIST(RenderBatchNode, RenderBatchList);
 struct Particle;
 
 RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, YDirection y_dir, LinearArena *arena);
-void         rb_sort_entries(RenderBatch *rb);
+void         rb_sort_entries(RenderBatch *rb, LinearArena *scratch);
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,

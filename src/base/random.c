@@ -18,7 +18,7 @@ static u64 splitmix(u64 *state)
 
 void rng_initialize(RNGState *rng, u64 seed)
 {
-    rng_set_global_rng_state(rng);
+    rng_set_global_state(rng);
 
     rng->state[0] = splitmix(&seed);
     rng->state[1] = splitmix(&seed);
@@ -26,7 +26,7 @@ void rng_initialize(RNGState *rng, u64 seed)
     rng->state[3] = splitmix(&seed);
 }
 
-void rng_set_global_rng_state(RNGState *rng)
+void rng_set_global_state(RNGState *rng)
 {
     ASSERT(rng);
     g_rng_state = rng;

@@ -106,7 +106,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
 	RGBA32_WHITE, game_state->asset_list.texture_shader, 4);
 #endif
 
-    rb_sort_entries(rb);
+    rb_sort_entries(rb, frame_arena);
 }
 
 static String dbg_arena_usage_string(String name, ssize usage, Allocator allocator)
@@ -288,7 +288,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 {
 #if HOT_RELOAD
     // NOTE: these global pointers are set every frame in case we have hot reloaded
-    rng_set_global_rng_state(&game_state->rng_state);
+    rng_set_global_state(&game_state->rng_state);
 #endif
 
     debug_update(game_state, frame_data, &game_memory->temporary_memory);
@@ -310,6 +310,8 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
         Matrix4 proj = mat4_orthographic(frame_data.window_size, Y_IS_DOWN);
         RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
         ui_core_end_frame(&game_state->ui, frame_data, ui_rb, &game_state->asset_list, platform_code);
+
+        rb_sort_entries(ui_rb, &game_memory->temporary_memory);
     }
 }
 

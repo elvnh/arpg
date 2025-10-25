@@ -17,31 +17,68 @@ RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, YDirect
     return &node->render_batch;
 }
 
-static int sort_cmp(const void *a, const void *b)
+static void merge_render_entry_arrays(RenderEntry *dst, RenderEntry *left, ssize left_count,
+    RenderEntry *right, ssize right_count)
 {
-    const RenderEntry *entry_a = a;
-    const RenderEntry *entry_b = b;
+    ssize end = left_count + right_count;
 
-    if (entry_a->key < entry_b->key) {
-        return -1;
-    } else if (entry_a->key > entry_b->key) {
-        return 1;
+    ssize left_idx = 0;
+    ssize right_idx = 0;
+
+    for (ssize dst_idx = 0; dst_idx < end; ++dst_idx) {
+        b32 left_half_done = left_idx == left_count;
+        b32 right_half_done = right_idx == right_count;
+        b32 left_element_smaller = left[left_idx].key <= right[right_idx].key;
+
+        if (!left_half_done && (left_element_smaller || right_half_done)) {
+            dst[dst_idx] = left[left_idx++];
+        } else {
+            dst[dst_idx] = right[right_idx++];
+        }
     }
-
-    return 0;
 }
 
-void rb_sort_entries(RenderBatch *rb)
+static void merge_sort_render_entries(RenderEntry *entries, ssize count, LinearArena *scratch)
 {
-    // TODO: don't use qsort here, use a stable sort
-    qsort(rb->entries, (usize)rb->entry_count, sizeof(*rb->entries), sort_cmp);
+    if (count == 1) {
 
+    } else if (count == 2) {
+        RenderEntry *a = &entries[0];
+        RenderEntry *b = &entries[1];
+
+        if (a->key > b->key) {
+            RenderEntry tmp = *a;
+            *a = *b;
+            *b = tmp;
+        }
+    } else {
+        RenderEntry *copy = la_copy_array(scratch, entries, count);
+
+        ssize left_half_count = count / 2;
+        ssize right_half_count = count - left_half_count;
+
+        RenderEntry *left_half = copy;
+        RenderEntry *right_half = left_half + left_half_count;
+
+        merge_sort_render_entries(left_half, left_half_count, scratch);
+        merge_sort_render_entries(right_half, right_half_count, scratch);
+
+        merge_render_entry_arrays(entries, left_half, left_half_count, right_half, right_half_count);
+    }
+}
+
+void rb_sort_entries(RenderBatch *rb, LinearArena *scratch)
+{
+    merge_sort_render_entries(rb->entries, rb->entry_count, scratch);
+
+#if 1
     for (ssize i = 0; i < rb->entry_count - 1; ++i) {
         RenderEntry *a = &rb->entries[i];
         RenderEntry *b = &rb->entries[i + 1];
 
         ASSERT(a->key <= b->key);
     }
+#endif
 }
 
 // TODO: can this be automated?

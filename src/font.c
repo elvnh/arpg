@@ -236,13 +236,11 @@ RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vec
 
 RenderedGlyphInfo font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 text_size, RGBA32 color, YDirection y_dir)
 {
-    // TODO: don't set this arbitrary value, use the window bounds
-    Rectangle glyph_bounds = {{0, 0}, {100000, 100000}};
+    // TODO: don't set this arbitrary value, use the window bounds or something similary
+    Rectangle glyph_bounds = {{-100000, -100000}, {10000000, 10000000}};
 
     RenderedGlyphInfo result = font_get_clipped_glyph_vertices(
 	asset, ch, position, glyph_bounds, text_size, color, y_dir);
-
-    ASSERT(result.is_visible || ch == ' ');
 
     return result;
 }

@@ -1,5 +1,6 @@
 #include "random.h"
 #include "base/maths.h"
+#include "base/utils.h"
 
 static RNGState *g_rng_state;
 
@@ -55,10 +56,34 @@ s32 rng_s32(s32 min, s32 max)
     u64 x = xoshiro256ss();
     f32 n = (f32)((f64)x / (f64)U64_MAX);
 
-    s32 result = (min + (s32)((f32)(max - min) * (f32)n));
+    s32 result = (min + (s32)((f32)(max - min) * n));
 
     ASSERT(result >= min);
     ASSERT(result <= max);
 
+    return result;
+}
+
+f32 rng_f32(f32 min, f32 max)
+{
+    ASSERT(min <= max);
+    u64 x = xoshiro256ss();
+    f32 n = (f32)((f64)x / (f64)U64_MAX);
+
+    f32 result = (min + ((f32)(max - min) * n));
+
+    ASSERT(result >= min);
+    ASSERT(result <= max);
+
+    return result;
+}
+
+Vector2 rng_direction(f32 max_radians)
+{
+    f32 n = rng_f32(0, max_radians);
+    f32 x = cos_f32(n);
+    f32 y = sin_f32(n);
+
+    Vector2 result = {x, y};
     return result;
 }

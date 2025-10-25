@@ -2,6 +2,7 @@
 #include "base/format.h"
 #include "base/matrix.h"
 #include "base/rgba.h"
+#include "base/random.h"
 #include "base/utils.h"
 #include "debug.h"
 #include "base/sl_list.h"
@@ -96,19 +97,18 @@ static void component_update_particle_spawner(Entity *entity, ParticleSpawner *p
     }
 
     for (s32 i = 0; i < particles_to_spawn_this_frame; ++i) {
-        f32 x = cos_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
-        f32 y = sin_f32(((f32)rand() / (f32)RAND_MAX) * PI * 2.0f);
+        Vector2 dir = rng_direction(PI * 2);
 
         f32 min_speed = ps->config.particle_speed * 0.5f;
         f32 max_speed = ps->config.particle_speed * 1.5f;
-        f32 speed = min_speed + ((f32)rand() / (f32)RAND_MAX) * (max_speed - min_speed);
+        f32 speed = rng_f32(min_speed, max_speed);
 
         // TODO: color variance
         Particle new_particle = {
             .timer = 0.0f,
             .lifetime = ps->config.particle_lifetime,
             .position = position,
-            .velocity = v2_mul_s(v2(x, y), speed)
+            .velocity = v2_mul_s(dir, speed)
         };
 
         ring_push_overwrite(&ps->particle_buffer, &new_particle);
@@ -256,8 +256,10 @@ static void create_hitsplat(World *world, Vector2 position, Damage damage)
 {
     ASSERT(world->hitsplat_count < ARRAY_COUNT(world->active_hitsplats));
 
-    // TODO: randomize velocity and position
-    Vector2 velocity = {0, 10.0f};
+    // TODO: randomize size and position
+    // TODO: use function for updating position instead
+    Vector2 velocity = rng_direction(PI * 2);
+    velocity = v2_mul_s(velocity, 20.0f);
 
     Hitsplat hitsplat = {
         .damage = damage,
@@ -772,19 +774,19 @@ void world_initialize(World *world, const struct AssetList *asset_list, const st
         add_blocking_collide_effect(collider, OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES, true);
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
-        hp->health.hitpoints = 10;
+        hp->health.hitpoints = 100000;
 
         ASSERT(es_has_component(entity, ColliderComponent));
         ASSERT(es_has_component(entity, HealthComponent));
 
 #if 1
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
-        spawner->action_when_done = PS_WHEN_DONE_DO_NOTHING;
+        spawner->action_when_done = PS_WHEN_DONE_REMOVE_COMPONENT;
         ParticleSpawnerConfig config = {
             .particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f},
             .particle_size = 4.0f,
             .particles_per_second = 250.0f,
-            .total_particles_to_spawn = 10.0f,
+            .total_particles_to_spawn = 1000000.0f, // TODO: infinite particles
             .particle_speed = 100.0f,
             .particle_lifetime = 1.0f
         };

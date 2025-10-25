@@ -247,7 +247,7 @@ b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b)
     return result;
 }
 
-void world_add_collision_exception(World *world, EntityID a, EntityID b, s32 effect_index)
+void world_add_collision_cooldown(World *world, EntityID a, EntityID b, s32 effect_index)
 {
     collision_cooldown_add(&world->collision_effect_cooldowns, a, b, effect_index, &world->world_arena);
 }
@@ -397,7 +397,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
             EntityID other_id = es_get_id_of_entity(&world->entity_system, other);
 
             s32 effect_index = i;
-            world_add_collision_exception(world, entity_id, other_id, effect_index);
+            world_add_collision_cooldown(world, entity_id, other_id, effect_index);
         }
     }
 }

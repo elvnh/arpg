@@ -8,6 +8,7 @@ src/base/linear_arena.c
 src/base/string8.c
 src/base/allocator.c
 src/base/image.c
+src/base/random.c
 src/base/free_list_arena.c
 "
 #src/base/thread_context.c

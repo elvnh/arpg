@@ -8,7 +8,6 @@
 
 #define MAX_SIGNED_TYPE_VALUE(type) ((ssize)(((u64)1 << (CHAR_BIT * sizeof(type) - 1)) - 1))
 #define MIN_SIGNED_TYPE_VALUE(type) (-MAX_SIGNED_TYPE_VALUE(type) - 1)
-
 #define MAX_UNSIGNED_TYPE_VALUE(type) ((type)-1)
 
 #define USIZE_MAX    MAX_UNSIGNED_TYPE_VALUE(usize)

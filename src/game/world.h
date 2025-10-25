@@ -33,7 +33,8 @@ typedef struct World {
     CollisionEventTable  current_frame_collisions;
     Hitsplat active_hitsplats[128];
     s32 hitsplat_count;
-    const struct Spells *spells;
+
+    const struct Spells *spells; // TODO: make into global variable
 } World;
 
 void world_initialize(World *world, const struct AssetList *asset_list, const struct Spells *spells, LinearArena *arena);

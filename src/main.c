@@ -8,6 +8,7 @@
 #include "base/free_list_arena.h"
 #include "base/hash.h"
 #include "base/linear_arena.h"
+#include "base/random.h"
 #include "base/rectangle.h"
 #include "base/string8.h"
 #include "base/image.h"
@@ -81,6 +82,9 @@ int main()
     RendererBackend *backend = renderer_backend_initialize(la_allocator(&game_memory.permanent_memory));
 
     assets_initialize(&asset_mgr, la_allocator(&game_memory.permanent_memory));
+
+    u64 rng_seed = (u64)time(0); // TODO: better seed
+    rng_initialize(&game_state->rng_state, rng_seed);
 
     game_state->asset_list = (AssetList){
         .texture_shader = assets_register_shader(&asset_mgr, str_lit("shader.glsl"), &game_memory.temporary_memory),

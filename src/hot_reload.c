@@ -55,7 +55,7 @@ void load_game_code(GameCode *game_code, LinearArena *scratch)
 
     game_code->handle = handle;
     game_code->initialize = initialize;
-    game_code->update_and_render = (GameUpdateAndRender *)update_and_render;
+    game_code->update_and_render = update_and_render;
 
     END_IGNORE_FUNCTION_PTR_WARNINGS;
 

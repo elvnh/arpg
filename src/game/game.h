@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "base/matrix.h"
+#include "base/random.h"
 #include "game/magic.h"
 #include "ui/ui_core.h"
 #include "platform.h"
@@ -21,8 +22,9 @@ typedef struct {
     AssetList asset_list;
     DebugState debug_state;
     Spells spells;
+    RNGState rng_state;
 
-    StringBuilder sb;
+    //StringBuilder sb;
 } GameState;
 
 typedef struct {

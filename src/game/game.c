@@ -6,6 +6,7 @@
 #include "base/linear_arena.h"
 #include "base/list.h"
 #include "base/matrix.h"
+#include "base/random.h"
 #include "base/rectangle.h"
 #include "base/ring_buffer.h"
 #include "base/sl_list.h"
@@ -268,6 +269,11 @@ void debug_update(GameState *game_state, FrameData frame_data, LinearArena *fram
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory)
 {
+#if HOT_RELOAD
+    // NOTE: these global pointers are set every frame in case we have hot reloaded
+    rng_set_global_rng_state(&game_state->rng_state);
+#endif
+
     debug_update(game_state, frame_data, &game_memory->temporary_memory);
 
     game_update(game_state, frame_data, &game_memory->temporary_memory);
@@ -293,9 +299,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     magic_initialize(&game_state->spells, &game_state->asset_list);
     world_initialize(&game_state->world, &game_state->asset_list, &game_state->spells, &game_memory->permanent_memory);
 
-    game_state->sb = str_builder_allocate(32, la_allocator(&game_memory->permanent_memory));
     game_state->debug_state.average_fps = 60.0f;
-
 
     UIStyle default_ui_style = {
         .font = game_state->asset_list.default_font

@@ -8,6 +8,7 @@ typedef struct DebugState {
     b32 render_origin;
     b32 render_entity_bounds;
     f32 average_fps;
+    f32 timestep_modifier;
 
     EntityID hovered_entity;
 } DebugState;

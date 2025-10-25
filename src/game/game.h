@@ -21,10 +21,8 @@ typedef struct {
     UIState ui;
     AssetList asset_list;
     DebugState debug_state;
-    Spells spells;
+    Spells spells; // TODO: make into global variable
     RNGState rng_state;
-
-    //StringBuilder sb;
 } GameState;
 
 typedef struct {

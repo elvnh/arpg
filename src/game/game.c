@@ -159,9 +159,16 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
         temp_alloc
     );
 
+    f32 timestep = game_state->debug_state.timestep_modifier;
+    String timestep_str = str_concat(
+        str_lit("Timestep modifier: "),
+        f32_to_string(timestep, 2, temp_alloc),
+        temp_alloc
+    );
 
     ui_text(ui, frame_time_str);
     ui_text(ui, fps_str);
+    ui_text(ui, timestep_str);
 
     ui_spacing(ui, 8);
 
@@ -264,6 +271,16 @@ void debug_update(GameState *game_state, FrameData frame_data, LinearArena *fram
     } else {
         game_state->debug_state.hovered_entity = NULL_ENTITY_ID;
     }
+
+    f32 speed_modifier = game_state->debug_state.timestep_modifier;
+    f32 speed_modifier_step = 0.25;
+    if (input_is_key_pressed(frame_data.input, KEY_UP)) {
+        speed_modifier += speed_modifier_step;
+    } else if (input_is_key_pressed(frame_data.input, KEY_DOWN)) {
+        speed_modifier -= speed_modifier_step;
+    }
+
+    game_state->debug_state.timestep_modifier = CLAMP(speed_modifier, speed_modifier_step, 5.0f);
 }
 
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
@@ -275,6 +292,8 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 #endif
 
     debug_update(game_state, frame_data, &game_memory->temporary_memory);
+
+    frame_data.dt *= game_state->debug_state.timestep_modifier;
 
     game_update(game_state, frame_data, &game_memory->temporary_memory);
     game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);
@@ -300,6 +319,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
     world_initialize(&game_state->world, &game_state->asset_list, &game_state->spells, &game_memory->permanent_memory);
 
     game_state->debug_state.average_fps = 60.0f;
+    game_state->debug_state.timestep_modifier = 1.0f;
 
     UIStyle default_ui_style = {
         .font = game_state->asset_list.default_font

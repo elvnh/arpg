@@ -156,6 +156,24 @@ static void tests_arena()
 
         la_destroy(&arena);
     }
+
+    {
+        LinearArena arena = la_create(default_allocator, 1024);
+        s32 *first = la_allocate_array(&arena, s32, 4);
+
+        for (s32 i = 0; i < 4; ++i) {
+            first[i] = i;
+        }
+
+        s32 *second = la_copy_array(&arena, first, 4);
+
+        ASSERT(first != second);
+        ASSERT(is_aligned((ssize)second, ALIGNOF(s32)));
+
+        for (s32 i = 0; i < 4; ++i) {
+            ASSERT(second[i] == first[i]);
+        }
+    }
 }
 
 static void tests_string()

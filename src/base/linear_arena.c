@@ -122,14 +122,14 @@ void *alloc_bytes(LinearArena *arena, ssize byte_count, ssize alignment)
 void *la_allocate(void *context, ssize count, ssize item_size, ssize alignment)
 {
     ASSERT(is_pow2(alignment));
+    ASSERT(count > 0);
+    ASSERT(item_size > 0);
+    ASSERT(alignment > 0);
 
     LinearArena *arena = context;
 
     // TODO: just crash when this happens
-    if (multiply_overflows_ssize(count, item_size)) {
-        ASSERT(false);
-        return 0;
-    }
+    ASSERT(!multiply_overflows_ssize(count, item_size));
 
     ssize byte_count = count * item_size;
 
@@ -218,4 +218,12 @@ void la_pop_to(LinearArena *arena, void *ptr)
     }
 
     ASSERT(curr_block);
+}
+
+void *la_copy_allocation(void *context, void *arr, ssize item_count, ssize item_size, ssize alignment)
+{
+    void *new_alloc = la_allocate(context, item_count, item_size, alignment);
+    memcpy(new_alloc, arr, cast_ssize_to_usize(item_count * item_size));
+
+    return new_alloc;
 }

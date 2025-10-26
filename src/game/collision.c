@@ -1,5 +1,5 @@
 #include "collision.h"
-#include "game/component.h"
+#include "components/component.h"
 #include "game/entity_system.h"
 #include "world.h"
 #include "base/list.h"

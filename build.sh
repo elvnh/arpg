@@ -35,6 +35,7 @@ src/game/magic.c
 src/game/renderer/render_batch.c
 src/game/ui/ui_core.c
 src/game/ui/ui_builder.c
+src/game/components/particle.c
 "
 
 RENDERER_SOURCES="
@@ -80,6 +81,7 @@ FLAGS="
       -Wcast-align
 
       -Isrc
+      -Isrc/game
       -Ideps
 "
 

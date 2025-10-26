@@ -4,7 +4,7 @@
 #include "game/collision.h"
 #include "game/damage.h"
 #include "world.h"
-#include "component.h"
+#include "components/component.h"
 #include "asset.h"
 #include "entity_system.h"
 
@@ -57,8 +57,7 @@ static const Spell *get_spell_by_id(SpellID id)
     return &g_spells->spells[id];
 }
 
-void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 position,
-    Vector2 direction)
+void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 pos, Vector2 dir)
 {
     //ASSERT(v2_mag(direction) == 1.0f);
 
@@ -66,7 +65,7 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 
     EntityWithID spell_entity_with_id = es_spawn_entity(&world->entity_system, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
-    spell_entity->position = position;
+    spell_entity->position = pos;
 
     const Spell *spell = get_spell_by_id(id);
 
@@ -80,7 +79,7 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
 	collider->size = spell->projectile.collider_size;
 
-	spell_entity->velocity = v2_mul_s(direction, spell->projectile.projectile_speed);
+	spell_entity->velocity = v2_mul_s(dir, spell->projectile.projectile_speed);
     }
 
     if (spell->properties & SPELL_COLLISION_EFFECT_PROPERTIES) {

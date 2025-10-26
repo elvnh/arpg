@@ -17,7 +17,7 @@
 #include "base/vector.h"
 #include "base/line.h"
 #include "game/camera.h"
-#include "game/component.h"
+#include "components/component.h"
 #include "game/damage.h"
 #include "game/entity.h"
 #include "game/entity_system.h"

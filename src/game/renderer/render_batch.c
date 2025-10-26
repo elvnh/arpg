@@ -4,7 +4,7 @@
 #include "base/utils.h"
 #include "game/renderer/render_key.h"
 #include "render_command.h"
-#include "game/particle.h"
+#include "game/components/particle.h"
 
 RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, YDirection y_dir, LinearArena *arena)
 {

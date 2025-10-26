@@ -3,7 +3,7 @@
 
 #include "base/vector.h"
 #include "base/rgba.h"
-#include "component.h"
+#include "components/component.h"
 
 typedef s32 EntityIndex;
 typedef s32 EntityGeneration;

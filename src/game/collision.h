@@ -5,7 +5,7 @@
 #include "base/rectangle.h"
 #include "base/linear_arena.h"
 #include "entity.h"
-#include "game/component.h"
+#include "components/component.h"
 
 typedef enum {
     COLL_NOT_COLLIDING,

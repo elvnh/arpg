@@ -3,7 +3,7 @@
 #include "font.h"
 #include "game/renderer/render_command.h"
 #include "game/renderer/render_key.h"
-#include "game/particle.h"
+#include "game/components/particle.h"
 #include "renderer/renderer_backend.h"
 
 typedef struct {

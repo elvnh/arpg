@@ -311,7 +311,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
     // TODO: clean up this function
     ASSERT(entity);
 
-    b32 should_pass_through = false;
+    b32 should_block = !other;
 
     // TODO: if no blocking effect is present, pass through
     // If other entity has a pass through effect, we shouldn't be blocked by that entity
@@ -322,10 +322,11 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
         for (s32 i = 0; i < other_collider->on_collide_effects.count; ++i) {
             OnCollisionEffect effect = other_collider->on_collide_effects.effects[i];
 
-            b32 should_execute = should_execute_collision_effect(world, other, entity, effect, colliding_with_obj_kind, i);
+            b32 should_execute = should_execute_collision_effect(world, other, entity, effect,
+		colliding_with_obj_kind, i);
 
-            if (should_execute && (effect.kind == ON_COLLIDE_PASS_THROUGH)) {
-                should_pass_through = true;
+            if (should_execute && (effect.kind == ON_COLLIDE_STOP)) {
+                should_block = true;
             }
         }
     }
@@ -333,7 +334,8 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
     for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
         OnCollisionEffect effect = collider->on_collide_effects.effects[i];
 
-        b32 should_execute = should_execute_collision_effect(world, entity, other, effect, colliding_with_obj_kind, i);
+        b32 should_execute = should_execute_collision_effect(world, entity, other, effect,
+	    colliding_with_obj_kind, i);
 
         if (!should_execute) {
             continue;
@@ -341,7 +343,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
 
         switch (effect.kind) {
             case ON_COLLIDE_STOP: {
-                if (!should_pass_through) {
+                if (should_block) {
                     if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
                         entity->position = collision.new_position_a;
                         entity->velocity = collision.new_velocity_a;
@@ -353,7 +355,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
             } break;
 
             case ON_COLLIDE_BOUNCE: {
-                if (!should_pass_through) {
+                if (should_block) {
                     if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
                         entity->position = collision.new_position_a;
                         entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);

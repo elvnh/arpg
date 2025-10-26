@@ -14,8 +14,7 @@ typedef enum {
     SPELL_PROP_PROJECTILE = (1 << 0),
     SPELL_PROP_DAMAGING = (1 << 1),
     SPELL_PROP_SPRITE = (1 << 2),
-    SPELL_PROP_BOUNCE_OFF_WALLS = (1 << 3),
-
+    SPELL_PROP_BOUNCE_ON_TILES = (1 << 3),
 } SpellProperties;
 
 typedef struct {
@@ -33,6 +32,7 @@ typedef struct {
 
     struct {
 	f32 projectile_speed;
+	Vector2 collider_size;
     } projectile;
 
     /*

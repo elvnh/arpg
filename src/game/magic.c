@@ -21,6 +21,7 @@ static Spell spell_fireball(const AssetList *asset_list)
     spell.sprite.sprite_size = v2(32, 32);
 
     spell.projectile.projectile_speed = 100.0f;
+    spell.projectile.collider_size = v2(32, 32);
 
     Damage damage = {0};
     damage.types.values[DMG_KIND_FIRE] = 10;
@@ -72,17 +73,26 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 	sprite->size = spell->sprite.sprite_size;
     }
 
-    if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
-	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
-	add_damage_collision_effect(collider, spell->damaging.base_damage, OBJECT_KIND_ENTITIES, false);
-    }
-
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
+	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
+	collider->size = spell->projectile.collider_size;
+
 	spell_entity->velocity = v2_mul_s(direction, spell->projectile.projectile_speed);
     }
 
-    if (spell_has_prop(spell, SPELL_PROP_BOUNCE_OFF_WALLS)) {
-	UNIMPLEMENTED;
+    // NOTE: for now, either die on collision with walls unless bounce flag is set
+    // TODO: more dynamic behaviour
+    if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
+	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
+	add_bounce_collision_effect(collider, OBJECT_KIND_TILES, false);
+    } else {
+	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
+	add_die_collision_effect(collider, OBJECT_KIND_TILES, false);
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
+	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
+	add_damage_collision_effect(collider, spell->damaging.base_damage, OBJECT_KIND_ENTITIES, false);
     }
 }
 

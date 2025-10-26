@@ -287,9 +287,12 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     FrameData frame_data, GameMemory *game_memory)
 {
 #if HOT_RELOAD
-    // NOTE: these global pointers are set every frame in case we have hot reloaded
+    // NOTE: these global pointers are set every frame in case we have hot reloaded.
     rng_set_global_state(&game_state->rng_state);
     magic_set_global_spell_array(&game_state->spells);
+
+    // Spells are re-initialized every frame so that the spells can be changed during runtime.
+    magic_initialize(&game_state->spells, &game_state->asset_list);
 #endif
 
     debug_update(game_state, frame_data, &game_memory->temporary_memory);

@@ -705,7 +705,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         ASSERT(es_has_component(entity, ColliderComponent));
         ASSERT(es_has_component(entity, HealthComponent));
 
-#if 1
+#if 0
         ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
         spawner->action_when_done = PS_WHEN_DONE_REMOVE_COMPONENT;
         ParticleSpawnerConfig config = {

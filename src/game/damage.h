@@ -3,6 +3,7 @@
 
 #include "health.h"
 #include "base/utils.h"
+#include "base/random.h"
 
 /*
   TODO:
@@ -29,8 +30,13 @@ typedef struct {
 } ResistanceStats;
 
 typedef struct {
+    DamageTypes low_roll;
+    DamageTypes high_roll;
+} DamageRange;
+
+typedef struct {
     DamageTypes types;
-} Damage;
+} Damage; // TODO: rename to DamageInstance
 
 static inline DamageValue *get_damage_reference_of_type(DamageTypes *damages, DamageKind type)
 {
@@ -114,10 +120,33 @@ static inline DamageKind get_primary_damage_type(Damage damage)
     return result;
 }
 
+// TODO: these should be the same function
 static inline void set_damage_of_type(Damage *damage, DamageKind kind, DamageValue new_value)
 {
     DamageValue *old_value = get_damage_reference_of_type(&damage->types, kind);
     *old_value = new_value;
+}
+
+static inline void set_damage_value_of_type(DamageTypes *damages, DamageKind kind, DamageValue new_value)
+{
+    DamageValue *old_value = get_damage_reference_of_type(damages, kind);
+    *old_value = new_value;
+}
+
+static inline Damage calculate_damage_dealt_from_range(DamageRange damage_range)
+{
+    // TODO: make caster stats influence damage roll
+    Damage result = {0};
+
+    for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
+	DamageValue low = get_damage_value_of_type(damage_range.low_roll, type);
+	DamageValue high = get_damage_value_of_type(damage_range.high_roll, type);
+
+	DamageValue roll = rng_s64(low, high);
+	set_damage_of_type(&result, type, roll);
+    }
+
+    return result;
 }
 
 #endif //DAMAGE_H

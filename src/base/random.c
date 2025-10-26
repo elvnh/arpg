@@ -50,6 +50,22 @@ u64 xoshiro256ss()
     return result;
 }
 
+// TODO: mcros to make defining these simpler
+s64 rng_s64(s64 min, s64 max)
+{
+    ASSERT(min <= max);
+    u64 x = xoshiro256ss();
+    f32 n = (f32)((f64)x / (f64)U64_MAX);
+
+    s64 result = (s64)(min + (s64)((f32)(max - min) * n));
+
+    ASSERT(result >= min);
+    ASSERT(result <= max);
+
+    return result;
+}
+
+
 s32 rng_s32(s32 min, s32 max)
 {
     ASSERT(min <= max);

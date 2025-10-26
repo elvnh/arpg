@@ -25,10 +25,11 @@ static Spell spell_fireball(const AssetList *asset_list)
     spell.projectile.projectile_speed = 250.0f;
     spell.projectile.collider_size = v2(32, 32);
 
-    Damage damage = {0};
-    set_damage_of_type(&damage, DMG_KIND_FIRE, 10);
+    DamageRange damage_range = {0};
+    set_damage_value_of_type(&damage_range.low_roll, DMG_KIND_FIRE, 10);
+    set_damage_value_of_type(&damage_range.high_roll, DMG_KIND_FIRE, 20);
 
-    spell.damaging.base_damage = damage;
+    spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_NEVER;
 
     return spell;
@@ -52,11 +53,11 @@ static Spell spell_spark(const AssetList *asset_list)
 
     spell.lifetime = 5.0f;
 
-    // TODO: lightning damage
-    Damage damage = {0};
-    set_damage_of_type(&damage, DMG_KIND_LIGHTNING, 100);
+    DamageRange damage_range = {0};
+    set_damage_value_of_type(&damage_range.low_roll, DMG_KIND_LIGHTNING, 1);
+    set_damage_value_of_type(&damage_range.high_roll, DMG_KIND_LIGHTNING, 100);
 
-    spell.damaging.base_damage = damage;
+    spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;
 
     return spell;
@@ -114,7 +115,9 @@ void cast_single_spell(struct World *world, const Spell *spell, struct Entity *c
     if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
 	OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DEAL_DAMAGE);
 	effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
-	effect->as.deal_damage.damage = spell->damaging.base_damage;
+
+	Damage damage = calculate_damage_dealt_from_range(spell->damaging.base_damage);
+	effect->as.deal_damage.damage = damage;
 
 	effect->retrigger_behaviour = spell->damaging.retrigger_behaviour;
     }

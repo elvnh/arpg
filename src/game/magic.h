@@ -35,7 +35,7 @@ typedef struct {
 
     struct {
 	// TODO: damage roll
-	Damage base_damage;
+	DamageRange base_damage;
 	CollisionRetriggerBehaviour retrigger_behaviour;
     } damaging;
 

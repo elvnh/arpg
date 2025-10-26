@@ -9,5 +9,4 @@ typedef struct {
     s64 hitpoints;
 } Health;
 
-
 #endif //HEALTH_H

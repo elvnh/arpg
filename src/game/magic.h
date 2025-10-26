@@ -42,6 +42,7 @@ typedef struct {
     struct {
 	f32 projectile_speed;
 	Vector2 collider_size;
+	s32 extra_projectile_count;
     } projectile;
 
     f32 lifetime;

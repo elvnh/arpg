@@ -8,8 +8,7 @@
 #include "components/component.h"
 #include "asset.h"
 #include "entity_system.h"
-
-#define SPELL_COLLISION_EFFECT_PROPERTIES (SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_DAMAGING)
+#include <math.h>
 
 static SpellArray *g_spells;
 
@@ -49,6 +48,7 @@ static Spell spell_spark(const AssetList *asset_list)
 
     spell.projectile.projectile_speed = 500.0f;
     spell.projectile.collider_size = v2(32, 32);
+    spell.projectile.extra_projectile_count = 5;
 
     spell.lifetime = 3.0f;
 
@@ -92,57 +92,74 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 
     //EntityID caster_id = es_get_id_of_entity(&world->entity_system, caster);
 
-    EntityWithID spell_entity_with_id = es_spawn_entity(&world->entity_system, caster->faction);
-    Entity *spell_entity = spell_entity_with_id.entity;
-    spell_entity->position = pos;
-
     const Spell *spell = get_spell_by_id(id);
+    s32 spell_count = 1 + spell->projectile.extra_projectile_count;
 
-    if (spell_has_prop(spell, SPELL_PROP_SPRITE)) {
-	SpriteComponent *sprite = es_get_or_add_component(spell_entity, SpriteComponent);
-	sprite->texture = spell->sprite.texture;
-	sprite->size = spell->sprite.sprite_size;
+    f32 angle = atan2f(dir.y, dir.x);
+    f32 step_angle = 0.0f;
+
+    if (spell_count >= 2) {
+	f32 cone = (PI / 2.0f);
+	step_angle = cone / ((f32)(spell_count - 1));
+
+	f32 first = angle - cone / 2.0f;
+
+	dir = v2(cos_f32(first), sin_f32(first));
+	angle = atan2f(dir.y, dir.x);
     }
 
-    if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
-	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
-	collider->size = spell->projectile.collider_size;
+    for (s32 i = 0; i < spell_count; ++i) {
+	Vector2 current_dir = v2(cos_f32(angle), sin_f32(angle));
 
-	spell_entity->velocity = v2_mul_s(dir, spell->projectile.projectile_speed);
-    }
+	EntityWithID spell_entity_with_id = es_spawn_entity(&world->entity_system, caster->faction);
+	Entity *spell_entity = spell_entity_with_id.entity;
+	spell_entity->position = pos;
 
-    if (spell->properties & SPELL_COLLISION_EFFECT_PROPERTIES) {
-	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
+	ColliderComponent *spell_collider = es_get_or_add_component(spell_entity, ColliderComponent);
 
-        if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
-            OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_BOUNCE);
-            effect->affects_object_kinds |= OBJECT_KIND_TILES;
-        }
+	if (spell_has_prop(spell, SPELL_PROP_SPRITE)) {
+	    SpriteComponent *sprite = es_get_or_add_component(spell_entity, SpriteComponent);
+	    sprite->texture = spell->sprite.texture;
+	    sprite->size = spell->sprite.sprite_size;
+	}
 
-        if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
-            OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_DEAL_DAMAGE);
-            effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
-            effect->as.deal_damage.damage = spell->damaging.base_damage;
+	if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
+	    spell_collider->size = spell->projectile.collider_size;
+
+	    spell_entity->velocity = v2_mul_s(current_dir, spell->projectile.projectile_speed);
+	}
+
+	if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
+	    OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_BOUNCE);
+	    effect->affects_object_kinds |= OBJECT_KIND_TILES;
+	}
+
+	if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
+	    OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DEAL_DAMAGE);
+	    effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
+	    effect->as.deal_damage.damage = spell->damaging.base_damage;
 
 	    effect->retrigger_behaviour = spell->damaging.retrigger_behaviour;
-        }
+	}
 
-        if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
-            OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_DIE);
-            effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
-        }
+	if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
+	    OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DIE);
+	    effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
+	}
 
-        if (spell_has_prop(spell, SPELL_PROP_DIE_ON_WALL_COLLISION)) {
-            OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_DIE);
-            effect->affects_object_kinds |= OBJECT_KIND_TILES;
-        }
-    }
+	if (spell_has_prop(spell, SPELL_PROP_DIE_ON_WALL_COLLISION)) {
+	    OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DIE);
+	    effect->affects_object_kinds |= OBJECT_KIND_TILES;
+	}
 
-    if (spell_has_prop(spell, SPELL_PROP_LIFETIME)) {
-	ASSERT(spell->lifetime > 0.0f);
+	if (spell_has_prop(spell, SPELL_PROP_LIFETIME)) {
+	    ASSERT(spell->lifetime > 0.0f);
 
-	LifetimeComponent *lifetime = es_add_component(spell_entity, LifetimeComponent);
-	lifetime->time_to_live = spell->lifetime;
+	    LifetimeComponent *lifetime = es_add_component(spell_entity, LifetimeComponent);
+	    lifetime->time_to_live = spell->lifetime;
+	}
+
+	angle += step_angle;
     }
 }
 

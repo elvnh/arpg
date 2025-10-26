@@ -11,17 +11,12 @@
 #include "input.h"
 #include "debug.h"
 
-/*
-  TODO:
-  - Manually controlling dt to slow down/speed up time
- */
-
 typedef struct {
     World world;
     UIState ui;
     AssetList asset_list;
     DebugState debug_state;
-    Spells spells; // TODO: make into global variable
+    SpellArray spells;
     RNGState rng_state;
 } GameState;
 

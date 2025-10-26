@@ -173,6 +173,8 @@ static void tests_arena()
         for (s32 i = 0; i < 4; ++i) {
             ASSERT(second[i] == first[i]);
         }
+
+	la_destroy(&arena);
     }
 }
 

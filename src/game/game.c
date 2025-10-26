@@ -289,6 +289,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 #if HOT_RELOAD
     // NOTE: these global pointers are set every frame in case we have hot reloaded
     rng_set_global_state(&game_state->rng_state);
+    magic_set_global_spell_array(&game_state->spells);
 #endif
 
     debug_update(game_state, frame_data, &game_memory->temporary_memory);
@@ -318,7 +319,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
     magic_initialize(&game_state->spells, &game_state->asset_list);
-    world_initialize(&game_state->world, &game_state->asset_list, &game_state->spells, &game_memory->permanent_memory);
+    world_initialize(&game_state->world, &game_state->asset_list, &game_memory->permanent_memory);
 
     game_state->debug_state.average_fps = 60.0f;
     game_state->debug_state.timestep_modifier = 1.0f;

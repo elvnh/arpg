@@ -22,15 +22,16 @@ typedef struct {
      */
 } Spell;
 
-typedef struct Spells {
+typedef struct SpellArray {
     Spell spells[SPELL_COUNT];
-} Spells;
+} SpellArray;
 
 struct Entity;
 struct World;
 struct AssetList;
 
-void magic_initialize(Spells *spells, const struct AssetList *asset_list);
+void magic_initialize(SpellArray *spells, const struct AssetList *asset_list);
 void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 position, Vector2 velocity);
+void magic_set_global_spell_array(SpellArray *spells);
 
 #endif //MAGIC_H

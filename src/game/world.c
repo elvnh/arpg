@@ -233,20 +233,6 @@ static void swap_and_reset_collision_tables(World *world)
     }
 }
 
-b32 entities_intersected_this_frame(World *world, EntityID a, EntityID b)
-{
-    b32 result = collision_event_table_find(&world->current_frame_collisions, a, b) != 0;
-
-    return result;
-}
-
-b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b)
-{
-    b32 result = collision_event_table_find(&world->previous_frame_collisions, a, b) != 0;
-
-    return result;
-}
-
 void world_add_collision_cooldown(World *world, EntityID a, EntityID b, s32 effect_index)
 {
     collision_cooldown_add(&world->collision_effect_cooldowns, a, b, effect_index, &world->world_arena);
@@ -743,10 +729,9 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     }
 }
 
-void world_initialize(World *world, const struct AssetList *asset_list, const struct Spells *spells, LinearArena *arena)
+void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena)
 {
     world->world_arena = la_create(la_allocator(arena), WORLD_ARENA_SIZE);
-    world->spells = spells;
 
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);

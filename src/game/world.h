@@ -11,7 +11,6 @@ struct Input;
 struct DebugState;
 struct RenderBatch;
 struct AssetList;
-struct Spells;
 
 // TODO: make size and velocity depend on damage number
 // TODO: make color depend on elemental types present
@@ -33,17 +32,13 @@ typedef struct World {
     CollisionEventTable  current_frame_collisions;
     Hitsplat active_hitsplats[128];
     s32 hitsplat_count;
-
-    const struct Spells *spells; // TODO: make into global variable
 } World;
 
-void world_initialize(World *world, const struct AssetList *asset_list, const struct Spells *spells, LinearArena *arena);
+void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena);
 void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena);
-void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list, FrameData frame_data,
-    LinearArena *frame_arena, struct DebugState *debug_state);
-void world_add_collision_cooldown(World *world, EntityID owner, EntityID collided, s32 effect_index);
+void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list,
+    FrameData frame_data, LinearArena *frame_arena, struct DebugState *debug_state);
 
-b32 entities_intersected_this_frame(World *world, EntityID a, EntityID b);
-b32 entities_intersected_previous_frame(World *world, EntityID a, EntityID b);
+
 
 #endif //WORLD_H

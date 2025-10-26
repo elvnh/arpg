@@ -251,3 +251,17 @@ void collision_event_table_insert(CollisionEventTable *table, EntityID a, Entity
         ASSERT(0);
     }
 }
+
+b32 entities_intersected_this_frame(struct World *world, EntityID a, EntityID b)
+{
+    b32 result = collision_event_table_find(&world->current_frame_collisions, a, b) != 0;
+
+    return result;
+}
+
+b32 entities_intersected_previous_frame(struct World *world, EntityID a, EntityID b)
+{
+    b32 result = collision_event_table_find(&world->previous_frame_collisions, a, b) != 0;
+
+    return result;
+}

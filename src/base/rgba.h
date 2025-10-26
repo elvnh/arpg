@@ -8,6 +8,7 @@
 #define RGBA32_RED (RGBA32)   {1.0f, 0.0f, 0.0f, 1.0f}
 #define RGBA32_BLUE (RGBA32)  {0.0f, 0.0f, 1.0f, 1.0f}
 #define RGBA32_GREEN (RGBA32) {0.0f, 1.0f, 0.0f, 1.0f}
+#define RGBA32_YELLOW (RGBA32) {1.0f, 1.0f, 0.0f, 1.0f}
 
 typedef struct {
     f32 r;

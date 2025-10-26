@@ -23,7 +23,6 @@ typedef enum {
     SPELL_PROP_LIFETIME = (1 << 6),
 } SpellProperties;
 
-// TODO: multiple projectiles, fire in cone etc
 
 typedef struct {
     SpellProperties properties;
@@ -35,6 +34,7 @@ typedef struct {
     } sprite;
 
     struct {
+	// TODO: damage roll
 	Damage base_damage;
 	CollisionRetriggerBehaviour retrigger_behaviour;
     } damaging;

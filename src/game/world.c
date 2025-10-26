@@ -4,16 +4,15 @@
 #include "base/rgba.h"
 #include "base/random.h"
 #include "base/utils.h"
+#include "base/sl_list.h"
 #include "components/component.h"
 #include "debug.h"
-#include "base/sl_list.h"
-#include "game/camera.h"
-#include "game/collision.h"
-#include "components/component.h"
-#include "game/damage.h"
-#include "game/entity.h"
-#include "game/entity_system.h"
-#include "game/magic.h"
+#include "camera.h"
+#include "collision.h"
+#include "damage.h"
+#include "entity.h"
+#include "entity_system.h"
+#include "magic.h"
 #include "input.h"
 #include "renderer/render_batch.h"
 
@@ -207,7 +206,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
         damage_taken = damage;
     }
 
-    DamageValue dmg_sum = damage_sum(damage_taken);
+    DamageValue dmg_sum = calculate_damage_sum(damage_taken);
 
     health->health.hitpoints -= dmg_sum;
     create_hitsplat(world, entity->position, damage_taken);
@@ -308,7 +307,6 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
                 ASSERT(other);
                 ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
 
-                printf("Damage\n");
                 try_deal_damage_to_entity(world, other, entity, effect.as.deal_damage.damage);
             } break;
 
@@ -647,26 +645,41 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
         Hitsplat *hitsplat = &world->active_hitsplats[i];
 
-        DamageValue sum = damage_sum(hitsplat->damage);
-        String damage_str = ssize_to_string(sum, la_allocator(frame_arena));
+	for (s32 type = 0; type < DMG_KIND_COUNT; ++type) {
+	    DamageValue value_of_type = get_damage_value_of_type(hitsplat->damage.types, type);
+	    ASSERT(value_of_type >= 0);
 
-        DamageKind primary_type = get_primary_damage_type(hitsplat->damage);
+	    if (value_of_type > 0) {
+		String damage_str = ssize_to_string(value_of_type, la_allocator(frame_arena));
 
-        f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
-        RGBA32 color = {0};
+		DamageKind primary_type = get_primary_damage_type(hitsplat->damage);
 
-        switch (primary_type) {
-            case DMG_KIND_FIRE: {
-                color = RGBA32_RED;
-            } break;
+		f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
+		RGBA32 color = {0};
 
-            INVALID_DEFAULT_CASE;
-        }
+		switch (primary_type) {
+		    case DMG_KIND_FIRE: {
+			color = RGBA32_RED;
+		    } break;
 
-        color.a = alpha;
+		    case DMG_KIND_LIGHTNING: {
+			color = RGBA32_YELLOW;
+		    } break;
 
-        rb_push_text(rb, frame_arena, damage_str, hitsplat->position, color, 32, assets->texture_shader,
-            assets->default_font, 5);
+		    INVALID_DEFAULT_CASE;
+		}
+
+		color.a = alpha;
+
+		rb_push_text(
+		    rb, frame_arena, damage_str, hitsplat->position, color, 32,
+		    assets->texture_shader, assets->default_font, 5);
+	    }
+	}
+
+
+
+
     }
 }
 

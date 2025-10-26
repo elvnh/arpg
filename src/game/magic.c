@@ -26,7 +26,7 @@ static Spell spell_fireball(const AssetList *asset_list)
     spell.projectile.collider_size = v2(32, 32);
 
     Damage damage = {0};
-    damage.types.values[DMG_KIND_FIRE] = 10;
+    set_damage_of_type(&damage, DMG_KIND_FIRE, 10);
 
     spell.damaging.base_damage = damage;
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_NEVER;
@@ -54,7 +54,7 @@ static Spell spell_spark(const AssetList *asset_list)
 
     // TODO: lightning damage
     Damage damage = {0};
-    damage.types.values[DMG_KIND_FIRE] = 10;
+    set_damage_of_type(&damage, DMG_KIND_LIGHTNING, 100);
 
     spell.damaging.base_damage = damage;
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;

@@ -15,6 +15,7 @@ typedef s64 DamageValue;
 
 typedef enum {
     DMG_KIND_FIRE,
+    DMG_KIND_LIGHTNING,
     DMG_KIND_COUNT,
 } DamageKind;
 
@@ -31,17 +32,23 @@ typedef struct {
     DamageTypes types;
 } Damage;
 
-static inline DamageValue get_damage_value_of_type(DamageTypes damages, DamageKind type)
+static inline DamageValue *get_damage_reference_of_type(DamageTypes *damages, DamageKind type)
 {
     ssize index = (ssize)type;
     ASSERT((index >= 0) && (index < DMG_KIND_COUNT));
 
-    DamageValue result = damages.values[index];
+    DamageValue *result = &damages->values[index];
 
     return result;
 }
 
-static inline DamageValue damage_sum(Damage damage)
+static inline DamageValue get_damage_value_of_type(DamageTypes damages, DamageKind type)
+{
+    DamageValue result = *get_damage_reference_of_type(&damages, type);
+    return result;
+}
+
+static inline DamageValue calculate_damage_sum(Damage damage)
 {
     DamageValue result = 0;
 
@@ -81,7 +88,8 @@ static inline Damage calculate_damage_received(ResistanceStats resistances, Dama
     Damage result = {0};
 
     for (DamageKind dmg_kind = 0; dmg_kind < DMG_KIND_COUNT; ++dmg_kind) {
-        result.types.values[dmg_kind] = calculate_damage_of_type_after_resistance(damage, resistances, dmg_kind);
+        result.types.values[dmg_kind] =
+	    calculate_damage_of_type_after_resistance(damage, resistances, dmg_kind);
     }
 
     return result;
@@ -104,6 +112,12 @@ static inline DamageKind get_primary_damage_type(Damage damage)
     ASSERT(max_value != -1);
 
     return result;
+}
+
+static inline void set_damage_of_type(Damage *damage, DamageKind kind, DamageValue new_value)
+{
+    DamageValue *old_value = get_damage_reference_of_type(&damage->types, kind);
+    *old_value = new_value;
 }
 
 #endif //DAMAGE_H

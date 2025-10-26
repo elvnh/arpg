@@ -1,6 +1,7 @@
 #include "magic.h"
 
 #include "base/utils.h"
+#include "components/collider.h"
 #include "game/collision.h"
 #include "game/damage.h"
 #include "world.h"
@@ -34,6 +35,33 @@ static Spell spell_fireball(const AssetList *asset_list)
     return spell;
 }
 
+static Spell spell_spark(const AssetList *asset_list)
+{
+    Spell spell = {0};
+
+    // TODO: erratic movement
+
+    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
+	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME;
+
+    spell.sprite.texture = asset_list->spark_texture;
+    spell.sprite.sprite_size = v2(32, 32);
+
+    spell.projectile.projectile_speed = 500.0f;
+    spell.projectile.collider_size = v2(32, 32);
+
+    spell.lifetime = 3.0f;
+
+    // TODO: lightning damage
+    Damage damage = {0};
+    damage.types.values[DMG_KIND_FIRE] = 10;
+
+    spell.damaging.base_damage = damage;
+    spell.damaging.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;
+
+    return spell;
+}
+
 static b32 spell_has_prop(const Spell *spell, SpellProperties prop)
 {
     b32 result = (spell->properties & prop) != 0;
@@ -45,6 +73,7 @@ static b32 spell_has_prop(const Spell *spell, SpellProperties prop)
 void magic_initialize(SpellArray *spells, const struct AssetList *asset_list)
 {
     spells->spells[SPELL_FIREBALL] = spell_fireball(asset_list);
+    spells->spells[SPELL_SPARK] = spell_spark(asset_list);
 
     magic_set_global_spell_array(spells);
 }
@@ -107,6 +136,13 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
             OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_DIE);
             effect->affects_object_kinds |= OBJECT_KIND_TILES;
         }
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_LIFETIME)) {
+	ASSERT(spell->lifetime > 0.0f);
+
+	LifetimeComponent *lifetime = es_add_component(spell_entity, LifetimeComponent);
+	lifetime->time_to_live = spell->lifetime;
     }
 }
 

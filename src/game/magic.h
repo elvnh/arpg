@@ -9,6 +9,7 @@
 
 typedef enum {
     SPELL_FIREBALL,
+    SPELL_SPARK,
     SPELL_COUNT,
 } SpellID;
 
@@ -19,7 +20,10 @@ typedef enum {
     SPELL_PROP_BOUNCE_ON_TILES = (1 << 3),
     SPELL_PROP_DIE_ON_WALL_COLLISION = (1 << 4),
     SPELL_PROP_DIE_ON_ENTITY_COLLISION = (1 << 5),
+    SPELL_PROP_LIFETIME = (1 << 6),
 } SpellProperties;
+
+// TODO: multiple projectiles, fire in cone etc
 
 typedef struct {
     SpellProperties properties;
@@ -39,6 +43,8 @@ typedef struct {
 	f32 projectile_speed;
 	Vector2 collider_size;
     } projectile;
+
+    f32 lifetime;
 
     /*
       damaging

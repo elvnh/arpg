@@ -510,7 +510,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
             Vector2 mouse_dir = v2_sub(mouse_pos, player->position);
             mouse_dir = v2_norm(mouse_dir);
 
-            magic_cast_spell(world, SPELL_FIREBALL, player, player->position, mouse_dir);
+            magic_cast_spell(world, SPELL_SPARK, player, player->position, mouse_dir);
         }
 
         camera_set_target(&world->camera, target);

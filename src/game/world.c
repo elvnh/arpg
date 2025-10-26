@@ -313,6 +313,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
 
     b32 should_pass_through = false;
 
+    // TODO: if no blocking effect is present, pass through
     // If other entity has a pass through effect, we shouldn't be blocked by that entity
     if (other) {
         ColliderComponent *other_collider = es_get_component(other, ColliderComponent);
@@ -569,7 +570,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
             Vector2 mouse_dir = v2_sub(mouse_pos, player->position);
             mouse_dir = v2_norm(mouse_dir);
 
-            magic_cast_spell(world, SPELL_FIREBALL, player, player->position, v2_mul_s(mouse_dir, 200.0f));
+            magic_cast_spell(world, SPELL_FIREBALL, player, player->position, mouse_dir);
         }
 
         camera_set_target(&world->camera, target);

@@ -78,7 +78,6 @@ static inline void add_collide_effect(ColliderComponent *c, OnCollisionEffect ef
     ASSERT(c->on_collide_effects.count < ARRAY_COUNT(c->on_collide_effects.effects));
     ssize index = c->on_collide_effects.count++;
     c->on_collide_effects.effects[index] = effect;
-
 }
 
 static inline void add_blocking_collide_effect(ColliderComponent *c, ObjectKind affected_objects, b32 affect_same_faction)

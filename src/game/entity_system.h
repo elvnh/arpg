@@ -17,6 +17,7 @@
 #define es_get_component(entity, type) ((type *)es_impl_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_has_component(entity, type)          es_has_components((entity), component_flag(type))
 #define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
+#define es_get_or_add_component(entity, type)  ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 
 typedef struct {
     Entity             entity;
@@ -50,6 +51,7 @@ Rectangle    es_get_entity_bounding_box(Entity *entity);
 
 void      *es_impl_add_component(Entity *entity, ComponentType type);
 void      *es_impl_get_component(Entity *entity, ComponentType type);
+void      *es_impl_get_or_add_component(Entity *entity, ComponentType type);
 void       es_impl_remove_component(Entity *entity, ComponentType type);
 
 // NOTE: until this is called at end of every entity update, entity won't be colliding with others

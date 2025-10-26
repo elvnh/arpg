@@ -99,6 +99,17 @@ void *es_impl_get_component(Entity *entity, ComponentType type)
     return result;
 }
 
+void *es_impl_get_or_add_component(Entity *entity, ComponentType type)
+{
+    void *component = es_impl_get_component(entity, type);
+
+    if (!component) {
+	component = es_impl_add_component(entity, type);
+    }
+
+    return component;
+}
+
 void es_impl_remove_component(Entity *entity, ComponentType type)
 {
     u64 bit_value = ES_IMPL_COMP_ENUM_BIT_VALUE(type);

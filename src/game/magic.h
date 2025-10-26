@@ -10,11 +10,43 @@ typedef enum {
     SPELL_COUNT,
 } SpellID;
 
+typedef enum {
+    SPELL_PROP_PROJECTILE = (1 << 0),
+    SPELL_PROP_DAMAGING = (1 << 1),
+    SPELL_PROP_SPRITE = (1 << 2),
+    SPELL_PROP_BOUNCE_OFF_WALLS = (1 << 3),
+
+} SpellProperties;
+
 typedef struct {
-    Damage base_damage;
-    TextureHandle texture;
-    Vector2 sprite_size;
+    SpellProperties properties;
+
+    /* Flag specific fields */
+    struct {
+	TextureHandle texture;
+	Vector2 sprite_size;
+    } sprite;
+
+    struct {
+	Damage base_damage;
+    } damaging;
+
+    struct {
+	f32 projectile_speed;
+    } projectile;
+
     /*
+      damaging
+      healing
+      spell kind - projectile, channeling etc
+
+      Damage
+      damage roll
+
+      Projectile
+      projectile speed
+
+
       base dmg
       proj? channeling?
       base speed
@@ -31,7 +63,8 @@ struct World;
 struct AssetList;
 
 void magic_initialize(SpellArray *spells, const struct AssetList *asset_list);
-void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 position, Vector2 velocity);
+void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster,
+    Vector2 position, Vector2 direction);
 void magic_set_global_spell_array(SpellArray *spells);
 
 #endif //MAGIC_H

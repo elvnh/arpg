@@ -8,6 +8,8 @@
 #include "asset.h"
 #include "entity_system.h"
 
+#define SPELL_COLLISION_EFFECT_PROPERTIES (SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_DAMAGING)
+
 static SpellArray *g_spells;
 
 static Spell spell_fireball(const AssetList *asset_list)
@@ -15,18 +17,19 @@ static Spell spell_fireball(const AssetList *asset_list)
     Spell spell = {0};
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
-	| SPELL_PROP_SPRITE;
+	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION;
 
     spell.sprite.texture = asset_list->fireball_texture;
     spell.sprite.sprite_size = v2(32, 32);
 
-    spell.projectile.projectile_speed = 100.0f;
+    spell.projectile.projectile_speed = 250.0f;
     spell.projectile.collider_size = v2(32, 32);
 
     Damage damage = {0};
     damage.types.values[DMG_KIND_FIRE] = 10;
 
     spell.damaging.base_damage = damage;
+    spell.damaging.retrigger_behaviour = COLL_RETRIGGER_NEVER;
 
     return spell;
 }
@@ -80,10 +83,6 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 	spell_entity->velocity = v2_mul_s(direction, spell->projectile.projectile_speed);
     }
 
-#define SPELL_COLLISION_EFFECT_PROPERTIES (SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_DAMAGING)
-
-    // NOTE: for now, either die on collision with walls unless bounce flag is set
-    // TODO: more dynamic behaviour
     if (spell->properties & SPELL_COLLISION_EFFECT_PROPERTIES) {
 	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
 
@@ -96,6 +95,8 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
             OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_DEAL_DAMAGE);
             effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
             effect->as.deal_damage.damage = spell->damaging.base_damage;
+
+	    effect->retrigger_behaviour = spell->damaging.retrigger_behaviour;
         }
 
         if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
@@ -108,10 +109,6 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
             effect->affects_object_kinds |= OBJECT_KIND_TILES;
         }
     }
-
-
-
-
 }
 
 void magic_set_global_spell_array(SpellArray *spells)

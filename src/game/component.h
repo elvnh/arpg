@@ -68,6 +68,7 @@ typedef struct {
     Vector2 size;
 
     struct {
+	// TODO: there should propably only be one of each kind, so don't use array here
         OnCollisionEffect effects[4];
         s32 count;
     } on_collide_effects;

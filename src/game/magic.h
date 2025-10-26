@@ -4,6 +4,7 @@
 #include "base/vector.h"
 #include "asset.h"
 #include "damage.h"
+#include "game/component.h"
 
 typedef enum {
     SPELL_FIREBALL,
@@ -30,6 +31,7 @@ typedef struct {
 
     struct {
 	Damage base_damage;
+	CollisionRetriggerBehaviour retrigger_behaviour;
     } damaging;
 
     struct {

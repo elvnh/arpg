@@ -80,20 +80,38 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 	spell_entity->velocity = v2_mul_s(direction, spell->projectile.projectile_speed);
     }
 
+#define SPELL_COLLISION_EFFECT_PROPERTIES (SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_DAMAGING)
+
     // NOTE: for now, either die on collision with walls unless bounce flag is set
     // TODO: more dynamic behaviour
-    if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
+    if (spell->properties & SPELL_COLLISION_EFFECT_PROPERTIES) {
 	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
-	add_bounce_collision_effect(collider, OBJECT_KIND_TILES, false);
-    } else {
-	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
-	add_die_collision_effect(collider, OBJECT_KIND_TILES, false);
+
+        if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
+            OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_BOUNCE);
+            effect->affects_object_kinds |= OBJECT_KIND_TILES;
+        }
+
+        if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
+            OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_DEAL_DAMAGE);
+            effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
+            effect->as.deal_damage.damage = spell->damaging.base_damage;
+        }
+
+        if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
+            OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_DIE);
+            effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
+        }
+
+        if (spell_has_prop(spell, SPELL_PROP_DIE_ON_WALL_COLLISION)) {
+            OnCollisionEffect *effect = get_or_add_collide_effect(collider, ON_COLLIDE_DIE);
+            effect->affects_object_kinds |= OBJECT_KIND_TILES;
+        }
     }
 
-    if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
-	ColliderComponent *collider = es_get_or_add_component(spell_entity, ColliderComponent);
-	add_damage_collision_effect(collider, spell->damaging.base_damage, OBJECT_KIND_ENTITIES, false);
-    }
+
+
+
 }
 
 void magic_set_global_spell_array(SpellArray *spells)

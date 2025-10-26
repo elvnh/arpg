@@ -15,6 +15,8 @@ typedef enum {
     SPELL_PROP_DAMAGING = (1 << 1),
     SPELL_PROP_SPRITE = (1 << 2),
     SPELL_PROP_BOUNCE_ON_TILES = (1 << 3),
+    SPELL_PROP_DIE_ON_WALL_COLLISION = (1 << 4),
+    SPELL_PROP_DIE_ON_ENTITY_COLLISION = (1 << 5),
 } SpellProperties;
 
 typedef struct {

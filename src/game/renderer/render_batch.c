@@ -9,6 +9,41 @@
 
 // TODO: lots of code duplication in this file
 
+static inline s32 get_key_y_sort_order(struct RenderBatch *rb, f32 y_pos)
+{
+    s32 result = 0;
+
+    if (rb->y_direction == Y_IS_UP) {
+        result = rb->y_sorting_basis - (s32)y_pos;
+    } else {
+        result = (s32)y_pos - rb->y_sorting_basis;
+    }
+
+    return result;
+}
+
+
+static inline RenderKey render_key_create(struct RenderBatch *rb, s32 layer, ShaderHandle shader, TextureHandle texture,
+    FontHandle font, f32 y_pos)
+{
+    ASSERT(layer < pow(2, LAYER_KEY_BITS));
+    ASSERT(shader.id < pow(2, SHADER_KEY_BITS));
+    ASSERT(shader.id < pow(2, TEXTURE_KEY_BITS));
+    ASSERT(font.id < pow(2, FONT_KEY_BITS));
+
+    RenderKey result = 0;
+    s32 y_order = get_key_y_sort_order(rb, y_pos);
+    ASSERT(y_order < pow(2, Y_ORDER_KEY_BITS));
+
+    result |= (u64)layer      << (LAYER_KEY_POSITION);
+    result |= (u64)y_order    << (Y_ORDER_KEY_POSITION);
+    result |= (u64)shader.id  << (SHADER_KEY_POSITION);
+    result |= (u64)texture.id << (TEXTURE_KEY_POSITION);
+    result |= (u64)font.id    << (FONT_KEY_POSITION);
+
+    return result;
+}
+
 RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir, LinearArena *arena)
 {
     RenderBatchNode *node = la_allocate_item(arena, RenderBatchNode);
@@ -147,18 +182,6 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
     return entry;
 }
 
-static inline s32 get_y_sort_order(RenderBatch *rb, s32 y_pos)
-{
-    s32 result = 0;
-
-    if (rb->y_direction == Y_IS_UP) {
-        result = rb->y_sorting_basis - y_pos;
-    } else {
-        result = y_pos - rb->y_sorting_basis;
-    }
-
-    return result;
-}
 
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer)
@@ -169,10 +192,7 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
     cmd->rect = rectangle;
     cmd->color = color;
 
-    // TODO: shouldn't need to manually call this every draw
-    s32 y_order = get_y_sort_order(rb, (s32)rectangle.position.y);
-
-    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, y_order);
+    RenderKey key = render_key_create(rb, layer, shader, texture, NULL_FONT, rectangle.position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -192,7 +212,7 @@ RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, Texture
     cmd->viewport_rect = viewport;
     cmd->color = color;
 
-    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)rect.position.y);
+    RenderKey key = render_key_create(rb, layer, shader, texture, NULL_FONT, rect.position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -206,7 +226,7 @@ RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangl
     cmd->color = color;
     cmd->thickness = thickness;
 
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, NULL_FONT, 0);
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -220,7 +240,7 @@ RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureH
     cmd->color = color;
     cmd->radius = radius;
 
-    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)position.y);
+    RenderKey key = render_key_create(rb, layer, shader, texture, NULL_FONT, (s32)position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -241,7 +261,7 @@ RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Ve
     cmd->color = color;
     cmd->thickness = thickness;
 
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, NULL_FONT, (s32)start.y);
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, (s32)start.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -256,7 +276,7 @@ RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vect
     cmd->color = color;
     cmd->size = size;
 
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, font, 0);
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, font, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -273,7 +293,7 @@ RenderEntry *rb_push_clipped_text(RenderBatch *rb, LinearArena *arena, String te
     cmd->is_clipped = true;
     cmd->clip_rect = clip_rect;
 
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, font, 0);
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, font, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -289,7 +309,7 @@ RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, ParticleBuff
 
     ASSERT(particle_size > 0.0f);
 
-    RenderKey key = render_key_create(layer, shader, NULL_TEXTURE, NULL_FONT, 0);
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -299,7 +319,7 @@ RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, str
     TextureHandle texture, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {
     RenderEntry *entry = rb_push_particles(rb, arena, particles, color, particle_size, shader, layer);
-    entry->key = render_key_create(layer, shader, texture, NULL_FONT, 0);
+    entry->key = render_key_create(rb, layer, shader, texture, NULL_FONT, 0);
 
     return entry;
 }

@@ -20,6 +20,8 @@
 #define FONT_KEY_POSITION    (TEXTURE_KEY_POSITION - FONT_KEY_BITS)
 #define FONT_KEY_BITS        3u
 
+struct RenderBatch;
+
 typedef u64 RenderKey;
 
 typedef enum {
@@ -28,6 +30,7 @@ typedef enum {
     RENDER_LAYER_PARTICLES,
 } RenderLayer;
 
+// TODO: these should return the asset handles directly so caller doesn't have to create them
 inline static RenderKey render_key_extract_shader(RenderKey key)
 {
     RenderKey result = bit_span(key, SHADER_KEY_POSITION, SHADER_KEY_BITS);
@@ -45,26 +48,6 @@ inline static RenderKey render_key_extract_texture(RenderKey key)
 inline static RenderKey render_key_extract_font(RenderKey key)
 {
     RenderKey result = bit_span(key, FONT_KEY_POSITION, FONT_KEY_BITS);
-
-    return result;
-}
-
-inline static RenderKey render_key_create(s32 layer, ShaderHandle shader, TextureHandle texture, FontHandle font,
-    s32 y_order)
-{
-    ASSERT(layer < pow(2, LAYER_KEY_BITS));
-    ASSERT(y_order < pow(2, Y_ORDER_KEY_BITS));
-    ASSERT(shader.id < pow(2, SHADER_KEY_BITS));
-    ASSERT(shader.id < pow(2, TEXTURE_KEY_BITS));
-    ASSERT(font.id < pow(2, FONT_KEY_BITS));
-
-    RenderKey result = 0;
-
-    result |= (u64)layer      << (LAYER_KEY_POSITION);
-    result |= (u64)y_order    << (Y_ORDER_KEY_POSITION);
-    result |= (u64)shader.id  << (SHADER_KEY_POSITION);
-    result |= (u64)texture.id << (TEXTURE_KEY_POSITION);
-    result |= (u64)font.id    << (FONT_KEY_POSITION);
 
     return result;
 }

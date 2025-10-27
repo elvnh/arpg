@@ -209,7 +209,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
         damage_taken = damage;
     }
 
-    DamageValue dmg_sum = calculate_damage_sum(damage_taken);
+    DamageValue dmg_sum = calculate_damage_sum(damage_taken.types);
 
     health->health.hitpoints -= dmg_sum;
     create_hitsplat(world, entity->position, damage_taken);
@@ -648,19 +648,17 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
         Hitsplat *hitsplat = &world->active_hitsplats[i];
 
-	for (s32 type = 0; type < DMG_KIND_COUNT; ++type) {
+	for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
 	    DamageValue value_of_type = get_damage_value_of_type(hitsplat->damage.types, type);
 	    ASSERT(value_of_type >= 0);
 
 	    if (value_of_type > 0) {
 		String damage_str = ssize_to_string(value_of_type, la_allocator(frame_arena));
 
-		DamageKind primary_type = get_primary_damage_type(hitsplat->damage);
-
 		f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
 		RGBA32 color = {0};
 
-		switch (primary_type) {
+		switch (type) {
 		    case DMG_KIND_FIRE: {
 			color = RGBA32_RED;
 		    } break;

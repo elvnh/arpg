@@ -65,7 +65,6 @@ s64 rng_s64(s64 min, s64 max)
     return result;
 }
 
-
 s32 rng_s32(s32 min, s32 max)
 {
     ASSERT(min <= max);

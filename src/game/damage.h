@@ -20,6 +20,7 @@ typedef enum {
     DMG_KIND_COUNT,
 } DamageKind;
 
+// TODO: rename this struct
 typedef struct {
     DamageValue values[DMG_KIND_COUNT]; // Use DamageKind as index
 } DamageTypes;
@@ -54,12 +55,12 @@ static inline DamageValue get_damage_value_of_type(DamageTypes damages, DamageKi
     return result;
 }
 
-static inline DamageValue calculate_damage_sum(Damage damage)
+static inline DamageValue calculate_damage_sum(DamageTypes damage)
 {
     DamageValue result = 0;
 
     for (DamageKind kind = 0; kind < DMG_KIND_COUNT; ++kind) {
-	result += get_damage_value_of_type(damage.types, kind);
+	result += get_damage_value_of_type(damage, kind);
     }
 
     return result;
@@ -101,32 +102,6 @@ static inline Damage calculate_damage_received(ResistanceStats resistances, Dama
     return result;
 }
 
-static inline DamageKind get_primary_damage_type(Damage damage)
-{
-    DamageKind result = 0;
-    DamageValue max_value = -1;
-
-    for (DamageKind dmg_kind = 0; dmg_kind < DMG_KIND_COUNT; ++dmg_kind) {
-        DamageValue value = get_damage_value_of_type(damage.types, dmg_kind);
-
-        if (value > max_value) {
-            result = dmg_kind;
-            max_value = value;
-        }
-    }
-
-    ASSERT(max_value != -1);
-
-    return result;
-}
-
-// TODO: these should be the same function
-static inline void set_damage_of_type(Damage *damage, DamageKind kind, DamageValue new_value)
-{
-    DamageValue *old_value = get_damage_reference_of_type(&damage->types, kind);
-    *old_value = new_value;
-}
-
 static inline void set_damage_value_of_type(DamageTypes *damages, DamageKind kind, DamageValue new_value)
 {
     DamageValue *old_value = get_damage_reference_of_type(damages, kind);
@@ -143,7 +118,7 @@ static inline Damage calculate_damage_dealt_from_range(DamageRange damage_range)
 	DamageValue high = get_damage_value_of_type(damage_range.high_roll, type);
 
 	DamageValue roll = rng_s64(low, high);
-	set_damage_of_type(&result, type, roll);
+	set_damage_value_of_type(&result.types, type, roll);
     }
 
     return result;

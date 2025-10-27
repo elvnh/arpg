@@ -140,7 +140,9 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
         }
 
         switch (entry->data->kind) {
-            case RENDER_CMD_RECTANGLE: {
+            // TODO: can these switch cases be simplified?
+
+            case RENDER_COMMAND_ENUM_NAME(RectangleCmd): {
                 RectangleCmd *cmd = (RectangleCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color, rb->y_direction);
 
@@ -150,7 +152,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 		    verts.bottom_right, verts.bottom_left);
             } break;
 
-            case RENDER_CMD_CLIPPED_RECTANGLE: {
+            case RENDER_COMMAND_ENUM_NAME(ClippedRectangleCmd): {
                 ClippedRectangleCmd *cmd = (ClippedRectangleCmd *)entry->data;
 
                 Rectangle rect = cmd->rect;
@@ -170,7 +172,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 }
             } break;
 
-            case RENDER_CMD_OUTLINED_RECTANGLE: {
+            case RENDER_COMMAND_ENUM_NAME(OutlinedRectangleCmd): {
                 OutlinedRectangleCmd *cmd = (OutlinedRectangleCmd *)entry->data;
                 ASSERT(cmd->rect.size.x > 0.0f && cmd->rect.size.y > 0.0f);
 
@@ -190,7 +192,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
 
 	    } break;
 
-            case RENDER_CMD_CIRCLE: {
+            case RENDER_COMMAND_ENUM_NAME(CircleCmd): {
                 CircleCmd *cmd = (CircleCmd *)entry->data;
 
                 s32 segments = 64;
@@ -224,13 +226,13 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 }
             } break;
 
-            case RENDER_CMD_LINE: {
+            case RENDER_COMMAND_ENUM_NAME(LineCmd): {
                 LineCmd *cmd = (LineCmd *)entry->data;
 
 		render_line(backend, cmd->start, cmd->end, cmd->thickness, cmd->color);
             } break;
 
-            case RENDER_CMD_TEXT: {
+            case RENDER_COMMAND_ENUM_NAME(TextCmd): {
                 TextCmd *cmd = (TextCmd *)entry->data;
 
                 FontHandle font_handle = (FontHandle){(u32)render_key_extract_font(entry->key)};
@@ -292,7 +294,7 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 }
             } break;
 
-            case RENDER_CMD_PARTICLES: {
+            case RENDER_COMMAND_ENUM_NAME(ParticleGroupCmd): {
                 ParticleGroupCmd *cmd = (ParticleGroupCmd *)entry->data;
 
                 ParticleBuffer *particles = cmd->particles;

@@ -8,14 +8,21 @@
 
 // TODO: X macro to avoid defining new commands in multiple places
 
+#define RENDER_COMMAND_LIST                     \
+    RENDER_COMMAND(RectangleCmd)                \
+    RENDER_COMMAND(ClippedRectangleCmd)         \
+    RENDER_COMMAND(OutlinedRectangleCmd)        \
+    RENDER_COMMAND(CircleCmd)                   \
+    RENDER_COMMAND(LineCmd)                     \
+    RENDER_COMMAND(TextCmd)                     \
+    RENDER_COMMAND(ParticleGroupCmd)            \
+
+#define RENDER_COMMAND_ENUM_NAME(type) RENDER_CMD_##type
+
 typedef enum {
-    RENDER_CMD_RECTANGLE,
-    RENDER_CMD_CLIPPED_RECTANGLE,
-    RENDER_CMD_OUTLINED_RECTANGLE,
-    RENDER_CMD_CIRCLE,
-    RENDER_CMD_LINE,
-    RENDER_CMD_TEXT,
-    RENDER_CMD_PARTICLES,
+#define RENDER_COMMAND(type) RENDER_COMMAND_ENUM_NAME(type),
+    RENDER_COMMAND_LIST
+#undef RENDER_COMMAND
 } RenderCmdKind;
 
 typedef enum {

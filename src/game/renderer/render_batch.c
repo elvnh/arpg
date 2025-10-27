@@ -9,6 +9,8 @@
 
 // TODO: lots of code duplication in this file
 
+#define allocate_render_cmd(arena, type) (type *)(allocate_render_cmd_impl((arena), RENDER_COMMAND_ENUM_NAME(type)))
+
 static inline s32 get_key_y_sort_order(struct RenderBatch *rb, f32 y_pos)
 {
     s32 result = 0;
@@ -21,7 +23,6 @@ static inline s32 get_key_y_sort_order(struct RenderBatch *rb, f32 y_pos)
 
     return result;
 }
-
 
 static inline RenderKey render_key_create(struct RenderBatch *rb, s32 layer, ShaderHandle shader, TextureHandle texture,
     FontHandle font, f32 y_pos)
@@ -44,7 +45,8 @@ static inline RenderKey render_key_create(struct RenderBatch *rb, s32 layer, Sha
     return result;
 }
 
-RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir, LinearArena *arena)
+RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size,
+    YDirection y_dir, LinearArena *arena)
 {
     RenderBatchNode *node = la_allocate_item(arena, RenderBatchNode);
     list_push_back(list, node);
@@ -129,39 +131,14 @@ void rb_sort_entries(RenderBatch *rb, LinearArena *scratch)
 #endif
 }
 
-// TODO: can this be automated?
-static void *allocate_render_cmd(LinearArena *arena, RenderCmdKind kind)
+static void *allocate_render_cmd_impl(LinearArena *arena, RenderCmdKind kind)
 {
     void *result = 0;
 
     switch (kind) {
-        case RENDER_CMD_RECTANGLE: {
-            result = la_allocate_item(arena, RectangleCmd);
-        } break;
-
-        case RENDER_CMD_CLIPPED_RECTANGLE: {
-            result = la_allocate_item(arena, ClippedRectangleCmd);
-        } break;
-
-        case RENDER_CMD_OUTLINED_RECTANGLE: {
-            result = la_allocate_item(arena, OutlinedRectangleCmd);
-        } break;
-
-        case RENDER_CMD_CIRCLE: {
-            result = la_allocate_item(arena, CircleCmd);
-        } break;
-
-        case RENDER_CMD_LINE: {
-            result = la_allocate_item(arena, LineCmd);
-        } break;
-
-        case RENDER_CMD_TEXT: {
-            result = la_allocate_item(arena, TextCmd);
-        } break;
-
-        case RENDER_CMD_PARTICLES: {
-            result = la_allocate_item(arena, ParticleGroupCmd);
-        } break;
+#define RENDER_COMMAND(type) case RENDER_COMMAND_ENUM_NAME(type): { result = la_allocate_item(arena, type); } break;
+        RENDER_COMMAND_LIST
+#undef RENDER_COMMAND
 
         INVALID_DEFAULT_CASE;
     }
@@ -188,10 +165,11 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
 {
     ASSERT(rect_is_valid(rectangle));
 
-    RectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_RECTANGLE);
+    RectangleCmd *cmd = allocate_render_cmd(arena, RectangleCmd);
     cmd->rect = rectangle;
     cmd->color = color;
 
+    // TODO: make push_render_entry call render_key_create
     RenderKey key = render_key_create(rb, layer, shader, texture, NULL_FONT, rectangle.position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
@@ -207,7 +185,7 @@ RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
     Rectangle viewport, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
-    ClippedRectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_CLIPPED_RECTANGLE);
+    ClippedRectangleCmd *cmd = allocate_render_cmd(arena, ClippedRectangleCmd);
     cmd->rect = rect;
     cmd->viewport_rect = viewport;
     cmd->color = color;
@@ -221,7 +199,7 @@ RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, Texture
 RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     f32 thickness, ShaderHandle shader, RenderLayer layer)
 {
-    OutlinedRectangleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_OUTLINED_RECTANGLE);
+    OutlinedRectangleCmd *cmd = allocate_render_cmd(arena, OutlinedRectangleCmd);
     cmd->rect = rect;
     cmd->color = color;
     cmd->thickness = thickness;
@@ -235,7 +213,7 @@ RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangl
 RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Vector2 position, RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer)
 {
-    CircleCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_CIRCLE);
+    CircleCmd *cmd = allocate_render_cmd(arena, CircleCmd);
     cmd->position = position;
     cmd->color = color;
     cmd->radius = radius;
@@ -255,7 +233,7 @@ RenderEntry *rb_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 positio
 RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
     RGBA32 color, f32 thickness, ShaderHandle shader, RenderLayer layer)
 {
-    LineCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_LINE);
+    LineCmd *cmd = allocate_render_cmd(arena, LineCmd);
     cmd->start = start;
     cmd->end = end;
     cmd->color = color;
@@ -270,7 +248,7 @@ RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Ve
 RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer)
 {
-    TextCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_TEXT);
+    TextCmd *cmd = allocate_render_cmd(arena, TextCmd);
     cmd->text = text;
     cmd->position = position;
     cmd->color = color;
@@ -285,7 +263,7 @@ RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vect
 RenderEntry *rb_push_clipped_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     Rectangle clip_rect, RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer)
 {
-    TextCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_TEXT);
+    TextCmd *cmd = allocate_render_cmd(arena, TextCmd);
     cmd->text = text;
     cmd->position = position;
     cmd->color = color;
@@ -302,7 +280,7 @@ RenderEntry *rb_push_clipped_text(RenderBatch *rb, LinearArena *arena, String te
 RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, ParticleBuffer *particles,
     RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {
-    ParticleGroupCmd *cmd = allocate_render_cmd(arena, RENDER_CMD_PARTICLES);
+    ParticleGroupCmd *cmd = allocate_render_cmd(arena, ParticleGroupCmd);
     cmd->particles = particles;
     cmd->color = color;
     cmd->particle_size = particle_size;

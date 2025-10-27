@@ -23,7 +23,6 @@ typedef enum {
     SPELL_PROP_LIFETIME = (1 << 6),
 } SpellProperties;
 
-
 typedef struct {
     SpellProperties properties;
 

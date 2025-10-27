@@ -53,9 +53,7 @@ static Spell spell_spark(const AssetList *asset_list)
 
     spell.lifetime = 5.0f;
 
-    // TODO: set_damage_range_for_type
-    set_damage_value_of_type(&spell.damaging.base_damage.low_roll, DMG_KIND_LIGHTNING, 1);
-    set_damage_value_of_type(&spell.damaging.base_damage.high_roll, DMG_KIND_LIGHTNING, 100);
+    set_damage_range_for_type(&spell.damaging.base_damage, DMG_KIND_LIGHTNING, 1, 100);
     set_damage_value_of_type(&spell.damaging.penetration_values, DMG_KIND_LIGHTNING, 20);
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;
 

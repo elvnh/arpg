@@ -7,7 +7,6 @@
 
 /*
   TODO:
-  - Resistance penetration
   - Better way of setting resistance/damage values
   - Better naming
  */
@@ -122,6 +121,13 @@ static inline DamageInstance calculate_damage_dealt_from_range(DamageRange damag
     }
 
     return result;
+}
+
+static inline void set_damage_range_for_type(DamageRange *range, DamageKind type,
+    DamageValue low, DamageValue high)
+{
+    set_damage_value_of_type(&range->low_roll, type, low);
+    set_damage_value_of_type(&range->high_roll, type, high);
 }
 
 #endif //DAMAGE_H

@@ -157,8 +157,9 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 
     for (s32 i = 0; i < spell_count; ++i) {
 	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
+        Vector2 current_pos = v2_add(pos, v2_mul_s(dir, 20.0f));
 
-	cast_single_spell(world, spell, caster, pos, current_dir);
+	cast_single_spell(world, spell, caster, current_pos, current_dir);
 
 	current_angle += angle_step_size;
     }

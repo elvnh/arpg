@@ -5,6 +5,7 @@
 #include "base/vector.h"
 #include "base/matrix.h"
 #include "base/list.h"
+#include "camera.h"
 #include "render_command.h"
 #include "render_key.h"
 
@@ -20,7 +21,7 @@ typedef struct RenderEntry {
 typedef struct RenderBatch {
     RenderEntry  entries[1024];
     ssize        entry_count;
-    Vector2i     viewport_size;
+    s32          y_sorting_basis;
     Matrix4      projection;
     YDirection   y_direction; // TODO: get this from projection matrix instead of storing
 } RenderBatch;
@@ -35,10 +36,11 @@ DEFINE_LIST(RenderBatchNode, RenderBatchList);
 
 struct Particle;
 
-RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, YDirection y_dir, LinearArena *arena);
+RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
+    LinearArena *arena);
 void         rb_sort_entries(RenderBatch *rb, LinearArena *scratch);
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer, s32 y_offset);
+    Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,

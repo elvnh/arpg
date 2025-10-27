@@ -22,7 +22,7 @@ static Spell spell_fireball(const AssetList *asset_list)
     spell.sprite.texture = asset_list->fireball_texture;
     spell.sprite.sprite_size = v2(32, 32);
 
-    spell.projectile.projectile_speed = 250.0f;
+    spell.projectile.projectile_speed = 100.0f;
     spell.projectile.collider_size = v2(32, 32);
 
     DamageRange damage_range = {0};

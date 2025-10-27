@@ -76,8 +76,7 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
 
 static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData frame_data, LinearArena *frame_arena)
 {
-    Matrix4 proj = camera_get_matrix(game_state->world.camera, frame_data.window_size);
-    RenderBatch *rb = rb_list_push_new(rbs, proj, Y_IS_UP, frame_arena);
+    RenderBatch *rb = rb_list_push_new(rbs, game_state->world.camera, frame_data.window_size, Y_IS_UP, frame_arena);
 
     world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena,
 	&game_state->debug_state);
@@ -312,8 +311,11 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
         game_update_and_render_ui(&game_state->ui, game_state, game_memory, frame_data);
 
-        Matrix4 proj = mat4_orthographic(frame_data.window_size, Y_IS_DOWN);
-        RenderBatch *ui_rb = rb_list_push_new(rbs, proj, Y_IS_DOWN, &game_memory->temporary_memory);
+        Camera ui_cam = {
+            .position = {(f32)frame_data.window_size.x / 2.0f, (f32)frame_data.window_size.y / 2.0f}
+        };
+
+        RenderBatch *ui_rb = rb_list_push_new(rbs, ui_cam, frame_data.window_size, Y_IS_DOWN, &game_memory->temporary_memory);
         ui_core_end_frame(&game_state->ui, frame_data, ui_rb, &game_state->asset_list, platform_code);
 
         rb_sort_entries(ui_rb, &game_memory->temporary_memory);

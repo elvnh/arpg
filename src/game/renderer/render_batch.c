@@ -2,17 +2,30 @@
 #include "base/linear_arena.h"
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "game/camera.h"
 #include "game/renderer/render_key.h"
 #include "render_command.h"
 #include "game/components/particle.h"
 
-RenderBatch *rb_list_push_new(RenderBatchList *list, Matrix4 projection, YDirection y_dir, LinearArena *arena)
+// TODO: lots of code duplication in this file
+
+RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir, LinearArena *arena)
 {
     RenderBatchNode *node = la_allocate_item(arena, RenderBatchNode);
     list_push_back(list, node);
 
-    node->render_batch.projection = projection;
+    Matrix4 proj_matrix = camera_get_matrix(camera, viewport_size, y_dir);
+
+    Rectangle camera_bounds = camera_get_visible_area(camera, viewport_size);
+    f32 top_y = camera_bounds.position.y;
+
+    if (y_dir == Y_IS_UP) {
+        top_y += camera_bounds.size.y;
+    }
+
+    node->render_batch.projection = proj_matrix;
     node->render_batch.y_direction = y_dir;
+    node->render_batch.y_sorting_basis = (s32)top_y;
 
     return &node->render_batch;
 }
@@ -134,8 +147,21 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
     return entry;
 }
 
+static inline s32 get_y_sort_order(RenderBatch *rb, s32 y_pos)
+{
+    s32 result = 0;
+
+    if (rb->y_direction == Y_IS_UP) {
+        result = rb->y_sorting_basis - y_pos;
+    } else {
+        result = y_pos - rb->y_sorting_basis;
+    }
+
+    return result;
+}
+
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer, s32 y_offset)
+    Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     ASSERT(rect_is_valid(rectangle));
 
@@ -143,7 +169,10 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
     cmd->rect = rectangle;
     cmd->color = color;
 
-    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, y_offset);
+    // TODO: shouldn't need to manually call this every draw
+    s32 y_order = get_y_sort_order(rb, (s32)rectangle.position.y);
+
+    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, y_order);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -152,7 +181,7 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
 RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
-    return rb_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer, 0);
+    return rb_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);
 }
 
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,

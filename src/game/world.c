@@ -113,20 +113,11 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
     if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
 
-        // TODO: handle all this in renderer
         // TODO: UI should be drawn on separate layer
-        Rectangle bounds = camera_get_visible_area(world->camera, frame_data.window_size);
-        f32 top = bounds.position.y;
-
-        if (rb->y_direction == Y_IS_UP) {
-            top += bounds.size.y;
-        }
-
-        s32 y_offset = top - entity->position.y;
 
         Rectangle sprite_rect = { entity->position, sprite->size };
         rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, RGBA32_WHITE, assets->texture_shader,
-            RENDER_LAYER_ENTITIES, y_offset);
+            RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
@@ -520,7 +511,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
             Vector2 mouse_dir = v2_sub(mouse_pos, player->position);
             mouse_dir = v2_norm(mouse_dir);
 
-            magic_cast_spell(world, SPELL_FIREBALL, player, player->position, mouse_dir);
+            magic_cast_spell(world, SPELL_SPARK, player, player->position, mouse_dir);
         }
 
         camera_set_target(&world->camera, target);

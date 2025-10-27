@@ -3,6 +3,7 @@
 
 #include "base/maths.h"
 #include "base/matrix.h"
+#include "base/rectangle.h"
 
 #define ZOOM_MIN_VALUE          -0.9f
 #define ZOOM_MAX_VALUE           10.0f
@@ -17,9 +18,9 @@ typedef struct {
     f32 target_zoom;
 } Camera;
 
-static inline Matrix4 camera_get_matrix(Camera cam, Vector2i window_dims)
+static inline Matrix4 camera_get_matrix(Camera cam, Vector2i window_dims, YDirection y_dir)
 {
-    Matrix4 result = mat4_orthographic(window_dims, Y_IS_UP);
+    Matrix4 result = mat4_orthographic(window_dims, y_dir);
 
     Vector2 window_center = {(f32)window_dims.x / 2.0f, (f32)window_dims.y / 2.0f};
     result = mat4_translate(result, v2_add(window_center, v2_neg(cam.position)));

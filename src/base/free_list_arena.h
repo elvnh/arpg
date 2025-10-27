@@ -30,5 +30,6 @@ void	       *fl_reallocate(void *context, void *ptr, ssize new_count, ssize item
 ssize	        fl_get_memory_usage(FreeListArena *arena);
 ssize		fl_get_available_memory(FreeListArena *arena);
 Allocator       fl_allocator(FreeListArena *arena);
+void            fl_reset(FreeListArena *arena);
 
 #endif //FREE_LIST_ARENA_H

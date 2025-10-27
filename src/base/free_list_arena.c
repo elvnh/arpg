@@ -18,6 +18,7 @@ typedef struct FreeBlock {
 } FreeBlock;
 
 typedef struct FreeListBuffer {
+    // TODO: does this need to be doubly linked?
     FreeBlock *head;
     FreeBlock *tail;
 
@@ -41,8 +42,28 @@ static FreeBlock *write_free_block_header(void *address, ssize total_block_size)
 
     FreeBlock *result = address;
     result->total_size = total_block_size;
+    result->prev = 0;
+    result->next = 0;
 
     return result;
+}
+
+
+#define FIRST_BLOCK_OFFSET (align(SIZEOF(FreeListBuffer), ALIGNOF(FreeBlock)))
+
+static void reset_buffer(FreeListBuffer *buffer)
+{
+    ASSERT(buffer->usable_size != 0);
+
+    void *first_free_block_address = byte_offset(buffer, FIRST_BLOCK_OFFSET);
+    FreeBlock *first_free_block = write_free_block_header(first_free_block_address, buffer->usable_size);
+
+    ASSERT(FIRST_BLOCK_OFFSET >= SIZEOF(FreeListBuffer));
+    ASSERT((ssize)first_free_block_address >= ((ssize)(buffer + 1)));
+    ASSERT(is_aligned((ssize)first_free_block, ALIGNOF(FreeBlock)));
+
+    buffer->head = first_free_block;
+    buffer->tail = first_free_block;
 }
 
 static FreeListBuffer *allocate_new_buffer(FreeListArena *arena, ssize capacity)
@@ -50,23 +71,23 @@ static FreeListBuffer *allocate_new_buffer(FreeListArena *arena, ssize capacity)
     // Capacity must be rounded up since allocation sizes are rounded up to alignment boundary
     // of FreeBlock.
     ssize aligned_buffer_capacity = align(capacity, ALIGNOF(FreeBlock));
-    ssize block_offset_from_buffer_header = align(SIZEOF(FreeListBuffer), ALIGNOF(FreeBlock));
-    ssize total_alloc_size = aligned_buffer_capacity + block_offset_from_buffer_header;
+    ssize total_alloc_size = aligned_buffer_capacity + FIRST_BLOCK_OFFSET;
 
     FreeListBuffer *new_buffer = allocate_aligned(arena->parent, total_alloc_size, 1, ALIGNOF(FreeListBuffer));
-
-    void *first_free_block_address = byte_offset(new_buffer, block_offset_from_buffer_header);
-    FreeBlock *first_free_block = write_free_block_header(first_free_block_address, aligned_buffer_capacity);
-
-    ASSERT(block_offset_from_buffer_header >= SIZEOF(FreeListBuffer));
-    ASSERT((ssize)first_free_block_address >= ((ssize)(new_buffer + 1)));
-    ASSERT(is_aligned((ssize)first_free_block, ALIGNOF(FreeBlock)));
-
     new_buffer->usable_size = aligned_buffer_capacity;
-    new_buffer->head = first_free_block;
-    new_buffer->tail = first_free_block;
+
+    reset_buffer(new_buffer);
 
     return new_buffer;
+}
+
+void fl_reset(FreeListArena *arena)
+{
+    ASSERT(arena->head);
+
+    for (FreeListBuffer *buffer = list_head(arena); buffer; buffer = list_next(buffer)) {
+        reset_buffer(buffer);
+    }
 }
 
 FreeListArena fl_create(Allocator parent, ssize capacity)

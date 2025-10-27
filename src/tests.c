@@ -1054,6 +1054,40 @@ static void tests_free_list()
 
 	fl_destroy(&fl);
     }
+
+    // fl_reset
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+        fl_reset(&fl);
+        ASSERT(fl_get_memory_usage(&fl) == 0);
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+        fl_alloc_item(&fl, s32);
+
+        fl_reset(&fl);
+        ASSERT(fl_get_memory_usage(&fl) == 0);
+	fl_destroy(&fl);
+    }
+
+    {
+	FreeListArena fl = fl_create(default_allocator, 1024);
+
+        for (s32 i = 0; i < 3; ++i) {
+            for (s32 j = 0; j < 100; ++j) {
+                fl_alloc_array(&fl, byte, 100);
+            }
+
+            fl_reset(&fl);
+            ASSERT(fl_get_memory_usage(&fl) == 0);
+        }
+
+	fl_destroy(&fl);
+    }
 }
 
 static void tests_sl_list()

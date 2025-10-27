@@ -5,6 +5,7 @@
 #include "list.h"
 
 #define MIN_FREE_LIST_BLOCK_SIZE (SIZEOF(FreeBlock))
+#define FIRST_BLOCK_OFFSET (align(SIZEOF(FreeListBuffer), ALIGNOF(FreeBlock)))
 
 typedef struct {
     ssize free_block_address; // Header may have been offset from free block base
@@ -18,7 +19,6 @@ typedef struct FreeBlock {
 } FreeBlock;
 
 typedef struct FreeListBuffer {
-    // TODO: does this need to be doubly linked?
     FreeBlock *head;
     FreeBlock *tail;
 
@@ -47,9 +47,6 @@ static FreeBlock *write_free_block_header(void *address, ssize total_block_size)
 
     return result;
 }
-
-
-#define FIRST_BLOCK_OFFSET (align(SIZEOF(FreeListBuffer), ALIGNOF(FreeBlock)))
 
 static void reset_buffer(FreeListBuffer *buffer)
 {
@@ -233,13 +230,9 @@ static void allocate_from_free_block(void *alloc_address, ssize alloc_size,
 void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize requested_alignment)
 {
     ASSERT(is_pow2(requested_alignment));
+    ASSERT(!multiply_overflows_ssize(item_count, item_size));
 
     FreeListArena *arena = context;
-
-    if (multiply_overflows_ssize(item_count, item_size)) {
-        ASSERT(false);
-        return 0;
-    }
 
     // Allocation size must be rounded up to ensure that next free block lands on alignment boundary
     ssize allocation_size = align(item_count * item_size, ALIGNOF(FreeBlock));
@@ -248,14 +241,14 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize reques
     // properly aligned. Needed since a header will be written right before user pointer.
     ssize alignment = MAX(requested_alignment, ALIGNOF(AllocationHeader));
 
-    void *alloc_address = 0; // TODO: rename
+    void *result = 0;
     FreeBlock *block_of_allocation = 0;
     FreeListBuffer *buffer_of_allocation = 0;
 
     BlockSearchResult search_result = find_suitable_block(arena, allocation_size, alignment);
 
     if (search_result.block) {
-        alloc_address = search_result.user_ptr;
+        result = search_result.user_ptr;
         block_of_allocation = search_result.block;
         buffer_of_allocation = search_result.buffer;
     } else {
@@ -264,16 +257,16 @@ void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize reques
 
         list_push_back(arena, new_buffer);
 
-        alloc_address = try_get_aligned_alloc_address_in_block(list_head(new_buffer),
+        result = try_get_aligned_alloc_address_in_block(list_head(new_buffer),
 	    allocation_size, alignment);
         block_of_allocation = list_head(new_buffer);
         buffer_of_allocation = new_buffer;
     }
 
-    allocate_from_free_block(alloc_address, allocation_size, block_of_allocation, buffer_of_allocation);
-    mem_zero(alloc_address, allocation_size);
+    allocate_from_free_block(result, allocation_size, block_of_allocation, buffer_of_allocation);
+    mem_zero(result, allocation_size);
 
-    return alloc_address;
+    return result;
 }
 
 static FreeListBuffer *find_buffer_containing_address(FreeListArena *arena, ssize address)
@@ -286,7 +279,7 @@ static FreeListBuffer *find_buffer_containing_address(FreeListArena *arena, ssiz
         }
     }
 
-    ASSERT(false);
+    ASSERT(0);
     return 0;
 }
 
@@ -363,12 +356,7 @@ static AllocationHeader *get_allocation_header(void *alloc_address)
 void fl_deallocate(void *context, void *ptr)
 {
     FreeListArena *arena = context;
-
-    if (!ptr) {
-        // TODO: should this be allowed?
-        ASSERT(0);
-        return;
-    }
+    ASSERT(ptr);
 
     AllocationHeader *alloc_header = get_allocation_header(ptr);
     void *free_block_address = (void *)alloc_header->free_block_address;
@@ -472,11 +460,7 @@ void *fl_reallocate(void *context, void *ptr, ssize new_count, ssize item_size, 
 {
     ASSERT(ptr);
     ASSERT(context);
-
-    if (multiply_overflows_ssize(new_count, item_size)) {
-	ASSERT(0);
-	return 0;
-    }
+    ASSERT(!multiply_overflows_ssize(new_count, item_size));
 
     FreeListArena *arena = context;
     AllocationHeader *alloc_header = get_allocation_header(ptr);

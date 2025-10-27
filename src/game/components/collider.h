@@ -29,7 +29,7 @@ typedef struct {
 
     union {
         struct {
-            Damage damage;
+            DamageInstance damage;
         } deal_damage;
     } as;
 } OnCollisionEffect;

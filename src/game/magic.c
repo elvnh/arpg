@@ -53,11 +53,10 @@ static Spell spell_spark(const AssetList *asset_list)
 
     spell.lifetime = 5.0f;
 
-    DamageRange damage_range = {0};
-    set_damage_value_of_type(&damage_range.low_roll, DMG_KIND_LIGHTNING, 1);
-    set_damage_value_of_type(&damage_range.high_roll, DMG_KIND_LIGHTNING, 100);
-
-    spell.damaging.base_damage = damage_range;
+    // TODO: set_damage_range_for_type
+    set_damage_value_of_type(&spell.damaging.base_damage.low_roll, DMG_KIND_LIGHTNING, 1);
+    set_damage_value_of_type(&spell.damaging.base_damage.high_roll, DMG_KIND_LIGHTNING, 100);
+    set_damage_value_of_type(&spell.damaging.penetration_values, DMG_KIND_LIGHTNING, 20);
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;
 
     return spell;
@@ -116,7 +115,9 @@ void cast_single_spell(struct World *world, const Spell *spell, struct Entity *c
 	OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DEAL_DAMAGE);
 	effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
 
-	Damage damage = calculate_damage_dealt_from_range(spell->damaging.base_damage);
+	// TODO: create_damage_instance
+	DamageInstance damage = calculate_damage_dealt_from_range(spell->damaging.base_damage);
+	damage.penetration = spell->damaging.penetration_values;
 	effect->as.deal_damage.damage = damage;
 
 	effect->retrigger_behaviour = spell->damaging.retrigger_behaviour;

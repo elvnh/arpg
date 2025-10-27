@@ -37,7 +37,8 @@ typedef struct {
 
 typedef struct {
     DamageTypes types;
-} Damage; // TODO: rename to DamageInstance
+    DamageTypes penetration;
+} DamageInstance;
 
 static inline DamageValue *get_damage_reference_of_type(DamageTypes *damages, DamageKind type)
 {
@@ -76,13 +77,12 @@ static inline DamageValue get_total_resistance_of_type(ResistanceStats resistanc
     return result;
 }
 
-static inline DamageValue calculate_damage_of_type_after_resistance(Damage damage,
+static inline DamageValue calculate_damage_of_type_after_resistance(DamageInstance damage,
     ResistanceStats resistances, DamageKind dmg_type)
 {
     DamageValue damage_amount = get_damage_value_of_type(damage.types, dmg_type);
     DamageValue total_resistance = get_total_resistance_of_type(resistances, dmg_type);
-
-    // TODO: reduce total_resistance here by resistance penetration
+    total_resistance -= get_damage_value_of_type(damage.penetration, dmg_type);
 
     // TODO: round up or down?
     DamageValue result = (DamageValue)((f64)damage_amount * (1.0 - (f64)total_resistance / 100.0));
@@ -90,9 +90,9 @@ static inline DamageValue calculate_damage_of_type_after_resistance(Damage damag
     return result;
 }
 
-static inline Damage calculate_damage_received(ResistanceStats resistances, Damage damage)
+static inline DamageInstance calculate_damage_received(ResistanceStats resistances, DamageInstance damage)
 {
-    Damage result = {0};
+    DamageInstance result = {0};
 
     for (DamageKind dmg_kind = 0; dmg_kind < DMG_KIND_COUNT; ++dmg_kind) {
         result.types.values[dmg_kind] =
@@ -108,10 +108,10 @@ static inline void set_damage_value_of_type(DamageTypes *damages, DamageKind kin
     *old_value = new_value;
 }
 
-static inline Damage calculate_damage_dealt_from_range(DamageRange damage_range)
+static inline DamageInstance calculate_damage_dealt_from_range(DamageRange damage_range)
 {
     // TODO: make caster stats influence damage roll
-    Damage result = {0};
+    DamageInstance result = {0};
 
     for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
 	DamageValue low = get_damage_value_of_type(damage_range.low_roll, type);

@@ -178,7 +178,7 @@ void world_add_collision_cooldown(World *world, EntityID a, EntityID b, s32 effe
     collision_cooldown_add(&world->collision_effect_cooldowns, a, b, effect_index, &world->world_arena);
 }
 
-static void create_hitsplat(World *world, Vector2 position, Damage damage)
+static void create_hitsplat(World *world, Vector2 position, DamageInstance damage)
 {
     ASSERT(world->hitsplat_count < ARRAY_COUNT(world->active_hitsplats));
 
@@ -198,9 +198,9 @@ static void create_hitsplat(World *world, Vector2 position, Damage damage)
     world->active_hitsplats[index] = hitsplat;
 }
 
-static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, Damage damage)
+static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
 {
-    Damage damage_taken = {0};
+    DamageInstance damage_taken = {0};
 
     if (es_has_component(entity, StatsComponent)) {
         StatsComponent *stats = es_get_component(entity, StatsComponent);
@@ -215,7 +215,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
     create_hitsplat(world, entity->position, damage_taken);
 }
 
-static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, Damage damage)
+static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, DamageInstance damage)
 {
     (void)sender;
 

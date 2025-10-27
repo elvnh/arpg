@@ -15,7 +15,7 @@ struct AssetList;
 // TODO: make size and velocity depend on damage number
 // TODO: make color depend on elemental types present
 typedef struct {
-    Damage damage;
+    DamageInstance damage;
     Vector2 position;
     Vector2 velocity;
     f32 timer;

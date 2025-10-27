@@ -25,11 +25,6 @@ typedef struct {
 } DamageTypes;
 
 typedef struct {
-    DamageTypes base_resistances;
-    DamageTypes flat_bonuses;
-} ResistanceStats;
-
-typedef struct {
     DamageTypes low_roll;
     DamageTypes high_roll;
 } DamageRange;
@@ -66,30 +61,21 @@ static inline DamageValue calculate_damage_sum(DamageTypes damage)
     return result;
 }
 
-static inline DamageValue get_total_resistance_of_type(ResistanceStats resistances, DamageKind type)
-{
-    DamageValue base_resistance = get_damage_value_of_type(resistances.base_resistances, type);
-    DamageValue flat_bonus = get_damage_value_of_type(resistances.flat_bonuses, type);
-
-    DamageValue result = base_resistance + flat_bonus;
-
-    return result;
-}
-
 static inline DamageValue calculate_damage_of_type_after_resistance(DamageInstance damage,
-    ResistanceStats resistances, DamageKind dmg_type)
+    DamageTypes resistances, DamageKind dmg_type)
 {
     DamageValue damage_amount = get_damage_value_of_type(damage.types, dmg_type);
-    DamageValue total_resistance = get_total_resistance_of_type(resistances, dmg_type);
-    total_resistance -= get_damage_value_of_type(damage.penetration, dmg_type);
+    DamageValue resistance = get_damage_value_of_type(resistances, dmg_type);
+
+    resistance -= get_damage_value_of_type(damage.penetration, dmg_type);
 
     // TODO: round up or down?
-    DamageValue result = (DamageValue)((f64)damage_amount * (1.0 - (f64)total_resistance / 100.0));
+    DamageValue result = (DamageValue)((f64)damage_amount * (1.0 - (f64)resistance / 100.0));
 
     return result;
 }
 
-static inline DamageInstance calculate_damage_received(ResistanceStats resistances, DamageInstance damage)
+static inline DamageInstance calculate_damage_received(DamageTypes resistances, DamageInstance damage)
 {
     DamageInstance result = {0};
 

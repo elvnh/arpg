@@ -198,13 +198,23 @@ static void create_hitsplat(World *world, Vector2 position, DamageInstance damag
     world->active_hitsplats[index] = hitsplat;
 }
 
+static DamageTypes get_total_entity_resistances(Entity *entity, StatsComponent *stats)
+{
+    (void)entity;
+    DamageTypes result = stats->base_resistances;
+
+    return result;
+}
+
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
 {
     DamageInstance damage_taken = {0};
 
     if (es_has_component(entity, StatsComponent)) {
         StatsComponent *stats = es_get_component(entity, StatsComponent);
-        damage_taken = calculate_damage_received(stats->resistances, damage);
+        DamageTypes resistances = get_total_entity_resistances(entity, stats);
+
+        damage_taken = calculate_damage_received(resistances, damage);
     } else {
         damage_taken = damage;
     }
@@ -735,7 +745,6 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         sprite->size = v2(32, 32);
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
-        stats->resistances.base_resistances.values[DMG_KIND_FIRE] = 10;
-        stats->resistances.flat_bonuses.values[DMG_KIND_FIRE] = 5;
+        set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 100);
     }
 }

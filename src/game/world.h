@@ -27,9 +27,12 @@ typedef struct World {
     Camera camera;
     Tilemap tilemap;
     EntitySystem entity_system;
+
     CollisionCooldownTable collision_effect_cooldowns;
+
     CollisionEventTable  previous_frame_collisions;
     CollisionEventTable  current_frame_collisions;
+
     Hitsplat active_hitsplats[128];
     s32 hitsplat_count;
 } World;
@@ -38,7 +41,5 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena);
 void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list,
     FrameData frame_data, LinearArena *frame_arena, struct DebugState *debug_state);
-
-
 
 #endif //WORLD_H

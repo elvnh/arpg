@@ -5,7 +5,6 @@
 #include "entity.h"
 #include "quad_tree.h"
 
-// TODO: bug: can only create 1 less than this
 #define MAX_ENTITIES 32
 
 #define NULL_ENTITY_ID ((EntityID){ 0, 0 })

@@ -108,13 +108,25 @@ static void entity_update(World *world, Entity *entity, f32 dt)
 }
 
 static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
-    struct DebugState *debug_state)
+    struct DebugState *debug_state, World *world, FrameData frame_data)
 {
     if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
 
+        // TODO: handle all this in renderer
+        // TODO: UI should be drawn on separate layer
+        Rectangle bounds = camera_get_visible_area(world->camera, frame_data.window_size);
+        f32 top = bounds.position.y;
+
+        if (rb->y_direction == Y_IS_UP) {
+            top += bounds.size.y;
+        }
+
+        s32 y_offset = top - entity->position.y;
+
         Rectangle sprite_rect = { entity->position, sprite->size };
-        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
+        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, RGBA32_WHITE, assets->texture_shader,
+            RENDER_LAYER_ENTITIES, y_offset);
     }
 
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
@@ -508,7 +520,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
             Vector2 mouse_dir = v2_sub(mouse_pos, player->position);
             mouse_dir = v2_norm(mouse_dir);
 
-            magic_cast_spell(world, SPELL_SPARK, player, player->position, mouse_dir);
+            magic_cast_spell(world, SPELL_FIREBALL, player, player->position, mouse_dir);
         }
 
         camera_set_target(&world->camera, target);
@@ -639,7 +651,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(&world->entity_system, node->id);
 
-        entity_render(entity, rb, assets, frame_arena, debug_state);
+        entity_render(entity, rb, assets, frame_arena, debug_state, world, frame_data);
     }
 
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
@@ -676,10 +688,6 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
 		    assets->texture_shader, assets->default_font, 5);
 	    }
 	}
-
-
-
-
     }
 }
 

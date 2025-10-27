@@ -307,6 +307,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     }
 
     if (game_state->debug_state.debug_menu_active) {
+        // TODO: ui should be updated before game, but rendered after
         ui_core_begin_frame(&game_state->ui);
 
         game_update_and_render_ui(&game_state->ui, game_state, game_memory, frame_data);

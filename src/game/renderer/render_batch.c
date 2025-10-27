@@ -135,7 +135,7 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
 }
 
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer)
+    Rectangle rectangle, RGBA32 color, ShaderHandle shader, RenderLayer layer, s32 y_offset)
 {
     ASSERT(rect_is_valid(rectangle));
 
@@ -143,7 +143,7 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
     cmd->rect = rectangle;
     cmd->color = color;
 
-    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, (s32)rectangle.position.y);
+    RenderKey key = render_key_create(layer, shader, texture, NULL_FONT, y_offset);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -152,7 +152,7 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
 RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
-    return rb_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer);
+    return rb_push_sprite(rb, arena, NULL_TEXTURE, rect, color, shader, layer, 0);
 }
 
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,

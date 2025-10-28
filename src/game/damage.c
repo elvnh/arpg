@@ -6,6 +6,7 @@
 // NOTE: the ordering of these affects the order of calculations
 typedef enum {
     DMG_CALC_PHASE_ADDITIVE,
+    DMG_CALC_PHASE_MULTIPLICATIVE,
     DMG_CALC_PHASE_COUNT,
 } DamageCalculationPhase;
 
@@ -18,6 +19,22 @@ static DamageTypes damage_types_add(DamageTypes lhs, DamageTypes rhs)
         DamageValue rhs_value = get_damage_value_of_type(rhs, type);
 
         *lhs_ptr += rhs_value;
+    }
+
+    return result;
+}
+
+static DamageTypes damage_types_multiply(DamageTypes lhs, DamageTypes rhs)
+{
+    DamageTypes result = lhs;
+
+    for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
+        DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
+        DamageValue rhs_value = get_damage_value_of_type(rhs, type);
+
+        f32 n = 1.0f + (f32)(rhs_value) / 100.0f;
+
+        *lhs_ptr = (DamageValue)((f32)(*lhs_ptr) * n);
     }
 
     return result;
@@ -44,7 +61,7 @@ static DamageTypes apply_damage_value_status_effects(DamageTypes value, struct E
                     if (phase == DMG_CALC_PHASE_ADDITIVE) {
                         result = damage_types_add(result, effect->as.damage_modifiers.additive_modifiers);
                     } else {
-                        ASSERT(0);
+                        result = damage_types_multiply(result, effect->as.damage_modifiers.multiplicative_modifiers);
                     }
                 } break;
 
@@ -78,11 +95,10 @@ DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *ent
 // TODO: make this take only entity as parameter
 DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity)
 {
-    // NOTE: resistances only have an additive phase
     DamageTypes result = base_resistances;
 
-    result = apply_damage_value_status_effects(result, entity, STATUS_EFFECT_RESISTANCE_MODIFIER,
-        DMG_CALC_PHASE_ADDITIVE);
+    // NOTE: resistances only have an additive phase
+    result = apply_damage_value_status_effects(result, entity, STATUS_EFFECT_RESISTANCE_MODIFIER, DMG_CALC_PHASE_ADDITIVE);
 
     return result;
 }

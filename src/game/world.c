@@ -84,6 +84,11 @@ static void entity_update(World *world, Entity *entity, f32 dt)
         lifetime->time_to_live -= dt;
     }
 
+    if (es_has_component(entity, StatusEffectComponent)) {
+        StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
+        status_effects_update(status_effects, dt);
+    }
+
     if (entity_should_die(entity)) {
         // NOTE: won't be removed until after this frame
         es_schedule_entity_for_removal(entity);
@@ -588,6 +593,10 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         if (hitsplat->timer >= hitsplat->lifetime) {
             world->active_hitsplats[i] = world->active_hitsplats[world->hitsplat_count - 1];
             world->hitsplat_count -= 1;
+
+            if (world->hitsplat_count == 0) {
+                break;
+            }
         }
 
         hitsplat->position = v2_add(hitsplat->position, v2_mul_s(hitsplat->velocity, frame_data.dt));
@@ -749,7 +758,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
-        StatusEffect *dmg_boost = status_effects_add(effects, STATUS_EFFECT_DAMAGE_MODIFIER);
+        StatusEffect *dmg_boost = status_effects_add(effects, STATUS_EFFECT_DAMAGE_MODIFIER, 5.0f);
         set_damage_value_of_type(&dmg_boost->as.damage_modifiers.additive_modifiers, DMG_KIND_LIGHTNING, 100);
     }
 }

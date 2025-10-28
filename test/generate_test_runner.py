@@ -327,6 +327,9 @@ def gather_test_cases(filenames):
                 if case in encountered_case_names:
                     print(f'\x1b[31merror: Multiple definition of test case \'{case}\'. Stopping.');
                     exit(1)
+                elif len(case) == 0:
+                    print(f'\x1b[31merror: Test case name can not be empty. Stopping.');
+                    exit(1)
 
                 encountered_case_names.add(case)
 

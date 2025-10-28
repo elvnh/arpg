@@ -6,6 +6,7 @@
 
 typedef enum {
     STATUS_EFFECT_DAMAGE_MODIFIER,
+    STATUS_EFFECT_RESISTANCE_MODIFIER,
 } StatusEffectKind;
 
 typedef struct {
@@ -14,7 +15,7 @@ typedef struct {
 
     union {
         DamageValueModifiers damage_modifiers;
-        //DamageValueModifiers resistance_modifiers;
+        DamageTypes resistance_modifiers;
     } as;
 } StatusEffect;
 

@@ -124,5 +124,6 @@ static inline void set_damage_range_for_type(DamageRange *range, DamageKind type
 }
 
 DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *entity);
+DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity);
 
 #endif //DAMAGE_H

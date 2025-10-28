@@ -218,7 +218,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
 
     if (es_has_component(entity, StatsComponent)) {
         StatsComponent *stats = es_get_component(entity, StatsComponent);
-        DamageTypes resistances = get_total_entity_resistances(entity, stats);
+        DamageTypes resistances = calculate_resistances_after_boosts(stats->base_resistances, entity);
 
         damage_taken = calculate_damage_received(resistances, damage);
     } else {
@@ -760,5 +760,8 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
         StatusEffect *dmg_boost = status_effects_add(effects, STATUS_EFFECT_DAMAGE_MODIFIER, 5.0f);
         set_damage_value_of_type(&dmg_boost->as.damage_modifiers.additive_modifiers, DMG_KIND_LIGHTNING, 100);
+
+        StatusEffect *res_boost = status_effects_add(effects, STATUS_EFFECT_RESISTANCE_MODIFIER, 10.0f);
+        set_damage_value_of_type(&res_boost->as.resistance_modifiers, DMG_KIND_LIGHTNING, 100);
     }
 }

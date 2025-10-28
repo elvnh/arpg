@@ -58,3 +58,28 @@ DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *ent
 
     return result;
 }
+
+DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity)
+{
+    DamageTypes result = base_resistances;
+
+    // TODO: unify with the other functions
+
+    if (es_has_component(entity, StatusEffectComponent)) {
+        StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
+
+        for (s32 i = 0; i < status_effects->effect_count; ++i) {
+            StatusEffect *effect = &status_effects->effects[i];
+
+            switch (effect->kind) {
+                case STATUS_EFFECT_RESISTANCE_MODIFIER: {
+                    result = damage_types_add(result, effect->as.resistance_modifiers);
+                } break;
+
+                default: break;
+            }
+        }
+    }
+
+    return result;
+}

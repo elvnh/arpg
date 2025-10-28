@@ -11,7 +11,6 @@ src/base/image.c
 src/base/random.c
 src/base/free_list_arena.c
 "
-#src/base/thread_context.c
 
 # TODO: remove hot reload source files if hot reloading isn't enabled
 PLATFORM_SOURCES="
@@ -43,6 +42,13 @@ RENDERER_SOURCES="
 src/renderer/open_gl/renderer_backend.c
 "
 
+TEST_SOURCES="
+test/src/test_foo.c
+"
+
+TEST_RUNNER_SOURCE="
+test/src/test_runner.c
+"
 
 FLAGS="
       -DHOT_RELOAD=${HOT_RELOAD}
@@ -125,7 +131,7 @@ else
         ar rcs libgame.a build/game/*.o;
     fi
 
-    ## Main
+    # Main
     if [ $HOT_RELOAD = 1 ]; then
         ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image -lstb_truetype \
               `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
@@ -133,6 +139,10 @@ else
         ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lgame -lrenderer -lstb_image -lstb_truetype \
               `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
     fi
+
+    # Tests
+    python3 test/generate_test_runner.py ${TEST_SOURCES} -o ${TEST_RUNNER_SOURCE} && \
+    ${CC} ${TEST_RUNNER_SOURCE} ${FLAGS} -Itest/include/ -o tests;
 
     rm build/lock;
 fi

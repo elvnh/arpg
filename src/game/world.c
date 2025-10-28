@@ -6,6 +6,7 @@
 #include "base/utils.h"
 #include "base/sl_list.h"
 #include "components/component.h"
+#include "components/status_effect.h"
 #include "debug.h"
 #include "camera.h"
 #include "collision.h"
@@ -745,6 +746,10 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         sprite->size = v2(32, 32);
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
-        set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 100);
+        set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);
+
+        StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
+        StatusEffect *dmg_boost = status_effects_add(effects, STATUS_EFFECT_DAMAGE_MODIFIER);
+        set_damage_value_of_type(&dmg_boost->as.damage_modifiers.additive_modifiers, DMG_KIND_LIGHTNING, 100);
     }
 }

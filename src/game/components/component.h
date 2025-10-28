@@ -1,11 +1,12 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+#include "base/rgba.h"
 #include "damage.h"
 #include "particle.h"
 #include "asset.h"
-#include "base/rgba.h"
 #include "collider.h"
+#include "status_effect.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
@@ -15,6 +16,7 @@
     COMPONENT(LifetimeComponent)                \
     COMPONENT(OnDeathComponent)                 \
     COMPONENT(StatsComponent)                   \
+    COMPONENT(StatusEffectComponent)            \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type

@@ -84,6 +84,8 @@ void *es_impl_add_component(Entity *entity, ComponentType type)
     void *result = es_impl_get_component(entity, type);
     ASSERT(result);
 
+    // TODO: zero out
+
     return result;
 }
 

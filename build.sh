@@ -29,6 +29,7 @@ src/game/game.c
 src/game/world.c
 src/game/collision.c
 src/game/quad_tree.c
+src/game/damage.c
 src/game/entity_system.c
 src/game/tilemap.c
 src/game/magic.c

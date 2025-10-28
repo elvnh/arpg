@@ -5,8 +5,8 @@
 #include "damage.h"
 
 typedef enum {
-    STATUS_EFFECT_DAMAGE_MODIFIER,
-    STATUS_EFFECT_RESISTANCE_MODIFIER,
+    STATUS_EFFECT_DAMAGE_MODIFIER = (1 << 0),
+    STATUS_EFFECT_RESISTANCE_MODIFIER = (1 << 1),
 } StatusEffectKind;
 
 typedef struct {

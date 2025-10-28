@@ -204,14 +204,6 @@ static void create_hitsplat(World *world, Vector2 position, DamageInstance damag
     world->active_hitsplats[index] = hitsplat;
 }
 
-static DamageTypes get_total_entity_resistances(Entity *entity, StatsComponent *stats)
-{
-    (void)entity;
-    DamageTypes result = stats->base_resistances;
-
-    return result;
-}
-
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
 {
     DamageInstance damage_taken = {0};
@@ -759,9 +751,9 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
         StatusEffect *dmg_boost = status_effects_add(effects, STATUS_EFFECT_DAMAGE_MODIFIER, 5.0f);
-        set_damage_value_of_type(&dmg_boost->as.damage_modifiers.additive_modifiers, DMG_KIND_LIGHTNING, 100);
+        set_damage_value_of_type(&dmg_boost->as.damage_modifiers.additive_modifiers, DMG_KIND_LIGHTNING, 1000);
 
         StatusEffect *res_boost = status_effects_add(effects, STATUS_EFFECT_RESISTANCE_MODIFIER, 10.0f);
-        set_damage_value_of_type(&res_boost->as.resistance_modifiers, DMG_KIND_LIGHTNING, 100);
+        set_damage_value_of_type(&res_boost->as.resistance_modifiers, DMG_KIND_LIGHTNING, 120);
     }
 }

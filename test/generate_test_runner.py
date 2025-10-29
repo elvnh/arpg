@@ -308,6 +308,8 @@ int main()
 }
 """
 
+COLOR_RED   = '\x1b[31m'
+COLOR_NORMAL = '\x1b[0m'
 
 def gather_test_cases_in_file(file_contents):
     matches = re.findall('TEST_CASE\((.*)\)', file_contents)
@@ -319,20 +321,23 @@ def gather_test_cases(filenames):
     errors = []
 
     for filename in filenames:
-        with open(filename) as f:
-            cases_in_file = gather_test_cases_in_file(f.read())
-            cases += cases_in_file
+        try:
+            with open(filename) as f:
+                cases_in_file = gather_test_cases_in_file(f.read())
+                cases += cases_in_file
 
-            for case in cases_in_file:
-                if case in encountered_case_names:
-                    print(f'\x1b[31merror: Multiple definition of test case \'{case}\'. Stopping.');
-                    exit(1)
-                elif len(case) == 0:
-                    print(f'\x1b[31merror: Test case name can not be empty. Stopping.');
-                    exit(1)
+                for case in cases_in_file:
+                    if case in encountered_case_names:
+                        print(f'{COLOR_RED}error: Multiple definition of test case \'{case}\'. Stopping.{COLOR_NORMAL}');
+                        exit(1)
+                    elif len(case) == 0:
+                        print(f'{COLOR_RED}error: Test case name can not be empty. Stopping.{COLOR_NORMAL}');
+                        exit(1)
 
-                encountered_case_names.add(case)
-
+                    encountered_case_names.add(case)
+        except IOError:
+            print(f'{COLOR_RED}error: Could not open file \'{filename}\'. Stopping.{COLOR_NORMAL}')
+            exit(1)
     return cases
 
 def create_test_runner_source(files, test_cases, output_dir):

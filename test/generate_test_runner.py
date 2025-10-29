@@ -312,7 +312,7 @@ COLOR_RED   = '\x1b[31m'
 COLOR_NORMAL = '\x1b[0m'
 
 def gather_test_cases_in_file(file_contents):
-    matches = re.findall('TEST_CASE\((.*)\)', file_contents)
+    matches = re.findall(r'TEST_CASE\((.*)\)', file_contents)
     return matches
 
 def gather_test_cases(filenames):

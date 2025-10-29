@@ -26,7 +26,7 @@
 
 #define sl_list_pop(list)                       \
     do {                                        \
-        ASSERT(!list_is_empty(list));        \
+        ASSERT(!list_is_empty(list));		\
         (list)->head = (list)->head->next;      \
         if (!(list)->head) {                    \
             (list)->tail = 0;                   \

@@ -3,6 +3,8 @@
 #include "base/utils.h"
 #include "test_macros.h"
 
+// TODO: test parent arenas
+
 TEST_CASE(linear_arena_create)
 {
     LinearArena arena = la_create(default_allocator, 1024);

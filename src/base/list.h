@@ -1,6 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
+#if 0
 #define list_concat(list_a, list_b)                     \
     do {                                                \
         ASSERT(!list_is_empty((list_a)));               \
@@ -10,6 +11,7 @@
             (list_a)->tail = (list_b)->tail;            \
         }                                               \
     } while (0)
+#endif
 
 #define list_insert_after(list, node, after)                    \
     do {                                                        \

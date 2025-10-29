@@ -43,7 +43,7 @@ src/renderer/open_gl/renderer_backend.c
 "
 
 TEST_SOURCES="
-test/src/test_foo.c
+test/src/base/test_linear_arena.c
 "
 
 TEST_RUNNER_SOURCE="
@@ -141,8 +141,9 @@ else
     fi
 
     # Tests
+    # TODO: fix linking to game
     python3 test/generate_test_runner.py ${TEST_SOURCES} -o ${TEST_RUNNER_SOURCE} && \
-    ${CC} ${TEST_RUNNER_SOURCE} ${FLAGS} -Itest/include/ -o tests;
+    ${CC} ${TEST_RUNNER_SOURCE} ${FLAGS} -Itest/include/ -L. -lbase -lstb_image -lm -o tests;
 
     rm build/lock;
 fi

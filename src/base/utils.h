@@ -5,6 +5,8 @@
 
 #include "typedefs.h"
 
+// TODO: make assert trap
+
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
 #define ASSERT(expr) do { if (!(expr)) { assert_impl(#expr, __func__, FILE_NAME, LINE); } } while (0)
 #define ASSERT_BREAK(expr) do { if (!(expr)) { DEBUG_BREAK; } } while (0)
@@ -57,6 +59,7 @@ static inline bool is_pow2(s64 n)
 
 inline static u64 bit_span(u64 n, u32 index, u32 length)
 {
+    ASSERT(length >= 1);
     ASSERT(length <= 64);
     ASSERT(index < 64);
 
@@ -96,6 +99,8 @@ static inline bool multiply_overflows_ssize(ssize a, ssize b)
 // TODO: create macro for these functions
 static inline bool add_overflows_ssize(ssize a, ssize b)
 {
+    ASSERT(b >= 0);
+
     if (a > (S_SIZE_MAX - b)) {
         return true;
     }
@@ -114,6 +119,7 @@ static inline bool add_overflows_s32(s32 a, s32 b)
 
 static inline bool is_aligned(s64 value, s64 alignment)
 {
+    ASSERT(value >= 0);
     ASSERT(is_pow2(alignment));
     return (value % alignment) == 0;
 }

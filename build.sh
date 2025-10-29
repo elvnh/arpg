@@ -44,6 +44,7 @@ src/renderer/open_gl/renderer_backend.c
 
 TEST_SOURCES="
 test/src/base/test_linear_arena.c
+test/src/base/test_utils.c
 "
 
 TEST_RUNNER_SOURCE="

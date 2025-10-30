@@ -10,13 +10,13 @@ typedef struct {
 } Equipment;
 
 typedef struct {
-    b32 item_was_replaced;
-    ItemID replaced_item; // TODO: use null item id to signify that item wasn't replaced
+    b32 success;
+    ItemID replaced_item;
 } EquipResult;
 
-b32 can_equip_item_in_slot(ItemManager *item_mgr, ItemID item_id, EquipmentSlot slot);
-EquipResult equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID item, EquipmentSlot slot);
+//b32 can_equip_item_in_slot(ItemManager *item_mgr, ItemID item_id, EquipmentSlot slot);
 ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot);
 b32    has_item_equipped_in_slot(Equipment *eq, EquipmentSlot slot);
+EquipResult try_equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID item_id, EquipmentSlot slot);
 
 #endif //EQUIPMENT_H

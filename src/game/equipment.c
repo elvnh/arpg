@@ -2,28 +2,6 @@
 #include "item.h"
 #include "item_manager.h"
 
-b32 can_equip_item_in_slot(ItemManager *item_mgr, ItemID item_id, EquipmentSlot slot)
-{
-    Item *item = item_mgr_get_item(item_mgr, item_id);
-
-    b32 item_is_equipment = item_has_prop(item, ITEM_PROP_EQUIPMENT);
-    b32 result = item_is_equipment && ((item->equipment.slot & slot) != 0);
-
-    return result;
-}
-
-static EquipResult equip_and_replace_item_in_slot(ItemID *slot, ItemID item_to_equip)
-{
-    EquipResult result = {0};
-
-    result.item_was_replaced = !item_is_null(*slot);
-    result.replaced_item = *slot;
-
-    *slot = item_to_equip;
-
-    return result;
-}
-
 static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
 {
     ItemID *result = 0;
@@ -35,6 +13,16 @@ static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
 
         INVALID_DEFAULT_CASE;
     }
+
+    return result;
+}
+
+b32 can_equip_item_in_slot(ItemManager *item_mgr, ItemID item_id, EquipmentSlot slot)
+{
+    Item *item = item_mgr_get_item(item_mgr, item_id);
+
+    b32 item_is_equipment = item_has_prop(item, ITEM_PROP_EQUIPMENT);
+    b32 result = item_is_equipment && ((item->equipment.slot & slot) != 0);
 
     return result;
 }
@@ -54,13 +42,23 @@ b32 has_item_equipped_in_slot(Equipment *eq, EquipmentSlot slot)
     return result;
 }
 
-EquipResult equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID item, EquipmentSlot slot)
+static ItemID exchange_item_ids(ItemID *old, ItemID new_value)
 {
-    ASSERT(can_equip_item_in_slot(item_mgr, item, slot));
+    ItemID old_value = *old;
+    *old = new_value;
 
-    ItemID *item_in_slot = get_pointer_to_item_id_in_slot(eq, slot);
+    return old_value;
+}
 
-    EquipResult result = equip_and_replace_item_in_slot(item_in_slot, item);
+EquipResult try_equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID item_id, EquipmentSlot slot)
+{
+    EquipResult result = {0};
+
+    if (can_equip_item_in_slot(item_mgr, item_id, slot)) {
+        ItemID *slot_ptr = get_pointer_to_item_id_in_slot(eq, slot);
+        result.replaced_item = exchange_item_ids(slot_ptr, item_id);
+        result.success = true;
+    }
 
     return result;
 }

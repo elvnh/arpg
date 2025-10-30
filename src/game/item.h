@@ -4,7 +4,6 @@
 #include "base/ring_buffer.h"
 #include "base/typedefs.h"
 
-#define MAX_ITEMS 1024
 #define NULL_ITEM_ID (ItemID){0}
 
 typedef struct {
@@ -32,30 +31,28 @@ typedef struct {
 } Item;
 
 typedef struct {
-    Item item;
-    u32 generation;
-} ItemStorageSlot;
-
-typedef struct {
     ItemID id;
     Item *item;
 } ItemWithID;
 
-DEFINE_STATIC_RING_BUFFER(ItemID, ItemIDQueue, MAX_ITEMS);
+static inline b32 item_has_prop(Item *item, ItemProperty property)
+{
+    b32 result = (item->properties & property) != 0;
 
-typedef struct {
-    ItemStorageSlot item_slots[MAX_ITEMS];
-    ItemIDQueue id_queue;
-} ItemManager;
+    return result;
+}
 
-void item_mgr_initialize(ItemManager *item_mgr);
-ItemWithID item_mgr_create_item(ItemManager *item_mgr);
-void item_mgr_destroy_item(ItemManager *item_mgr, ItemID id);
-Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id);
-ItemID item_mgr_get_id_of_item(Item *item);
+static inline void item_set_prop(Item *item, ItemProperty property)
+{
+    ASSERT(!item_has_prop(item, property));
+    item->properties |= property;
+}
 
-void item_set_prop(Item *item, ItemProperty property);
-b32 item_has_prop(Item *item, ItemProperty property);
-b32 item_ids_equal(ItemID lhs, ItemID rhs);
+static inline b32 item_ids_equal(ItemID lhs, ItemID rhs)
+{
+    b32 result = (lhs.id == rhs.id) && (lhs.generation == rhs.generation);
+
+    return result;
+}
 
 #endif //ITEM_H

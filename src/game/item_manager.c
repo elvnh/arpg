@@ -1,5 +1,4 @@
-#include "item.h"
-#include "base/ring_buffer.h"
+#include "item_manager.h"
 
 void push_item_id(ItemManager *item_mgr, ItemID id)
 {
@@ -71,30 +70,3 @@ void item_mgr_destroy_item(ItemManager *item_mgr, ItemID id)
 
     push_item_id(item_mgr, new_id);
 }
-
-void item_set_prop(Item *item, ItemProperty property)
-{
-    ASSERT(!item_has_prop(item, property));
-    item->properties |= property;
-}
-
-b32 item_has_prop(Item *item, ItemProperty property)
-{
-    b32 result = (item->properties & property) != 0;
-
-    return result;
-}
-
-b32 item_ids_equal(ItemID lhs, ItemID rhs)
-{
-    b32 result = (lhs.id == rhs.id) && (lhs.generation == rhs.generation);
-
-    return result;
-}
-
-/* ItemID item_mgr_get_id_of_item(Item *item) */
-/* { */
-/*     ASSERT(offsetof(ItemStorageSlot, item) == 0); */
-/*     ItemStorageSlot *slot = (ItemStorageSlot *)item; */
-/*     u32 offset = slot -  */
-/* } */

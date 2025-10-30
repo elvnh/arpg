@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "collision.h"
 #include "input.h"
+#include "item_manager.h"
 
 struct Input;
 struct DebugState;

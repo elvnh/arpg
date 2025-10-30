@@ -32,7 +32,8 @@ src/game/damage.c
 src/game/entity_system.c
 src/game/tilemap.c
 src/game/magic.c
-src/game/item.c
+src/game/item_manager.c
+src/game/equipment.c
 src/game/renderer/render_batch.c
 src/game/ui/ui_core.c
 src/game/ui/ui_builder.c

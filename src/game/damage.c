@@ -3,6 +3,7 @@
 #include "components/component.h"
 #include "components/status_effect.h"
 #include "entity_system.h"
+#include "equipment.h"
 #include "item.h"
 #include "item_manager.h"
 #include "modifier.h"
@@ -90,7 +91,29 @@ static DamageTypes apply_damage_value_status_effects(DamageTypes value, struct E
         }
     }
 
+    return result;
+}
 
+static DamageTypes apply_damage_modifiers_in_slot(DamageTypes value, Equipment *eq,
+    EquipmentSlot slot, ModifierKind interesting_mods, DamageCalculationPhase phase,
+    ItemManager *item_mgr)
+{
+    DamageTypes result = value;
+
+    ItemID item_id = get_equipped_item_in_slot(eq, slot);
+
+    Item *item = item_mgr_get_item(item_mgr, item_id);
+
+    if (item && item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
+        ASSERT(item_has_prop(item, ITEM_PROP_EQUIPMENT));
+
+        // TODO: break this out into function and unit test
+        for (s32 i = 0; i < item->modifiers.modifier_count; ++i) {
+            Modifier mod = item->modifiers.modifiers[i];
+
+            result = apply_damage_value_modifier(result, mod, interesting_mods, phase);
+        }
+    }
 
     return result;
 }
@@ -102,22 +125,9 @@ static DamageTypes apply_damage_value_equipment_modifiers(DamageTypes value, str
     EquipmentComponent *equipment = es_get_component(entity, EquipmentComponent);
 
     if (equipment) {
-        // TODO: simplify this
-        {
-            Item *item = item_mgr_get_item(item_mgr, equipment->equipment.head);
-
-            if (item) {
-                ASSERT(item_has_prop(item, ITEM_PROP_EQUIPMENT));
-
-                if (item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
-                    for (s32 i = 0; i < item->modifiers.modifier_count; ++i) {
-                        Modifier mod = item->modifiers.modifiers[i];
-
-                        result = apply_damage_value_modifier(result, mod, interesting_mods, phase);
-                    }
-                }
-            }
-        }
+        // TODO: make it possible to for loop over all slots
+        result = apply_damage_modifiers_in_slot(result, &equipment->equipment, EQUIP_SLOT_HEAD,
+            interesting_mods, phase, item_mgr);
     }
 
     return result;
@@ -136,7 +146,7 @@ DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *ent
     return result;
 }
 
-// TODO: make this take only entity as parameter
+// TODO: make this not require base_resistances as parameter
 DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity,
     struct ItemManager *item_mgr)
 {

@@ -2,6 +2,7 @@
 #include "base/utils.h"
 #include "components/status_effect.h"
 #include "entity_system.h"
+#include "modifier.h"
 
 // NOTE: the ordering of these affects the order of calculations
 typedef enum {
@@ -40,8 +41,38 @@ static DamageTypes damage_types_multiply(DamageTypes lhs, DamageTypes rhs)
     return result;
 }
 
+static DamageTypes apply_damage_value_modifier(DamageTypes value, Modifier modifier,
+    ModifierKind interesting_mods, DamageCalculationPhase phase)
+{
+    DamageTypes result = value;
+
+    b32 is_interesting = (modifier.kind & interesting_mods) != 0;
+
+    if (is_interesting) {
+        switch (modifier.kind) {
+            case MODIFIER_DAMAGE: {
+                if (phase == DMG_CALC_PHASE_ADDITIVE) {
+                    result = damage_types_add(result, modifier.as.damage_modifier.additive_modifiers);
+                } else {
+                    result = damage_types_multiply(result, modifier.as.damage_modifier.multiplicative_modifiers);
+                }
+            } break;
+
+            case MODIFIER_RESISTANCE: {
+                if (phase == DMG_CALC_PHASE_ADDITIVE) {
+                    result = damage_types_add(result, modifier.as.resistance_modifier);
+                } else {
+                    ASSERT(0);
+                }
+            } break;
+        }
+    }
+
+    return result;
+}
+
 static DamageTypes apply_damage_value_status_effects(DamageTypes value, struct Entity *entity,
-    StatusEffectKind interesting_effects, DamageCalculationPhase phase)
+    ModifierKind interesting_mods, DamageCalculationPhase phase)
 {
     DamageTypes result = value;
 
@@ -53,29 +84,9 @@ static DamageTypes apply_damage_value_status_effects(DamageTypes value, struct E
 
     for (s32 i = 0; i < status_effects->effect_count; ++i) {
         StatusEffect *effect = &status_effects->effects[i];
-        b32 is_interesting = (effect->kind & interesting_effects) != 0;
+        ASSERT(effect->expiry_time >= 0.0f);
 
-        if (is_interesting) {
-            switch (effect->kind) {
-                case STATUS_EFFECT_DAMAGE_MODIFIER: {
-                    if (phase == DMG_CALC_PHASE_ADDITIVE) {
-                        result = damage_types_add(result, effect->as.damage_modifiers.additive_modifiers);
-                    } else {
-                        result = damage_types_multiply(result, effect->as.damage_modifiers.multiplicative_modifiers);
-                    }
-                } break;
-
-                case STATUS_EFFECT_RESISTANCE_MODIFIER: {
-                    if (phase == DMG_CALC_PHASE_ADDITIVE) {
-                        result = damage_types_add(result, effect->as.resistance_modifiers);
-                    } else {
-                        ASSERT(0);
-                    }
-                } break;
-
-                default: break;
-            }
-        }
+        result = apply_damage_value_modifier(result, effect->modifier, interesting_mods, phase);
     }
 
     return result;
@@ -86,7 +97,7 @@ DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *ent
     DamageTypes result = damage;
 
     for (DamageCalculationPhase phase = 0; phase < DMG_CALC_PHASE_COUNT; ++phase) {
-        result = apply_damage_value_status_effects(result, entity, STATUS_EFFECT_DAMAGE_MODIFIER, phase);
+        result = apply_damage_value_status_effects(result, entity, MODIFIER_DAMAGE, phase);
     }
 
     return result;
@@ -98,7 +109,7 @@ DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, str
     DamageTypes result = base_resistances;
 
     // NOTE: resistances only have an additive phase
-    result = apply_damage_value_status_effects(result, entity, STATUS_EFFECT_RESISTANCE_MODIFIER, DMG_CALC_PHASE_ADDITIVE);
+    result = apply_damage_value_status_effects(result, entity, MODIFIER_RESISTANCE, DMG_CALC_PHASE_ADDITIVE);
 
     return result;
 }

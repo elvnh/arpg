@@ -3,20 +3,11 @@
 
 #include "base/utils.h"
 #include "damage.h"
-
-typedef enum {
-    STATUS_EFFECT_DAMAGE_MODIFIER = (1 << 0),
-    STATUS_EFFECT_RESISTANCE_MODIFIER = (1 << 1),
-} StatusEffectKind;
+#include "modifier.h"
 
 typedef struct {
-    StatusEffectKind kind;
+    Modifier modifier;
     f32 expiry_time;
-
-    union {
-        DamageValueModifiers damage_modifiers;
-        DamageTypes resistance_modifiers;
-    } as;
 } StatusEffect;
 
 typedef struct {
@@ -24,12 +15,14 @@ typedef struct {
     s32 effect_count;
 } StatusEffectComponent;
 
-static inline StatusEffect *status_effects_add(StatusEffectComponent *c, StatusEffectKind kind, f32 lifetime)
+static inline StatusEffect *status_effects_add(StatusEffectComponent *c, Modifier modifier, f32 lifetime)
 {
     ASSERT(c->effect_count < ARRAY_COUNT(c->effects));
+
     s32 index = c->effect_count++;
+
     StatusEffect *result = &c->effects[index];
-    result->kind = kind;
+    result->modifier = modifier;
     result->expiry_time = lifetime;
 
     return result;

@@ -16,5 +16,7 @@ typedef struct {
 
 b32 can_equip_item_in_slot(Item *item, EquipmentSlot slot);
 EquipResult equip_item_in_slot(Equipment *eq, ItemID item, EquipmentSlot slot);
+ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot);
+b32    has_item_equipped_in_slot(Equipment *eq, EquipmentSlot slot);
 
 #endif //EQUIPMENT_H

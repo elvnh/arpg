@@ -21,7 +21,7 @@ static EquipResult equip_and_replace_item_in_slot(ItemID *slot, ItemID item_to_e
     return result;
 }
 
-static ItemID *get_equipped_item_by_slot(Equipment *eq, EquipmentSlot slot)
+static ItemID *get_pointer_to_item_in_slot(Equipment *eq, EquipmentSlot slot)
 {
     ItemID *result = 0;
 
@@ -36,12 +36,27 @@ static ItemID *get_equipped_item_by_slot(Equipment *eq, EquipmentSlot slot)
     return result;
 }
 
+ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot)
+{
+    ItemID *item = get_pointer_to_item_in_slot(eq, slot);
+
+    return *item;
+}
+
+b32 has_item_equipped_in_slot(Equipment *eq, EquipmentSlot slot)
+{
+    ItemID id = get_equipped_item_in_slot(eq, slot);
+    b32 result = !item_ids_equal(id, NULL_ITEM_ID);
+
+    return result;
+}
+
 EquipResult equip_item_in_slot(Equipment *eq, ItemID item, EquipmentSlot slot)
 {
     // TODO: pass item pointer, get item id from pointer
     //ASSERT(can_equip_item_in_slot(item *item, EquipmentSlot slot))
 
-    ItemID *item_in_slot = get_equipped_item_by_slot(eq, slot);
+    ItemID *item_in_slot = get_pointer_to_item_in_slot(eq, slot);
     EquipResult result = equip_and_replace_item_in_slot(item_in_slot, item);
 
     return result;

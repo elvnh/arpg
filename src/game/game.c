@@ -16,6 +16,7 @@
 #include "base/utils.h"
 #include "base/vector.h"
 #include "base/line.h"
+#include "equipment.h"
 #include "game/camera.h"
 #include "components/component.h"
 #include "game/damage.h"
@@ -252,6 +253,29 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
                     id_string = str_concat(id_string, str_lit(", "), temp_alloc);
                     ui_text(ui, id_string);
                 }
+            }
+
+            if (es_has_component(entity, EquipmentComponent)) {
+                ui_spacing(ui, 8);
+
+                EquipmentComponent *eq = es_get_component(entity, EquipmentComponent);
+                ui_text(ui, str_lit("Equipment:"));
+
+                {
+                    {
+                        ui_text(ui, str_lit("Head: "));
+
+                        if (has_item_equipped_in_slot(&eq->equipment, EQUIP_SLOT_HEAD)) {
+                            ui_core_same_line(ui);
+
+                            ItemID item_id = get_equipped_item_in_slot(&eq->equipment, EQUIP_SLOT_HEAD);
+                            String item_str = ssize_to_string((ssize)item_id.id, temp_alloc);
+                            ui_text(ui, item_str);
+                        }
+
+                    }
+                }
+
             }
         }
     }

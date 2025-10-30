@@ -23,5 +23,4 @@ void item_mgr_destroy_item(ItemManager *item_mgr, ItemID id);
 Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id);
 ItemID item_mgr_get_id_of_item(Item *item);
 
-
 #endif //ITEM_MANAGER_H

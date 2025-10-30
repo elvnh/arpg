@@ -574,11 +574,11 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
 
         if (inv && equipment) {
             ItemID item_id = inventory_get_item_at_index(&inv->inventory, 0);
-            Item *item = item_mgr_get_item(&world->item_manager, item_id);
 
-            if (can_equip_item_in_slot(item, EQUIP_SLOT_HEAD)) {
-                EquipResult equip_result = equip_item_in_slot(&equipment->equipment, item_id, EQUIP_SLOT_HEAD);
-                ASSERT(!equip_result.item_was_replaced);
+            if (can_equip_item_in_slot(&world->item_manager, item_id, EQUIP_SLOT_HEAD)) {
+                EquipResult equip_result = equip_item_in_slot(&world->item_manager, &equipment->equipment,
+                    item_id, EQUIP_SLOT_HEAD);
+
                 inventory_remove_item_at_index(&inv->inventory, 0);
             }
         }

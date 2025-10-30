@@ -21,6 +21,6 @@ void item_mgr_initialize(ItemManager *item_mgr);
 ItemWithID item_mgr_create_item(ItemManager *item_mgr);
 void item_mgr_destroy_item(ItemManager *item_mgr, ItemID id);
 Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id);
-ItemID item_mgr_get_id_of_item(Item *item);
+ItemID item_mgr_get_id_of_item(ItemManager *item_mgr, Item *item);
 
 #endif //ITEM_MANAGER_H

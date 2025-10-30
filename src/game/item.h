@@ -55,4 +55,11 @@ static inline b32 item_ids_equal(ItemID lhs, ItemID rhs)
     return result;
 }
 
+static inline b32 item_id_is_null(ItemID id)
+{
+    b32 result = item_ids_equal(id, NULL_ITEM_ID);
+
+    return result;
+}
+
 #endif //ITEM_H

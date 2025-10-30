@@ -1,8 +1,11 @@
 #include "equipment.h"
 #include "item.h"
+#include "item_manager.h"
 
-b32 can_equip_item_in_slot(Item *item, EquipmentSlot slot)
+b32 can_equip_item_in_slot(ItemManager *item_mgr, ItemID item_id, EquipmentSlot slot)
 {
+    Item *item = item_mgr_get_item(item_mgr, item_id);
+
     b32 item_is_equipment = item_has_prop(item, ITEM_PROP_EQUIPMENT);
     b32 result = item_is_equipment && ((item->equipment.slot & slot) != 0);
 
@@ -13,7 +16,7 @@ static EquipResult equip_and_replace_item_in_slot(ItemID *slot, ItemID item_to_e
 {
     EquipResult result = {0};
 
-    result.item_was_replaced = !item_ids_equal(*slot, NULL_ITEM_ID);
+    result.item_was_replaced = !item_is_null(*slot);
     result.replaced_item = *slot;
 
     *slot = item_to_equip;
@@ -21,7 +24,7 @@ static EquipResult equip_and_replace_item_in_slot(ItemID *slot, ItemID item_to_e
     return result;
 }
 
-static ItemID *get_pointer_to_item_in_slot(Equipment *eq, EquipmentSlot slot)
+static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
 {
     ItemID *result = 0;
 
@@ -38,7 +41,7 @@ static ItemID *get_pointer_to_item_in_slot(Equipment *eq, EquipmentSlot slot)
 
 ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot)
 {
-    ItemID *item = get_pointer_to_item_in_slot(eq, slot);
+    ItemID *item = get_pointer_to_item_id_in_slot(eq, slot);
 
     return *item;
 }
@@ -51,12 +54,12 @@ b32 has_item_equipped_in_slot(Equipment *eq, EquipmentSlot slot)
     return result;
 }
 
-EquipResult equip_item_in_slot(Equipment *eq, ItemID item, EquipmentSlot slot)
+EquipResult equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID item, EquipmentSlot slot)
 {
-    // TODO: pass item pointer, get item id from pointer
-    //ASSERT(can_equip_item_in_slot(item *item, EquipmentSlot slot))
+    ASSERT(can_equip_item_in_slot(item_mgr, item, slot));
 
-    ItemID *item_in_slot = get_pointer_to_item_in_slot(eq, slot);
+    ItemID *item_in_slot = get_pointer_to_item_id_in_slot(eq, slot);
+
     EquipResult result = equip_and_replace_item_in_slot(item_in_slot, item);
 
     return result;

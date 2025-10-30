@@ -114,7 +114,7 @@ void cast_single_spell(struct World *world, const Spell *spell, struct Entity *c
 	effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
 
 	DamageTypes damage_roll = calculate_damage_dealt_from_range(spell->damaging.base_damage);
-        DamageTypes damage_after_boosts = calculate_damage_after_boosts(damage_roll, caster);
+        DamageTypes damage_after_boosts = calculate_damage_after_boosts(damage_roll, caster, &world->item_manager);
 
         // TODO: create_damage_instance function
         DamageInstance damage = { damage_after_boosts, spell->damaging.penetration_values };

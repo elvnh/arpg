@@ -13,6 +13,7 @@
 #include "damage.h"
 #include "entity.h"
 #include "entity_system.h"
+#include "equipment.h"
 #include "item.h"
 #include "magic.h"
 #include "input.h"
@@ -212,7 +213,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
 
     if (es_has_component(entity, StatsComponent)) {
         StatsComponent *stats = es_get_component(entity, StatsComponent);
-        DamageTypes resistances = calculate_resistances_after_boosts(stats->base_resistances, entity);
+        DamageTypes resistances = calculate_resistances_after_boosts(stats->base_resistances, entity, &world->item_manager);
 
         damage_taken = calculate_damage_received(resistances, damage);
     } else {
@@ -771,6 +772,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
 
+#if 0
         Modifier dmg_mod = {
             .kind = MODIFIER_DAMAGE,
         };
@@ -785,22 +787,42 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
         set_damage_value_of_type(&res_mod.as.resistance_modifier, DMG_KIND_LIGHTNING, 120);
         status_effects_add(effects, res_mod, 3.0f);
+#endif
 
         // TODO: ensure components are zeroed out
         InventoryComponent *inventory = es_add_component(entity, InventoryComponent);
 
+        EquipmentComponent *equipment = es_add_component(entity, EquipmentComponent);
+        (void)equipment;
+
         {
             ItemWithID item_with_id = item_mgr_create_item(&world->item_manager);
             Item *item = item_with_id.item;
-            item_set_prop(item, ITEM_PROP_EQUIPMENT);
+            item_set_prop(item, ITEM_PROP_EQUIPMENT | ITEM_PROP_HAS_MODIFIERS);
             item->equipment.slot = EQUIP_SLOT_HEAD;
 
+            Modifier dmg_mod = {
+                .kind = MODIFIER_DAMAGE,
+            };
+
+            set_damage_value_of_type(&dmg_mod.as.damage_modifier.additive_modifiers, DMG_KIND_LIGHTNING, 1000);
+
+            Modifier res_mod = {
+                .kind = MODIFIER_RESISTANCE,
+            };
+
+            set_damage_value_of_type(&res_mod.as.resistance_modifier, DMG_KIND_LIGHTNING, 0);
+
+            item_add_modifier(item, dmg_mod);
+            //item_add_modifier(item, res_mod);
+
             inventory_add_item(&inventory->inventory, item_with_id.id);
+
+            //try_equip_item_in_slot(&world->item_manager, &equipment->equipment, item_with_id.id, EQUIP_SLOT_HEAD);
         }
 
 
-        EquipmentComponent *equipment = es_add_component(entity, EquipmentComponent);
-        (void)equipment;
+
 
     }
 }

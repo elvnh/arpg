@@ -1,7 +1,10 @@
 #include "damage.h"
 #include "base/utils.h"
+#include "components/component.h"
 #include "components/status_effect.h"
 #include "entity_system.h"
+#include "item.h"
+#include "item_manager.h"
 #include "modifier.h"
 
 // NOTE: the ordering of these affects the order of calculations
@@ -78,38 +81,70 @@ static DamageTypes apply_damage_value_status_effects(DamageTypes value, struct E
 
     StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
 
-    if (!status_effects) {
-        return result;
+    if (status_effects) {
+        for (s32 i = 0; i < status_effects->effect_count; ++i) {
+            StatusEffect *effect = &status_effects->effects[i];
+            ASSERT(effect->expiry_time >= 0.0f);
+
+            result = apply_damage_value_modifier(result, effect->modifier, interesting_mods, phase);
+        }
     }
 
-    for (s32 i = 0; i < status_effects->effect_count; ++i) {
-        StatusEffect *effect = &status_effects->effects[i];
-        ASSERT(effect->expiry_time >= 0.0f);
 
-        result = apply_damage_value_modifier(result, effect->modifier, interesting_mods, phase);
+
+    return result;
+}
+
+static DamageTypes apply_damage_value_equipment_modifiers(DamageTypes value, struct Entity *entity,
+    ModifierKind interesting_mods, DamageCalculationPhase phase, ItemManager *item_mgr)
+{
+    DamageTypes result = value;
+    EquipmentComponent *equipment = es_get_component(entity, EquipmentComponent);
+
+    if (equipment) {
+        // TODO: simplify this
+        {
+            Item *item = item_mgr_get_item(item_mgr, equipment->equipment.head);
+
+            if (item) {
+                ASSERT(item_has_prop(item, ITEM_PROP_EQUIPMENT));
+
+                if (item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
+                    for (s32 i = 0; i < item->modifiers.modifier_count; ++i) {
+                        Modifier mod = item->modifiers.modifiers[i];
+
+                        result = apply_damage_value_modifier(result, mod, interesting_mods, phase);
+                    }
+                }
+            }
+        }
     }
 
     return result;
 }
 
-DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *entity)
+// TODO: I don't like that ItemManager is a parameter here
+DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *entity, struct ItemManager *item_mgr)
 {
     DamageTypes result = damage;
 
     for (DamageCalculationPhase phase = 0; phase < DMG_CALC_PHASE_COUNT; ++phase) {
         result = apply_damage_value_status_effects(result, entity, MODIFIER_DAMAGE, phase);
+        result = apply_damage_value_equipment_modifiers(result, entity, MODIFIER_DAMAGE, phase, item_mgr);
     }
 
     return result;
 }
 
 // TODO: make this take only entity as parameter
-DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity)
+DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity,
+    struct ItemManager *item_mgr)
 {
     DamageTypes result = base_resistances;
 
     // NOTE: resistances only have an additive phase
     result = apply_damage_value_status_effects(result, entity, MODIFIER_RESISTANCE, DMG_CALC_PHASE_ADDITIVE);
+    result = apply_damage_value_equipment_modifiers(result, entity, MODIFIER_RESISTANCE, DMG_CALC_PHASE_ADDITIVE, item_mgr);
 
     return result;
 }

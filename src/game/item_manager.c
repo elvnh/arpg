@@ -1,4 +1,5 @@
 #include "item_manager.h"
+#include "item.h"
 
 void push_item_id(ItemManager *item_mgr, ItemID id)
 {
@@ -36,9 +37,15 @@ static ItemStorageSlot *get_item_storage_slot(ItemManager *item_mgr, ItemID id)
 
 Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id)
 {
-    ItemStorageSlot *slot = get_item_storage_slot(item_mgr, id);
+    Item *result = 0;
 
-    return &slot->item;
+    if (!item_id_is_null(id)) {
+        ItemStorageSlot *slot = get_item_storage_slot(item_mgr, id);
+
+        result = &slot->item;
+    }
+
+    return result;
 }
 
 ItemWithID item_mgr_create_item(ItemManager *item_mgr)

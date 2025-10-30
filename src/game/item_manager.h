@@ -12,7 +12,7 @@ typedef struct {
 
 DEFINE_STATIC_RING_BUFFER(ItemID, ItemIDQueue, MAX_ITEMS);
 
-typedef struct {
+typedef struct ItemManager {
     ItemStorageSlot item_slots[MAX_ITEMS];
     ItemIDQueue id_queue;
 } ItemManager;

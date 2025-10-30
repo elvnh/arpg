@@ -11,6 +11,8 @@
   - Better naming
  */
 
+struct ItemManager;
+
 typedef s64 DamageValue;
 
 typedef enum {
@@ -123,7 +125,8 @@ static inline void set_damage_range_for_type(DamageRange *range, DamageKind type
     set_damage_value_of_type(&range->high_roll, type, high);
 }
 
-DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *entity);
-DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity);
+DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *entity, struct ItemManager *item_mgr);
+DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity,
+    struct ItemManager *item_mgr);
 
 #endif //DAMAGE_H

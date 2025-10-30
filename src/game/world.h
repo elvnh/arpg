@@ -2,6 +2,7 @@
 #define WORLD_H
 
 #include "entity_system.h"
+#include "item.h"
 #include "tilemap.h"
 #include "camera.h"
 #include "collision.h"
@@ -27,6 +28,7 @@ typedef struct World {
     Camera camera;
     Tilemap tilemap;
     EntitySystem entity_system;
+    ItemManager item_manager;
 
     CollisionCooldownTable collision_effect_cooldowns;
 

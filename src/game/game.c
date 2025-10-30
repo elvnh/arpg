@@ -31,6 +31,7 @@
 #include "game/ui/widget.h"
 #include "input.h"
 #include "collision.h"
+#include "item.h"
 #include "renderer/render_batch.h"
 
 static void game_update(GameState *game_state, FrameData frame_data, LinearArena *frame_arena)
@@ -201,7 +202,7 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
     // TODO: display more stats about hovered entity
     if (!entity_id_equal(game_state->debug_state.hovered_entity, NULL_ENTITY_ID)) {
-        const Entity *entity = es_try_get_entity(&game_state->world.entity_system, game_state->debug_state.hovered_entity);
+        Entity *entity = es_try_get_entity(&game_state->world.entity_system, game_state->debug_state.hovered_entity);
 
         if (entity) {
             String entity_str = str_concat(
@@ -234,6 +235,24 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
             ui_text(ui, entity_str);
             ui_text(ui, entity_pos_str);
             ui_text(ui, entity_faction_str);
+
+            if (es_has_component(entity, InventoryComponent)) {
+                ui_spacing(ui, 8);
+
+                InventoryComponent *inv = es_get_component(entity, InventoryComponent);
+                ui_text(ui, str_lit("Inventory:"));
+
+                for (ssize i = 0; i < inv->inventory.item_count; ++i) {
+                    ItemID id = inv->inventory.items[i];
+
+                    Item *item = item_mgr_get_item(&game_state->world.item_manager, id);
+                    ASSERT(item);
+
+                    String id_string = ssize_to_string((ssize)id.id, temp_alloc);
+                    id_string = str_concat(id_string, str_lit(", "), temp_alloc);
+                    ui_text(ui, id_string);
+                }
+            }
         }
     }
 

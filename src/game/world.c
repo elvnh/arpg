@@ -13,6 +13,7 @@
 #include "damage.h"
 #include "entity.h"
 #include "entity_system.h"
+#include "item.h"
 #include "magic.h"
 #include "input.h"
 #include "renderer/render_batch.h"
@@ -567,6 +568,22 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         player->velocity = new_velocity;
     }
 
+    if (input_is_key_pressed(frame_data.input, KEY_G)) {
+        InventoryComponent *inv = es_get_component(player, InventoryComponent);
+        EquipmentComponent *equipment = es_get_component(player, EquipmentComponent);
+
+        if (inv && equipment) {
+            ItemID item_id = inventory_get_item_at_index(&inv->inventory, 0);
+            Item *item = item_mgr_get_item(&world->item_manager, item_id);
+
+            if (can_equip_item_in_slot(item, EQUIP_SLOT_HEAD)) {
+                EquipResult equip_result = equip_item_in_slot(&equipment->equipment, item_id, EQUIP_SLOT_HEAD);
+                ASSERT(!equip_result.item_was_replaced);
+                inventory_remove_item_at_index(&inv->inventory, 0);
+            }
+        }
+    }
+
     handle_collision_and_movement(world, frame_data.dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
@@ -709,6 +726,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
     es_initialize(&world->entity_system, tilemap_area);
 
+    item_mgr_initialize(&world->item_manager);
 
     for (s32 i = 0; i < 2; ++i) {
         EntityWithID entity_with_id = es_spawn_entity(&world->entity_system, i + 1);
@@ -755,5 +773,22 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
         StatusEffect *res_boost = status_effects_add(effects, STATUS_EFFECT_RESISTANCE_MODIFIER, 10.0f);
         set_damage_value_of_type(&res_boost->as.resistance_modifiers, DMG_KIND_LIGHTNING, 120);
+
+        // TODO: ensure components are zeroed out
+        InventoryComponent *inventory = es_add_component(entity, InventoryComponent);
+
+        {
+            ItemWithID item_with_id = item_mgr_create_item(&world->item_manager);
+            Item *item = item_with_id.item;
+            item_set_prop(item, ITEM_PROP_EQUIPMENT);
+            item->equipment.slot = EQUIP_SLOT_HEAD;
+
+            inventory_add_item(&inventory->inventory, item_with_id.id);
+        }
+
+
+        EquipmentComponent *equipment = es_add_component(entity, EquipmentComponent);
+        (void)equipment;
+
     }
 }

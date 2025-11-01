@@ -19,7 +19,6 @@ typedef enum {
     FACTION_ENEMY,
 } EntityFaction;
 
-
 typedef struct Entity {
     ComponentBitset active_components;
     b32 is_inactive;
@@ -29,6 +28,7 @@ typedef struct Entity {
 
     Vector2 position;
     Vector2 velocity;
+    Vector2 direction;
 
     #define COMPONENT(type) type ES_IMPL_COMP_FIELD_NAME(type);
         COMPONENT_LIST

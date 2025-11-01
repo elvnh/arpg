@@ -20,6 +20,7 @@ typedef enum {
 } RectangleSide;
 
 typedef enum {
+    RECT_FLIP_NONE = 0,
     RECT_FLIP_HORIZONTALLY = (1 << 0),
     RECT_FLIP_VERTICALLY   = (1 << 1),
 } RectangleFlip;

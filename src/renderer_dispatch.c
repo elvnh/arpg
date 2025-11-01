@@ -177,7 +177,6 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 verts.bottom_right.position = v2_rotate_around_point(verts.bottom_right.position, rotation, origin);
                 verts.bottom_left.position = v2_rotate_around_point(verts.bottom_left.position, rotation, origin);
 
-
 		renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
 		    verts.bottom_right, verts.bottom_left);
             } break;

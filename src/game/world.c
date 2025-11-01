@@ -2,6 +2,7 @@
 #include "animation.h"
 #include "base/format.h"
 #include "base/matrix.h"
+#include "base/rectangle.h"
 #include "base/rgba.h"
 #include "base/random.h"
 #include "base/utils.h"
@@ -160,17 +161,30 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
         Animation *anim = anim_get_by_id(animations, anim_instance->animation_id);
         AnimationFrame current_frame = anim->frames[anim_instance->current_frame];
 
-        // TODO: make anim size be configurable
+        f32 rotation = 0.0f;
+        f32 dir_angle = (f32)atan2(entity->direction.y, entity->direction.x);
+        RectangleFlip flip = RECT_FLIP_NONE;
+
+        if (anim_component->rotation_behaviour == SPRITE_ROTATE_BASED_ON_DIR) {
+            rotation = dir_angle;
+        } else if (anim_component->rotation_behaviour == SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR) {
+            b32 should_flip = (dir_angle > PI_2) || (dir_angle < -PI_2);
+
+            if (should_flip) {
+                flip = RECT_FLIP_HORIZONTALLY;
+            }
+        }
+
         Rectangle sprite_rect = { entity->position, {32, 32} };
-        rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, 0, RGBA32_WHITE, assets->texture_shader,
-            RENDER_LAYER_ENTITIES);
+        rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, rotation, flip,
+            RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
         // TODO: how to handle if entity has both sprite and animation component?
         // TODO: UI should be drawn on separate layer
 
         Rectangle sprite_rect = { entity->position, sprite->size };
-        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, 0, RGBA32_WHITE, assets->texture_shader,
+        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, 0, RECT_FLIP_NONE, RGBA32_WHITE, assets->texture_shader,
             RENDER_LAYER_ENTITIES);
     }
 
@@ -538,6 +552,10 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
 
             Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(a->velocity, movement_fraction_left), dt);
             a->position = v2_add(a->position, to_move_this_frame);
+
+            if (v2_mag(a->velocity) > 0.5f) {
+                a->direction = v2_norm(a->velocity);
+            }
         }
     }
 }
@@ -598,10 +616,18 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
 	    acceleration.x = 1.0f;
 	}
 
+        acceleration = v2_norm(acceleration);
+
+        if (!v2_eq(acceleration, V2_ZERO)) {
+            player->state = ENTITY_STATE_WALKING;
+        } else {
+            player->state = ENTITY_STATE_IDLE;
+        }
+
+
         Vector2 v = player->velocity;
         Vector2 p = player->position;
 
-        acceleration = v2_norm(acceleration);
         acceleration = v2_mul_s(acceleration, speed);
         acceleration = v2_add(acceleration, v2_mul_s(v, -3.5f));
 
@@ -614,12 +640,6 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
 
         player->position = new_pos;
         player->velocity = new_velocity;
-
-        if (v2_mag(new_velocity) > 0.5f) {
-            player->state = ENTITY_STATE_WALKING;
-        } else {
-            player->state = ENTITY_STATE_IDLE;
-        }
     }
 
     if (input_is_key_pressed(frame_data.input, KEY_G)) {
@@ -822,6 +842,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         AnimationComponent *anim = es_add_component(entity, AnimationComponent);
         anim->state_animations[ENTITY_STATE_IDLE].animation_id = ANIM_PLAYER_IDLE;
         anim->state_animations[ENTITY_STATE_WALKING].animation_id = ANIM_PLAYER_WALKING;
+        anim->rotation_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
         set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);

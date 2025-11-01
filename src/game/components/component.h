@@ -84,6 +84,12 @@ typedef struct {
     Equipment equipment;
 } EquipmentComponent;
 
+typedef enum {
+    SPRITE_ROTATE_NONE,
+    SPRITE_ROTATE_BASED_ON_DIR,
+    SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR,
+} SpriteRotationBehaviour;
+
 // TODO: allow resetting animation when starting it anew
 typedef struct {
     AnimationID animation_id;
@@ -93,6 +99,7 @@ typedef struct {
 
 typedef struct {
     AnimationInstance state_animations[ENTITY_STATE_COUNT];
+    SpriteRotationBehaviour rotation_behaviour;
 } AnimationComponent;
 
 #endif //COMPONENT_H

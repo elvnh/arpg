@@ -11,6 +11,7 @@
 #include "status_effect.h"
 #include "equipment.h"
 #include "inventory.h"
+#include "animation.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
@@ -23,6 +24,7 @@
     COMPONENT(StatusEffectComponent)            \
     COMPONENT(InventoryComponent)               \
     COMPONENT(EquipmentComponent)               \
+    COMPONENT(AnimationComponent)               \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -80,5 +82,11 @@ typedef struct {
 typedef struct {
     Equipment equipment;
 } EquipmentComponent;
+
+typedef struct {
+    AnimationID animation_id;
+    s32 current_frame;
+    f32 current_frame_elapsed_time;
+} AnimationComponent;
 
 #endif //COMPONENT_H

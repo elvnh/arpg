@@ -1,4 +1,5 @@
 #include "world.h"
+#include "animation.h"
 #include "base/format.h"
 #include "base/matrix.h"
 #include "base/rgba.h"
@@ -73,8 +74,30 @@ static b32 entity_should_die(Entity *entity)
     return false;
 }
 
+static void component_update_animation(AnimationComponent *anim_component, AnimationTable *animations, f32 dt)
+{
+    Animation *anim = anim_get_by_id(animations, anim_component->animation_id);
+    ASSERT(anim_component->current_frame < anim->frame_count);
 
-static void entity_update(World *world, Entity *entity, f32 dt)
+    AnimationFrame curr_frame = anim->frames[anim_component->current_frame];
+
+    anim_component->current_frame_elapsed_time += dt;
+
+    if (anim_component->current_frame_elapsed_time >= curr_frame.duration) {
+        anim_component->current_frame_elapsed_time = 0.0f;
+
+        anim_component->current_frame += 1;
+
+        if ((anim_component->current_frame == anim->frame_count) && anim->is_repeating) {
+            anim_component->current_frame = 0;
+        }
+
+        // Non-repeating animations should stay on the last frame
+        anim_component->current_frame = MIN(anim_component->current_frame, anim->frame_count - 1);
+    }
+}
+
+static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *animations)
 {
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
@@ -90,6 +113,11 @@ static void entity_update(World *world, Entity *entity, f32 dt)
     if (es_has_component(entity, StatusEffectComponent)) {
         StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
         status_effects_update(status_effects, dt);
+    }
+
+    if (es_has_component(entity, AnimationComponent)) {
+        AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
+        component_update_animation(anim_component, animations, dt);
     }
 
     if (entity_should_die(entity)) {
@@ -117,11 +145,22 @@ static void entity_update(World *world, Entity *entity, f32 dt)
 }
 
 static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
-    struct DebugState *debug_state, World *world, FrameData frame_data)
+    struct DebugState *debug_state, World *world, FrameData frame_data, AnimationTable *animations)
 {
-    if (es_has_component(entity, SpriteComponent)) {
-        SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
+    if (es_has_component(entity, AnimationComponent)) {
+        AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
+        Animation *anim = anim_get_by_id(animations, anim_component->animation_id);
+        ASSERT(anim_component->current_frame < anim->frame_count);
 
+        AnimationFrame current_frame = anim->frames[anim_component->current_frame];
+
+        // TODO: make anim size be configurable
+        Rectangle sprite_rect = { entity->position, {32, 32} };
+        rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, RGBA32_WHITE, assets->texture_shader,
+            RENDER_LAYER_ENTITIES);
+    } else if (es_has_component(entity, SpriteComponent)) {
+        SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
+        // TODO: how to handle if entity has both sprite and animation component?
         // TODO: UI should be drawn on separate layer
 
         Rectangle sprite_rect = { entity->position, sprite->size };
@@ -497,7 +536,8 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
     }
 }
 
-void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena)
+void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena,
+    AnimationTable *animations)
 {
     if (world->entity_system.alive_entity_count < 1) {
         return;
@@ -596,7 +636,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         Entity *entity = es_get_entity(&world->entity_system, entity_id);
         ASSERT(entity);
 
-        entity_update(world, entity, frame_data.dt);
+        entity_update(world, entity, frame_data.dt, animations);
     }
 
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
@@ -627,7 +667,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
 
 // TODO: this shouldn't need AssetList parameter?
 void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
-    LinearArena *frame_arena, DebugState *debug_state)
+    LinearArena *frame_arena, DebugState *debug_state, AnimationTable *animations)
 {
     Rectangle visible_area = camera_get_visible_area(world->camera, frame_data.window_size);
     Vector2i min_tile = world_to_tile_coords(rect_bottom_left(visible_area));
@@ -674,7 +714,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(&world->entity_system, node->id);
 
-        entity_render(entity, rb, assets, frame_arena, debug_state, world, frame_data);
+        entity_render(entity, rb, assets, frame_arena, debug_state, world, frame_data, animations);
     }
 
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
@@ -764,8 +804,11 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
 #endif
         SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
-        sprite->texture = asset_list->default_texture;
+        sprite->texture = asset_list->player_idle1;
         sprite->size = v2(32, 32);
+
+        AnimationComponent *anim = es_add_component(entity, AnimationComponent);
+        anim->animation_id = ANIM_PLAYER_IDLE;
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
         set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);
@@ -820,9 +863,5 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
             //try_equip_item_in_slot(&world->item_manager, &equipment->equipment, item_with_id.id, EQUIP_SLOT_HEAD);
         }
-
-
-
-
     }
 }

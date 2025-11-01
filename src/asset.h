@@ -28,6 +28,9 @@ typedef struct AssetList {
     TextureHandle fireball_texture;
     TextureHandle spark_texture;
     FontHandle default_font;
+
+    TextureHandle player_idle1;
+    TextureHandle player_idle2;
 } AssetList;
 
 #endif //ASSET_H

@@ -92,7 +92,9 @@ int main()
         .default_texture = assets_register_texture(&asset_mgr, str_lit("test.png"), &game_memory.temporary_memory),
         .fireball_texture = assets_register_texture(&asset_mgr, str_lit("fireball.png"), &game_memory.temporary_memory),
         .spark_texture = assets_register_texture(&asset_mgr, str_lit("spark.png"), &game_memory.temporary_memory),
-        .default_font = assets_register_font(&asset_mgr, str_lit("Ubuntu-M.ttf"), &game_memory.temporary_memory)
+        .default_font = assets_register_font(&asset_mgr, str_lit("Ubuntu-M.ttf"), &game_memory.temporary_memory),
+        .player_idle1 = assets_register_texture(&asset_mgr, str_lit("player_idle1.png"), &game_memory.temporary_memory),
+        .player_idle2 = assets_register_texture(&asset_mgr, str_lit("player_idle2.png"), &game_memory.temporary_memory),
     };
 
     PlatformCode platform_code = {

@@ -10,6 +10,7 @@
 #include "world.h"
 #include "input.h"
 #include "debug.h"
+#include "animation.h"
 
 typedef struct {
     World world;
@@ -18,6 +19,7 @@ typedef struct {
     DebugState debug_state;
     SpellArray spells;
     RNGState rng_state;
+    AnimationTable animations;
 } GameState;
 
 typedef struct {

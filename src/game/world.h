@@ -1,6 +1,7 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include "animation.h"
 #include "entity_system.h"
 #include "item.h"
 #include "tilemap.h"
@@ -41,8 +42,9 @@ typedef struct World {
 } World;
 
 void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena);
-void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena);
+void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena,
+    AnimationTable *animations);
 void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list,
-    FrameData frame_data, LinearArena *frame_arena, struct DebugState *debug_state);
+    FrameData frame_data, LinearArena *frame_arena, struct DebugState *debug_state, AnimationTable *animations);
 
 #endif //WORLD_H

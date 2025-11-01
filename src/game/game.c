@@ -1,4 +1,5 @@
 #include "game.h"
+#include "animation.h"
 #include "asset.h"
 #include "base/allocator.h"
 #include "base/format.h"
@@ -43,7 +44,7 @@ static void game_update(GameState *game_state, FrameData frame_data, LinearArena
         DEBUG_BREAK;
     }
 
-    world_update(&game_state->world, frame_data, &game_state->asset_list, frame_arena);
+    world_update(&game_state->world, frame_data, &game_state->asset_list, frame_arena, &game_state->animations);
 
 }
 
@@ -81,7 +82,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData f
     RenderBatch *rb = rb_list_push_new(rbs, game_state->world.camera, frame_data.window_size, Y_IS_UP, frame_arena);
 
     world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena,
-	&game_state->debug_state);
+	&game_state->debug_state, &game_state->animations);
 
     if (game_state->debug_state.quad_tree_overlay) {
         render_tree(&game_state->world.entity_system.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
@@ -335,6 +336,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
     // Spells are re-initialized every frame so that the spells can be changed during runtime.
     magic_initialize(&game_state->spells, &game_state->asset_list);
+    anim_initialize(&game_state->animations, &game_state->asset_list);
 #endif
 
     debug_update(game_state, frame_data, &game_memory->temporary_memory);
@@ -369,6 +371,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
     magic_initialize(&game_state->spells, &game_state->asset_list);
     world_initialize(&game_state->world, &game_state->asset_list, &game_memory->permanent_memory);
+    anim_initialize(&game_state->animations, &game_state->asset_list);
 
     game_state->debug_state.average_fps = 60.0f;
     game_state->debug_state.timestep_modifier = 1.0f;

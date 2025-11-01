@@ -22,6 +22,7 @@
 #include "input.h"
 #include "modifier.h"
 #include "renderer/render_batch.h"
+#include "tilemap.h"
 
 #define WORLD_ARENA_SIZE MB(64)
 
@@ -716,18 +717,18 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
             Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
             if (tile) {
-                RGBA32 color;
+                TextureHandle texture = {0};
 
                 switch (tile->type) {
                     case TILE_FLOOR: {
-                        color = (RGBA32){0.1f, 0.5f, 0.9f, 1.0f};
+                        texture = assets->floor_texture;
                     } break;
 
                     case TILE_WALL: {
-                        color = (RGBA32){1.0f, 0.2f, 0.1f, 1.0f};
+                        texture = assets->wall_texture;
                     } break;
 
-                        INVALID_DEFAULT_CASE;
+                    INVALID_DEFAULT_CASE;
                 }
 
                 Rectangle tile_rect = {
@@ -735,7 +736,13 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
                     .size = { (f32)TILE_SIZE, (f32)TILE_SIZE }
                 };
 
-                rb_push_rect(rb, frame_arena, tile_rect, color, assets->shape_shader, RENDER_LAYER_TILEMAP);
+                if (tile->type == TILE_WALL) {
+                    tile_rect.size.y += TILE_SIZE;
+                }
+
+                // TODO: draw the top part of the wall in layer above so entities never go above it
+                rb_push_sprite(rb, frame_arena, texture, tile_rect, 0, 0, RGBA32_WHITE,
+                    assets->texture_shader, RENDER_LAYER_TILEMAP);
             }
         }
     }
@@ -791,11 +798,28 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);
 
-    for (s32 y = 0; y < 8; ++y) {
-	for (s32 x = 0; x < 8; ++x) {
-	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, y}, TILE_FLOOR,
-		&world->world_arena);
-	}
+
+    for (s32 x = 0; x < 8; ++x) {
+        tilemap_insert_tile(&world->tilemap, (Vector2i){x, 0}, TILE_WALL,
+            &world->world_arena);
+
+        tilemap_insert_tile(&world->tilemap, (Vector2i){x, 7}, TILE_WALL,
+            &world->world_arena);
+    }
+
+    for (s32 y = 1; y < 7; ++y) {
+        tilemap_insert_tile(&world->tilemap, (Vector2i){0, y}, TILE_WALL,
+            &world->world_arena);
+
+        tilemap_insert_tile(&world->tilemap, (Vector2i){7, y}, TILE_WALL,
+            &world->world_arena);
+    }
+
+    for (s32 y = 1; y < 7; ++y) {
+        for (s32 x = 1; x < 7; ++x) {
+            tilemap_insert_tile(&world->tilemap, (Vector2i){x, y}, TILE_FLOOR,
+        	&world->world_arena);
+        }
     }
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
@@ -803,10 +827,10 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
 
     item_mgr_initialize(&world->item_manager);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 1; ++i) {
         EntityWithID entity_with_id = es_spawn_entity(&world->entity_system, i + 1);
         Entity *entity = entity_with_id.entity;
-        entity->position = v2((f32)(64 * (i * 2)), 64.0f * ((f32)i * 2.0f));
+        entity->position = v2(256, 256);
 
         ASSERT(!es_has_component(entity, ColliderComponent));
 

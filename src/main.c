@@ -97,6 +97,8 @@ int main()
         .player_idle2 = assets_register_texture(&asset_mgr, str_lit("player_idle2.png"), &game_memory.temporary_memory),
         .player_walking1 = assets_register_texture(&asset_mgr, str_lit("player_walking1.png"), &game_memory.temporary_memory),
         .player_walking2 = assets_register_texture(&asset_mgr, str_lit("player_walking2.png"), &game_memory.temporary_memory),
+        .floor_texture = assets_register_texture(&asset_mgr, str_lit("floor.png"), &game_memory.temporary_memory),
+        .wall_texture = assets_register_texture(&asset_mgr, str_lit("wall.png"), &game_memory.temporary_memory),
     };
 
     PlatformCode platform_code = {

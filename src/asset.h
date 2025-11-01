@@ -31,6 +31,8 @@ typedef struct AssetList {
 
     TextureHandle player_idle1;
     TextureHandle player_idle2;
+    TextureHandle player_walking1;
+    TextureHandle player_walking2;
 } AssetList;
 
 #endif //ASSET_H

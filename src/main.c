@@ -95,6 +95,8 @@ int main()
         .default_font = assets_register_font(&asset_mgr, str_lit("Ubuntu-M.ttf"), &game_memory.temporary_memory),
         .player_idle1 = assets_register_texture(&asset_mgr, str_lit("player_idle1.png"), &game_memory.temporary_memory),
         .player_idle2 = assets_register_texture(&asset_mgr, str_lit("player_idle2.png"), &game_memory.temporary_memory),
+        .player_walking1 = assets_register_texture(&asset_mgr, str_lit("player_walking1.png"), &game_memory.temporary_memory),
+        .player_walking2 = assets_register_texture(&asset_mgr, str_lit("player_walking2.png"), &game_memory.temporary_memory),
     };
 
     PlatformCode platform_code = {

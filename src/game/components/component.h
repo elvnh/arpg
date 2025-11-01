@@ -12,6 +12,7 @@
 #include "equipment.h"
 #include "inventory.h"
 #include "animation.h"
+#include "entity_state.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
@@ -83,10 +84,15 @@ typedef struct {
     Equipment equipment;
 } EquipmentComponent;
 
+// TODO: allow resetting animation when starting it anew
 typedef struct {
     AnimationID animation_id;
     s32 current_frame;
     f32 current_frame_elapsed_time;
+} AnimationInstance;
+
+typedef struct {
+    AnimationInstance state_animations[ENTITY_STATE_COUNT];
 } AnimationComponent;
 
 #endif //COMPONENT_H

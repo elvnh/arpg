@@ -8,6 +8,7 @@
 typedef enum {
     ANIM_NULL = 0,
     ANIM_PLAYER_IDLE,
+    ANIM_PLAYER_WALKING,
     ANIM_ANIMATION_COUNT,
 } AnimationID;
 

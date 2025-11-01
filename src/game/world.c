@@ -6,6 +6,7 @@
 #include "base/random.h"
 #include "base/utils.h"
 #include "base/sl_list.h"
+#include "base/vector.h"
 #include "components/component.h"
 #include "components/status_effect.h"
 #include "debug.h"
@@ -74,27 +75,34 @@ static b32 entity_should_die(Entity *entity)
     return false;
 }
 
-static void component_update_animation(AnimationComponent *anim_component, AnimationTable *animations, f32 dt)
+static void animation_instance_update(AnimationInstance *anim_instance, AnimationTable *animations, f32 dt)
 {
-    Animation *anim = anim_get_by_id(animations, anim_component->animation_id);
-    ASSERT(anim_component->current_frame < anim->frame_count);
+    Animation *anim = anim_get_by_id(animations, anim_instance->animation_id);
+    ASSERT(anim_instance->current_frame < anim->frame_count);
 
-    AnimationFrame curr_frame = anim->frames[anim_component->current_frame];
+    AnimationFrame curr_frame = anim->frames[anim_instance->current_frame];
 
-    anim_component->current_frame_elapsed_time += dt;
+    anim_instance->current_frame_elapsed_time += dt;
 
-    if (anim_component->current_frame_elapsed_time >= curr_frame.duration) {
-        anim_component->current_frame_elapsed_time = 0.0f;
+    if (anim_instance->current_frame_elapsed_time >= curr_frame.duration) {
+        anim_instance->current_frame_elapsed_time = 0.0f;
 
-        anim_component->current_frame += 1;
+        anim_instance->current_frame += 1;
 
-        if ((anim_component->current_frame == anim->frame_count) && anim->is_repeating) {
-            anim_component->current_frame = 0;
+        if ((anim_instance->current_frame == anim->frame_count) && anim->is_repeating) {
+            anim_instance->current_frame = 0;
         }
 
         // Non-repeating animations should stay on the last frame
-        anim_component->current_frame = MIN(anim_component->current_frame, anim->frame_count - 1);
+        anim_instance->current_frame = MIN(anim_instance->current_frame, anim->frame_count - 1);
     }
+}
+
+static void component_update_animation(Entity *entity, AnimationComponent *anim_component,
+    AnimationTable *animations, f32 dt)
+{
+    // TODO: this function is unnecessary
+    animation_instance_update(&anim_component->state_animations[entity->state], animations, dt);
 }
 
 static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *animations)
@@ -116,7 +124,7 @@ static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *
 
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
-        component_update_animation(anim_component, animations, dt);
+        component_update_animation(entity, anim_component, animations, dt);
     }
 
     if (entity_should_die(entity)) {
@@ -148,10 +156,9 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
 {
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
-        Animation *anim = anim_get_by_id(animations, anim_component->animation_id);
-        ASSERT(anim_component->current_frame < anim->frame_count);
-
-        AnimationFrame current_frame = anim->frames[anim_component->current_frame];
+        AnimationInstance *anim_instance = &anim_component->state_animations[entity->state];
+        Animation *anim = anim_get_by_id(animations, anim_instance->animation_id);
+        AnimationFrame current_frame = anim->frames[anim_instance->current_frame];
 
         // TODO: make anim size be configurable
         Rectangle sprite_rect = { entity->position, {32, 32} };
@@ -607,6 +614,12 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
 
         player->position = new_pos;
         player->velocity = new_velocity;
+
+        if (v2_mag(new_velocity) > 0.5f) {
+            player->state = ENTITY_STATE_WALKING;
+        } else {
+            player->state = ENTITY_STATE_IDLE;
+        }
     }
 
     if (input_is_key_pressed(frame_data.input, KEY_G)) {
@@ -807,7 +820,8 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         sprite->size = v2(32, 32);
 
         AnimationComponent *anim = es_add_component(entity, AnimationComponent);
-        anim->animation_id = ANIM_PLAYER_IDLE;
+        anim->state_animations[ENTITY_STATE_IDLE].animation_id = ANIM_PLAYER_IDLE;
+        anim->state_animations[ENTITY_STATE_WALKING].animation_id = ANIM_PLAYER_WALKING;
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
         set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);

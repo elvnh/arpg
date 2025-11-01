@@ -15,9 +15,24 @@ static Animation animation_player_idle(const AssetList *asset_table)
     return result;
 }
 
+static Animation animation_player_walking(const AssetList *asset_table)
+{
+    Animation result = {0};
+
+    AnimationFrame frame_1 = {asset_table->player_walking1, 0.5f};
+    AnimationFrame frame_2 = {asset_table->player_walking2, 0.5f};
+
+    result.frames[result.frame_count++] = frame_1;
+    result.frames[result.frame_count++] = frame_2;
+    result.is_repeating = true;
+
+    return result;
+}
+
 void anim_initialize(AnimationTable *table, const AssetList *asset_table)
 {
     table->animations[ANIM_PLAYER_IDLE] = animation_player_idle(asset_table);
+    table->animations[ANIM_PLAYER_WALKING] = animation_player_walking(asset_table);
 }
 
 Animation *anim_get_by_id(AnimationTable *table, AnimationID id)

@@ -19,11 +19,13 @@ typedef enum {
     FACTION_ENEMY,
 } EntityFaction;
 
+
 typedef struct Entity {
     ComponentBitset active_components;
     b32 is_inactive;
 
     EntityFaction faction;
+    EntityState state;
 
     Vector2 position;
     Vector2 velocity;

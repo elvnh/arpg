@@ -19,6 +19,11 @@ typedef enum {
     RECT_SIDE_LEFT,
 } RectangleSide;
 
+typedef enum {
+    RECT_FLIP_HORIZONTALLY = (1 << 0),
+    RECT_FLIP_VERTICALLY   = (1 << 1),
+} RectangleFlip;
+
 typedef struct {
     b32 is_intersecting;
     f32 time_of_impact;

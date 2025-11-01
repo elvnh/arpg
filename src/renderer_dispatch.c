@@ -146,6 +146,26 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                 RectangleCmd *cmd = (RectangleCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color, rb->y_direction);
 
+                if (cmd->flip & RECT_FLIP_HORIZONTALLY) {
+                    Vector2 tmp = verts.top_left.uv;
+                    verts.top_left.uv = verts.top_right.uv;
+                    verts.top_right.uv = tmp;
+
+                    tmp = verts.bottom_left.uv;
+                    verts.bottom_left.uv = verts.bottom_right.uv;
+                    verts.bottom_right.uv = tmp;
+                }
+
+                if (cmd->flip & RECT_FLIP_VERTICALLY) {
+                    Vector2 tmp = verts.top_left.uv;
+                    verts.top_left.uv = verts.bottom_left.uv;
+                    verts.bottom_left.uv = tmp;
+
+                    tmp = verts.top_right.uv;
+                    verts.top_right.uv = verts.bottom_right.uv;
+                    verts.bottom_right.uv = tmp;
+                }
+
                 ASSERT(rect_is_valid(cmd->rect));
 
 		renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,

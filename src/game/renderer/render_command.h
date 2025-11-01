@@ -45,6 +45,7 @@ typedef struct {
     RenderCmdHeader header;
     Rectangle rect;
     RGBA32 color;
+    RectangleFlip flip;
 } RectangleCmd;
 
 typedef struct {

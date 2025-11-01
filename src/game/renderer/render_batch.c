@@ -1,5 +1,6 @@
 #include "render_batch.h"
 #include "base/linear_arena.h"
+#include "base/rectangle.h"
 #include "base/rgba.h"
 #include "base/utils.h"
 #include "game/camera.h"

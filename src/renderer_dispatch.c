@@ -1,5 +1,6 @@
 #include "renderer_dispatch.h"
 #include "base/rectangle.h"
+#include "base/vector.h"
 #include "font.h"
 #include "game/renderer/render_command.h"
 #include "game/renderer/render_key.h"
@@ -145,6 +146,9 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
             case RENDER_COMMAND_ENUM_NAME(RectangleCmd): {
                 RectangleCmd *cmd = (RectangleCmd *)entry->data;
                 RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color, rb->y_direction);
+                ASSERT(rect_is_valid(cmd->rect));
+
+                f32 rotation = cmd->rotation_in_radians;
 
                 if (cmd->flip & RECT_FLIP_HORIZONTALLY) {
                     Vector2 tmp = verts.top_left.uv;
@@ -166,7 +170,13 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                     verts.bottom_right.uv = tmp;
                 }
 
-                ASSERT(rect_is_valid(cmd->rect));
+                Vector2 origin = verts.bottom_left.position;
+
+                verts.top_left.position = v2_rotate_around_point(verts.top_left.position, rotation, origin);
+                verts.top_right.position = v2_rotate_around_point(verts.top_right.position, rotation, origin);
+                verts.bottom_right.position = v2_rotate_around_point(verts.bottom_right.position, rotation, origin);
+                verts.bottom_left.position = v2_rotate_around_point(verts.bottom_left.position, rotation, origin);
+
 
 		renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
 		    verts.bottom_right, verts.bottom_left);

@@ -46,6 +46,7 @@ typedef struct {
     Rectangle rect;
     RGBA32 color;
     RectangleFlip flip;
+    f32 rotation_in_radians;
 } RectangleCmd;
 
 typedef struct {

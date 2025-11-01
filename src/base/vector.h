@@ -177,4 +177,18 @@ static inline Vector2 v2i_to_v2(Vector2i from)
 }
 
 
+static inline Vector2 v2_rotate_around_point(Vector2 v, f32 rotation_in_radians, Vector2 origin)
+{
+    f32 s = sin_f32(rotation_in_radians);
+    f32 c = cos_f32(rotation_in_radians);
+
+    Vector2 result = {
+        (v.x - origin.x) * c - (v.y - origin.y) * s + origin.x,
+        (v.x - origin.x) * s + (v.y - origin.y) * c + origin.y
+    };
+
+    return result;
+}
+
+
 #endif //VECTOR2_H

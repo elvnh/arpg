@@ -162,7 +162,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
 
         // TODO: make anim size be configurable
         Rectangle sprite_rect = { entity->position, {32, 32} };
-        rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, RGBA32_WHITE, assets->texture_shader,
+        rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, 0, RGBA32_WHITE, assets->texture_shader,
             RENDER_LAYER_ENTITIES);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
@@ -170,7 +170,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
         // TODO: UI should be drawn on separate layer
 
         Rectangle sprite_rect = { entity->position, sprite->size };
-        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, RGBA32_WHITE, assets->texture_shader,
+        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, 0, RGBA32_WHITE, assets->texture_shader,
             RENDER_LAYER_ENTITIES);
     }
 

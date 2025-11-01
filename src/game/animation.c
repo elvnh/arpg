@@ -5,8 +5,8 @@ static Animation animation_player_idle(const AssetList *asset_table)
 {
     Animation result = {0};
 
-    AnimationFrame frame_1 = {asset_table->player_idle1, 1.0f};
-    AnimationFrame frame_2 = {asset_table->player_idle2, 1.0f};
+    AnimationFrame frame_1 = {asset_table->player_idle1, 0.75f};
+    AnimationFrame frame_2 = {asset_table->player_idle2, 0.75f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -22,6 +22,7 @@ void anim_initialize(AnimationTable *table, const AssetList *asset_table)
 
 Animation *anim_get_by_id(AnimationTable *table, AnimationID id)
 {
+    ASSERT(id != ANIM_NULL);
     ASSERT(id >= 0);
     ASSERT(id < ARRAY_COUNT(table->animations));
     Animation *result = &table->animations[id];

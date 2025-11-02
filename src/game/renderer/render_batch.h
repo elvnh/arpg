@@ -39,6 +39,8 @@ struct Particle;
 
 RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
     LinearArena *arena);
+void         rb_list_push(RenderBatchList *list, RenderBatch *rb, LinearArena *arena);
+RenderBatch  rb_create(Camera camera, Vector2i viewport_size, YDirection y_dir);
 void         rb_sort_entries(RenderBatch *rb, LinearArena *scratch);
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, RGBA32 color, ShaderHandle shader, RenderLayer layer);

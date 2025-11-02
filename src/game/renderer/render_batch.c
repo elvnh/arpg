@@ -1,5 +1,6 @@
 #include "render_batch.h"
 #include "base/linear_arena.h"
+#include "base/list.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
 #include "base/utils.h"
@@ -46,11 +47,35 @@ static inline RenderKey render_key_create(struct RenderBatch *rb, s32 layer, Sha
     return result;
 }
 
+static RenderBatchNode *rb_create_node(LinearArena *arena)
+{
+    RenderBatchNode *node = la_allocate_item(arena, RenderBatchNode);
+
+    return node;
+}
+
+void rb_list_push(RenderBatchList *list, RenderBatch *rb, LinearArena *arena)
+{
+    RenderBatchNode *node = rb_create_node(arena);
+    node->render_batch = *rb;
+
+    list_push_back(list, node);
+}
+
 RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size,
     YDirection y_dir, LinearArena *arena)
 {
-    RenderBatchNode *node = la_allocate_item(arena, RenderBatchNode);
+    RenderBatchNode *node = rb_create_node(arena);
+    node->render_batch = rb_create(camera, viewport_size, y_dir);
+
     list_push_back(list, node);
+
+    return &node->render_batch;
+}
+
+RenderBatch rb_create(Camera camera, Vector2i viewport_size, YDirection y_dir)
+{
+    RenderBatch result = {0};
 
     Matrix4 proj_matrix = camera_get_matrix(camera, viewport_size, y_dir);
 
@@ -61,11 +86,11 @@ RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i vie
         top_y += camera_bounds.size.y;
     }
 
-    node->render_batch.projection = proj_matrix;
-    node->render_batch.y_direction = y_dir;
-    node->render_batch.y_sorting_basis = (s32)top_y;
+    result.projection = proj_matrix;
+    result.y_direction = y_dir;
+    result.y_sorting_basis = (s32)top_y;
 
-    return &node->render_batch;
+    return result;
 }
 
 static void merge_render_entry_arrays(RenderEntry *dst, RenderEntry *left, ssize left_count,
@@ -91,7 +116,7 @@ static void merge_render_entry_arrays(RenderEntry *dst, RenderEntry *left, ssize
 
 static void merge_sort_render_entries(RenderEntry *entries, ssize count, LinearArena *scratch)
 {
-    if (count == 1) {
+    if (count <= 1) {
 
     } else if (count == 2) {
         RenderEntry *a = &entries[0];
@@ -122,6 +147,7 @@ void rb_sort_entries(RenderBatch *rb, LinearArena *scratch)
 {
     merge_sort_render_entries(rb->entries, rb->entry_count, scratch);
 
+    // TODO: use a unit test for this instead
 #if 1
     for (ssize i = 0; i < rb->entry_count - 1; ++i) {
         RenderEntry *a = &rb->entries[i];

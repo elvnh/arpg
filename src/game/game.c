@@ -339,16 +339,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     anim_initialize(&game_state->animations, &game_state->asset_list);
 #endif
 
-    debug_update(game_state, frame_data, &game_memory->temporary_memory);
-
-    frame_data.dt *= game_state->debug_state.timestep_modifier;
-
-    game_update(game_state, frame_data, &game_memory->temporary_memory);
-    game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);
-
-    if (input_is_key_pressed(frame_data.input, KEY_T)) {
-        game_state->debug_state.debug_menu_active = !game_state->debug_state.debug_menu_active;
-    }
+    RenderBatch ui_render_batch = {0};
 
     if (game_state->debug_state.debug_menu_active) {
         // TODO: ui should be updated before game, but rendered after
@@ -360,11 +351,23 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
             .position = {(f32)frame_data.window_size.x / 2.0f, (f32)frame_data.window_size.y / 2.0f}
         };
 
-        RenderBatch *ui_rb = rb_list_push_new(rbs, ui_cam, frame_data.window_size, Y_IS_DOWN, &game_memory->temporary_memory);
-        ui_core_end_frame(&game_state->ui, frame_data, ui_rb, &game_state->asset_list, platform_code);
-
-        rb_sort_entries(ui_rb, &game_memory->temporary_memory);
+        ui_render_batch = rb_create(ui_cam, frame_data.window_size, Y_IS_DOWN);
+        ui_core_end_frame(&game_state->ui, frame_data, &ui_render_batch, &game_state->asset_list, platform_code);
     }
+
+    debug_update(game_state, frame_data, &game_memory->temporary_memory);
+
+    frame_data.dt *= game_state->debug_state.timestep_modifier;
+
+    game_update(game_state, frame_data, &game_memory->temporary_memory);
+    game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);
+
+    if (input_is_key_pressed(frame_data.input, KEY_T)) {
+        game_state->debug_state.debug_menu_active = !game_state->debug_state.debug_menu_active;
+    }
+
+    rb_sort_entries(&ui_render_batch, &game_memory->temporary_memory);
+    rb_list_push(rbs, &ui_render_batch, &game_memory->temporary_memory);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)

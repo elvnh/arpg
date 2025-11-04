@@ -47,7 +47,7 @@ typedef struct Input {
 
 typedef struct {
     f32 dt;
-    const Input *input;
+    Input input;
     Vector2i window_size;
 } FrameData;
 
@@ -123,5 +123,13 @@ static inline Vector2 input_get_mouse_click_pos(const Input *input, YDirection y
     return result;
 }
 
+static inline void input_consume_input(Input *input, Key key)
+{
+    ASSERT(key >= 0);
+    ASSERT(key < KEY_COUNT);
+
+    input->keystates[key] = 0;
+    input->previous_keystates[key] = 0;
+}
 
 #endif //INPUT_H

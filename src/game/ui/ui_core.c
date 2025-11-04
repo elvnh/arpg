@@ -213,13 +213,13 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 
 }
 
-static void calculate_widget_interactions(UIState *ui, Widget *widget, FrameData frame_data,
-    Rectangle parent_bounds, YDirection y_dir)
+static void calculate_widget_interactions(UIState *ui, Widget *widget, const FrameData *frame_data,
+    Rectangle parent_bounds, YDirection y_dir, UIInteraction *interactions)
 {
     Rectangle clipped_bounds = widget_get_clipped_bounding_box(widget, parent_bounds);
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        calculate_widget_interactions(ui, child, frame_data, clipped_bounds, y_dir);
+        calculate_widget_interactions(ui, child, frame_data, clipped_bounds, y_dir, interactions);
 
         // If child widget is being interacted with, don't consider input further up the tree
         if (widget_is_hot(ui, child)) {
@@ -231,17 +231,18 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, FrameData
         return;
     }
 
-    Vector2 mouse_pos = input_get_mouse_pos(frame_data.input, y_dir, frame_data.window_size);
+    Vector2 mouse_pos = input_get_mouse_pos(&frame_data->input, y_dir, frame_data->window_size);
     b32 mouse_inside = rect_contains_point(clipped_bounds, mouse_pos);
+    b32 mouse_clicked = input_is_key_down(&frame_data->input, MOUSE_LEFT);
+    b32 mouse_released = input_is_key_released(&frame_data->input, MOUSE_LEFT);
 
     if (mouse_inside) {
         ui->hot_widget = widget->id;
     }
 
     if (widget_is_hot(ui, widget)) {
-	Vector2 mouse_click_pos = input_get_mouse_click_pos(frame_data.input, y_dir, frame_data.window_size);
-        b32 clicked_inside = input_is_key_down(frame_data.input, MOUSE_LEFT)
-            && rect_contains_point(clipped_bounds, mouse_click_pos);
+	Vector2 mouse_click_pos = input_get_mouse_click_pos(&frame_data->input, y_dir, frame_data->window_size);
+        b32 clicked_inside = mouse_clicked && rect_contains_point(clipped_bounds, mouse_click_pos);
 
         if (widget_has_flag(widget, WIDGET_CLICKABLE) && clicked_inside) {
             ui->active_widget = widget->id;
@@ -251,7 +252,7 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, FrameData
     if (widget_is_active(ui, widget)) {
         if (!mouse_inside && !widget_has_flag(widget, WIDGET_STAY_ACTIVE)) {
             ui->active_widget = UI_NULL_WIDGET_ID;
-        } else if (input_is_key_released(frame_data.input, MOUSE_LEFT)) {
+        } else if (mouse_released) {
             widget->interaction_state.clicked = true;
 
             if (!widget_has_flag(widget, WIDGET_STAY_ACTIVE)) {
@@ -261,12 +262,20 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, FrameData
 
         // TODO: proper text input
         if (widget_has_flag(widget, WIDGET_TEXT_INPUT)) {
-            if (input_is_key_pressed(frame_data.input, KEY_A)) {
+            if (input_is_key_pressed(&frame_data->input, KEY_A)) {
                 if (str_builder_has_capacity_for(widget->text_input_buffer, str_lit("A"))) {
                     str_builder_append(widget->text_input_buffer, str_lit("A"));
                 }
             }
         }
+    }
+
+    if (mouse_inside) {
+	interactions->was_hovered = true;
+
+	if (mouse_clicked || mouse_released) {
+	    interactions->received_mouse_input = true;
+	}
     }
 }
 
@@ -353,18 +362,22 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
     }
 }
 
-void ui_core_end_frame(UIState *ui, FrameData frame_data, RenderBatch *rb, const AssetList *assets,
-    PlatformCode platform_code)
+UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, RenderBatch *rb,
+    const AssetList *assets, PlatformCode platform_code)
 {
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
 
-    Rectangle window_rect = {{0, 0}, v2i_to_v2(frame_data.window_size)};
+    UIInteraction result = {0};
+
+    Rectangle window_rect = {{0, 0}, v2i_to_v2(frame_data->window_size)};
     if (ui->root_widget) {
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
-        calculate_widget_interactions(ui, ui->root_widget, frame_data, window_rect, rb->y_direction);
+        calculate_widget_interactions(ui, ui->root_widget, frame_data, window_rect, rb->y_direction, &result);
         render_widget(ui, ui->root_widget, rb, assets, 0, window_rect);
     }
+
+    return result;
 }
 
 static Widget *get_top_container(UIState *ui)

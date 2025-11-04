@@ -128,8 +128,8 @@ static inline void input_consume_input(Input *input, Key key)
     ASSERT(key >= 0);
     ASSERT(key < KEY_COUNT);
 
-    input->keystates[key] = 0;
-    input->previous_keystates[key] = 0;
+    input->keystates[key] = KEYSTATE_UP;
+    input->previous_keystates[key] = KEYSTATE_UP;
 }
 
 #endif //INPUT_H

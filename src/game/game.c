@@ -359,8 +359,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     }
 
     // NOTE: input has been passed by copy so we're just modifying the copy for this frame
-    if (ui_interaction.received_mouse_input) {
-	// TODO: make it so that clicks don't count as released if the first click was inside UI
+    if (ui_interaction.received_mouse_input || ui_interaction.click_began_inside_ui) {
 	input_consume_input(&frame_data.input, MOUSE_LEFT);
     }
 

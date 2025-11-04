@@ -232,19 +232,18 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Fra
     }
 
     Vector2 mouse_pos = input_get_mouse_pos(&frame_data->input, y_dir, frame_data->window_size);
+    Vector2 mouse_click_pos = input_get_mouse_click_pos(&frame_data->input, y_dir, frame_data->window_size);
     b32 mouse_inside = rect_contains_point(clipped_bounds, mouse_pos);
     b32 mouse_clicked = input_is_key_down(&frame_data->input, MOUSE_LEFT);
     b32 mouse_released = input_is_key_released(&frame_data->input, MOUSE_LEFT);
+    b32 click_began_inside = rect_contains_point(clipped_bounds, mouse_click_pos);
 
     if (mouse_inside) {
         ui->hot_widget = widget->id;
     }
 
     if (widget_is_hot(ui, widget)) {
-	Vector2 mouse_click_pos = input_get_mouse_click_pos(&frame_data->input, y_dir, frame_data->window_size);
-        b32 clicked_inside = mouse_clicked && rect_contains_point(clipped_bounds, mouse_click_pos);
-
-        if (widget_has_flag(widget, WIDGET_CLICKABLE) && clicked_inside) {
+        if (widget_has_flag(widget, WIDGET_CLICKABLE) && click_began_inside) {
             ui->active_widget = widget->id;
         }
     }
@@ -276,6 +275,10 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Fra
 	if (mouse_clicked || mouse_released) {
 	    interactions->received_mouse_input = true;
 	}
+    }
+
+    if (click_began_inside) {
+	interactions->click_began_inside_ui = true;
     }
 }
 

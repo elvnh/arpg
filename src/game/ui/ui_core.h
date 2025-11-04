@@ -46,7 +46,9 @@ typedef struct {
 } UIStyle;
 
 typedef struct {
+    // TODO: maybe received_mouse_input and click_began_inside_ui should be same field?
     b32 received_mouse_input;
+    b32 click_began_inside_ui;
     b32 was_hovered;
 } UIInteraction;
 

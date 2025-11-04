@@ -1,6 +1,8 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <stdio.h>
+
 typedef struct DebugState {
     b32 debug_menu_active;
     b32 quad_tree_overlay;
@@ -13,5 +15,9 @@ typedef struct DebugState {
     EntityID hovered_entity;
 } DebugState;
 
+static inline void print_v2(Vector2 v)
+{
+    printf("(%.2f, %.2f)\n", (f64)v.x, (f64)v.y);
+}
 
 #endif //DEBUG_H

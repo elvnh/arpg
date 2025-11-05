@@ -341,28 +341,6 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     anim_initialize(&game_state->animations, &game_state->asset_list);
 #endif
 
-    RenderBatch ui_render_batch = {0};
-    UIInteraction ui_interaction = {0};
-
-    if (game_state->debug_state.debug_menu_active) {
-        ui_core_begin_frame(&game_state->ui);
-
-        game_update_and_render_ui(&game_state->ui, game_state, game_memory, &frame_data);
-
-        Camera ui_cam = {
-            .position = {(f32)frame_data.window_size.x / 2.0f, (f32)frame_data.window_size.y / 2.0f}
-        };
-
-        ui_render_batch = rb_create(ui_cam, frame_data.window_size, Y_IS_DOWN);
-        ui_interaction = ui_core_end_frame(&game_state->ui, &frame_data, &ui_render_batch,
-	    &game_state->asset_list, platform_code);
-    }
-
-    // NOTE: input has been passed by copy so we're just modifying the copy for this frame
-    if (ui_interaction.received_mouse_input || ui_interaction.click_began_inside_ui) {
-	input_consume_input(&frame_data.input, MOUSE_LEFT);
-    }
-
     debug_update(game_state, &frame_data, &game_memory->temporary_memory);
 
     frame_data.dt *= game_state->debug_state.timestep_modifier;
@@ -374,8 +352,23 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
         game_state->debug_state.debug_menu_active = !game_state->debug_state.debug_menu_active;
     }
 
-    rb_sort_entries(&ui_render_batch, &game_memory->temporary_memory);
-    rb_list_push(rbs, &ui_render_batch, &game_memory->temporary_memory);
+
+    if (game_state->debug_state.debug_menu_active) {
+        ui_core_begin_frame(&game_state->ui);
+
+        game_update_and_render_ui(&game_state->ui, game_state, game_memory, &frame_data);
+
+        Camera ui_cam = {
+            .position = {(f32)frame_data.window_size.x / 2.0f, (f32)frame_data.window_size.y / 2.0f}
+        };
+
+	RenderBatch *ui_rb = rb_list_push_new(rbs, ui_cam, frame_data.window_size,
+	    Y_IS_DOWN, &game_memory->temporary_memory);
+
+	ui_core_end_frame(&game_state->ui, &frame_data, ui_rb, &game_state->asset_list, platform_code);
+
+	rb_sort_entries(ui_rb, &game_memory->temporary_memory);
+    }
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)

@@ -46,6 +46,13 @@ typedef struct {
 } UIStyle;
 
 typedef struct {
+    // TODO: maybe received_mouse_input and click_began_inside_ui should be same field?
+    b32 received_mouse_input;
+    b32 click_began_inside_ui;
+    b32 was_hovered;
+} UIInteraction;
+
+typedef struct {
     WidgetFrameTable previous_frame_widgets;
     WidgetFrameTable current_frame_widgets;
     WidgetContainerStack container_stack;
@@ -62,8 +69,8 @@ typedef struct {
 
 void ui_core_initialize(UIState *ui, UIStyle style, LinearArena *arena);
 void ui_core_begin_frame(UIState *ui);
-void ui_core_end_frame(UIState *ui, FrameData frame_data, struct RenderBatch *rb, const AssetList *assets,
-    PlatformCode platform_code);
+UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, struct RenderBatch *rb,
+    const AssetList *assets, PlatformCode platform_code);
 void ui_core_set_style(UIState *ui, UIStyle style);
 void ui_core_push_container(UIState *ui, Widget *widget);
 void ui_core_pop_container(UIState *ui);

@@ -152,7 +152,7 @@ int main()
         Vector2i window_size = platform_get_window_size(window);
         FrameData frame_data = {
             .dt = dt,
-            .input = &input,
+            .input = input,
             .window_size = window_size
         };
 

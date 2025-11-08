@@ -154,8 +154,9 @@ static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *
     es_update_entity_quad_tree_location(&world->entity_system, entity, &world->world_arena);
 }
 
-static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetList *assets, LinearArena *scratch,
-    struct DebugState *debug_state, World *world, FrameData frame_data, AnimationTable *animations)
+static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetList *assets,
+    LinearArena *scratch, struct DebugState *debug_state, World *world, const FrameData *frame_data,
+    AnimationTable *animations)
 {
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
@@ -562,7 +563,7 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
     }
 }
 
-void world_update(World *world, FrameData frame_data, const AssetList *assets, LinearArena *frame_arena,
+void world_update(World *world, const FrameData *frame_data, const AssetList *assets, LinearArena *frame_arena,
     AnimationTable *animations)
 {
     if (world->entity_system.alive_entity_count < 1) {
@@ -581,9 +582,9 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
             target = v2_add(target, v2_div_s(collider->size, 2));
         }
 
-        if (input_is_key_pressed(frame_data.input, MOUSE_LEFT)) {
-            Vector2 mouse_pos = frame_data.input->mouse_position;
-            mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data.window_size);
+        if (input_is_key_released(&frame_data->input, MOUSE_LEFT)) {
+            Vector2 mouse_pos = frame_data->input.mouse_position;
+            mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
 
             Vector2 mouse_dir = v2_sub(mouse_pos, player->position);
             mouse_dir = v2_norm(mouse_dir);
@@ -594,27 +595,27 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         camera_set_target(&world->camera, target);
     }
 
-    camera_zoom(&world->camera, (s32)frame_data.input->scroll_delta);
-    camera_update(&world->camera, frame_data.dt);
+    camera_zoom(&world->camera, (s32)frame_data->input.scroll_delta);
+    camera_update(&world->camera, frame_data->dt);
 
     f32 speed = 350.0f;
 
-    if (input_is_key_held(frame_data.input, KEY_LEFT_SHIFT)) {
+    if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
         speed *= 3.0f;
     }
 
     {
 	Vector2 acceleration = {0};
 
-	if (input_is_key_down(frame_data.input, KEY_W)) {
+	if (input_is_key_down(&frame_data->input, KEY_W)) {
 	    acceleration.y = 1.0f;
-	} else if (input_is_key_down(frame_data.input, KEY_S)) {
+	} else if (input_is_key_down(&frame_data->input, KEY_S)) {
 	    acceleration.y = -1.0f;
 	}
 
-	if (input_is_key_down(frame_data.input, KEY_A)) {
+	if (input_is_key_down(&frame_data->input, KEY_A)) {
 	    acceleration.x = -1.0f;
-	} else if (input_is_key_down(frame_data.input, KEY_D)) {
+	} else if (input_is_key_down(&frame_data->input, KEY_D)) {
 	    acceleration.x = 1.0f;
 	}
 
@@ -626,7 +627,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
             player->state = ENTITY_STATE_IDLE;
         }
 
-
+	f32 dt = frame_data->dt;
         Vector2 v = player->velocity;
         Vector2 p = player->position;
 
@@ -634,17 +635,17 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         acceleration = v2_add(acceleration, v2_mul_s(v, -3.5f));
 
         Vector2 new_pos = v2_add(
-            v2_add(v2_mul_s(v2_mul_s(acceleration, frame_data.dt * frame_data.dt), 0.5f), v2_mul_s(v, frame_data.dt)),
+            v2_add(v2_mul_s(v2_mul_s(acceleration, dt * dt), 0.5f), v2_mul_s(v, dt)),
             p
         );
 
-        Vector2 new_velocity = v2_add(v2_mul_s(acceleration, frame_data.dt), v);
+        Vector2 new_velocity = v2_add(v2_mul_s(acceleration, dt), v);
 
         player->position = new_pos;
         player->velocity = new_velocity;
     }
 
-    if (input_is_key_pressed(frame_data.input, KEY_G)) {
+    if (input_is_key_pressed(&frame_data->input, KEY_G)) {
         InventoryComponent *inv = es_get_component(player, InventoryComponent);
         EquipmentComponent *equipment = es_get_component(player, EquipmentComponent);
 
@@ -661,7 +662,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         }
     }
 
-    handle_collision_and_movement(world, frame_data.dt, frame_arena);
+    handle_collision_and_movement(world, frame_data->dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
     EntityIndex entity_count = world->entity_system.alive_entity_count;
@@ -670,7 +671,7 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
         Entity *entity = es_get_entity(&world->entity_system, entity_id);
         ASSERT(entity);
 
-        entity_update(world, entity, frame_data.dt, animations);
+        entity_update(world, entity, frame_data->dt, animations);
     }
 
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
@@ -685,8 +686,8 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
             }
         }
 
-        hitsplat->position = v2_add(hitsplat->position, v2_mul_s(hitsplat->velocity, frame_data.dt));
-        hitsplat->timer += frame_data.dt;
+        hitsplat->position = v2_add(hitsplat->position, v2_mul_s(hitsplat->velocity, frame_data->dt));
+        hitsplat->timer += frame_data->dt;
     }
 
     // TODO: should this be done at beginning of each frame so inactive entities are rendered?
@@ -700,10 +701,10 @@ void world_update(World *world, FrameData frame_data, const AssetList *assets, L
 }
 
 // TODO: this shouldn't need AssetList parameter?
-void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameData frame_data,
+void world_render(World *world, RenderBatch *rb, const AssetList *assets, const FrameData *frame_data,
     LinearArena *frame_arena, DebugState *debug_state, AnimationTable *animations)
 {
-    Rectangle visible_area = camera_get_visible_area(world->camera, frame_data.window_size);
+    Rectangle visible_area = camera_get_visible_area(world->camera, frame_data->window_size);
     Vector2i min_tile = world_to_tile_coords(rect_bottom_left(visible_area));
     Vector2i max_tile = world_to_tile_coords(rect_top_right(visible_area));
 

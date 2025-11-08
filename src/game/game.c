@@ -36,11 +36,11 @@
 #include "item.h"
 #include "renderer/render_batch.h"
 
-static void game_update(GameState *game_state, FrameData frame_data, LinearArena *frame_arena)
+static void game_update(GameState *game_state, const FrameData *frame_data, LinearArena *frame_arena)
 {
     (void)frame_arena;
 
-    if (input_is_key_pressed(frame_data.input, KEY_ESCAPE)) {
+    if (input_is_key_pressed(&frame_data->input, KEY_ESCAPE)) {
         DEBUG_BREAK;
     }
 
@@ -77,9 +77,9 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
 
 
 
-static void game_render(GameState *game_state, RenderBatchList *rbs, FrameData frame_data, LinearArena *frame_arena)
+static void game_render(GameState *game_state, RenderBatchList *rbs, const FrameData *frame_data, LinearArena *frame_arena)
 {
-    RenderBatch *rb = rb_list_push_new(rbs, game_state->world.camera, frame_data.window_size, Y_IS_UP, frame_arena);
+    RenderBatch *rb = rb_list_push_new(rbs, game_state->world.camera, frame_data->window_size, Y_IS_UP, frame_arena);
 
     world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena,
 	&game_state->debug_state, &game_state->animations);
@@ -125,7 +125,7 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
     return result;
 }
 
-static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, FrameData frame_data)
+static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {
     ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
@@ -138,7 +138,7 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
     String frame_time_str = str_concat(
         str_lit("Frame time: "),
-        f32_to_string(frame_data.dt, 5, temp_alloc),
+        f32_to_string(frame_data->dt, 5, temp_alloc),
         temp_alloc
     );
 
@@ -286,14 +286,15 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_pop_container(ui);
 }
 
-static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, FrameData frame_data)
+static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMemory *game_memory,
+    const FrameData *frame_data)
 {
     debug_ui(ui, game_state, game_memory, frame_data);
 }
 
-void debug_update(GameState *game_state, FrameData frame_data, LinearArena *frame_arena)
+static void debug_update(GameState *game_state, const FrameData *frame_data, LinearArena *frame_arena)
 {
-    f32 curr_fps = 1.0f / frame_data.dt;
+    f32 curr_fps = 1.0f / frame_data->dt;
     f32 avg_fps = game_state->debug_state.average_fps;
 
     // NOTE: lower alpha value means more smoothing
@@ -301,8 +302,8 @@ void debug_update(GameState *game_state, FrameData frame_data, LinearArena *fram
 
     Vector2 hovered_coords = screen_to_world_coords(
         game_state->world.camera,
-        frame_data.input->mouse_position,
-        frame_data.window_size
+        frame_data->input.mouse_position,
+        frame_data->window_size
     );
 
     Rectangle hovered_rect = {hovered_coords, {1, 1}};
@@ -317,15 +318,16 @@ void debug_update(GameState *game_state, FrameData frame_data, LinearArena *fram
 
     f32 speed_modifier = game_state->debug_state.timestep_modifier;
     f32 speed_modifier_step = 0.25;
-    if (input_is_key_pressed(frame_data.input, KEY_UP)) {
+    if (input_is_key_pressed(&frame_data->input, KEY_UP)) {
         speed_modifier += speed_modifier_step;
-    } else if (input_is_key_pressed(frame_data.input, KEY_DOWN)) {
+    } else if (input_is_key_pressed(&frame_data->input, KEY_DOWN)) {
         speed_modifier -= speed_modifier_step;
     }
 
     game_state->debug_state.timestep_modifier = CLAMP(speed_modifier, speed_modifier_step, 5.0f);
 }
 
+// TODO: only send FrameData into this function, send dt etc to others
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory)
 {
@@ -339,35 +341,34 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     anim_initialize(&game_state->animations, &game_state->asset_list);
 #endif
 
-    RenderBatch ui_render_batch = {0};
+    debug_update(game_state, &frame_data, &game_memory->temporary_memory);
+
+    frame_data.dt *= game_state->debug_state.timestep_modifier;
+
+    game_update(game_state, &frame_data, &game_memory->temporary_memory);
+    game_render(game_state, rbs, &frame_data, &game_memory->temporary_memory);
+
+    if (input_is_key_pressed(&frame_data.input, KEY_T)) {
+        game_state->debug_state.debug_menu_active = !game_state->debug_state.debug_menu_active;
+    }
+
 
     if (game_state->debug_state.debug_menu_active) {
-        // TODO: ui should be updated before game, but rendered after
         ui_core_begin_frame(&game_state->ui);
 
-        game_update_and_render_ui(&game_state->ui, game_state, game_memory, frame_data);
+        game_update_and_render_ui(&game_state->ui, game_state, game_memory, &frame_data);
 
         Camera ui_cam = {
             .position = {(f32)frame_data.window_size.x / 2.0f, (f32)frame_data.window_size.y / 2.0f}
         };
 
-        ui_render_batch = rb_create(ui_cam, frame_data.window_size, Y_IS_DOWN);
-        ui_core_end_frame(&game_state->ui, frame_data, &ui_render_batch, &game_state->asset_list, platform_code);
+	RenderBatch *ui_rb = rb_list_push_new(rbs, ui_cam, frame_data.window_size,
+	    Y_IS_DOWN, &game_memory->temporary_memory);
+
+	ui_core_end_frame(&game_state->ui, &frame_data, ui_rb, &game_state->asset_list, platform_code);
+
+	rb_sort_entries(ui_rb, &game_memory->temporary_memory);
     }
-
-    debug_update(game_state, frame_data, &game_memory->temporary_memory);
-
-    frame_data.dt *= game_state->debug_state.timestep_modifier;
-
-    game_update(game_state, frame_data, &game_memory->temporary_memory);
-    game_render(game_state, rbs, frame_data, &game_memory->temporary_memory);
-
-    if (input_is_key_pressed(frame_data.input, KEY_T)) {
-        game_state->debug_state.debug_menu_active = !game_state->debug_state.debug_menu_active;
-    }
-
-    rb_sort_entries(&ui_render_batch, &game_memory->temporary_memory);
-    rb_list_push(rbs, &ui_render_batch, &game_memory->temporary_memory);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)

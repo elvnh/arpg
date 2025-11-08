@@ -237,13 +237,14 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Fra
     b32 mouse_clicked = input_is_key_down(&frame_data->input, MOUSE_LEFT);
     b32 mouse_released = input_is_key_released(&frame_data->input, MOUSE_LEFT);
     b32 click_began_inside = rect_contains_point(clipped_bounds, mouse_click_pos);
+    b32 clicked_inside = mouse_clicked && click_began_inside;
 
     if (mouse_inside) {
         ui->hot_widget = widget->id;
     }
 
     if (widget_is_hot(ui, widget)) {
-        if (widget_has_flag(widget, WIDGET_CLICKABLE) && click_began_inside) {
+        if (widget_has_flag(widget, WIDGET_CLICKABLE) && clicked_inside) {
             ui->active_widget = widget->id;
         }
     }

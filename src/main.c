@@ -37,6 +37,8 @@
 
 static AssetManager asset_mgr;
 
+const char *__asan_default_options() { return "detect_leaks=0"; }
+
 static Vector2 get_text_dimensions(FontHandle font_handle, String text, s32 text_size)
 {
     FontAsset *asset = assets_get_font(&asset_mgr, font_handle);

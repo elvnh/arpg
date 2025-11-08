@@ -179,7 +179,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
             }
         }
 
-        Rectangle sprite_rect = { entity->position, {32, 32} };
+        Rectangle sprite_rect = { entity->position, anim_component->sprite_size };
         rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, rotation, flip,
             RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
     } else if (es_has_component(entity, SpriteComponent)) {
@@ -899,6 +899,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         anim->state_animations[ENTITY_STATE_IDLE].animation_id = ANIM_PLAYER_IDLE;
         anim->state_animations[ENTITY_STATE_WALKING].animation_id = ANIM_PLAYER_WALKING;
         anim->rotation_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
+        anim->sprite_size = v2(32, 64);
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
         set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);

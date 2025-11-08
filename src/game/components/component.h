@@ -100,6 +100,7 @@ typedef struct {
 typedef struct {
     AnimationInstance state_animations[ENTITY_STATE_COUNT];
     SpriteRotationBehaviour rotation_behaviour;
+    Vector2 sprite_size;
 } AnimationComponent;
 
 #endif //COMPONENT_H

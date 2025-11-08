@@ -3,6 +3,7 @@
 #include "base/ring_buffer.h"
 #include "base/sl_list.h"
 #include "base/utils.h"
+#include "components/component.h"
 #include "game/entity.h"
 #include "game/quad_tree.h"
 
@@ -339,6 +340,13 @@ Rectangle es_get_entity_bounding_box(Entity *entity)
         size.x = MAX(size.x, sprite->size.x);
         size.y = MAX(size.y, sprite->size.y);
     }
+
+    if (es_has_component(entity, AnimationComponent)) {
+        AnimationComponent *anim = es_get_component(entity, AnimationComponent);
+        size.x = MAX(size.x, anim->sprite_size.x);
+        size.y = MAX(size.y, anim->sprite_size.y);
+    }
+
 
     Rectangle result = {entity->position, size};
 

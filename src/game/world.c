@@ -22,6 +22,7 @@
 #include "input.h"
 #include "modifier.h"
 #include "renderer/render_batch.h"
+#include "renderer/render_key.h"
 #include "tilemap.h"
 
 #define WORLD_ARENA_SIZE MB(64)
@@ -740,9 +741,16 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, FrameD
                     tile_rect.size.y += TILE_SIZE;
                 }
 
-                // TODO: draw the top part of the wall in layer above so entities never go above it
+                // TODO: transparency if player is behind wall
+                RenderLayer layer = 0;
+                if (tile->type == TILE_WALL) {
+                    layer = RENDER_LAYER_WALLS;
+                } else {
+                    layer = RENDER_LAYER_FLOORS;
+                }
+
                 rb_push_sprite(rb, frame_arena, texture, tile_rect, 0, 0, RGBA32_WHITE,
-                    assets->texture_shader, RENDER_LAYER_TILEMAP);
+                    assets->texture_shader, layer);
             }
         }
     }

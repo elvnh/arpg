@@ -25,8 +25,9 @@ struct RenderBatch;
 typedef u64 RenderKey;
 
 typedef enum {
-    RENDER_LAYER_TILEMAP,
+    RENDER_LAYER_FLOORS,
     RENDER_LAYER_ENTITIES,
+    RENDER_LAYER_WALLS,
     RENDER_LAYER_PARTICLES,
 } RenderLayer;
 

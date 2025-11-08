@@ -706,6 +706,9 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
     LinearArena *frame_arena, DebugState *debug_state, AnimationTable *animations)
 {
     Rectangle visible_area = camera_get_visible_area(world->camera, frame_data->window_size);
+    visible_area.position = v2_sub(visible_area.position, v2(TILE_SIZE, TILE_SIZE));
+    visible_area.size = v2_add(visible_area.size, v2(TILE_SIZE * 2, TILE_SIZE * 2));
+
     Vector2i min_tile = world_to_tile_coords(rect_bottom_left(visible_area));
     Vector2i max_tile = world_to_tile_coords(rect_top_right(visible_area));
 

@@ -743,10 +743,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
                     tile_rect.size.y += TILE_SIZE;
                 }
 
-                RenderLayer layer = (tile->type == TILE_WALL)
-                    ? RENDER_LAYER_WALLS
-                    : RENDER_LAYER_FLOORS;
-
+                RenderLayer layer = RENDER_LAYER_FLOORS;
                 RGBA32 tile_sprite_color = RGBA32_WHITE;
 
                 if (tile->type == TILE_WALL) {
@@ -769,6 +766,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
 
                         if (entity_is_behind_wall) {
                             tile_sprite_color.a = 0.5f;
+                            layer = RENDER_LAYER_WALLS;
                         }
                     }
                 }

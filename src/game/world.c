@@ -21,6 +21,7 @@
 #include "magic.h"
 #include "input.h"
 #include "modifier.h"
+#include "quad_tree.h"
 #include "renderer/render_batch.h"
 #include "renderer/render_key.h"
 #include "tilemap.h"
@@ -742,15 +743,37 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
                     tile_rect.size.y += TILE_SIZE;
                 }
 
-                // TODO: transparency if player is behind wall
-                RenderLayer layer = 0;
+                RenderLayer layer = (tile->type == TILE_WALL)
+                    ? RENDER_LAYER_WALLS
+                    : RENDER_LAYER_FLOORS;
+
+                RGBA32 tile_sprite_color = RGBA32_WHITE;
+
                 if (tile->type == TILE_WALL) {
-                    layer = RENDER_LAYER_WALLS;
-                } else {
-                    layer = RENDER_LAYER_FLOORS;
+                    EntityIDList entities_near_tile = es_get_entities_in_area(&world->entity_system, tile_rect, frame_arena);
+
+                    for (EntityIDNode *node = list_head(&entities_near_tile); node; node = list_next(node)) {
+                        Entity *entity = es_get_entity(&world->entity_system, node->id);
+
+                        // TODO: only do this if it's the player?
+                        // TODO: only get sprite rect instead of all component bounds?
+
+                        Rectangle entity_bounds = es_get_entity_bounding_box(entity);
+                        Tile *tile_above = tilemap_get_tile(&world->tilemap, (Vector2i){tile_coords.x, tile_coords.y + 1});
+
+                        b32 can_walk_behind_tile = tile_above && (tile_above->type == TILE_FLOOR);
+                        b32 entity_is_behind_wall =
+                            can_walk_behind_tile
+                            && rect_intersects(entity_bounds, tile_rect)
+                            && (entity->position.y > tile_rect.position.y);
+
+                        if (entity_is_behind_wall) {
+                            tile_sprite_color.a = 0.5f;
+                        }
+                    }
                 }
 
-                rb_push_sprite(rb, frame_arena, texture, tile_rect, 0, 0, RGBA32_WHITE,
+                rb_push_sprite(rb, frame_arena, texture, tile_rect, 0, 0, tile_sprite_color,
                     assets->texture_shader, layer);
             }
         }

@@ -284,11 +284,14 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
     ui_pop_container(ui);
 }
 
-/* static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, */
-/*     const FrameData *frame_data) */
-/* { */
-/*     debug_ui(ui, game_state, game_memory, frame_data); */
-/* } */
+static void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
+{
+    ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+
+    ui_button(ui, str_lit("Game UI"));
+
+    ui_pop_container(ui);
+}
 
 static void debug_update(GameState *game_state, const FrameData *frame_data, LinearArena *frame_arena)
 {
@@ -346,18 +349,38 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     };
 
     RenderBatch debug_ui_rb = rb_create(ui_camera, frame_data.window_size, Y_IS_DOWN);
+    RenderBatch game_ui_rb = rb_create(ui_camera, frame_data.window_size, Y_IS_DOWN);
 
-    if (game_state->debug_state.debug_menu_active) {
-        ui_core_begin_frame(&game_state->debug_state.debug_ui);
+    // TODO: create function for these two UI updates
+    // Debug UI
+    {
+        if (game_state->debug_state.debug_menu_active) {
+            ui_core_begin_frame(&game_state->debug_state.debug_ui);
 
-        debug_ui(&game_state->debug_state.debug_ui,
-            game_state, game_memory, &frame_data);
+            debug_ui(&game_state->debug_state.debug_ui,
+                game_state, game_memory, &frame_data);
 
-	UIInteraction dbg_ui_interaction =
-            ui_core_end_frame(&game_state->debug_state.debug_ui, &frame_data, &debug_ui_rb,
+            UIInteraction dbg_ui_interaction =
+                ui_core_end_frame(&game_state->debug_state.debug_ui, &frame_data, &debug_ui_rb,
+                    &game_state->asset_list, platform_code);
+
+            if (dbg_ui_interaction.received_mouse_input) {
+                input_consume_input(&frame_data.input, MOUSE_LEFT);
+            }
+        }
+    }
+
+    // Game UI
+    {
+        ui_core_begin_frame(&game_state->ui);
+
+        game_ui(&game_state->ui, game_state, game_memory, &frame_data);
+
+	UIInteraction game_ui_interaction =
+            ui_core_end_frame(&game_state->ui, &frame_data, &game_ui_rb,
                 &game_state->asset_list, platform_code);
 
-        if (dbg_ui_interaction.received_mouse_input) {
+        if (game_ui_interaction.received_mouse_input) {
             input_consume_input(&frame_data.input, MOUSE_LEFT);
         }
     }
@@ -372,7 +395,11 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     }
 
 
+    rb_sort_entries(&game_ui_rb, &game_memory->temporary_memory);
     rb_sort_entries(&debug_ui_rb, &game_memory->temporary_memory);
+
+    // Debug UI is rendered on top of game UI
+    rb_list_push(rbs, &game_ui_rb, &game_memory->temporary_memory);
     rb_list_push(rbs, &debug_ui_rb, &game_memory->temporary_memory);
 }
 

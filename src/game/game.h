@@ -14,12 +14,12 @@
 
 typedef struct {
     World world;
-    UIState ui;
     AssetList asset_list;
     DebugState debug_state;
     SpellArray spells;
     RNGState rng_state;
     AnimationTable animations;
+    UIState ui;
 } GameState;
 
 typedef struct {

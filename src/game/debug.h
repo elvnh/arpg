@@ -3,7 +3,11 @@
 
 #include <stdio.h>
 
+#include "ui/ui_core.h"
+
 typedef struct DebugState {
+    UIState debug_ui;
+
     b32 debug_menu_active;
     b32 quad_tree_overlay;
     b32 render_colliders;

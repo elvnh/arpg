@@ -127,7 +127,7 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
 
 static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {
-    ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(ui, str_lit("root"), v2(800, 800), UI_SIZE_KIND_ABSOLUTE, 8.0f);
 
     ssize temp_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
     ssize perm_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
@@ -281,16 +281,14 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
         }
     }
 
-    ui_button(ui, str_lit("ABCDEFG"));
-
     ui_pop_container(ui);
 }
 
-static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMemory *game_memory,
-    const FrameData *frame_data)
-{
-    debug_ui(ui, game_state, game_memory, frame_data);
-}
+/* static void game_update_and_render_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, */
+/*     const FrameData *frame_data) */
+/* { */
+/*     debug_ui(ui, game_state, game_memory, frame_data); */
+/* } */
 
 static void debug_update(GameState *game_state, const FrameData *frame_data, LinearArena *frame_arena)
 {
@@ -343,6 +341,27 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
     debug_update(game_state, &frame_data, &game_memory->temporary_memory);
 
+    Camera ui_camera = {
+        .position = {(f32)frame_data.window_size.x / 2.0f, (f32)frame_data.window_size.y / 2.0f}
+    };
+
+    RenderBatch debug_ui_rb = rb_create(ui_camera, frame_data.window_size, Y_IS_DOWN);
+
+    if (game_state->debug_state.debug_menu_active) {
+        ui_core_begin_frame(&game_state->debug_state.debug_ui);
+
+        debug_ui(&game_state->debug_state.debug_ui,
+            game_state, game_memory, &frame_data);
+
+	UIInteraction dbg_ui_interaction =
+            ui_core_end_frame(&game_state->debug_state.debug_ui, &frame_data, &debug_ui_rb,
+                &game_state->asset_list, platform_code);
+
+        if (dbg_ui_interaction.received_mouse_input) {
+            input_consume_input(&frame_data.input, MOUSE_LEFT);
+        }
+    }
+
     frame_data.dt *= game_state->debug_state.timestep_modifier;
 
     game_update(game_state, &frame_data, &game_memory->temporary_memory);
@@ -353,22 +372,8 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     }
 
 
-    if (game_state->debug_state.debug_menu_active) {
-        ui_core_begin_frame(&game_state->ui);
-
-        game_update_and_render_ui(&game_state->ui, game_state, game_memory, &frame_data);
-
-        Camera ui_cam = {
-            .position = {(f32)frame_data.window_size.x / 2.0f, (f32)frame_data.window_size.y / 2.0f}
-        };
-
-	RenderBatch *ui_rb = rb_list_push_new(rbs, ui_cam, frame_data.window_size,
-	    Y_IS_DOWN, &game_memory->temporary_memory);
-
-	ui_core_end_frame(&game_state->ui, &frame_data, ui_rb, &game_state->asset_list, platform_code);
-
-	rb_sort_entries(ui_rb, &game_memory->temporary_memory);
-    }
+    rb_sort_entries(&debug_ui_rb, &game_memory->temporary_memory);
+    rb_list_push(rbs, &debug_ui_rb, &game_memory->temporary_memory);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
@@ -384,5 +389,7 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
         .font = game_state->asset_list.default_font
     };
 
+    // Debug UI
+    ui_core_initialize(&game_state->debug_state.debug_ui, default_ui_style, &game_memory->permanent_memory);
     ui_core_initialize(&game_state->ui, default_ui_style, &game_memory->permanent_memory);
 }

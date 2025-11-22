@@ -127,7 +127,7 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
 
 static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {
-    ui_begin_container(ui, str_lit("root"), v2(800, 800), UI_SIZE_KIND_ABSOLUTE, 8.0f);
+    ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     ssize temp_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
     ssize perm_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
@@ -364,7 +364,8 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
                 ui_core_end_frame(&game_state->debug_state.debug_ui, &frame_data, &debug_ui_rb,
                     &game_state->asset_list, platform_code);
 
-            if (dbg_ui_interaction.received_mouse_input) {
+            // TODO: shouldn't click_began_inside_ui be counted as receiving mouse input?
+            if (dbg_ui_interaction.received_mouse_input || dbg_ui_interaction.click_began_inside_ui) {
                 input_consume_input(&frame_data.input, MOUSE_LEFT);
             }
         }
@@ -380,7 +381,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
             ui_core_end_frame(&game_state->ui, &frame_data, &game_ui_rb,
                 &game_state->asset_list, platform_code);
 
-        if (game_ui_interaction.received_mouse_input) {
+        if (game_ui_interaction.received_mouse_input || game_ui_interaction.click_began_inside_ui) {
             input_consume_input(&frame_data.input, MOUSE_LEFT);
         }
     }

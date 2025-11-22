@@ -125,13 +125,20 @@ void ui_end_list(UIState *ui)
 
 void ui_selectable(UIState *ui, String text)
 {
-    Widget *container = ui_core_colored_box(ui, v2(1.0f, 0.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID);
-    container->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
-    container->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+    Widget *list_widget = ui_core_get_top_container(ui);
+    ASSERT(list_widget);
 
-    // TODO: combine the hash of selectable text with hash of listbox text
+    // NOTE: the hash of the selectable is a combination of the hash of the
+    // list that contains it and the text of the selectable
+    u64 hash = list_widget->id ^ ui_core_hash_string(text);
 
-    ui_core_push_container(ui, container);
+    Widget *selectable = ui_core_colored_box(ui, v2(1.0f, 0.0f), RGBA32_BLUE, hash);
+    selectable->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
+    selectable->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
+
+    widget_add_flag(selectable, WIDGET_CLICKABLE);
+
+    ui_core_push_container(ui, selectable);
     ui_text(ui, text);
     ui_core_pop_container(ui);
 }

@@ -74,6 +74,7 @@ UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, struct
 void ui_core_set_style(UIState *ui, UIStyle style);
 void ui_core_push_container(UIState *ui, Widget *widget);
 void ui_core_pop_container(UIState *ui);
+Widget *ui_core_get_top_container(UIState *ui);
 Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id);
 Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id);
 WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widget);

@@ -213,22 +213,29 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
 
 }
 
-static void calculate_widget_interactions(UIState *ui, Widget *widget, const FrameData *frame_data,
+typedef enum {
+    CALC_INTERACTION_STOP,
+    CALC_INTERACTION_KEEP_GOING,
+} CalculateInteractionResult;
+
+static CalculateInteractionResult
+calculate_widget_interactions(UIState *ui, Widget *widget, const FrameData *frame_data,
     Rectangle parent_bounds, YDirection y_dir, UIInteraction *interactions)
 {
     Rectangle clipped_bounds = widget_get_clipped_bounding_box(widget, parent_bounds);
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        calculate_widget_interactions(ui, child, frame_data, clipped_bounds, y_dir, interactions);
+        CalculateInteractionResult child_result =
+            calculate_widget_interactions(ui, child, frame_data, clipped_bounds, y_dir, interactions);
 
         // If child widget is being interacted with, don't consider input further up the tree
-        if (widget_is_hot(ui, child)) {
-            return;
+        if (child_result == CALC_INTERACTION_STOP) {
+            return CALC_INTERACTION_STOP;
         }
     }
 
     if (widget->id == UI_NULL_WIDGET_ID) {
-        return;
+        return CALC_INTERACTION_KEEP_GOING;
     }
 
     Vector2 mouse_pos = input_get_mouse_pos(&frame_data->input, y_dir, frame_data->window_size);
@@ -281,6 +288,12 @@ static void calculate_widget_interactions(UIState *ui, Widget *widget, const Fra
     if (click_began_inside) {
 	interactions->click_began_inside_ui = true;
     }
+
+    if (widget_is_hot(ui, widget) || widget_is_active(ui, widget)) {
+        return CALC_INTERACTION_STOP;
+    }
+
+    return CALC_INTERACTION_KEEP_GOING;
 }
 
 static LinearArena *get_frame_arena(UIState *ui)
@@ -384,7 +397,7 @@ UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, Render
     return result;
 }
 
-static Widget *get_top_container(UIState *ui)
+Widget *ui_core_get_top_container(UIState *ui)
 {
     WidgetContainer *container = list_head(&ui->container_stack);
 
@@ -404,7 +417,7 @@ static void ui_core_push_widget(UIState *ui, Widget *widget)
         ui->root_widget = widget;
     }
 
-    Widget *top_container = get_top_container(ui);
+    Widget *top_container = ui_core_get_top_container(ui);
 
     widget->layout_direction = ui->current_layout_axis;
     ui->current_layout_axis = DEFAULT_LAYOUT_AXIS;

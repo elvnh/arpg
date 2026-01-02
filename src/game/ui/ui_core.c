@@ -388,9 +388,11 @@ UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, Render
     UIInteraction result = {0};
 
     Rectangle window_rect = {{0, 0}, v2i_to_v2(frame_data->window_size)};
+
     if (ui->root_widget) {
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
         calculate_widget_interactions(ui, ui->root_widget, frame_data, window_rect, rb->y_direction, &result);
+
         render_widget(ui, ui->root_widget, rb, assets, 0, window_rect);
     }
 
@@ -453,6 +455,7 @@ void ui_core_push_container(UIState *ui, Widget *widget)
 {
     WidgetContainer *container = la_allocate_item(get_frame_arena(ui), WidgetContainer);
     container->widget = widget;
+
     sl_list_push_front(&ui->container_stack, container);
 }
 

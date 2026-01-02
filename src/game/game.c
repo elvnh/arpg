@@ -127,7 +127,7 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
 
 static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {
-    ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     ssize temp_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
     ssize perm_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);

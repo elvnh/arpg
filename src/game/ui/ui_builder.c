@@ -143,9 +143,9 @@ void ui_selectable(UIState *ui, String text)
     ui_core_pop_container(ui);
 }
 
-WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, UISizeKind size_kind, f32 child_padding)
+WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, RGBA32 color, UISizeKind size_kind, f32 child_padding)
 {
-    Widget *widget = ui_core_create_widget(ui, size, ui_core_hash_string(title));
+    Widget *widget = ui_core_colored_box(ui, size, color, ui_core_hash_string(title));
 
     widget->child_padding = child_padding;
     widget->semantic_size[AXIS_HORIZONTAL].kind = size_kind;

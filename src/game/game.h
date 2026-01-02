@@ -12,7 +12,10 @@
 #include "debug.h"
 #include "animation.h"
 
-// TODO: should asset list be a global variable?
+/*
+  TODO:
+  - Should asset list be a global variable?
+ */
 
 typedef struct {
     World world;

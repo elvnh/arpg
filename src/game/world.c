@@ -514,7 +514,6 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
         return;
     }
 
-
     Entity *player = world_get_player_entity(world);
     ASSERT(player);
 
@@ -798,15 +797,21 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         particle_spawner_initialize(spawner, config);
 
 #endif
+
+#if 0
         SpriteComponent *sprite_comp = es_add_component(entity, SpriteComponent);
 	Sprite *sprite = &sprite_comp->sprite;
 
         sprite->texture = asset_list->player_idle1;
         sprite->size = v2(32, 32);
+	sprite->rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
+
+#else
 
         AnimationComponent *anim = es_add_component(entity, AnimationComponent);
         anim->state_animations[ENTITY_STATE_IDLE].animation_id = ANIM_PLAYER_IDLE;
         anim->state_animations[ENTITY_STATE_WALKING].animation_id = ANIM_PLAYER_WALKING;
+#endif
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
         set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);

@@ -96,8 +96,7 @@ void cast_single_spell(struct World *world, const Spell *spell, struct Entity *c
     if (spell_has_prop(spell, SPELL_PROP_SPRITE)) {
 	SpriteComponent *sprite_comp = es_get_or_add_component(spell_entity, SpriteComponent);
 
-	sprite_comp->sprite.texture = spell->sprite.texture;
-	sprite_comp->sprite.size = spell->sprite.size;
+	sprite_comp->sprite = spell->sprite;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {

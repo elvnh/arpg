@@ -27,10 +27,7 @@ typedef struct {
     SpellProperties properties;
 
     /* Flag specific fields */
-    struct {
-	TextureHandle texture;
-	Vector2 sprite_size;
-    } sprite;
+    Sprite sprite;
 
     struct {
 	// TODO: pack base_damage and penetration_values into struct

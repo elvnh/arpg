@@ -20,7 +20,8 @@ static Spell spell_fireball(const AssetList *asset_list)
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION;
 
     spell.sprite.texture = asset_list->fireball_texture;
-    spell.sprite.sprite_size = v2(32, 32);
+    spell.sprite.size = v2(32, 32);
+    spell.sprite.rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
 
     spell.projectile.projectile_speed = 100.0f;
     spell.projectile.collider_size = v2(32, 32);
@@ -45,7 +46,7 @@ static Spell spell_spark(const AssetList *asset_list)
 	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME;
 
     spell.sprite.texture = asset_list->spark_texture;
-    spell.sprite.sprite_size = v2(32, 32);
+    spell.sprite.size = v2(32, 32);
 
     spell.projectile.projectile_speed = 500.0f;
     spell.projectile.collider_size = v2(32, 32);
@@ -93,9 +94,10 @@ void cast_single_spell(struct World *world, const Spell *spell, struct Entity *c
     ColliderComponent *spell_collider = es_get_or_add_component(spell_entity, ColliderComponent);
 
     if (spell_has_prop(spell, SPELL_PROP_SPRITE)) {
-	SpriteComponent *sprite = es_get_or_add_component(spell_entity, SpriteComponent);
-	sprite->texture = spell->sprite.texture;
-	sprite->size = spell->sprite.sprite_size;
+	SpriteComponent *sprite_comp = es_get_or_add_component(spell_entity, SpriteComponent);
+
+	sprite_comp->sprite.texture = spell->sprite.texture;
+	sprite_comp->sprite.size = spell->sprite.size;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {

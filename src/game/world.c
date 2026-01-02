@@ -134,13 +134,16 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
         AnimationInstance *anim_instance = &anim_component->state_animations[entity->state];
 	anim_render_instance(animations, anim_instance, entity, rb, assets, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
-        SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
+        SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
+	Sprite *sprite = &sprite_comp->sprite;
         // TODO: how to handle if entity has both sprite and animation component?
         // TODO: UI should be drawn on separate layer
 
+	SpriteModifiers sprite_mods = sprite_get_modifiers(entity, sprite->rotation_behaviour);
+
         Rectangle sprite_rect = { entity->position, sprite->size };
-        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, 0, RECT_FLIP_NONE, RGBA32_WHITE, assets->texture_shader,
-            RENDER_LAYER_ENTITIES);
+        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods.rotation, sprite_mods.flip,
+	    RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
@@ -530,7 +533,7 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
             Vector2 mouse_dir = v2_sub(mouse_pos, player->position);
             mouse_dir = v2_norm(mouse_dir);
 
-            magic_cast_spell(world, SPELL_SPARK, player, player->position, mouse_dir);
+            magic_cast_spell(world, SPELL_FIREBALL, player, player->position, mouse_dir);
         }
 
         camera_set_target(&world->camera, target);
@@ -795,7 +798,9 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         particle_spawner_initialize(spawner, config);
 
 #endif
-        SpriteComponent *sprite = es_add_component(entity, SpriteComponent);
+        SpriteComponent *sprite_comp = es_add_component(entity, SpriteComponent);
+	Sprite *sprite = &sprite_comp->sprite;
+
         sprite->texture = asset_list->player_idle1;
         sprite->size = v2(32, 32);
 

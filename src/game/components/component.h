@@ -47,8 +47,7 @@ typedef struct {
 } HealthComponent;
 
 typedef struct {
-    TextureHandle texture;
-    Vector2 size;
+    Sprite sprite;
 } SpriteComponent;
 
 typedef struct {

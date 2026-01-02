@@ -336,7 +336,9 @@ Rectangle es_get_entity_bounding_box(Entity *entity)
     }
 
     if (es_has_component(entity, SpriteComponent)) {
-        SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
+        SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
+	Sprite *sprite = &sprite_comp->sprite;
+
         size.x = MAX(size.x, sprite->size.x);
         size.y = MAX(size.y, sprite->size.y);
     }

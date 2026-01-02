@@ -3,6 +3,7 @@
 
 #include "base/vector.h"
 #include "asset.h"
+#include "sprite.h"
 
 #define MAX_ANIMATION_FRAMES 8
 
@@ -20,23 +21,13 @@ typedef enum {
 } AnimationID;
 
 typedef struct {
-    TextureHandle texture;
+    Sprite sprite;
     f32 duration;
 } AnimationFrame;
-
-// TODO: move elsewhere
-typedef enum {
-    SPRITE_ROTATE_NONE,
-    SPRITE_ROTATE_BASED_ON_DIR,
-    SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR,
-} SpriteRotationBehaviour;
 
 typedef struct {
     AnimationFrame frames[MAX_ANIMATION_FRAMES];
     s32 frame_count;
-
-    SpriteRotationBehaviour rotation_behaviour;
-    Vector2 sprite_size;
 
     b32 is_repeating;
     AnimationID transition_to_animation_on_end;

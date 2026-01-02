@@ -80,4 +80,16 @@ static inline void item_add_modifier(Item *item, Modifier mod)
     item->modifiers.modifiers[index] = mod;
 }
 
+static inline String equipment_slot_spelling(EquipmentSlot slot)
+{
+    switch (slot) {
+	case EQUIP_SLOT_HEAD:      return str_lit("Head");
+
+	INVALID_DEFAULT_CASE;
+    }
+
+    ASSERT(0);
+    return (String){0};
+}
+
 #endif //ITEM_H

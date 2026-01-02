@@ -8,8 +8,8 @@ static Animation animation_player_idle(const AssetList *asset_table)
 {
     Animation result = {0};
 
-    AnimationFrame frame_1 = {asset_table->player_idle1, 0.75f};
-    AnimationFrame frame_2 = {asset_table->player_idle2, 0.75f};
+    AnimationFrame frame_1 = {asset_table->player_idle1, 2.75f};
+    AnimationFrame frame_2 = {asset_table->player_idle2, 2.75f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -68,12 +68,17 @@ void anim_update_instance(AnimationTable *anim_table, AnimationInstance *anim_in
 
         anim_instance->current_frame += 1;
 
-        if ((anim_instance->current_frame == anim->frame_count) && anim->is_repeating) {
-	    // TODO: transition to next
-            anim_instance->current_frame = 0;
+	ASSERT(anim_instance->current_frame <= anim->frame_count);
+
+        if (anim_instance->current_frame == anim->frame_count) {
+	    if (anim->is_repeating) {
+		anim_instance->current_frame = 0;
+	    } else if (anim->transition_to_animation_on_end != ANIM_NULL) {
+		anim_transition_to_animation(anim_instance, anim->transition_to_animation_on_end);
+	    }
         }
 
-        // Non-repeating animations should stay on the last frame
+        // Animations without special behaviour on animation end  should stay on the last frame
         anim_instance->current_frame = MIN(anim_instance->current_frame, anim->frame_count - 1);
     }
 
@@ -99,8 +104,16 @@ void anim_render_instance(AnimationTable *anim_table, AnimationInstance *anim_in
 	}
     }
 
-
     Rectangle sprite_rect = { owning_entity->position, anim->sprite_size };
     rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, rotation, flip,
 	RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
+}
+
+void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim)
+{
+    ASSERT(next_anim != ANIM_NULL);
+
+    anim_instance->animation_id = next_anim;
+    anim_instance->current_frame = 0;
+    anim_instance->current_frame_elapsed_time = 0;
 }

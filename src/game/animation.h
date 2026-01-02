@@ -58,5 +58,6 @@ void anim_update_instance(AnimationTable *anim_table, struct AnimationInstance *
 void anim_render_instance(AnimationTable *anim_table, struct AnimationInstance *anim_instance,
     struct Entity *owning_entity, struct RenderBatch *rb, const struct AssetList *assets,
     struct LinearArena *scratch);
+void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim);
 
 #endif //ANIMATION_H

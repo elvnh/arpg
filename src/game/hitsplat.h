@@ -22,7 +22,7 @@ typedef struct {
 
 void hitsplats_update(struct World *world, const struct FrameData *frame_data);
 void hitsplats_render(struct World *world, struct RenderBatch *rb, const struct AssetList *assets,
-    const struct FrameData *frame_data, struct LinearArena *frame_arena);
+    struct LinearArena *frame_arena);
 void hitsplat_create(struct World *world, Vector2 position, DamageInstance damage);
 
 #endif //HITSPLAT_H

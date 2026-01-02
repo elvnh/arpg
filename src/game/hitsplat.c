@@ -22,8 +22,7 @@ void hitsplats_update(World *world, const FrameData *frame_data)
     }
 }
 
-void hitsplats_render(World *world, RenderBatch *rb, const AssetList *assets, const FrameData *frame_data,
-    LinearArena *frame_arena)
+void hitsplats_render(World *world, RenderBatch *rb, const AssetList *assets, LinearArena *frame_arena)
 {
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
         Hitsplat *hitsplat = &world->active_hitsplats[i];

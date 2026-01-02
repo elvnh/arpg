@@ -15,6 +15,30 @@ typedef enum {
     DMG_CALC_PHASE_COUNT,
 } DamageCalculationPhase;
 
+static DamageValue *get_damage_reference_of_type(DamageTypes *damages, DamageKind type)
+{
+    ssize index = (ssize)type;
+    ASSERT((index >= 0) && (index < DMG_KIND_COUNT));
+
+    DamageValue *result = &damages->values[index];
+
+    return result;
+}
+
+static DamageValue calculate_damage_of_type_after_resistance(DamageInstance damage,
+    DamageTypes resistances, DamageKind dmg_type)
+{
+    DamageValue damage_amount = get_damage_value_of_type(damage.types, dmg_type);
+    DamageValue resistance = get_damage_value_of_type(resistances, dmg_type);
+
+    resistance -= get_damage_value_of_type(damage.penetration, dmg_type);
+
+    // TODO: round up or down?
+    DamageValue result = (DamageValue)((f64)damage_amount * (1.0 - (f64)resistance / 100.0));
+
+    return result;
+}
+
 static DamageTypes damage_types_add(DamageTypes lhs, DamageTypes rhs)
 {
     DamageTypes result = lhs;
@@ -85,7 +109,7 @@ static DamageTypes apply_damage_value_status_effects(DamageTypes value, struct E
     if (status_effects) {
         for (s32 i = 0; i < status_effects->effect_count; ++i) {
             StatusEffect *effect = &status_effects->effects[i];
-            ASSERT(effect->expiry_time >= 0.0f);
+            ASSERT(effect->time_remaining >= 0.0f);
 
             result = apply_damage_value_modifier(result, effect->modifier, interesting_mods, phase);
         }
@@ -156,5 +180,64 @@ DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, str
     result = apply_damage_value_status_effects(result, entity, MODIFIER_RESISTANCE, DMG_CALC_PHASE_ADDITIVE);
     result = apply_damage_value_equipment_modifiers(result, entity, MODIFIER_RESISTANCE, DMG_CALC_PHASE_ADDITIVE, item_mgr);
 
+    return result;
+}
+
+DamageTypes calculate_damage_dealt_from_damage_range(DamageRange damage_range)
+{
+    // TODO: make caster stats influence damage roll
+    DamageTypes result = {0};
+
+    for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
+	DamageValue low = get_damage_value_of_type(damage_range.low_roll, type);
+	DamageValue high = get_damage_value_of_type(damage_range.high_roll, type);
+
+	DamageValue roll = rng_s64(low, high);
+	set_damage_value_of_type(&result, type, roll);
+    }
+
+    return result;
+}
+
+void set_damage_range_for_type(DamageRange *range, DamageKind type,
+    DamageValue low, DamageValue high)
+{
+    set_damage_value_of_type(&range->low_roll, type, low);
+    set_damage_value_of_type(&range->high_roll, type, high);
+}
+
+void set_damage_value_of_type(DamageTypes *damages, DamageKind kind, DamageValue new_value)
+{
+    DamageValue *old_value = get_damage_reference_of_type(damages, kind);
+    *old_value = new_value;
+}
+
+DamageInstance calculate_damage_received(DamageTypes resistances, DamageInstance damage)
+{
+    DamageInstance result = {0};
+
+    for (DamageKind dmg_kind = 0; dmg_kind < DMG_KIND_COUNT; ++dmg_kind) {
+        result.types.values[dmg_kind] =
+	    calculate_damage_of_type_after_resistance(damage, resistances, dmg_kind);
+    }
+
+    return result;
+}
+
+
+DamageValue calculate_damage_sum(DamageTypes damage)
+{
+    DamageValue result = 0;
+
+    for (DamageKind kind = 0; kind < DMG_KIND_COUNT; ++kind) {
+	result += get_damage_value_of_type(damage, kind);
+    }
+
+    return result;
+}
+
+DamageValue get_damage_value_of_type(DamageTypes damages, DamageKind type)
+{
+    DamageValue result = *get_damage_reference_of_type(&damages, type);
     return result;
 }

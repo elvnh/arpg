@@ -771,7 +771,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
         entity_render(entity, rb, assets, frame_arena, debug_state, world, frame_data, animations);
     }
 
-    hitsplats_render(world, rb, assets, frame_data, frame_arena);
+    hitsplats_render(world, rb, assets, frame_arena);
 }
 
 void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena)

@@ -34,6 +34,7 @@
 #include "input.h"
 #include "collision.h"
 #include "item.h"
+#include "item_manager.h"
 #include "renderer/render_batch.h"
 
 static void game_update(GameState *game_state, const FrameData *frame_data, LinearArena *frame_arena)
@@ -286,26 +287,64 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
 static void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {
+    Entity *player = world_get_player_entity(&game_state->world);
+    ASSERT(player);
+
     ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     // inventory
-    {
+    ui_begin_container(ui, str_lit("inventory_container"), V2_ZERO, RGBA32_GREEN, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+
 	ui_text(ui, str_lit("Inventory"));
 
 	// TODO: allow setting min/max size
 	ui_begin_list(ui, str_lit("player_inventory")); {
-	    Entity *player = world_get_player_entity(&game_state->world);
 	    InventoryComponent *inv = es_get_component(player, InventoryComponent);
+	    EquipmentComponent *eq = es_get_component(player, EquipmentComponent);
+
 	    ASSERT(inv);
+	    ASSERT(eq);
 
 	    for (ssize i = 0; i < inv->inventory.item_count; ++i) {
 		Item *item = item_mgr_get_item(&game_state->world.item_manager, inv->inventory.items[i]);
+		ItemID item_id = inv->inventory.items[i];
 		ASSERT(item);
 
-		ui_selectable(ui, item->name);
+		if (ui_selectable(ui, item->name).clicked) {
+		    equip_item_from_inventory(&game_state->world.item_manager, &eq->equipment,
+			&inv->inventory, item_id);
+		}
 	    }
 	} ui_end_list(ui);
-    }
+    } ui_pop_container(ui);
+
+    ui_core_same_line(ui);
+
+    // equipment
+    ui_begin_container(ui, str_lit("equipment_container"), V2_ZERO, RGBA32_GREEN, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+	ui_text(ui, str_lit("Equipment"));
+
+	EquipmentComponent *eq = es_get_component(player, EquipmentComponent);
+	InventoryComponent *inv = es_get_component(player, InventoryComponent);
+	ASSERT(eq);
+	ASSERT(inv);
+
+	ui_text(ui, str_lit("Head:"));
+	Item *head_item = item_mgr_get_item(&game_state->world.item_manager, eq->equipment.head);
+	ui_core_same_line(ui);
+
+	if (head_item) {
+	    if (ui_button(ui, head_item->name).clicked) {
+		bool unequip_success = unequip_item_and_put_in_inventory(
+		    &eq->equipment, &inv->inventory, EQUIP_SLOT_HEAD);
+
+		ASSERT(unequip_success);
+	    }
+	} else {
+	    ui_button(ui, str_lit("(empty)"));
+	}
+    } ui_pop_container(ui);
+
 
     ui_pop_container(ui);
 }

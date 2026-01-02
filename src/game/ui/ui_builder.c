@@ -123,7 +123,7 @@ void ui_end_list(UIState *ui)
     ui_core_pop_container(ui);
 }
 
-void ui_selectable(UIState *ui, String text)
+WidgetInteraction ui_selectable(UIState *ui, String text)
 {
     Widget *list_widget = ui_core_get_top_container(ui);
     ASSERT(list_widget);
@@ -141,6 +141,9 @@ void ui_selectable(UIState *ui, String text)
     ui_core_push_container(ui, selectable);
     ui_text(ui, text);
     ui_core_pop_container(ui);
+
+    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, selectable);
+    return prev_interaction;
 }
 
 WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, RGBA32 color, UISizeKind size_kind, f32 child_padding)

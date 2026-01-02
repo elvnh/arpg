@@ -324,7 +324,7 @@ static void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory,
 
     RGBA32 color = rgba32(0, 1, 0, 0.5f);
 
-    // inventory
+    // Inventory
     ui_begin_container(ui, str_lit("inventory_container"), V2_ZERO, color, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 
 	ui_text(ui, str_lit("Inventory"));
@@ -394,6 +394,7 @@ static void debug_update(GameState *game_state, const FrameData *frame_data, Lin
 
     f32 speed_modifier = game_state->debug_state.timestep_modifier;
     f32 speed_modifier_step = 0.25;
+
     if (input_is_key_pressed(&frame_data->input, KEY_UP)) {
         speed_modifier += speed_modifier_step;
     } else if (input_is_key_pressed(&frame_data->input, KEY_DOWN)) {
@@ -412,7 +413,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     rng_set_global_state(&game_state->rng_state);
     magic_set_global_spell_array(&game_state->spells);
 
-    // Spells are re-initialized every frame so that the spells can be changed during runtime.
+    // NOTE: Spells are re-initialized every frame so that the spells can be changed during runtime.
     magic_initialize(&game_state->spells, &game_state->asset_list);
     anim_initialize(&game_state->animations, &game_state->asset_list);
 #endif

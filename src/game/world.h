@@ -9,21 +9,17 @@
 #include "collision.h"
 #include "input.h"
 #include "item_manager.h"
+#include "hitsplat.h"
+
+/*
+  TODO:
+  - Should a World be a single level or something more persistent?
+ */
 
 struct Input;
 struct DebugState;
 struct RenderBatch;
 struct AssetList;
-
-// TODO: make size and velocity depend on damage number
-// TODO: make color depend on elemental types present
-typedef struct {
-    DamageInstance damage;
-    Vector2 position;
-    Vector2 velocity;
-    f32 timer;
-    f32 lifetime;
-} Hitsplat;
 
 typedef struct World {
     LinearArena world_arena;

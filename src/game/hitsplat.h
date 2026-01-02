@@ -1,0 +1,28 @@
+#ifndef HITSPLAT_H
+#define HITSPLAT_H
+
+#include "base/typedefs.h"
+#include "base/vector.h"
+#include "damage.h"
+
+struct World;
+struct LinearArena;
+struct RenderBatch;
+struct FrameData;
+struct AssetList;
+
+// TODO: make size and velocity depend on damage number
+typedef struct {
+    DamageInstance damage;
+    Vector2 position;
+    Vector2 velocity;
+    f32 timer;
+    f32 lifetime;
+} Hitsplat;
+
+void hitsplats_update(struct World *world, const struct FrameData *frame_data);
+void hitsplats_render(struct World *world, struct RenderBatch *rb, const struct AssetList *assets,
+    const struct FrameData *frame_data, struct LinearArena *frame_arena);
+void hitsplat_create(struct World *world, Vector2 position, DamageInstance damage);
+
+#endif //HITSPLAT_H

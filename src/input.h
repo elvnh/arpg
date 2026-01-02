@@ -46,7 +46,7 @@ typedef struct Input {
     Vector2 mouse_click_position;
 } Input;
 
-typedef struct {
+typedef struct FrameData {
     f32 dt;
     Input input;
     Vector2i window_size;

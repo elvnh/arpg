@@ -8,7 +8,7 @@
 #define la_allocate_item(arena, type) la_allocate_array(arena, type, 1)
 #define la_copy_array(arena, ptr, count) la_copy_allocation((arena), (ptr), (count), sizeof(*(ptr)), ALIGNOF(*(ptr)))
 
-typedef struct {
+typedef struct LinearArena {
     Allocator           parent;
     struct ArenaBlock  *first_block;
     struct ArenaBlock  *top_block;

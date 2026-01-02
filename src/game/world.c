@@ -655,23 +655,6 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
         player->velocity = new_velocity;
     }
 
-    if (input_is_key_pressed(&frame_data->input, KEY_G)) {
-        InventoryComponent *inv = es_get_component(player, InventoryComponent);
-        EquipmentComponent *equipment = es_get_component(player, EquipmentComponent);
-
-        if (inv && equipment) {
-            ItemID item_id = inventory_get_item_at_index(&inv->inventory, 0);
-
-            EquipResult equip_result = try_equip_item_in_slot(&world->item_manager, &equipment->equipment,
-                item_id, EQUIP_SLOT_HEAD);
-            ASSERT(equip_result.success);
-
-            if (equip_result.success) {
-                inventory_remove_item_at_index(&inv->inventory, 0);
-            }
-        }
-    }
-
     handle_collision_and_movement(world, frame_data->dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?

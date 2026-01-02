@@ -50,7 +50,7 @@ static ItemID exchange_item_ids(ItemID *old, ItemID new_value)
     return old_value;
 }
 
-EquipResult try_equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID item_id, EquipmentSlot slot)
+static EquipResult try_equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID item_id, EquipmentSlot slot)
 {
     EquipResult result = {0};
 
@@ -61,4 +61,23 @@ EquipResult try_equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID 
     }
 
     return result;
+}
+
+bool equip_item_from_inventory_in_slot(ItemManager *item_mgr, Equipment *eq, Inventory *inv, ItemID item,
+    EquipmentSlot slot)
+{
+    ASSERT(inventory_contains_item(inv, item));
+
+    EquipResult equip_result = try_equip_item_in_slot(item_mgr, eq, item, slot);
+
+    if (equip_result.success) {
+	if (!item_id_is_null(equip_result.replaced_item)) {
+	    // TODO: how to handle if we can't add the item?
+	    inventory_add_item(inv, equip_result.replaced_item);
+	}
+
+	inventory_remove_item(inv, item);
+    }
+
+    return equip_result.success;
 }

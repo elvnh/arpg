@@ -48,7 +48,6 @@ static Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
-
 static b32 entity_should_die(Entity *entity)
 {
     if (es_has_component(entity, HealthComponent)) {
@@ -79,36 +78,6 @@ static b32 entity_should_die(Entity *entity)
     return false;
 }
 
-static void animation_instance_update(AnimationInstance *anim_instance, AnimationTable *animations, f32 dt)
-{
-    Animation *anim = anim_get_by_id(animations, anim_instance->animation_id);
-    ASSERT(anim_instance->current_frame < anim->frame_count);
-
-    AnimationFrame curr_frame = anim->frames[anim_instance->current_frame];
-
-    anim_instance->current_frame_elapsed_time += dt;
-
-    if (anim_instance->current_frame_elapsed_time >= curr_frame.duration) {
-        anim_instance->current_frame_elapsed_time = 0.0f;
-
-        anim_instance->current_frame += 1;
-
-        if ((anim_instance->current_frame == anim->frame_count) && anim->is_repeating) {
-            anim_instance->current_frame = 0;
-        }
-
-        // Non-repeating animations should stay on the last frame
-        anim_instance->current_frame = MIN(anim_instance->current_frame, anim->frame_count - 1);
-    }
-}
-
-static void component_update_animation(Entity *entity, AnimationComponent *anim_component,
-    AnimationTable *animations, f32 dt)
-{
-    // TODO: this function is unnecessary
-    animation_instance_update(&anim_component->state_animations[entity->state], animations, dt);
-}
-
 static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *animations)
 {
     if (es_has_component(entity, ParticleSpawner)) {
@@ -128,7 +97,7 @@ static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *
 
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
-        component_update_animation(entity, anim_component, animations, dt);
+	anim_update_instance(animations, &anim_component->state_animations[entity->state], dt);
     }
 
     if (entity_should_die(entity)) {
@@ -161,27 +130,9 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
 {
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
+	// TODO: move into separate function
         AnimationInstance *anim_instance = &anim_component->state_animations[entity->state];
-        Animation *anim = anim_get_by_id(animations, anim_instance->animation_id);
-        AnimationFrame current_frame = anim->frames[anim_instance->current_frame];
-
-        f32 rotation = 0.0f;
-        f32 dir_angle = (f32)atan2(entity->direction.y, entity->direction.x);
-        RectangleFlip flip = RECT_FLIP_NONE;
-
-        if (anim_component->rotation_behaviour == SPRITE_ROTATE_BASED_ON_DIR) {
-            rotation = dir_angle;
-        } else if (anim_component->rotation_behaviour == SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR) {
-            b32 should_flip = (dir_angle > PI_2) || (dir_angle < -PI_2);
-
-            if (should_flip) {
-                flip = RECT_FLIP_HORIZONTALLY;
-            }
-        }
-
-        Rectangle sprite_rect = { entity->position, anim_component->sprite_size };
-        rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, rotation, flip,
-            RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
+	anim_render_instance(animations, anim_instance, entity, rb, assets, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite = es_get_component(entity, SpriteComponent);
         // TODO: how to handle if entity has both sprite and animation component?
@@ -851,8 +802,6 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         AnimationComponent *anim = es_add_component(entity, AnimationComponent);
         anim->state_animations[ENTITY_STATE_IDLE].animation_id = ANIM_PLAYER_IDLE;
         anim->state_animations[ENTITY_STATE_WALKING].animation_id = ANIM_PLAYER_WALKING;
-        anim->rotation_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
-        anim->sprite_size = v2(32, 64);
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
         set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);

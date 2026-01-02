@@ -1,5 +1,8 @@
 #include "animation.h"
 #include "base/utils.h"
+#include "components/component.h"
+#include "entity.h"
+#include "renderer/render_batch.h"
 
 static Animation animation_player_idle(const AssetList *asset_table)
 {
@@ -11,6 +14,9 @@ static Animation animation_player_idle(const AssetList *asset_table)
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
     result.is_repeating = true;
+
+    result.rotation_behaviour = SPRITE_ROTATE_NONE;
+    result.sprite_size = v2(32, 64);
 
     return result;
 }
@@ -25,6 +31,9 @@ static Animation animation_player_walking(const AssetList *asset_table)
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
     result.is_repeating = true;
+
+    result.rotation_behaviour = SPRITE_ROTATE_NONE;
+    result.sprite_size = v2(32, 64);
 
     return result;
 }
@@ -43,4 +52,55 @@ Animation *anim_get_by_id(AnimationTable *table, AnimationID id)
     Animation *result = &table->animations[id];
 
     return result;
+}
+
+void anim_update_instance(AnimationTable *anim_table, AnimationInstance *anim_instance, f32 dt)
+{
+    Animation *anim = anim_get_by_id(anim_table, anim_instance->animation_id);
+    ASSERT(anim_instance->current_frame < anim->frame_count);
+
+    AnimationFrame curr_frame = anim->frames[anim_instance->current_frame];
+
+    anim_instance->current_frame_elapsed_time += dt;
+
+    if (anim_instance->current_frame_elapsed_time >= curr_frame.duration) {
+        anim_instance->current_frame_elapsed_time = 0.0f;
+
+        anim_instance->current_frame += 1;
+
+        if ((anim_instance->current_frame == anim->frame_count) && anim->is_repeating) {
+	    // TODO: transition to next
+            anim_instance->current_frame = 0;
+        }
+
+        // Non-repeating animations should stay on the last frame
+        anim_instance->current_frame = MIN(anim_instance->current_frame, anim->frame_count - 1);
+    }
+
+}
+
+void anim_render_instance(AnimationTable *anim_table, AnimationInstance *anim_instance,
+    Entity *owning_entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
+{
+    Animation *anim = anim_get_by_id(anim_table, anim_instance->animation_id);
+    AnimationFrame current_frame = anim->frames[anim_instance->current_frame];
+
+    f32 rotation = 0.0f;
+    f32 dir_angle = (f32)atan2(owning_entity->direction.y, owning_entity->direction.x);
+    RectangleFlip flip = RECT_FLIP_NONE;
+
+    if (anim->rotation_behaviour == SPRITE_ROTATE_BASED_ON_DIR) {
+	rotation = dir_angle;
+    } else if (anim->rotation_behaviour == SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR) {
+	b32 should_flip = (dir_angle > PI_2) || (dir_angle < -PI_2);
+
+	if (should_flip) {
+	    flip = RECT_FLIP_HORIZONTALLY;
+	}
+    }
+
+
+    Rectangle sprite_rect = { owning_entity->position, anim->sprite_size };
+    rb_push_sprite(rb, scratch, current_frame.texture, sprite_rect, rotation, flip,
+	RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
 }

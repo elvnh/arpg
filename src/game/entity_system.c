@@ -342,9 +342,14 @@ Rectangle es_get_entity_bounding_box(Entity *entity)
     }
 
     if (es_has_component(entity, AnimationComponent)) {
+	// TODO: reactivate
+#if 0
         AnimationComponent *anim = es_get_component(entity, AnimationComponent);
-        size.x = MAX(size.x, anim->sprite_size.x);
-        size.y = MAX(size.y, anim->sprite_size.y);
+	AnimationInstance *instance = anim_get_currently_playing_instance(entity, anim);
+
+        size.x = MAX(size.x, instance->sprite_size.x);
+        size.y = MAX(size.y, instance->sprite_size.y);
+#endif
     }
 
 

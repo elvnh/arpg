@@ -564,6 +564,15 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
     }
 }
 
+Entity *world_get_player_entity(World *world)
+{
+    ASSERT(world->entity_system.alive_entity_count > 0);
+    EntityID player_id = world->entity_system.alive_entity_ids[0];
+    Entity *result = es_get_entity(&world->entity_system, player_id);
+
+    return result;
+}
+
 void world_update(World *world, const FrameData *frame_data, const AssetList *assets, LinearArena *frame_arena,
     AnimationTable *animations)
 {
@@ -571,8 +580,8 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
         return;
     }
 
-    EntityID player_id = world->entity_system.alive_entity_ids[0];
-    Entity *player = es_get_entity(&world->entity_system, player_id);
+
+    Entity *player = world_get_player_entity(world);
     ASSERT(player);
 
     {

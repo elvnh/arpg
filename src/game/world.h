@@ -47,5 +47,6 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
 void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list,
     const FrameData *frame_data, LinearArena *frame_arena, struct DebugState *debug_state,
     AnimationTable *animations);
+Entity *world_get_player_entity(World *world);
 
 #endif //WORLD_H

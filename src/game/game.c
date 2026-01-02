@@ -286,9 +286,28 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 
 static void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {
-    ui_begin_container(ui, str_lit("root"), V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
-    ui_button(ui, str_lit("Game UI"));
+    // inventory
+    {
+	ui_text(ui, str_lit("Inventory"));
+
+	// TODO: allow setting min/max size
+	ui_begin_list(ui, str_lit("player_inventory")); {
+	    Entity *player = world_get_player_entity(&game_state->world);
+	    InventoryComponent *inv = es_get_component(player, InventoryComponent);
+	    ASSERT(inv);
+
+	    for (ssize i = 0; i < inv->inventory.item_count; ++i) {
+		Item *item = item_mgr_get_item(&game_state->world.item_manager, inv->inventory.items[i]);
+		ASSERT(item);
+
+		String item_text = ssize_to_string(inv->inventory.items[i].id,
+		    la_allocator(&game_memory->temporary_memory));
+		ui_selectable(ui, item_text);
+	    }
+	} ui_end_list(ui);
+    }
 
     ui_pop_container(ui);
 }

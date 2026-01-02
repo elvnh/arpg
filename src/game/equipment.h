@@ -10,15 +10,9 @@ typedef struct {
     ItemID head;
 } Equipment;
 
-typedef struct {
-    b32 success;
-    ItemID replaced_item;
-} EquipResult;
-
-//b32 can_equip_item_in_slot(ItemManager *item_mgr, ItemID item_id, EquipmentSlot slot);
 ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot);
 b32    has_item_equipped_in_slot(Equipment *eq, EquipmentSlot slot);
-bool   equip_item_from_inventory_in_slot(ItemManager *item_mgr, Equipment *eq, Inventory *inv,
-    ItemID item, EquipmentSlot slot);
+bool   equip_item_from_inventory(ItemManager *item_mgr, Equipment *eq, Inventory *inv, ItemID item);
+bool   unequip_item_and_put_in_inventory(Equipment *eq, Inventory *inv, EquipmentSlot slot);
 
 #endif //EQUIPMENT_H

@@ -2,6 +2,11 @@
 #include "item.h"
 #include "item_manager.h"
 
+typedef struct {
+    b32 success;
+    ItemID replaced_item;
+} EquipResult;
+
 static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
 {
     ItemID *result = 0;
@@ -13,6 +18,8 @@ static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
 
         INVALID_DEFAULT_CASE;
     }
+
+    ASSERT(result);
 
     return result;
 }
@@ -63,12 +70,14 @@ static EquipResult try_equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, 
     return result;
 }
 
-bool equip_item_from_inventory_in_slot(ItemManager *item_mgr, Equipment *eq, Inventory *inv, ItemID item,
-    EquipmentSlot slot)
+bool equip_item_from_inventory(ItemManager *item_mgr, Equipment *eq, Inventory *inv, ItemID item_id)
 {
-    ASSERT(inventory_contains_item(inv, item));
+    ASSERT(inventory_contains_item(inv, item_id));
 
-    EquipResult equip_result = try_equip_item_in_slot(item_mgr, eq, item, slot);
+    Item *item = item_mgr_get_item(item_mgr, item_id);
+    ASSERT(item_has_prop(item, ITEM_PROP_EQUIPMENT));
+
+    EquipResult equip_result = try_equip_item_in_slot(item_mgr, eq, item_id, item->equipment.slot);
 
     if (equip_result.success) {
 	if (!item_id_is_null(equip_result.replaced_item)) {
@@ -76,8 +85,32 @@ bool equip_item_from_inventory_in_slot(ItemManager *item_mgr, Equipment *eq, Inv
 	    inventory_add_item(inv, equip_result.replaced_item);
 	}
 
-	inventory_remove_item(inv, item);
+	inventory_remove_item(inv, item_id);
     }
 
     return equip_result.success;
+}
+
+static ItemID unequip_item_in_slot(Equipment *eq, EquipmentSlot slot)
+{
+    ItemID *equipped_item_ptr = get_pointer_to_item_id_in_slot(eq, slot);
+    ASSERT(equipped_item_ptr);
+
+    ItemID unequipped_item = *equipped_item_ptr;
+
+    exchange_item_ids(equipped_item_ptr, NULL_ITEM_ID);
+
+    return unequipped_item;
+}
+
+bool unequip_item_and_put_in_inventory(Equipment *eq, Inventory *inv, EquipmentSlot slot)
+{
+    ItemID unequipped_item = unequip_item_in_slot(eq, slot);
+    bool success = !item_id_is_null(unequipped_item);
+
+    if (success) {
+	inventory_add_item(inv, unequipped_item);
+    }
+
+    return success;
 }

@@ -302,9 +302,7 @@ static void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory,
 		Item *item = item_mgr_get_item(&game_state->world.item_manager, inv->inventory.items[i]);
 		ASSERT(item);
 
-		String item_text = ssize_to_string(inv->inventory.items[i].id,
-		    la_allocator(&game_memory->temporary_memory));
-		ui_selectable(ui, item_text);
+		ui_selectable(ui, item->name);
 	    }
 	} ui_end_list(ui);
     }

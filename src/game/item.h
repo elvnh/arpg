@@ -3,6 +3,7 @@
 
 #include "base/ring_buffer.h"
 #include "base/typedefs.h"
+#include "base/string8.h"
 #include "modifier.h"
 
 #define NULL_ITEM_ID (ItemID){0}
@@ -25,7 +26,7 @@ typedef enum {
 } EquipmentSlot;
 
 typedef struct {
-    // TODO: item name
+    String name;
     ItemProperty properties;
 
     struct {

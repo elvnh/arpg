@@ -865,34 +865,36 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);
 
+    // NOTE: testing code
+    {
+	for (s32 x = 0; x < 8; ++x) {
+	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, 0}, TILE_WALL,
+		&world->world_arena);
 
-    for (s32 x = 0; x < 8; ++x) {
-        tilemap_insert_tile(&world->tilemap, (Vector2i){x, 0}, TILE_WALL,
-            &world->world_arena);
+	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, 7}, TILE_WALL,
+		&world->world_arena);
+	}
 
-        tilemap_insert_tile(&world->tilemap, (Vector2i){x, 7}, TILE_WALL,
-            &world->world_arena);
-    }
+	for (s32 y = 1; y < 7; ++y) {
+	    tilemap_insert_tile(&world->tilemap, (Vector2i){0, y}, TILE_WALL,
+		&world->world_arena);
 
-    for (s32 y = 1; y < 7; ++y) {
-        tilemap_insert_tile(&world->tilemap, (Vector2i){0, y}, TILE_WALL,
-            &world->world_arena);
+	    tilemap_insert_tile(&world->tilemap, (Vector2i){7, y}, TILE_WALL,
+		&world->world_arena);
+	}
 
-        tilemap_insert_tile(&world->tilemap, (Vector2i){7, y}, TILE_WALL,
-            &world->world_arena);
-    }
-
-    for (s32 y = 1; y < 7; ++y) {
-        for (s32 x = 1; x < 7; ++x) {
-            tilemap_insert_tile(&world->tilemap, (Vector2i){x, y}, TILE_FLOOR,
-        	&world->world_arena);
-        }
+	for (s32 y = 1; y < 7; ++y) {
+	    for (s32 x = 1; x < 7; ++x) {
+		tilemap_insert_tile(&world->tilemap, (Vector2i){x, y}, TILE_FLOOR,
+		    &world->world_arena);
+	    }
+	}
     }
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
-    es_initialize(&world->entity_system, tilemap_area);
 
-    item_mgr_initialize(&world->item_manager);
+    es_initialize(&world->entity_system, tilemap_area);
+    item_mgr_initialize(&world->item_manager, la_allocator(&world->world_arena));
 
     for (s32 i = 0; i < 1; ++i) {
         EntityWithID entity_with_id = es_spawn_entity(&world->entity_system, i + 1);
@@ -965,7 +967,7 @@ void world_initialize(World *world, const struct AssetList *asset_list, LinearAr
         (void)equipment;
 
         {
-            ItemWithID item_with_id = item_mgr_create_item(&world->item_manager);
+            ItemWithID item_with_id = item_mgr_create_item(&world->item_manager, str_lit("Sword"));
             Item *item = item_with_id.item;
             item_set_prop(item, ITEM_PROP_EQUIPMENT | ITEM_PROP_HAS_MODIFIERS);
             item->equipment.slot = EQUIP_SLOT_HEAD;

@@ -1,6 +1,7 @@
 #ifndef ITEM_MANAGER_H
 #define ITEM_MANAGER_H
 
+#include "base/free_list_arena.h"
 #include "item.h"
 
 #define MAX_ITEMS 1024
@@ -15,10 +16,11 @@ DEFINE_STATIC_RING_BUFFER(ItemID, ItemIDQueue, MAX_ITEMS);
 typedef struct ItemManager {
     ItemStorageSlot item_slots[MAX_ITEMS];
     ItemIDQueue id_queue;
+    FreeListArena item_system_memory;
 } ItemManager;
 
-void item_mgr_initialize(ItemManager *item_mgr);
-ItemWithID item_mgr_create_item(ItemManager *item_mgr);
+void item_mgr_initialize(ItemManager *item_mgr, Allocator allocator);
+ItemWithID item_mgr_create_item(ItemManager *item_mgr, String name);
 void item_mgr_destroy_item(ItemManager *item_mgr, ItemID id);
 Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id);
 ItemID item_mgr_get_id_of_item(ItemManager *item_mgr, Item *item);

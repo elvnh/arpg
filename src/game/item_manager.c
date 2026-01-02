@@ -1,13 +1,17 @@
 #include "item_manager.h"
 #include "item.h"
 
+#define ITEM_SYSTEM_MEMORY_SIZE MB(8)
+
 void push_item_id(ItemManager *item_mgr, ItemID id)
 {
     ring_push(&item_mgr->id_queue, &id);
 }
 
-void item_mgr_initialize(ItemManager *item_mgr)
+void item_mgr_initialize(ItemManager *item_mgr, Allocator allocator)
 {
+    item_mgr->item_system_memory = fl_create(allocator, ITEM_SYSTEM_MEMORY_SIZE);
+
     // TODO: be sure to change to regular init if this becomes heap allocated
     ring_initialize_static(&item_mgr->id_queue);
 
@@ -48,12 +52,13 @@ Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id)
     return result;
 }
 
-ItemWithID item_mgr_create_item(ItemManager *item_mgr)
+ItemWithID item_mgr_create_item(ItemManager *item_mgr, String name)
 {
     ItemID id = get_new_item_id(item_mgr);
     Item *item = item_mgr_get_item(item_mgr, id);
-
     mem_zero(item, SIZEOF(*item));
+
+    item->name = str_copy(name, fl_allocator(&item_mgr->item_system_memory));
 
     ItemWithID result = {
         .id = id,

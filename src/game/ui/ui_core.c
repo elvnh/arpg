@@ -5,6 +5,7 @@
 #include "base/vector.h"
 #include "game/ui/widget.h"
 #include "ui_core.h"
+#include "asset_table.h"
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
@@ -303,8 +304,7 @@ static LinearArena *get_frame_arena(UIState *ui)
     return result;
 }
 
-static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const AssetList *assets, ssize depth,
-    Rectangle parent_bounds)
+static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize depth, Rectangle parent_bounds)
 {
     // TODO: depth isn't needed once a stable sort is implemented for render commands
 #if 1
@@ -325,7 +325,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
             }
 
             rb_push_rect(rb, &ui->current_frame_widgets.arena, widget_rect, color,
-		assets->shape_shader, depth);
+		get_asset_table()->shape_shader, depth);
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
@@ -338,7 +338,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
 
             rb_push_clipped_text(rb, arena, widget->text.string, text_position,
 		parent_bounds, widget->color, widget->text.size,
-                assets->texture_shader, widget->text.font, depth);
+                get_asset_table()->texture_shader, widget->text.font, depth);
         }
     }
 #else
@@ -375,12 +375,12 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, const As
 #endif
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        render_widget(ui, child, rb, assets, depth + 1, widget_rect);
+        render_widget(ui, child, rb, depth + 1, widget_rect);
     }
 }
 
 UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, RenderBatch *rb,
-    const AssetList *assets, PlatformCode platform_code)
+    PlatformCode platform_code)
 {
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
@@ -393,7 +393,7 @@ UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, Render
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
         calculate_widget_interactions(ui, ui->root_widget, frame_data, window_rect, rb->y_direction, &result);
 
-        render_widget(ui, ui->root_widget, rb, assets, 0, window_rect);
+        render_widget(ui, ui->root_widget, rb, 0, window_rect);
     }
 
     return result;

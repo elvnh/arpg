@@ -124,14 +124,14 @@ static void entity_update(World *world, Entity *entity, f32 dt)
     es_update_entity_quad_tree_location(&world->entity_system, entity, &world->world_arena);
 }
 
-static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetList *assets,
+static void entity_render(Entity *entity, struct RenderBatch *rb,
     LinearArena *scratch, struct DebugState *debug_state, World *world, const FrameData *frame_data)
 {
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
 	// TODO: move into separate function
         AnimationInstance *anim_instance = anim_get_current_animation(entity, anim_component);
-	anim_render_instance(anim_instance, entity, rb, assets, scratch);
+	anim_render_instance(anim_instance, entity, rb, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
 	Sprite *sprite = &sprite_comp->sprite;
@@ -142,7 +142,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
 
         Rectangle sprite_rect = { entity->position, sprite->size };
         rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods.rotation, sprite_mods.flip,
-	    RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
+	    RGBA32_WHITE, get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
@@ -153,7 +153,8 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
             .size = collider->size
         };
 
-        rb_push_rect(rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
+        rb_push_rect(rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f},
+	    get_asset_table()->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ParticleSpawner)) {
@@ -162,8 +163,8 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
         if (ps->config.particle_texture.id == NULL_TEXTURE.id) {
             ASSERT(ps->config.particle_color.a != 0.0f);
 
-            rb_push_particles(rb, scratch, &ps->particle_buffer,
-                ps->config.particle_color, ps->config.particle_size, assets->shape_shader, RENDER_LAYER_PARTICLES);
+            rb_push_particles(rb, scratch, &ps->particle_buffer, ps->config.particle_color,
+		ps->config.particle_size, get_asset_table()->shape_shader, RENDER_LAYER_PARTICLES);
         } else {
             // If color isn't set, assume it to be white
             RGBA32 particle_color = ps->config.particle_color;
@@ -172,14 +173,15 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
             }
 
             rb_push_particles_textured(rb, scratch, &ps->particle_buffer,
-                assets->default_texture, particle_color, ps->config.particle_size, assets->texture_shader,
-                RENDER_LAYER_PARTICLES);
+		get_asset_table()->default_texture, particle_color, ps->config.particle_size,
+		get_asset_table()->texture_shader, RENDER_LAYER_PARTICLES);
         }
     }
 
     if (debug_state->render_entity_bounds) {
         Rectangle entity_rect = es_get_entity_bounding_box(entity);
-        rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
+        rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
+	    get_asset_table()->shape_shader, RENDER_LAYER_ENTITIES);
     }
 }
 
@@ -506,7 +508,7 @@ Entity *world_get_player_entity(World *world)
     return result;
 }
 
-void world_update(World *world, const FrameData *frame_data, const AssetList *assets, LinearArena *frame_arena)
+void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena)
 {
     if (world->entity_system.alive_entity_count < 1) {
         return;
@@ -610,8 +612,7 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
     es_remove_inactive_entities(&world->entity_system, frame_arena);
 }
 
-// TODO: this shouldn't need AssetList parameter?
-void world_render(World *world, RenderBatch *rb, const AssetList *assets, const FrameData *frame_data,
+void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
     LinearArena *frame_arena, DebugState *debug_state)
 {
     Rectangle visible_area = camera_get_visible_area(world->camera, frame_data->window_size);
@@ -636,11 +637,11 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
 
                 switch (tile->type) {
                     case TILE_FLOOR: {
-                        texture = assets->floor_texture;
+                        texture = get_asset_table()->floor_texture;
                     } break;
 
                     case TILE_WALL: {
-                        texture = assets->wall_texture;
+                        texture = get_asset_table()->wall_texture;
                     } break;
 
                     INVALID_DEFAULT_CASE;
@@ -661,7 +662,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
 
                 if (tile->type == TILE_FLOOR) {
                     rb_push_sprite(rb, frame_arena, texture, tile_rect, 0, 0, RGBA32_WHITE,
-                        assets->texture_shader, layer);
+                        get_asset_table()->texture_shader, layer);
                 } else if (tile->type == TILE_WALL) {
                     // NOTE: Walls are rendered in two segments and are made transparent if entities are behind them
                     RGBA32 tile_sprite_color = RGBA32_WHITE;
@@ -703,10 +704,12 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
                     }
 
                     rb_push_clipped_sprite(rb, frame_arena, texture,
-                        tile_rect, bottom_segment, tile_sprite_color, assets->texture_shader, RENDER_LAYER_FLOORS);
+                        tile_rect, bottom_segment, tile_sprite_color, get_asset_table()->texture_shader,
+			RENDER_LAYER_FLOORS);
 
                     rb_push_clipped_sprite(rb, frame_arena, texture,
-                        tile_rect, top_segment, tile_sprite_color, assets->texture_shader, RENDER_LAYER_WALLS);
+                        tile_rect, top_segment, tile_sprite_color, get_asset_table()->texture_shader,
+			RENDER_LAYER_WALLS);
                 } else {
                     ASSERT(0);
                 }
@@ -720,13 +723,13 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(&world->entity_system, node->id);
 
-        entity_render(entity, rb, assets, frame_arena, debug_state, world, frame_data);
+        entity_render(entity, rb, frame_arena, debug_state, world, frame_data);
     }
 
-    hitsplats_render(world, rb, assets, frame_arena);
+    hitsplats_render(world, rb, frame_arena);
 }
 
-void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena)
+void world_initialize(World *world, LinearArena *arena)
 {
     world->world_arena = la_create(la_allocator(arena), WORLD_ARENA_SIZE);
 

@@ -7,15 +7,15 @@
 
 static AnimationTable *g_animation_table;
 
-static Animation animation_player_idle(const AssetList *asset_table)
+static Animation animation_player_idle()
 {
     Animation result = {0};
 
     SpriteRotationBehaviour rotate_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
     Vector2 size = v2(32, 64);
 
-    AnimationFrame frame_1 = {sprite_create(asset_table->player_idle1, size, rotate_behaviour), 2.75f};
-    AnimationFrame frame_2 = {sprite_create(asset_table->player_idle2, size, rotate_behaviour), 2.75f};
+    AnimationFrame frame_1 = {sprite_create(get_asset_table()->player_idle1, size, rotate_behaviour), 0.75f};
+    AnimationFrame frame_2 = {sprite_create(get_asset_table()->player_idle2, size, rotate_behaviour), 0.75f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -24,15 +24,15 @@ static Animation animation_player_idle(const AssetList *asset_table)
     return result;
 }
 
-static Animation animation_player_walking(const AssetList *asset_table)
+static Animation animation_player_walking()
 {
     Animation result = {0};
 
     SpriteRotationBehaviour rotate_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
     Vector2 size = v2(32, 64);
 
-    AnimationFrame frame_1 = {sprite_create(asset_table->player_walking1, size, rotate_behaviour), 2.75f};
-    AnimationFrame frame_2 = {sprite_create(asset_table->player_walking2, size, rotate_behaviour), 2.75f};
+    AnimationFrame frame_1 = {sprite_create(get_asset_table()->player_walking1, size, rotate_behaviour), 0.5f};
+    AnimationFrame frame_2 = {sprite_create(get_asset_table()->player_walking2, size, rotate_behaviour), 0.5f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -41,15 +41,15 @@ static Animation animation_player_walking(const AssetList *asset_table)
     return result;
 }
 
-void anim_initialize(AnimationTable *anim_table, const AssetList *asset_table)
+void anim_initialize(AnimationTable *anim_table)
 {
     anim_set_global_animation_table(anim_table);
 
-    g_animation_table->animations[ANIM_PLAYER_IDLE] = animation_player_idle(asset_table);
-    g_animation_table->animations[ANIM_PLAYER_WALKING] = animation_player_walking(asset_table);
+    g_animation_table->animations[ANIM_PLAYER_IDLE] = animation_player_idle();
+    g_animation_table->animations[ANIM_PLAYER_WALKING] = animation_player_walking();
 }
 
-Animation *anim_get_by_id(AnimationID id)
+static Animation *anim_get_by_id(AnimationID id)
 {
     ASSERT(id != ANIM_NULL);
     ASSERT(id >= 0);
@@ -89,8 +89,7 @@ void anim_update_instance(AnimationInstance *anim_instance, f32 dt)
 
 }
 
-void anim_render_instance(AnimationInstance *anim_instance,
-    Entity *owning_entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
+void anim_render_instance(AnimationInstance *anim_instance, Entity *owning_entity, RenderBatch *rb, LinearArena *scratch)
 {
     AnimationFrame current_frame = anim_get_current_frame(anim_instance);
 
@@ -98,7 +97,7 @@ void anim_render_instance(AnimationInstance *anim_instance,
 
     Rectangle sprite_rect = { owning_entity->position, current_frame.sprite.size };
     rb_push_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods.rotation,
-	sprite_mods.flip, RGBA32_WHITE, assets->texture_shader, RENDER_LAYER_ENTITIES);
+	sprite_mods.flip, RGBA32_WHITE, get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
 }
 
 void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim)

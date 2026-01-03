@@ -21,21 +21,4 @@ typedef struct {
     AssetID id;
 } FontHandle;
 
-typedef struct AssetList {
-    ShaderHandle texture_shader;
-    ShaderHandle shape_shader;
-    TextureHandle default_texture;
-    TextureHandle fireball_texture;
-    TextureHandle spark_texture;
-    FontHandle default_font;
-
-    TextureHandle player_idle1;
-    TextureHandle player_idle2;
-    TextureHandle player_walking1;
-    TextureHandle player_walking2;
-
-    TextureHandle floor_texture;
-    TextureHandle wall_texture;
-} AssetList;
-
 #endif //ASSET_H

@@ -12,14 +12,14 @@
 
 static SpellArray *g_spells;
 
-static Spell spell_fireball(const AssetList *asset_list)
+static Spell spell_fireball()
 {
     Spell spell = {0};
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION;
 
-    spell.sprite.texture = asset_list->fireball_texture;
+    spell.sprite.texture = get_asset_table()->fireball_texture;
     spell.sprite.size = v2(32, 32);
     spell.sprite.rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
 
@@ -36,7 +36,7 @@ static Spell spell_fireball(const AssetList *asset_list)
     return spell;
 }
 
-static Spell spell_spark(const AssetList *asset_list)
+static Spell spell_spark()
 {
     Spell spell = {0};
 
@@ -45,7 +45,7 @@ static Spell spell_spark(const AssetList *asset_list)
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME;
 
-    spell.sprite.texture = asset_list->spark_texture;
+    spell.sprite.texture = get_asset_table()->spark_texture;
     spell.sprite.size = v2(32, 32);
 
     spell.projectile.projectile_speed = 500.0f;
@@ -69,10 +69,10 @@ static b32 spell_has_prop(const Spell *spell, SpellProperties prop)
 }
 
 // TODO: make it easier to define spells
-void magic_initialize(SpellArray *spells, const struct AssetList *asset_list)
+void magic_initialize(SpellArray *spells)
 {
-    spells->spells[SPELL_FIREBALL] = spell_fireball(asset_list);
-    spells->spells[SPELL_SPARK] = spell_spark(asset_list);
+    spells->spells[SPELL_FIREBALL] = spell_fireball();
+    spells->spells[SPELL_SPARK] = spell_spark();
 
     magic_set_global_spell_array(spells);
 }

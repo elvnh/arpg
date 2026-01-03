@@ -2,7 +2,7 @@
 #define ANIMATION_H
 
 #include "base/vector.h"
-#include "asset.h"
+#include "asset_table.h"
 #include "sprite.h"
 
 #define MAX_ANIMATION_FRAMES 8
@@ -11,7 +11,6 @@ struct AnimationInstance;
 struct Entity;
 struct RenderBatch;
 struct LinearArena;
-struct AssetList;
 struct AnimationComponent;
 
 typedef enum {
@@ -44,11 +43,10 @@ typedef struct AnimationTable {
     Animation animations[ANIM_ANIMATION_COUNT];
 } AnimationTable;
 
-void anim_initialize(AnimationTable *anim_table, const AssetList *asset_table);
-Animation *anim_get_by_id(AnimationID id);
+void anim_initialize(AnimationTable *anim_table);
 void anim_update_instance(struct AnimationInstance *anim_instance, f32 dt);
 void anim_render_instance(struct AnimationInstance *anim_instance, struct Entity *owning_entity,
-    struct RenderBatch *rb, const struct AssetList *assets, struct LinearArena *scratch);
+    struct RenderBatch *rb, struct LinearArena *scratch);
 void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim);
 AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance);
 AnimationInstance *anim_get_current_animation(struct Entity *entity, struct AnimationComponent *anim_comp);

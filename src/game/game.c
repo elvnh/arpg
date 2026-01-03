@@ -1,6 +1,7 @@
 #include "game.h"
 #include "animation.h"
 #include "asset.h"
+#include "asset_table.h"
 #include "base/allocator.h"
 #include "base/format.h"
 #include "base/free_list_arena.h"
@@ -45,18 +46,16 @@ static void game_update(GameState *game_state, const FrameData *frame_data, Line
         DEBUG_BREAK;
     }
 
-    world_update(&game_state->world, frame_data, &game_state->asset_list, frame_arena);
-
+    world_update(&game_state->world, frame_data, frame_arena);
 }
 
-static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
-    const AssetList *assets, ssize depth)
+static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, ssize depth)
 {
     if (tree) {
-	render_tree(tree->top_left, rb, arena, assets, depth + 1);
-	render_tree(tree->top_right, rb, arena, assets, depth + 1);
-	render_tree(tree->bottom_right, rb, arena, assets, depth + 1);
-	render_tree(tree->bottom_left, rb, arena, assets, depth + 1);
+	render_tree(tree->top_left, rb, arena, depth + 1);
+	render_tree(tree->top_right, rb, arena, depth + 1);
+	render_tree(tree->bottom_right, rb, arena, depth + 1);
+	render_tree(tree->bottom_left, rb, arena, depth + 1);
 
 	static const RGBA32 colors[] = {
 	    {1.0f, 0.0f, 0.0f, 0.5f},
@@ -72,7 +71,7 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
 	ASSERT(depth < ARRAY_COUNT(colors));
 
 	RGBA32 color = colors[depth];
-	rb_push_outlined_rect(rb, arena, tree->area, color, 4.0f, assets->shape_shader, 2);
+	rb_push_outlined_rect(rb, arena, tree->area, color, 4.0f, get_asset_table()->shape_shader, 2);
     }
 }
 
@@ -82,16 +81,15 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Frame
 {
     RenderBatch *rb = rb_list_push_new(rbs, game_state->world.camera, frame_data->window_size, Y_IS_UP, frame_arena);
 
-    world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena,
-	&game_state->debug_state);
+    world_render(&game_state->world, rb, frame_data, frame_arena, &game_state->debug_state);
 
     if (game_state->debug_state.quad_tree_overlay) {
-        render_tree(&game_state->world.entity_system.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
+        render_tree(&game_state->world.entity_system.quad_tree.root, rb, frame_arena, 0);
     }
 
     if (game_state->debug_state.render_origin) {
         rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
-	    game_state->asset_list.shape_shader, 3);
+	    get_asset_table()->shape_shader, 3);
     }
 
 
@@ -413,10 +411,11 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     rng_set_global_state(&game_state->rng_state);
     magic_set_global_spell_array(&game_state->spells);
     anim_set_global_animation_table(&game_state->animations);
+    set_global_asset_table(&game_state->asset_list);
 
-    // NOTE: Spells are re-initialized every frame so that the spells can be changed during runtime.
-    magic_initialize(&game_state->spells, &game_state->asset_list);
-    anim_initialize(&game_state->animations, &game_state->asset_list);
+    // NOTE: Spells and animations are re-initialized every frame so that they can be changed during runtime.
+    magic_initialize(&game_state->spells);
+    anim_initialize(&game_state->animations);
 #endif
 
     debug_update(game_state, &frame_data, &game_memory->temporary_memory);
@@ -439,7 +438,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
             UIInteraction dbg_ui_interaction =
                 ui_core_end_frame(&game_state->debug_state.debug_ui, &frame_data, &debug_ui_rb,
-                    &game_state->asset_list, platform_code);
+		    platform_code);
 
             // TODO: shouldn't click_began_inside_ui be counted as receiving mouse input?
             if (dbg_ui_interaction.received_mouse_input || dbg_ui_interaction.click_began_inside_ui) {
@@ -455,8 +454,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
         game_ui(&game_state->ui, game_state, game_memory, &frame_data);
 
 	UIInteraction game_ui_interaction =
-            ui_core_end_frame(&game_state->ui, &frame_data, &game_ui_rb,
-                &game_state->asset_list, platform_code);
+            ui_core_end_frame(&game_state->ui, &frame_data, &game_ui_rb, platform_code);
 
         if (game_ui_interaction.received_mouse_input || game_ui_interaction.click_began_inside_ui) {
             input_consume_input(&frame_data.input, MOUSE_LEFT);
@@ -483,9 +481,10 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)
 {
-    magic_initialize(&game_state->spells, &game_state->asset_list);
-    world_initialize(&game_state->world, &game_state->asset_list, &game_memory->permanent_memory);
-    anim_initialize(&game_state->animations, &game_state->asset_list);
+    set_global_asset_table(&game_state->asset_list);
+    magic_initialize(&game_state->spells);
+    world_initialize(&game_state->world, &game_memory->permanent_memory);
+    anim_initialize(&game_state->animations);
 
     game_state->debug_state.average_fps = 60.0f;
     game_state->debug_state.timestep_modifier = 1.0f;

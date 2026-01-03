@@ -19,7 +19,7 @@
 
 typedef struct {
     World world;
-    AssetList asset_list;
+    AssetTable asset_list;
     DebugState debug_state;
     SpellArray spells;
     RNGState rng_state;

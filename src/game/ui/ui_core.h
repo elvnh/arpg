@@ -5,7 +5,6 @@
 #include "base/string8.h"
 #include "base/vector.h"
 #include "base/rectangle.h"
-#include "asset.h"
 #include "platform.h"
 #include "widget.h"
 #include "input.h"
@@ -22,7 +21,6 @@
 
 struct Input;
 struct RenderBatch;
-struct AssetList;
 
 typedef struct {
     WidgetList *entries;
@@ -70,7 +68,7 @@ typedef struct {
 void ui_core_initialize(UIState *ui, UIStyle style, LinearArena *arena);
 void ui_core_begin_frame(UIState *ui);
 UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, struct RenderBatch *rb,
-    const AssetList *assets, PlatformCode platform_code);
+    PlatformCode platform_code);
 void ui_core_set_style(UIState *ui, UIStyle style);
 void ui_core_push_container(UIState *ui, Widget *widget);
 void ui_core_pop_container(UIState *ui);

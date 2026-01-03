@@ -29,6 +29,7 @@ src/game/world.c
 src/game/collision.c
 src/game/animation.c
 src/game/hitsplat.c
+src/game/asset_table.c
 src/game/quad_tree.c
 src/game/damage.c
 src/game/entity_system.c

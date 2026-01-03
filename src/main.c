@@ -88,7 +88,7 @@ int main()
     u64 rng_seed = (u64)time(0); // TODO: better seed
     rng_initialize(&game_state->rng_state, rng_seed);
 
-    game_state->asset_list = (AssetList){
+    game_state->asset_list = (AssetTable){
         .texture_shader = assets_register_shader(&asset_mgr, str_lit("shader.glsl"), &game_memory.temporary_memory),
         .shape_shader = assets_register_shader(&asset_mgr, str_lit("shader2.glsl"), &game_memory.temporary_memory),
         .default_texture = assets_register_texture(&asset_mgr, str_lit("test.png"), &game_memory.temporary_memory),

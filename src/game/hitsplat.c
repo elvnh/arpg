@@ -22,7 +22,7 @@ void hitsplats_update(World *world, const FrameData *frame_data)
     }
 }
 
-void hitsplats_render(World *world, RenderBatch *rb, const AssetList *assets, LinearArena *frame_arena)
+void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 {
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
         Hitsplat *hitsplat = &world->active_hitsplats[i];
@@ -53,7 +53,7 @@ void hitsplats_render(World *world, RenderBatch *rb, const AssetList *assets, Li
 
 		rb_push_text(
 		    rb, frame_arena, damage_str, hitsplat->position, color, 32,
-		    assets->texture_shader, assets->default_font, 5);
+		    get_asset_table()->texture_shader, get_asset_table()->default_font, 5);
 	    }
 	}
     }

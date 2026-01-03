@@ -19,7 +19,6 @@
 struct Input;
 struct DebugState;
 struct RenderBatch;
-struct AssetList;
 
 typedef struct World {
     LinearArena world_arena;
@@ -37,11 +36,10 @@ typedef struct World {
     s32 hitsplat_count;
 } World;
 
-void world_initialize(World *world, const struct AssetList *asset_list, LinearArena *arena);
-void world_update(World *world, const FrameData *frame_data, const AssetList *assets,
-    LinearArena *frame_arena);
-void world_render(World *world, struct RenderBatch *rb, const struct AssetList *asset_list,
-    const FrameData *frame_data, LinearArena *frame_arena, struct DebugState *debug_state);
+void world_initialize(World *world, LinearArena *arena);
+void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena);
+void world_render(World *world, struct RenderBatch *rb, const FrameData *frame_data,
+    LinearArena *frame_arena, struct DebugState *debug_state);
 Entity *world_get_player_entity(World *world);
 
 #endif //WORLD_H

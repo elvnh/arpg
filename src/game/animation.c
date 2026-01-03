@@ -2,6 +2,7 @@
 #include "base/utils.h"
 #include "components/component.h"
 #include "entity.h"
+#include "entity_system.h"
 #include "renderer/render_batch.h"
 
 static Animation animation_player_idle(const AssetList *asset_table)
@@ -87,8 +88,7 @@ void anim_update_instance(AnimationTable *anim_table, AnimationInstance *anim_in
 void anim_render_instance(AnimationTable *anim_table, AnimationInstance *anim_instance,
     Entity *owning_entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
-    Animation *anim = anim_get_by_id(anim_table, anim_instance->animation_id);
-    AnimationFrame current_frame = anim->frames[anim_instance->current_frame];
+    AnimationFrame current_frame = anim_get_current_frame(anim_instance, anim_table);
 
     SpriteModifiers sprite_mods = sprite_get_modifiers(owning_entity, current_frame.sprite.rotation_behaviour);
 
@@ -104,4 +104,26 @@ void anim_transition_to_animation(struct AnimationInstance *anim_instance, Anima
     anim_instance->animation_id = next_anim;
     anim_instance->current_frame = 0;
     anim_instance->current_frame_elapsed_time = 0;
+}
+
+AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance,
+    AnimationTable *anim_table)
+{
+    Animation *anim = anim_get_by_id(anim_table, anim_instance->animation_id);
+    ASSERT(anim_instance->current_frame < anim->frame_count);
+    AnimationFrame frame = anim->frames[anim_instance->current_frame];
+
+    return frame;
+}
+
+AnimationInstance *anim_get_current_animation(Entity *entity, AnimationComponent *anim_comp)
+{
+    ASSERT(entity->state < ENTITY_STATE_COUNT);
+    ASSERT(entity);
+    ASSERT(anim_comp);
+    ASSERT(es_has_component(entity, AnimationComponent));
+
+    AnimationInstance *result = &anim_comp->state_animations[entity->state];
+
+    return result;
 }

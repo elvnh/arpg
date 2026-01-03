@@ -310,7 +310,7 @@ static void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory,
     ASSERT(player);
 
     // TODO: store in UI state or something similar
-    static bool is_active = true;
+    static bool is_active = false;
 
     if (input_is_key_pressed(&frame_data->input, KEY_I)) {
 	is_active = !is_active;

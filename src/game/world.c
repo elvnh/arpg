@@ -121,7 +121,7 @@ static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *
         }
     }
 
-    es_update_entity_quad_tree_location(&world->entity_system, entity, &world->world_arena);
+    es_update_entity_quad_tree_location(&world->entity_system, entity, &world->world_arena, animations);
 }
 
 static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetList *assets,
@@ -131,7 +131,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
 	// TODO: move into separate function
-        AnimationInstance *anim_instance = &anim_component->state_animations[entity->state];
+        AnimationInstance *anim_instance = anim_get_current_animation(entity, anim_component);
 	anim_render_instance(animations, anim_instance, entity, rb, assets, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
@@ -179,7 +179,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
     }
 
     if (debug_state->render_entity_bounds) {
-        Rectangle entity_rect = es_get_entity_bounding_box(entity);
+        Rectangle entity_rect = es_get_entity_bounding_box(entity, animations);
         rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 }
@@ -529,10 +529,11 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
             Vector2 mouse_pos = frame_data->input.mouse_position;
             mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
 
-            Vector2 mouse_dir = v2_sub(mouse_pos, player->position);
+	    Vector2 player_center = rect_center(es_get_entity_bounding_box(player, animations));
+            Vector2 mouse_dir = v2_sub(mouse_pos, player_center);
             mouse_dir = v2_norm(mouse_dir);
 
-            magic_cast_spell(world, SPELL_FIREBALL, player, player->position, mouse_dir);
+            magic_cast_spell(world, SPELL_FIREBALL, player, player_center, mouse_dir, animations);
         }
 
         camera_set_target(&world->camera, target);
@@ -690,7 +691,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
                         // TODO: only do this if it's the player?
                         // TODO: get sprite rect instead of all component bounds?
 
-                        Rectangle entity_bounds = es_get_entity_bounding_box(entity);
+                        Rectangle entity_bounds = es_get_entity_bounding_box(entity, animations);
                         b32 entity_intersects_wall = rect_intersects(entity_bounds, top_segment);
 
                         b32 entity_is_behind_wall = can_walk_behind_tile

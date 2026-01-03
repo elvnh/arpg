@@ -84,8 +84,7 @@ typedef struct {
 } EquipmentComponent;
 
 // TODO: allow resetting animation when starting it anew
-
-typedef struct {
+typedef struct AnimationComponent {
     AnimationInstance state_animations[ENTITY_STATE_COUNT];
 } AnimationComponent;
 

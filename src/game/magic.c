@@ -85,10 +85,13 @@ static const Spell *get_spell_by_id(SpellID id)
     return &g_spells->spells[id];
 }
 
-void cast_single_spell(struct World *world, const Spell *spell, struct Entity *caster, Vector2 pos, Vector2 dir)
+static void cast_single_spell(struct World *world, const Spell *spell, struct Entity *caster,
+    Vector2 pos, Vector2 dir, AnimationTable *anim_table)
 {
     EntityWithID spell_entity_with_id = es_spawn_entity(&world->entity_system, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
+
+    // TODO: remove, we set it at end of function
     spell_entity->position = pos;
 
     ColliderComponent *spell_collider = es_get_or_add_component(spell_entity, ColliderComponent);
@@ -140,9 +143,14 @@ void cast_single_spell(struct World *world, const Spell *spell, struct Entity *c
 	LifetimeComponent *lifetime = es_add_component(spell_entity, LifetimeComponent);
 	lifetime->time_to_live = spell->lifetime;
     }
+
+    // Offset so that spells center is 'pos'
+    Rectangle bounds = es_get_entity_bounding_box(spell_entity, anim_table);
+    spell_entity->position = v2_sub(pos, v2_div_s(bounds.size, 2.0f));
 }
 
-void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 pos, Vector2 dir)
+void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 pos, Vector2 dir,
+    AnimationTable *anim_table)
 {
     const Spell *spell = get_spell_by_id(id);
     s32 spell_count = 1 + spell->projectile.extra_projectile_count;
@@ -161,7 +169,7 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
         Vector2 current_pos = v2_add(pos, v2_mul_s(dir, 20.0f));
 
-	cast_single_spell(world, spell, caster, current_pos, current_dir);
+	cast_single_spell(world, spell, caster, current_pos, current_dir, anim_table);
 
 	current_angle += angle_step_size;
     }

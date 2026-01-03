@@ -12,6 +12,7 @@ struct Entity;
 struct RenderBatch;
 struct LinearArena;
 struct AssetList;
+struct AnimationComponent;
 
 typedef enum {
     ANIM_NULL = 0,
@@ -39,7 +40,7 @@ typedef struct AnimationInstance {
     f32 current_frame_elapsed_time;
 } AnimationInstance;
 
-typedef struct {
+typedef struct AnimationTable {
     Animation animations[ANIM_ANIMATION_COUNT];
 } AnimationTable;
 
@@ -50,5 +51,7 @@ void anim_render_instance(AnimationTable *anim_table, struct AnimationInstance *
     struct Entity *owning_entity, struct RenderBatch *rb, const struct AssetList *assets,
     struct LinearArena *scratch);
 void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim);
+AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance, AnimationTable *anim_table);
+AnimationInstance *anim_get_current_animation(struct Entity *entity, struct AnimationComponent *anim_comp);
 
 #endif //ANIMATION_H

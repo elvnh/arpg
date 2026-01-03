@@ -141,7 +141,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
 	SpriteModifiers sprite_mods = sprite_get_modifiers(entity, sprite->rotation_behaviour);
 
         Rectangle sprite_rect = { entity->position, sprite->size };
-        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods.rotation, sprite_mods.flip,
+        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods,
 	    get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
     }
 
@@ -661,7 +661,7 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
 
 
                 if (tile->type == TILE_FLOOR) {
-                    rb_push_sprite(rb, frame_arena, texture, tile_rect, 0, 0,
+                    rb_push_sprite(rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
                         get_asset_table()->texture_shader, layer);
                 } else if (tile->type == TILE_WALL) {
                     // NOTE: Walls are rendered in two segments and are made transparent if entities are behind them

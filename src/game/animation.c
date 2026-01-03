@@ -96,8 +96,8 @@ void anim_render_instance(AnimationInstance *anim_instance, Entity *owning_entit
     SpriteModifiers sprite_mods = sprite_get_modifiers(owning_entity, current_frame.sprite.rotation_behaviour);
 
     Rectangle sprite_rect = { owning_entity->position, current_frame.sprite.size };
-    rb_push_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods.rotation,
-	sprite_mods.flip, get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
+    rb_push_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods,
+	get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
 }
 
 void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim)

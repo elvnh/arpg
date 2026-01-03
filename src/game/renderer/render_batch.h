@@ -9,6 +9,7 @@
 #include "camera.h"
 #include "render_command.h"
 #include "render_key.h"
+#include "sprite.h"
 
 // TODO: make RenderEntry array into ring buffer in case it overflows
 // TODO: reduce amount of parameters, eg. create specialization for push_sprite in case
@@ -43,9 +44,9 @@ void         rb_list_push(RenderBatchList *list, RenderBatch *rb, LinearArena *a
 RenderBatch  rb_create(Camera camera, Vector2i viewport_size, YDirection y_dir);
 void         rb_sort_entries(RenderBatch *rb, LinearArena *scratch);
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, ShaderHandle shader, RenderLayer layer);
+    Rectangle rectangle, SpriteModifiers mods, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, RGBA32 color,
+    Rectangle rectangle, SpriteModifiers mods, RGBA32 color, // TODO: pack color into sprite mods
     ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     ShaderHandle shader, RenderLayer layer);

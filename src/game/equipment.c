@@ -16,6 +16,14 @@ static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
             result = &eq->head;
         } break;
 
+        case EQUIP_SLOT_LEFT_HAND: {
+            result = &eq->left_hand;
+        } break;
+
+        case EQUIP_SLOT_RIGHT_HAND: {
+            result = &eq->right_hand;
+        } break;
+
         INVALID_DEFAULT_CASE;
     }
 
@@ -28,7 +36,7 @@ b32 can_equip_item_in_slot(ItemManager *item_mgr, ItemID item_id, EquipmentSlot 
 {
     Item *item = item_mgr_get_item(item_mgr, item_id);
 
-    b32 item_is_equipment = item_has_prop(item, ITEM_PROP_EQUIPMENT);
+    b32 item_is_equipment = item_has_prop(item, ITEM_PROP_EQUIPPABLE);
     b32 result = item_is_equipment && ((item->equipment.slot & slot) != 0);
 
     return result;
@@ -75,7 +83,7 @@ bool equip_item_from_inventory(ItemManager *item_mgr, Equipment *eq, Inventory *
     ASSERT(inventory_contains_item(inv, item_id));
 
     Item *item = item_mgr_get_item(item_mgr, item_id);
-    ASSERT(item_has_prop(item, ITEM_PROP_EQUIPMENT));
+    ASSERT(item_has_prop(item, ITEM_PROP_EQUIPPABLE));
 
     EquipResult equip_result = try_equip_item_in_slot(item_mgr, eq, item_id, item->equipment.slot);
 

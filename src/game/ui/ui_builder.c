@@ -26,12 +26,9 @@ void ui_text(UIState *ui, String text)
     ui_internal_text(ui, text, V2_ZERO, RGBA32_WHITE);
 }
 
-WidgetInteraction ui_button(UIState *ui, String text)
+static Widget *ui_create_non_interactible_button(UIState *ui, String text, WidgetID id)
 {
-    Widget *widget = ui_core_colored_box(ui, v2(0, 32.0f), RGBA32_BLUE, ui_core_hash_string(text));
-    widget_add_flag(widget, WIDGET_CLICKABLE);
-    widget_add_flag(widget, WIDGET_HOT_COLOR);
-    widget_add_flag(widget, WIDGET_ACTIVE_COLOR);
+    Widget *widget = ui_core_colored_box(ui, v2(0, 32.0f), RGBA32_BLUE, id);
 
     // TODO: allow changing
     widget->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
@@ -43,6 +40,24 @@ WidgetInteraction ui_button(UIState *ui, String text)
     ui_core_push_container(ui, widget);
     ui_internal_text(ui, text, v2(0, widget->semantic_size[AXIS_VERTICAL].value / 2.0f - widget->child_padding * 2), RGBA32_WHITE);
     ui_core_pop_container(ui);
+
+    return widget;
+}
+
+WidgetInteraction ui_button(UIState *ui, String text)
+{
+    Widget *widget = ui_create_non_interactible_button(ui, text, ui_core_hash_string(text));
+    widget_add_flag(widget, WIDGET_CLICKABLE);
+    widget_add_flag(widget, WIDGET_HOT_COLOR);
+    widget_add_flag(widget, WIDGET_ACTIVE_COLOR);
+
+    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
+    return prev_interaction;
+}
+
+WidgetInteraction ui_non_interactible_button(UIState *ui, String text)
+{
+    Widget *widget = ui_create_non_interactible_button(ui, text, UI_NULL_WIDGET_ID);
 
     WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
     return prev_interaction;

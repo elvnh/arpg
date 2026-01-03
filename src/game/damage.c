@@ -129,7 +129,7 @@ static DamageTypes apply_damage_modifiers_in_slot(DamageTypes value, Equipment *
     Item *item = item_mgr_get_item(item_mgr, item_id);
 
     if (item && item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
-        ASSERT(item_has_prop(item, ITEM_PROP_EQUIPMENT));
+        ASSERT(item_has_prop(item, ITEM_PROP_EQUIPPABLE));
 
         // TODO: break this out into function and unit test
         for (s32 i = 0; i < item->modifiers.modifier_count; ++i) {

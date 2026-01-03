@@ -14,7 +14,7 @@ typedef struct {
 } ItemID;
 
 typedef enum {
-    ITEM_PROP_EQUIPMENT = (1 << 0),
+    ITEM_PROP_EQUIPPABLE = (1 << 0),
     ITEM_PROP_HAS_MODIFIERS = (1 << 1),
 } ItemProperty;
 
@@ -83,7 +83,9 @@ static inline void item_add_modifier(Item *item, Modifier mod)
 static inline String equipment_slot_spelling(EquipmentSlot slot)
 {
     switch (slot) {
-	case EQUIP_SLOT_HEAD:      return str_lit("Head");
+	case EQUIP_SLOT_HEAD:       return str_lit("Head");
+	case EQUIP_SLOT_LEFT_HAND:  return str_lit("Left hand");
+	case EQUIP_SLOT_RIGHT_HAND: return str_lit("Right hand");
 
 	INVALID_DEFAULT_CASE;
     }

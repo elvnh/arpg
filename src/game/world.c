@@ -846,7 +846,7 @@ void world_initialize(World *world, LinearArena *arena)
         {
             ItemWithID item_with_id = item_mgr_create_item(&world->item_manager, str_lit("Sword"));
             Item *item = item_with_id.item;
-            item_set_prop(item, ITEM_PROP_EQUIPMENT | ITEM_PROP_HAS_MODIFIERS);
+            item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
             item->equipment.slot = EQUIP_SLOT_HEAD;
 
             Modifier dmg_mod = {

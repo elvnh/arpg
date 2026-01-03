@@ -1,4 +1,5 @@
 #include "game_ui.h"
+#include "item.h"
 #include "ui/ui_builder.h"
 
 #define GAME_UI_COLOR (RGBA32) {0, 1, 0, 0.5f}
@@ -18,8 +19,28 @@ static void equipment_slot_widget(UIState *ui, GameState *game_state, Equipment 
 	    ASSERT(unequip_success);
 	}
     } else {
-	ui_button(ui, str_lit("(empty)"));
+	ui_non_interactible_button(ui, str_lit("(empty)"));
     }
+}
+
+
+static void equipment_menu(UIState *ui, GameState *game_state, GameMemory *game_memory,
+    const FrameData *frame_data)
+{
+    Entity *player = world_get_player_entity(&game_state->world);
+
+    ui_begin_container(ui, str_lit("equipment"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+	ui_text(ui, str_lit("Equipment"));
+
+	EquipmentComponent *eq = es_get_component(player, EquipmentComponent);
+	InventoryComponent *inv = es_get_component(player, InventoryComponent);
+	ASSERT(eq);
+	ASSERT(inv);
+
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_HEAD);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEFT_HAND);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_RIGHT_HAND);
+    } ui_pop_container(ui);
 }
 
 static void inventory_menu(UIState *ui, GameState *game_state, GameMemory *game_memory,
@@ -53,23 +74,6 @@ static void inventory_menu(UIState *ui, GameState *game_state, GameMemory *game_
     } ui_pop_container(ui);
 }
 
-static void equipment_menu(UIState *ui, GameState *game_state, GameMemory *game_memory,
-    const FrameData *frame_data)
-{
-    Entity *player = world_get_player_entity(&game_state->world);
-
-    ui_begin_container(ui, str_lit("equipment"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
-	ui_text(ui, str_lit("Equipment"));
-
-	EquipmentComponent *eq = es_get_component(player, EquipmentComponent);
-	InventoryComponent *inv = es_get_component(player, InventoryComponent);
-	ASSERT(eq);
-	ASSERT(inv);
-
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_HEAD);
-    } ui_pop_container(ui);
-
-}
 
 void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {

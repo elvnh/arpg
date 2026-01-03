@@ -8,6 +8,8 @@
 
 typedef struct {
     ItemID head;
+    ItemID left_hand;
+    ItemID right_hand;
 } Equipment;
 
 ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot);

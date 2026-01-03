@@ -170,7 +170,8 @@ void execute_render_commands(RenderBatch *rb, AssetManager *assets,
                     verts.bottom_right.uv = tmp;
                 }
 
-                Vector2 origin = verts.bottom_left.position;
+		// TODO: rotate around origin instead?
+                Vector2 origin = rect_center(cmd->rect);
 
                 verts.top_left.position = v2_rotate_around_point(verts.top_left.position, rotation, origin);
                 verts.top_right.position = v2_rotate_around_point(verts.top_right.position, rotation, origin);

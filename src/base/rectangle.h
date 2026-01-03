@@ -467,4 +467,14 @@ static inline RectangleQuadrants rect_quadrants(Rectangle rect)
     return result;
 }
 
+static inline Vector2 rect_center(Rectangle rect)
+{
+    Vector2 result = {
+	rect.position.x + rect.size.x / 2.0f,
+	rect.position.y + rect.size.y / 2.0f
+    };
+
+    return result;
+}
+
 #endif //RECTANGLE_H

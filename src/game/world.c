@@ -138,7 +138,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
         // TODO: how to handle if entity has both sprite and animation component?
         // TODO: UI should be drawn on separate layer
 
-	SpriteModifiers sprite_mods = sprite_get_modifiers(entity, sprite->rotation_behaviour);
+	SpriteModifiers sprite_mods = sprite_get_modifiers(entity->direction, sprite->rotation_behaviour);
 
         Rectangle sprite_rect = { entity->position, sprite->size };
         rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods,

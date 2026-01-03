@@ -93,7 +93,8 @@ void anim_render_instance(AnimationInstance *anim_instance, Entity *owning_entit
 {
     AnimationFrame current_frame = anim_get_current_frame(anim_instance);
 
-    SpriteModifiers sprite_mods = sprite_get_modifiers(owning_entity, current_frame.sprite.rotation_behaviour);
+    SpriteModifiers sprite_mods = sprite_get_modifiers(owning_entity->direction,
+	current_frame.sprite.rotation_behaviour);
 
     Rectangle sprite_rect = { owning_entity->position, current_frame.sprite.size };
     rb_push_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods,

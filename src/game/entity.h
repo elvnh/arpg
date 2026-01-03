@@ -102,31 +102,4 @@ static inline u64 entity_id_hash(EntityID id)
     return result;
 }
 
-// TODO: move elsewhere
-static inline SpriteModifiers sprite_get_modifiers(Entity *entity, SpriteRotationBehaviour rotation_behaviour)
-{
-    f32 rotation = 0.0f;
-    f32 dir_angle = (f32)atan2(entity->direction.y, entity->direction.x);
-
-    RectangleFlip flip = RECT_FLIP_NONE;
-
-    if (rotation_behaviour == SPRITE_ROTATE_BASED_ON_DIR) {
-	rotation = dir_angle;
-    } else if (rotation_behaviour == SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR) {
-	b32 should_flip = (dir_angle > PI_2) || (dir_angle < -PI_2);
-
-	if (should_flip) {
-	    flip = RECT_FLIP_HORIZONTALLY;
-	}
-    }
-
-    SpriteModifiers result = {
-	.flip = flip,
-	.rotation = rotation
-    };
-
-    return result;
-}
-
-
 #endif //ENTITY_H

@@ -366,12 +366,12 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
 
     // Game UI
     {
-        ui_core_begin_frame(&game_state->ui);
+        ui_core_begin_frame(&game_state->game_ui.backend_state);
 
-        game_ui(&game_state->ui, game_state, game_memory, &frame_data);
+        game_ui(game_state, game_memory, &frame_data);
 
 	UIInteraction game_ui_interaction =
-            ui_core_end_frame(&game_state->ui, &frame_data, &game_ui_rb, platform_code);
+            ui_core_end_frame(&game_state->game_ui.backend_state, &frame_data, &game_ui_rb, platform_code);
 
         if (game_ui_interaction.received_mouse_input || game_ui_interaction.click_began_inside_ui) {
             input_consume_input(&frame_data.input, MOUSE_LEFT);
@@ -418,5 +418,5 @@ void game_initialize(GameState *game_state, GameMemory *game_memory)
 
     // Debug UI
     ui_core_initialize(&game_state->debug_state.debug_ui, default_ui_style, &game_memory->permanent_memory);
-    ui_core_initialize(&game_state->ui, default_ui_style, &game_memory->permanent_memory);
+    ui_core_initialize(&game_state->game_ui.backend_state, default_ui_style, &game_memory->permanent_memory);
 }

@@ -1,12 +1,15 @@
 #include "game_ui.h"
-#include "item.h"
-#include "ui/ui_builder.h"
+#include "game.h"
 
 #define GAME_UI_COLOR (RGBA32) {0, 1, 0, 0.5f}
 
-static void equipment_slot_widget(UIState *ui, GameState *game_state, Equipment *equipment,
+// TODO: clean up this file
+
+static void equipment_slot_widget(GameUIState *ui_state, GameState *game_state, Equipment *equipment,
     Inventory *inventory, EquipmentSlot slot)
 {
+    UIState *ui = &ui_state->backend_state;
+
     ui_text(ui, equipment_slot_spelling(slot));
     ui_core_same_line(ui);
 
@@ -23,10 +26,10 @@ static void equipment_slot_widget(UIState *ui, GameState *game_state, Equipment 
     }
 }
 
-
-static void equipment_menu(UIState *ui, GameState *game_state, GameMemory *game_memory,
+static void equipment_menu(GameUIState *ui_state, GameState *game_state, GameMemory *game_memory,
     const FrameData *frame_data)
 {
+    UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game_state->world);
 
     ui_begin_container(ui, str_lit("equipment"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
@@ -37,20 +40,22 @@ static void equipment_menu(UIState *ui, GameState *game_state, GameMemory *game_
 	ASSERT(eq);
 	ASSERT(inv);
 
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_HEAD);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_NECK);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEFT_FINGER);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_RIGHT_FINGER);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_HANDS);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_BODY);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEGS);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_FEET);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_HEAD);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_NECK);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEFT_FINGER);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_RIGHT_FINGER);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_GLOVES);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_BODY);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEGS);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_FEET);
+	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_WEAPON);
     } ui_pop_container(ui);
 }
 
-static void inventory_menu(UIState *ui, GameState *game_state, GameMemory *game_memory,
+static void inventory_menu(GameUIState *ui_state, GameState *game_state, GameMemory *game_memory,
     const FrameData *frame_data)
 {
+    UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game_state->world);
 
     ui_begin_container(ui, str_lit("inventory"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
@@ -80,29 +85,27 @@ static void inventory_menu(UIState *ui, GameState *game_state, GameMemory *game_
 }
 
 
-void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
+void game_ui(GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {
     Entity *player = world_get_player_entity(&game_state->world);
+    UIState *ui = &game_state->game_ui.backend_state;
     ASSERT(player);
 
-    // TODO: store in UI state or something similar
-    static bool is_active = false;
-
     if (input_is_key_pressed(&frame_data->input, KEY_I)) {
-	is_active = !is_active;
+	game_state->game_ui.inventory_menu_open = !game_state->game_ui.inventory_menu_open;
     }
 
-    if (!is_active) {
+    if (!game_state->game_ui.inventory_menu_open) {
 	return;
     }
 
     ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
-    inventory_menu(ui, game_state, game_memory, frame_data);
+    inventory_menu(&game_state->game_ui, game_state, game_memory, frame_data);
 
     ui_core_same_line(ui);
 
-    equipment_menu(ui, game_state, game_memory, frame_data);
+    equipment_menu(&game_state->game_ui, game_state, game_memory, frame_data);
 
     ui_pop_container(ui);
 }

@@ -1,4 +1,5 @@
 #include "item_manager.h"
+#include "base/free_list_arena.h"
 #include "item.h"
 
 #define ITEM_SYSTEM_MEMORY_SIZE MB(8)
@@ -52,13 +53,11 @@ Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id)
     return result;
 }
 
-ItemWithID item_mgr_create_item(ItemManager *item_mgr, String name)
+ItemWithID item_mgr_create_item(ItemManager *item_mgr)
 {
     ItemID id = get_new_item_id(item_mgr);
     Item *item = item_mgr_get_item(item_mgr, id);
     mem_zero(item, SIZEOF(*item));
-
-    item->name = str_copy(name, fl_allocator(&item_mgr->item_system_memory));
 
     ItemWithID result = {
         .id = id,
@@ -66,6 +65,16 @@ ItemWithID item_mgr_create_item(ItemManager *item_mgr, String name)
     };
 
     return result;
+}
+
+// TODO: make it possible to set literal as name so it doesn't have to be copied
+void item_mgr_set_item_name(ItemManager *item_mgr, Item *item, String name)
+{
+    if (item->name.data) {
+	fl_deallocate(&item_mgr->item_system_memory, item->name.data);
+    }
+
+    item->name = str_copy(name, fl_allocator(&item_mgr->item_system_memory));
 }
 
 void item_mgr_destroy_item(ItemManager *item_mgr, ItemID id)

@@ -1,8 +1,18 @@
 #ifndef GAME_UI_H
 #define GAME_UI_H
 
-#include "game.h"
+#include "ui/ui_builder.h"
 
-void game_ui(UIState *ui, GameState *game_state, GameMemory *game_memory, const FrameData *frame_data);
+typedef struct {
+    UIState backend_state;
+
+    b32 inventory_menu_open;
+} GameUIState;
+
+struct GameState;
+struct GameMemory;
+struct FrameData;
+
+void game_ui(struct GameState *game_state, struct GameMemory *game_memory, const struct FrameData *frame_data);
 
 #endif //GAME_UI_H

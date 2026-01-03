@@ -844,10 +844,12 @@ void world_initialize(World *world, LinearArena *arena)
         (void)equipment;
 
         {
-            ItemWithID item_with_id = item_mgr_create_item(&world->item_manager, str_lit("Sword"));
+            ItemWithID item_with_id = item_mgr_create_item(&world->item_manager);
             Item *item = item_with_id.item;
+
+            item_mgr_set_item_name(&world->item_manager, item, str_lit("Sword"));
             item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
-            item->equipment.slot = EQUIP_SLOT_HEAD;
+            item->equipment.slot = EQUIP_SLOT_WEAPON;
 
             Modifier dmg_mod = {
                 .kind = MODIFIER_DAMAGE,

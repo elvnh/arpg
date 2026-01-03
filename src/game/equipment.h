@@ -15,6 +15,7 @@ typedef struct {
     ItemID body;
     ItemID legs;
     ItemID feet;
+    ItemID weapon;
 } Equipment;
 
 ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot);

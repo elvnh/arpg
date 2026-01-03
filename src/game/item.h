@@ -23,11 +23,12 @@ typedef enum {
     EQUIP_SLOT_LEFT_FINGER = (1 << 1),
     EQUIP_SLOT_RIGHT_FINGER = (1 << 2),
     EQUIP_SLOT_FINGERS = (EQUIP_SLOT_LEFT_FINGER | EQUIP_SLOT_RIGHT_FINGER),
-    EQUIP_SLOT_HANDS = (1 << 3),
+    EQUIP_SLOT_GLOVES = (1 << 3),
     EQUIP_SLOT_BODY = (1 << 4),
     EQUIP_SLOT_LEGS = (1 << 5),
     EQUIP_SLOT_FEET = (1 << 6),
     EQUIP_SLOT_NECK = (1 << 7),
+    EQUIP_SLOT_WEAPON = (1 << 8),
 } EquipmentSlot;
 
 typedef struct {
@@ -92,10 +93,11 @@ static inline String equipment_slot_spelling(EquipmentSlot slot)
 	case EQUIP_SLOT_NECK:         return str_lit("Neck");
 	case EQUIP_SLOT_LEFT_FINGER:  return str_lit("Left ring");
 	case EQUIP_SLOT_RIGHT_FINGER: return str_lit("Right ring");
-	case EQUIP_SLOT_HANDS:       return str_lit("Hands");
+	case EQUIP_SLOT_GLOVES:       return str_lit("Hands");
 	case EQUIP_SLOT_BODY:         return str_lit("Body");
 	case EQUIP_SLOT_LEGS:         return str_lit("Legs");
 	case EQUIP_SLOT_FEET:         return str_lit("Feet");
+	case EQUIP_SLOT_WEAPON:       return str_lit("Weapon");
 
 	INVALID_DEFAULT_CASE;
     }

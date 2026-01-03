@@ -11,23 +11,24 @@
 #include "input.h"
 #include "debug.h"
 #include "animation.h"
+#include "game_ui.h"
 
 /*
   TODO:
   - Should asset list be a global variable?
  */
 
-typedef struct {
+typedef struct GameState {
     World world;
     AssetTable asset_list;
     DebugState debug_state;
     SpellArray spells;
     RNGState rng_state;
     AnimationTable animations;
-    UIState ui;
+    GameUIState game_ui;
 } GameState;
 
-typedef struct {
+typedef struct GameMemory {
     LinearArena permanent_memory;
     LinearArena temporary_memory;
 } GameMemory;

@@ -28,7 +28,7 @@ static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
             result = &eq->right_finger;
         } break;
 
-        case EQUIP_SLOT_HANDS: {
+        case EQUIP_SLOT_GLOVES: {
             result = &eq->hands;
         } break;
 
@@ -42,6 +42,10 @@ static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
 
         case EQUIP_SLOT_FEET: {
             result = &eq->feet;
+        } break;
+
+        case EQUIP_SLOT_WEAPON: {
+            result = &eq->weapon;
         } break;
 
         INVALID_DEFAULT_CASE;

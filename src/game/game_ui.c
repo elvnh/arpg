@@ -38,8 +38,13 @@ static void equipment_menu(UIState *ui, GameState *game_state, GameMemory *game_
 	ASSERT(inv);
 
 	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_HEAD);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEFT_HAND);
-	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_RIGHT_HAND);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_NECK);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEFT_FINGER);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_RIGHT_FINGER);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_HANDS);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_BODY);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEGS);
+	equipment_slot_widget(ui, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_FEET);
     } ui_pop_container(ui);
 }
 

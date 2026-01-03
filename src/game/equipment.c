@@ -16,12 +16,32 @@ static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
             result = &eq->head;
         } break;
 
-        case EQUIP_SLOT_LEFT_HAND: {
-            result = &eq->left_hand;
+        case EQUIP_SLOT_NECK: {
+            result = &eq->neck;
         } break;
 
-        case EQUIP_SLOT_RIGHT_HAND: {
-            result = &eq->right_hand;
+        case EQUIP_SLOT_LEFT_FINGER: {
+            result = &eq->left_finger;
+        } break;
+
+        case EQUIP_SLOT_RIGHT_FINGER: {
+            result = &eq->right_finger;
+        } break;
+
+        case EQUIP_SLOT_HANDS: {
+            result = &eq->hands;
+        } break;
+
+        case EQUIP_SLOT_BODY: {
+            result = &eq->body;
+        } break;
+
+        case EQUIP_SLOT_LEGS: {
+            result = &eq->legs;
+        } break;
+
+        case EQUIP_SLOT_FEET: {
+            result = &eq->feet;
         } break;
 
         INVALID_DEFAULT_CASE;

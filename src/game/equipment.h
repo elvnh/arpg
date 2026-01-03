@@ -8,8 +8,13 @@
 
 typedef struct {
     ItemID head;
-    ItemID left_hand;
-    ItemID right_hand;
+    ItemID neck;
+    ItemID left_finger;
+    ItemID right_finger;
+    ItemID hands;
+    ItemID body;
+    ItemID legs;
+    ItemID feet;
 } Equipment;
 
 ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot);

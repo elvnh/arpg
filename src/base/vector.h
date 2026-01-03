@@ -190,9 +190,4 @@ static inline Vector2 v2_rotate_around_point(Vector2 v, f32 rotation_in_radians,
     return result;
 }
 
-static inline void v2_print(Vector2 v)
-{
-    printf("(%.2f, %.2f)\n", (f64)v.x, (f64)v.y);
-}
-
 #endif //VECTOR2_H

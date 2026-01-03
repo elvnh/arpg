@@ -128,10 +128,9 @@ static void debug_ui(UIState *ui, GameState *game_state, GameMemory *game_memory
 {
     ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
-    ssize temp_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
-    ssize perm_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
-    ssize world_arena_memory_usage = la_get_memory_usage(&game_state->world.world_arena);
-    // TODO: asset memory usage
+    ssize temp_arena_memory_usage = game_state->debug_state.scratch_arena_memory_usage;
+    ssize perm_arena_memory_usage = game_state->debug_state.permanent_arena_memory_usage;
+    ssize world_arena_memory_usage = game_state->debug_state.world_arena_memory_usage;
 
     Allocator temp_alloc = la_allocator(&game_memory->temporary_memory);
 
@@ -470,13 +469,19 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
         game_state->debug_state.debug_menu_active = !game_state->debug_state.debug_menu_active;
     }
 
-
     rb_sort_entries(&game_ui_rb, &game_memory->temporary_memory);
     rb_sort_entries(&debug_ui_rb, &game_memory->temporary_memory);
 
     // Debug UI is rendered on top of game UI
     rb_list_push(rbs, &game_ui_rb, &game_memory->temporary_memory);
     rb_list_push(rbs, &debug_ui_rb, &game_memory->temporary_memory);
+
+    // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
+    // have had time to be used during the frame. This means that the stats have 1 frame delay
+    // but that really doesn't matter
+    game_state->debug_state.scratch_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
+    game_state->debug_state.permanent_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
+    game_state->debug_state.world_arena_memory_usage = la_get_memory_usage(&game_state->world.world_arena);
 }
 
 void game_initialize(GameState *game_state, GameMemory *game_memory)

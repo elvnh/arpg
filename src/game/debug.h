@@ -16,6 +16,11 @@ typedef struct DebugState {
     f32 average_fps;
     f32 timestep_modifier;
 
+    // TODO: asset memory usage
+    ssize scratch_arena_memory_usage;
+    ssize permanent_arena_memory_usage;
+    ssize world_arena_memory_usage;
+
     EntityID hovered_entity;
 } DebugState;
 

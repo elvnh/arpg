@@ -142,7 +142,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
 
         Rectangle sprite_rect = { entity->position, sprite->size };
         rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods.rotation, sprite_mods.flip,
-	    RGBA32_WHITE, get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
+	    get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
@@ -661,7 +661,7 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
 
 
                 if (tile->type == TILE_FLOOR) {
-                    rb_push_sprite(rb, frame_arena, texture, tile_rect, 0, 0, RGBA32_WHITE,
+                    rb_push_sprite(rb, frame_arena, texture, tile_rect, 0, 0,
                         get_asset_table()->texture_shader, layer);
                 } else if (tile->type == TILE_WALL) {
                     // NOTE: Walls are rendered in two segments and are made transparent if entities are behind them

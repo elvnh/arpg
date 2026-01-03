@@ -186,8 +186,9 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
     return entry;
 }
 
-RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, RGBA32 color, ShaderHandle shader, RenderLayer layer)
+RenderEntry *rb_push_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, RGBA32 color,
+    ShaderHandle shader, RenderLayer layer)
 {
     ASSERT(rect_is_valid(rectangle));
 
@@ -204,10 +205,17 @@ RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle t
     return result;
 }
 
+RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, ShaderHandle shader, RenderLayer layer)
+{
+    return rb_push_colored_sprite(rb, arena, texture, rectangle, rotation_in_radians, flip,
+	RGBA32_WHITE, shader, layer);
+}
+
 RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
-    return rb_push_sprite(rb, arena, NULL_TEXTURE, rect, 0.0f, RECT_FLIP_NONE, color, shader, layer);
+    return rb_push_colored_sprite(rb, arena, NULL_TEXTURE, rect, 0.0f, RECT_FLIP_NONE, color, shader, layer);
 }
 
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,

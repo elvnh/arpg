@@ -43,7 +43,10 @@ void         rb_list_push(RenderBatchList *list, RenderBatch *rb, LinearArena *a
 RenderBatch  rb_create(Camera camera, Vector2i viewport_size, YDirection y_dir);
 void         rb_sort_entries(RenderBatch *rb, LinearArena *scratch);
 RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
-    Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, RGBA32 color, ShaderHandle shader, RenderLayer layer);
+    Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, ShaderHandle shader, RenderLayer layer);
+RenderEntry *rb_push_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Rectangle rectangle, f32 rotation_in_radians, RectangleFlip flip, RGBA32 color,
+    ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,

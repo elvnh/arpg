@@ -30,6 +30,8 @@ WidgetInteraction ui_button(UIState *ui, String text)
 {
     Widget *widget = ui_core_colored_box(ui, v2(0, 32.0f), RGBA32_BLUE, ui_core_hash_string(text));
     widget_add_flag(widget, WIDGET_CLICKABLE);
+    widget_add_flag(widget, WIDGET_HOT_COLOR);
+    widget_add_flag(widget, WIDGET_ACTIVE_COLOR);
 
     // TODO: allow changing
     widget->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
@@ -137,6 +139,8 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
     selectable->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
 
     widget_add_flag(selectable, WIDGET_CLICKABLE);
+    widget_add_flag(selectable, WIDGET_HOT_COLOR);
+    widget_add_flag(selectable, WIDGET_ACTIVE_COLOR);
 
     ui_core_push_container(ui, selectable);
     ui_text(ui, text);
@@ -146,7 +150,8 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
     return prev_interaction;
 }
 
-WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, RGBA32 color, UISizeKind size_kind, f32 child_padding)
+WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, RGBA32 color,
+    UISizeKind size_kind, f32 child_padding)
 {
     Widget *widget = ui_core_colored_box(ui, size, color, ui_core_hash_string(title));
 

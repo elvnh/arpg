@@ -316,11 +316,11 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
         if (widget_has_flag(widget, WIDGET_COLORED)) {
             RGBA32 color = widget->color;
 
-            if (widget_is_hot(ui, widget)) {
+            if (widget_is_hot(ui, widget) && widget_has_flag(widget, WIDGET_HOT_COLOR)) {
                 color = RGBA32_GREEN;
             }
 
-            if (widget_is_active(ui, widget)) {
+            if (widget_is_active(ui, widget) && widget_has_flag(widget, WIDGET_ACTIVE_COLOR)) {
                 color = RGBA32_RED;
             }
 

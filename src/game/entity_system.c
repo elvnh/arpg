@@ -324,7 +324,7 @@ EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearAre
     return result;
 }
 
-Rectangle es_get_entity_bounding_box(Entity *entity, AnimationTable *anim_table)
+Rectangle es_get_entity_bounding_box(Entity *entity)
 {
     // NOTE: this minimum size is completely arbitrary
     Vector2 size = {4, 4};
@@ -346,7 +346,7 @@ Rectangle es_get_entity_bounding_box(Entity *entity, AnimationTable *anim_table)
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
 	AnimationInstance *current_anim = anim_get_current_animation(entity, anim_comp);
-	AnimationFrame current_frame = anim_get_current_frame(current_anim, anim_table);
+	AnimationFrame current_frame = anim_get_current_frame(current_anim);
 
         size.x = MAX(size.x, current_frame.sprite.size.x);
         size.y = MAX(size.y, current_frame.sprite.size.y);
@@ -358,12 +358,11 @@ Rectangle es_get_entity_bounding_box(Entity *entity, AnimationTable *anim_table)
     return result;
 }
 
-void es_update_entity_quad_tree_location(EntitySystem *es, Entity *entity, LinearArena *arena,
-    AnimationTable *anim_table)
+void es_update_entity_quad_tree_location(EntitySystem *es, Entity *entity, LinearArena *arena)
 {
     EntitySlot *slot = es_get_entity_slot(entity);
     EntityID id = es_get_id_of_entity(es, entity);
 
-    Rectangle new_area = es_get_entity_bounding_box(entity, anim_table);
+    Rectangle new_area = es_get_entity_bounding_box(entity);
     slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, id, slot->quad_tree_location, new_area, arena);
 }

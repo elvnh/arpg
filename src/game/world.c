@@ -78,7 +78,7 @@ static b32 entity_should_die(Entity *entity)
     return false;
 }
 
-static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *animations)
+static void entity_update(World *world, Entity *entity, f32 dt)
 {
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
@@ -97,7 +97,7 @@ static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *
 
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
-	anim_update_instance(animations, &anim_component->state_animations[entity->state], dt);
+	anim_update_instance(&anim_component->state_animations[entity->state], dt);
     }
 
     if (entity_should_die(entity)) {
@@ -121,18 +121,17 @@ static void entity_update(World *world, Entity *entity, f32 dt, AnimationTable *
         }
     }
 
-    es_update_entity_quad_tree_location(&world->entity_system, entity, &world->world_arena, animations);
+    es_update_entity_quad_tree_location(&world->entity_system, entity, &world->world_arena);
 }
 
 static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetList *assets,
-    LinearArena *scratch, struct DebugState *debug_state, World *world, const FrameData *frame_data,
-    AnimationTable *animations)
+    LinearArena *scratch, struct DebugState *debug_state, World *world, const FrameData *frame_data)
 {
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
 	// TODO: move into separate function
         AnimationInstance *anim_instance = anim_get_current_animation(entity, anim_component);
-	anim_render_instance(animations, anim_instance, entity, rb, assets, scratch);
+	anim_render_instance(anim_instance, entity, rb, assets, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
 	Sprite *sprite = &sprite_comp->sprite;
@@ -179,7 +178,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb, const AssetLis
     }
 
     if (debug_state->render_entity_bounds) {
-        Rectangle entity_rect = es_get_entity_bounding_box(entity, animations);
+        Rectangle entity_rect = es_get_entity_bounding_box(entity);
         rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f}, assets->shape_shader, RENDER_LAYER_ENTITIES);
     }
 }
@@ -507,8 +506,7 @@ Entity *world_get_player_entity(World *world)
     return result;
 }
 
-void world_update(World *world, const FrameData *frame_data, const AssetList *assets, LinearArena *frame_arena,
-    AnimationTable *animations)
+void world_update(World *world, const FrameData *frame_data, const AssetList *assets, LinearArena *frame_arena)
 {
     if (world->entity_system.alive_entity_count < 1) {
         return;
@@ -529,11 +527,11 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
             Vector2 mouse_pos = frame_data->input.mouse_position;
             mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
 
-	    Vector2 player_center = rect_center(es_get_entity_bounding_box(player, animations));
+	    Vector2 player_center = rect_center(es_get_entity_bounding_box(player));
             Vector2 mouse_dir = v2_sub(mouse_pos, player_center);
             mouse_dir = v2_norm(mouse_dir);
 
-            magic_cast_spell(world, SPELL_FIREBALL, player, player_center, mouse_dir, animations);
+            magic_cast_spell(world, SPELL_FIREBALL, player, player_center, mouse_dir);
         }
 
         camera_set_target(&world->camera, target);
@@ -598,7 +596,7 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
         Entity *entity = es_get_entity(&world->entity_system, entity_id);
         ASSERT(entity);
 
-        entity_update(world, entity, frame_data->dt, animations);
+        entity_update(world, entity, frame_data->dt);
     }
 
     hitsplats_update(world, frame_data);
@@ -614,7 +612,7 @@ void world_update(World *world, const FrameData *frame_data, const AssetList *as
 
 // TODO: this shouldn't need AssetList parameter?
 void world_render(World *world, RenderBatch *rb, const AssetList *assets, const FrameData *frame_data,
-    LinearArena *frame_arena, DebugState *debug_state, AnimationTable *animations)
+    LinearArena *frame_arena, DebugState *debug_state)
 {
     Rectangle visible_area = camera_get_visible_area(world->camera, frame_data->window_size);
     visible_area.position = v2_sub(visible_area.position, v2(TILE_SIZE, TILE_SIZE));
@@ -691,7 +689,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
                         // TODO: only do this if it's the player?
                         // TODO: get sprite rect instead of all component bounds?
 
-                        Rectangle entity_bounds = es_get_entity_bounding_box(entity, animations);
+                        Rectangle entity_bounds = es_get_entity_bounding_box(entity);
                         b32 entity_intersects_wall = rect_intersects(entity_bounds, top_segment);
 
                         b32 entity_is_behind_wall = can_walk_behind_tile
@@ -722,7 +720,7 @@ void world_render(World *world, RenderBatch *rb, const AssetList *assets, const 
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(&world->entity_system, node->id);
 
-        entity_render(entity, rb, assets, frame_arena, debug_state, world, frame_data, animations);
+        entity_render(entity, rb, assets, frame_arena, debug_state, world, frame_data);
     }
 
     hitsplats_render(world, rb, assets, frame_arena);

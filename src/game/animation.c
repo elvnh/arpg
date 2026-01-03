@@ -5,6 +5,8 @@
 #include "entity_system.h"
 #include "renderer/render_batch.h"
 
+static AnimationTable *g_animation_table;
+
 static Animation animation_player_idle(const AssetList *asset_table)
 {
     Animation result = {0};
@@ -39,25 +41,27 @@ static Animation animation_player_walking(const AssetList *asset_table)
     return result;
 }
 
-void anim_initialize(AnimationTable *table, const AssetList *asset_table)
+void anim_initialize(AnimationTable *anim_table, const AssetList *asset_table)
 {
-    table->animations[ANIM_PLAYER_IDLE] = animation_player_idle(asset_table);
-    table->animations[ANIM_PLAYER_WALKING] = animation_player_walking(asset_table);
+    anim_set_global_animation_table(anim_table);
+
+    g_animation_table->animations[ANIM_PLAYER_IDLE] = animation_player_idle(asset_table);
+    g_animation_table->animations[ANIM_PLAYER_WALKING] = animation_player_walking(asset_table);
 }
 
-Animation *anim_get_by_id(AnimationTable *table, AnimationID id)
+Animation *anim_get_by_id(AnimationID id)
 {
     ASSERT(id != ANIM_NULL);
     ASSERT(id >= 0);
-    ASSERT(id < ARRAY_COUNT(table->animations));
-    Animation *result = &table->animations[id];
+    ASSERT(id < ARRAY_COUNT(g_animation_table->animations));
+    Animation *result = &g_animation_table->animations[id];
 
     return result;
 }
 
-void anim_update_instance(AnimationTable *anim_table, AnimationInstance *anim_instance, f32 dt)
+void anim_update_instance(AnimationInstance *anim_instance, f32 dt)
 {
-    Animation *anim = anim_get_by_id(anim_table, anim_instance->animation_id);
+    Animation *anim = anim_get_by_id(anim_instance->animation_id);
     ASSERT(anim_instance->current_frame < anim->frame_count);
 
     AnimationFrame curr_frame = anim->frames[anim_instance->current_frame];
@@ -85,10 +89,10 @@ void anim_update_instance(AnimationTable *anim_table, AnimationInstance *anim_in
 
 }
 
-void anim_render_instance(AnimationTable *anim_table, AnimationInstance *anim_instance,
+void anim_render_instance(AnimationInstance *anim_instance,
     Entity *owning_entity, RenderBatch *rb, const AssetList *assets, LinearArena *scratch)
 {
-    AnimationFrame current_frame = anim_get_current_frame(anim_instance, anim_table);
+    AnimationFrame current_frame = anim_get_current_frame(anim_instance);
 
     SpriteModifiers sprite_mods = sprite_get_modifiers(owning_entity, current_frame.sprite.rotation_behaviour);
 
@@ -106,10 +110,9 @@ void anim_transition_to_animation(struct AnimationInstance *anim_instance, Anima
     anim_instance->current_frame_elapsed_time = 0;
 }
 
-AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance,
-    AnimationTable *anim_table)
+AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance)
 {
-    Animation *anim = anim_get_by_id(anim_table, anim_instance->animation_id);
+    Animation *anim = anim_get_by_id(anim_instance->animation_id);
     ASSERT(anim_instance->current_frame < anim->frame_count);
     AnimationFrame frame = anim->frames[anim_instance->current_frame];
 
@@ -126,4 +129,9 @@ AnimationInstance *anim_get_current_animation(Entity *entity, AnimationComponent
     AnimationInstance *result = &anim_comp->state_animations[entity->state];
 
     return result;
+}
+
+void anim_set_global_animation_table(AnimationTable *anim_table)
+{
+    g_animation_table = anim_table;
 }

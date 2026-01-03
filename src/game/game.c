@@ -45,7 +45,7 @@ static void game_update(GameState *game_state, const FrameData *frame_data, Line
         DEBUG_BREAK;
     }
 
-    world_update(&game_state->world, frame_data, &game_state->asset_list, frame_arena, &game_state->animations);
+    world_update(&game_state->world, frame_data, &game_state->asset_list, frame_arena);
 
 }
 
@@ -83,7 +83,7 @@ static void game_render(GameState *game_state, RenderBatchList *rbs, const Frame
     RenderBatch *rb = rb_list_push_new(rbs, game_state->world.camera, frame_data->window_size, Y_IS_UP, frame_arena);
 
     world_render(&game_state->world, rb, &game_state->asset_list, frame_data, frame_arena,
-	&game_state->debug_state, &game_state->animations);
+	&game_state->debug_state);
 
     if (game_state->debug_state.quad_tree_overlay) {
         render_tree(&game_state->world.entity_system.quad_tree.root, rb, frame_arena, &game_state->asset_list, 0);
@@ -412,6 +412,7 @@ void game_update_and_render(GameState *game_state, PlatformCode platform_code, R
     // NOTE: these global pointers are set every frame in case we have hot reloaded.
     rng_set_global_state(&game_state->rng_state);
     magic_set_global_spell_array(&game_state->spells);
+    anim_set_global_animation_table(&game_state->animations);
 
     // NOTE: Spells are re-initialized every frame so that the spells can be changed during runtime.
     magic_initialize(&game_state->spells, &game_state->asset_list);

@@ -44,14 +44,14 @@ typedef struct AnimationTable {
     Animation animations[ANIM_ANIMATION_COUNT];
 } AnimationTable;
 
-void anim_initialize(AnimationTable *table, const AssetList *asset_table);
-Animation *anim_get_by_id(AnimationTable *table, AnimationID id);
-void anim_update_instance(AnimationTable *anim_table, struct AnimationInstance *anim_instance, f32 dt);
-void anim_render_instance(AnimationTable *anim_table, struct AnimationInstance *anim_instance,
-    struct Entity *owning_entity, struct RenderBatch *rb, const struct AssetList *assets,
-    struct LinearArena *scratch);
+void anim_initialize(AnimationTable *anim_table, const AssetList *asset_table);
+Animation *anim_get_by_id(AnimationID id);
+void anim_update_instance(struct AnimationInstance *anim_instance, f32 dt);
+void anim_render_instance(struct AnimationInstance *anim_instance, struct Entity *owning_entity,
+    struct RenderBatch *rb, const struct AssetList *assets, struct LinearArena *scratch);
 void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim);
-AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance, AnimationTable *anim_table);
+AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance);
 AnimationInstance *anim_get_current_animation(struct Entity *entity, struct AnimationComponent *anim_comp);
+void anim_set_global_animation_table(AnimationTable *anim_table);
 
 #endif //ANIMATION_H

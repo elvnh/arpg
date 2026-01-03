@@ -8,8 +8,6 @@
 #define MAX_ENTITIES 32
 #define NULL_ENTITY_ID ((EntityID){ 0, 0 })
 
-struct AnimationTable;
-
 // TODO: Create try_get_component that can return 0, make get_component crash on 0
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
@@ -47,7 +45,7 @@ void       es_schedule_entity_for_removal(Entity *entity);
 void       es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch);
 EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearArena *arena);
 EntityIDList es_get_inactive_entities(EntitySystem *es, LinearArena *scratch);
-Rectangle    es_get_entity_bounding_box(Entity *entity, struct AnimationTable *anim_table);
+Rectangle    es_get_entity_bounding_box(Entity *entity);
 
 void      *es_impl_add_component(Entity *entity, ComponentType type);
 void      *es_impl_get_component(Entity *entity, ComponentType type);
@@ -56,7 +54,6 @@ void       es_impl_remove_component(Entity *entity, ComponentType type);
 
 // NOTE: until this is called at end of every entity update, entity won't be colliding with others
 // etc. This might cause issues if an entity is spawning other entities
-void       es_update_entity_quad_tree_location(EntitySystem *es, Entity *entity, LinearArena *arena,
-					      AnimationTable *anim_table);
+void       es_update_entity_quad_tree_location(EntitySystem *es, Entity *entity, LinearArena *arena);
 
 #endif //ENTITY_SYSTEM_H

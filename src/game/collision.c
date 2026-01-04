@@ -2,7 +2,6 @@
 #include "components/component.h"
 #include "game/entity_system.h"
 #include "world.h"
-#include "base/list.h"
 #include "base/sl_list.h"
 
 #define INTERSECTION_TABLE_ARENA_SIZE (128 * SIZEOF(CollisionEvent))

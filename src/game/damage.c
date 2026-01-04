@@ -1,10 +1,7 @@
 #include "damage.h"
 #include "base/utils.h"
-#include "components/component.h"
 #include "components/status_effect.h"
 #include "entity_system.h"
-#include "equipment.h"
-#include "item.h"
 #include "item_manager.h"
 #include "modifier.h"
 

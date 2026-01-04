@@ -2,6 +2,8 @@
 #include "base/format.h"
 #include "world.h"
 #include "renderer/render_batch.h"
+#include "asset_table.h"
+#include "input.h"
 
 void hitsplats_update(World *world, const FrameData *frame_data)
 {

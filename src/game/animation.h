@@ -2,7 +2,6 @@
 #define ANIMATION_H
 
 #include "base/vector.h"
-#include "asset_table.h"
 #include "sprite.h"
 
 #define MAX_ANIMATION_FRAMES 8

@@ -1,22 +1,21 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "base/matrix.h"
-#include "base/random.h"
-#include "game/magic.h"
 #include "ui/ui_core.h"
+#include "game/magic.h"
 #include "platform.h"
-#include "renderer/render_batch.h"
 #include "world.h"
-#include "input.h"
 #include "debug.h"
 #include "animation.h"
 #include "game_ui.h"
+#include "asset_table.h"
 
 /*
   TODO:
   - Move hovered_entity into game_state
  */
+
+struct RenderBatchList;
 
 typedef struct GameState {
     World world;
@@ -33,7 +32,7 @@ typedef struct GameMemory {
     LinearArena temporary_memory;
 } GameMemory;
 
-void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,
+void game_update_and_render(GameState *game_state, PlatformCode platform_code, struct RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory);
 void game_initialize(GameState *game_state, GameMemory *game_memory);
 

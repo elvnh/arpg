@@ -1,5 +1,4 @@
 #include "magic.h"
-
 #include "base/utils.h"
 #include "components/collider.h"
 #include "game/collision.h"
@@ -8,7 +7,7 @@
 #include "components/component.h"
 #include "asset.h"
 #include "entity_system.h"
-#include <math.h>
+#include "asset_table.h"
 
 static SpellArray *g_spells;
 

@@ -3,6 +3,7 @@
 
 #include "game/game.h"
 #include "platform.h"
+#include "renderer/render_batch.h"
 
 typedef void (GameInitialize)(GameState *, GameMemory *);
 typedef void (GameUpdateAndRender)(GameState *, PlatformCode, RenderBatchList *, FrameData, GameMemory *);

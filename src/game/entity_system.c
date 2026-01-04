@@ -4,8 +4,6 @@
 #include "base/sl_list.h"
 #include "base/utils.h"
 #include "components/component.h"
-#include "game/entity.h"
-#include "game/quad_tree.h"
 
 #define ES_MEMORY_SIZE MB(2)
 

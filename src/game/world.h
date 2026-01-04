@@ -1,13 +1,11 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include "animation.h"
 #include "entity_system.h"
 #include "item.h"
 #include "tilemap.h"
 #include "camera.h"
 #include "collision.h"
-#include "input.h"
 #include "item_manager.h"
 #include "hitsplat.h"
 
@@ -16,7 +14,7 @@
   - Should a World be a single level or something more persistent?
  */
 
-struct Input;
+struct FrameData;
 struct DebugState;
 struct RenderBatch;
 
@@ -37,9 +35,9 @@ typedef struct World {
 } World;
 
 void world_initialize(World *world, LinearArena *arena);
-void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena,
+void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena,
     struct DebugState *debug_state);
-void world_render(World *world, struct RenderBatch *rb, const FrameData *frame_data,
+void world_render(World *world, struct RenderBatch *rb, const struct FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
 Entity *world_get_player_entity(World *world);
 

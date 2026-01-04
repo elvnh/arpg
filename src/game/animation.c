@@ -4,6 +4,7 @@
 #include "entity.h"
 #include "entity_system.h"
 #include "renderer/render_batch.h"
+#include "asset_table.h"
 
 static AnimationTable *g_animation_table;
 

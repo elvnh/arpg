@@ -37,7 +37,8 @@ typedef struct World {
 } World;
 
 void world_initialize(World *world, LinearArena *arena);
-void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena);
+void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena,
+    struct DebugState *debug_state);
 void world_render(World *world, struct RenderBatch *rb, const FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
 Entity *world_get_player_entity(World *world);

@@ -6,7 +6,7 @@
 #include "quad_tree.h"
 
 #define MAX_ENTITIES 32
-#define NULL_ENTITY_ID ((EntityID){ 0, 0 })
+
 
 // TODO: Create try_get_component that can return 0, make get_component crash on 0
 

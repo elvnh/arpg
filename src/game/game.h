@@ -15,7 +15,7 @@
 
 /*
   TODO:
-  - Should asset list be a global variable?
+  - Move hovered_entity into game_state
  */
 
 typedef struct GameState {

@@ -70,6 +70,7 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 
     Widget *widget = ui_core_colored_box(ui, v2(12, 12), RGBA32_WHITE, ui_core_hash_string(text));
     widget_add_flag(widget, WIDGET_CLICKABLE);
+    widget_add_flag(widget, WIDGET_HOT_COLOR);
 
     widget->child_padding = 2.0f;
 

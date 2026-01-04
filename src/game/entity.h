@@ -5,6 +5,8 @@
 #include "base/rectangle.h"
 #include "components/component.h"
 
+#define NULL_ENTITY_ID ((EntityID){ 0, 0 })
+
 typedef s32 EntityIndex;
 typedef s32 EntityGeneration;
 
@@ -69,6 +71,12 @@ static inline b32 entity_pair_equal(EntityPair lhs, EntityPair rhs)
     b32 result = entity_id_equal(lhs.entity_a, rhs.entity_a)
         && entity_id_equal(lhs.entity_b, rhs.entity_b);
 
+    return result;
+}
+
+static inline b32 entity_id_is_null(EntityID id)
+{
+    b32 result = entity_id_equal(id, NULL_ENTITY_ID);
     return result;
 }
 

@@ -26,6 +26,7 @@
     COMPONENT(InventoryComponent)               \
     COMPONENT(EquipmentComponent)               \
     COMPONENT(AnimationComponent)               \
+    COMPONENT(GroundItemComponent)		\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -87,5 +88,9 @@ typedef struct {
 typedef struct AnimationComponent {
     AnimationInstance state_animations[ENTITY_STATE_COUNT];
 } AnimationComponent;
+
+typedef struct {
+    ItemID item_id;
+} GroundItemComponent;
 
 #endif //COMPONENT_H

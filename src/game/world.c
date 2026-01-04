@@ -508,7 +508,8 @@ Entity *world_get_player_entity(World *world)
     return result;
 }
 
-void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena)
+void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena,
+    DebugState *debug_state)
 {
     if (world->entity_system.alive_entity_count < 1) {
         return;
@@ -543,6 +544,21 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     camera_update(&world->camera, frame_data->dt);
 
     f32 speed = 350.0f;
+
+    if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)
+	&& !entity_id_is_null(debug_state->hovered_entity)) {
+	Entity *hovered_entity = es_get_entity(&world->entity_system, debug_state->hovered_entity);
+	GroundItemComponent *ground_item = es_get_component(hovered_entity, GroundItemComponent);
+
+	if (ground_item) {
+	    // TODO: make try_get_component be nullable, make get_component assert on failure to get
+	    InventoryComponent *inv = es_get_component(player, InventoryComponent);
+	    ASSERT(inv);
+
+	    inventory_add_item(&inv->inventory, ground_item->item_id);
+	    es_schedule_entity_for_removal(hovered_entity);
+	}
+    }
 
     if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
         speed *= 3.0f;
@@ -729,6 +745,18 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
     hitsplats_render(world, rb, frame_arena);
 }
 
+static void drop_ground_item(World *world, Vector2 pos, ItemID id)
+{
+    EntityWithID entity = es_spawn_entity(&world->entity_system, FACTION_NEUTRAL);
+    entity.entity->position = pos;
+
+    GroundItemComponent *ground_item = es_add_component(entity.entity, GroundItemComponent);
+    ground_item->item_id = id;
+
+    SpriteComponent *sprite = es_add_component(entity.entity, SpriteComponent);
+    sprite->sprite = sprite_create(get_asset_table()->fireball_texture, v2(16, 16), SPRITE_ROTATE_NONE);
+}
+
 void world_initialize(World *world, LinearArena *arena)
 {
     world->world_arena = la_create(la_allocator(arena), WORLD_ARENA_SIZE);
@@ -847,6 +875,7 @@ void world_initialize(World *world, LinearArena *arena)
             ItemWithID item_with_id = item_mgr_create_item(&world->item_manager);
             Item *item = item_with_id.item;
 
+
             item_mgr_set_item_name(&world->item_manager, item, str_lit("Sword"));
             item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
             item->equipment.slot = EQUIP_SLOT_WEAPON;
@@ -865,8 +894,11 @@ void world_initialize(World *world, LinearArena *arena)
 
             item_add_modifier(item, dmg_mod);
             //item_add_modifier(item, res_mod);
-
+#if 1
+	    drop_ground_item(world, v2(400, 400), item_with_id.id);
+#else
             inventory_add_item(&inventory->inventory, item_with_id.id);
+#endif
 
             //try_equip_item_in_slot(&world->item_manager, &equipment->equipment, item_with_id.id, EQUIP_SLOT_HEAD);
         }

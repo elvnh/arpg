@@ -47,7 +47,7 @@ static void game_update(GameState *game_state, const FrameData *frame_data, Line
         DEBUG_BREAK;
     }
 
-    world_update(&game_state->world, frame_data, frame_arena);
+    world_update(&game_state->world, frame_data, frame_arena, &game_state->debug_state);
 }
 
 static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, ssize depth)
@@ -318,6 +318,7 @@ static void debug_update(GameState *game_state, const FrameData *frame_data, Lin
 
     game_state->debug_state.timestep_modifier = CLAMP(speed_modifier, speed_modifier_step, 5.0f);
 }
+
 
 // TODO: only send FrameData into this function, send dt etc to others
 void game_update_and_render(GameState *game_state, PlatformCode platform_code, RenderBatchList *rbs,

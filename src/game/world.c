@@ -7,12 +7,14 @@
 #include "base/utils.h"
 #include "base/sl_list.h"
 #include "components/status_effect.h"
+#include "damage.h"
 #include "debug.h"
 #include "camera.h"
 #include "collision.h"
 #include "entity_system.h"
 #include "item.h"
 #include "magic.h"
+#include "modifier.h"
 #include "quad_tree.h"
 #include "renderer/render_batch.h"
 #include "tilemap.h"
@@ -787,7 +789,7 @@ void world_initialize(World *world, LinearArena *arena)
     es_initialize(&world->entity_system, tilemap_area);
     item_mgr_initialize(&world->item_manager, la_allocator(&world->world_arena));
 
-    for (s32 i = 0; i < 1; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
         EntityWithID entity_with_id = es_spawn_entity(&world->entity_system, i + 1);
         Entity *entity = entity_with_id.entity;
         entity->position = v2(256, 256);
@@ -872,20 +874,12 @@ void world_initialize(World *world, LinearArena *arena)
             item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
             item->equipment.slot = EQUIP_SLOT_WEAPON;
 
-            Modifier dmg_mod = {
-                .kind = MODIFIER_DAMAGE,
-            };
-
-            set_damage_value_of_type(&dmg_mod.as.damage_modifier.additive_modifiers, DMG_KIND_LIGHTNING, 1000);
-
-            Modifier res_mod = {
-                .kind = MODIFIER_RESISTANCE,
-            };
-
-            set_damage_value_of_type(&res_mod.as.resistance_modifier, DMG_KIND_LIGHTNING, 0);
-
+#if 1
+            Modifier dmg_mod = create_damage_modifier(DMG_CALC_PHASE_ADDITIVE, DMG_KIND_FIRE, 1000);
             item_add_modifier(item, dmg_mod);
             //item_add_modifier(item, res_mod);
+#endif
+
 #if 1
 	    drop_ground_item(world, v2(400, 400), item_with_id.id);
 #else

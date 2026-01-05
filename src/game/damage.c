@@ -5,13 +5,6 @@
 #include "item_manager.h"
 #include "modifier.h"
 
-// NOTE: the ordering of these affects the order of calculations
-typedef enum {
-    DMG_CALC_PHASE_ADDITIVE,
-    DMG_CALC_PHASE_MULTIPLICATIVE,
-    DMG_CALC_PHASE_COUNT,
-} DamageCalculationPhase;
-
 static DamageValue *get_damage_reference_of_type(DamageTypes *damages, DamageKind type)
 {
     ssize index = (ssize)type;
@@ -66,6 +59,32 @@ static DamageTypes damage_types_multiply(DamageTypes lhs, DamageTypes rhs)
     return result;
 }
 
+static DamageTypes damage_types_add_scalar(DamageTypes lhs, DamageValue value,
+    DamageKind type)
+{
+    // TODO: implement damage_types_add in terms of this
+    DamageTypes result = lhs;
+
+    DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
+    *lhs_ptr += value;
+
+    return result;
+}
+
+static DamageTypes damage_types_multiply_scalar(DamageTypes lhs, DamageValue value,
+    DamageKind type)
+{
+    // TODO: implement damage_types_multiply in terms of this
+    DamageTypes result = lhs;
+
+    DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
+    f32 n = 1.0f + (f32)(value) / 100.0f;
+
+    *lhs_ptr = (DamageValue)((f32)(*lhs_ptr) * n);
+
+    return result;
+}
+
 static DamageTypes apply_damage_value_modifier(DamageTypes value, Modifier modifier,
     ModifierKind interesting_mods, DamageCalculationPhase phase)
 {
@@ -76,16 +95,26 @@ static DamageTypes apply_damage_value_modifier(DamageTypes value, Modifier modif
     if (is_interesting) {
         switch (modifier.kind) {
             case MODIFIER_DAMAGE: {
-                if (phase == DMG_CALC_PHASE_ADDITIVE) {
-                    result = damage_types_add(result, modifier.as.damage_modifier.additive_modifiers);
-                } else {
-                    result = damage_types_multiply(result, modifier.as.damage_modifier.multiplicative_modifiers);
-                }
+		DamageModifier dmg_mod = modifier.as.damage_modifier;
+
+		// TODO: break out into function
+		if (dmg_mod.applied_during_phase == phase) {
+		    if (phase == DMG_CALC_PHASE_ADDITIVE) {
+			result = damage_types_add_scalar(result,
+			    dmg_mod.value, dmg_mod.affected_damage_kind);
+		    } else if (phase == DMG_CALC_PHASE_MULTIPLICATIVE) {
+			result = damage_types_multiply_scalar(result,
+			    dmg_mod.value, dmg_mod.affected_damage_kind);
+		    } else {
+			ASSERT(0);
+		    }
+		}
             } break;
 
             case MODIFIER_RESISTANCE: {
                 if (phase == DMG_CALC_PHASE_ADDITIVE) {
-                    result = damage_types_add(result, modifier.as.resistance_modifier);
+                    result = damage_types_add_scalar(result, modifier.as.resistance_modifier.value,
+			modifier.as.resistance_modifier.type);
                 } else {
                     ASSERT(0);
                 }
@@ -148,6 +177,8 @@ static DamageTypes apply_damage_value_equipment_modifiers(DamageTypes value, str
     if (equipment) {
         // TODO: make it possible to for loop over all slots
         result = apply_damage_modifiers_in_slot(result, &equipment->equipment, EQUIP_SLOT_HEAD,
+            interesting_mods, phase, item_mgr);
+        result = apply_damage_modifiers_in_slot(result, &equipment->equipment, EQUIP_SLOT_WEAPON,
             interesting_mods, phase, item_mgr);
     }
 

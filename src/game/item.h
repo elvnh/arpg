@@ -18,6 +18,7 @@ typedef enum {
     ITEM_PROP_HAS_MODIFIERS = (1 << 1),
 } ItemProperty;
 
+// TODO: these probably don't need to be a bitmask
 typedef enum {
     EQUIP_SLOT_HEAD = (1 << 0),
     EQUIP_SLOT_LEFT_FINGER = (1 << 1),

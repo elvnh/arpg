@@ -22,6 +22,13 @@ typedef enum {
     DMG_KIND_COUNT,
 } DamageKind;
 
+// NOTE: the ordering of these affects the order of calculations
+typedef enum {
+    DMG_CALC_PHASE_ADDITIVE,
+    DMG_CALC_PHASE_MULTIPLICATIVE,
+    DMG_CALC_PHASE_COUNT,
+} DamageCalculationPhase;
+
 // TODO: rename this struct
 typedef struct {
     DamageValue values[DMG_KIND_COUNT]; // Use DamageKind as index
@@ -36,11 +43,6 @@ typedef struct {
     DamageTypes types;
     DamageTypes penetration;
 } DamageInstance;
-
-typedef struct {
-    DamageTypes additive_modifiers;
-    DamageTypes multiplicative_modifiers;
-} DamageValueModifiers;
 
 DamageValue    get_damage_value_of_type(DamageTypes damages, DamageKind type);
 DamageValue    calculate_damage_sum(DamageTypes damage);

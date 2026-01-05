@@ -1,7 +1,7 @@
 #ifndef MODIFIER_H
 #define MODIFIER_H
 
-#include "base/utils.h"
+#include "base/format.h"
 #include "damage.h"
 
 typedef enum {
@@ -39,6 +39,35 @@ static inline Modifier create_damage_modifier(DamageCalculationPhase boost_kind,
     dmg_mod->applied_during_phase = boost_kind;
     dmg_mod->affected_damage_kind = type;
     dmg_mod->value = value;
+
+    return result;
+}
+
+static inline String modifier_to_string(Modifier modifier, Allocator alloc)
+{
+    String result = {0};
+
+    switch (modifier.kind) {
+	case MODIFIER_DAMAGE: {
+	    DamageModifier dmg_mod = modifier.as.damage_modifier;
+	    result = ssize_to_string(dmg_mod.value, alloc);
+
+	    if (dmg_mod.applied_during_phase == DMG_CALC_PHASE_ADDITIVE) {
+		result = str_concat(str_lit("+"), result, alloc);
+	    } else if (dmg_mod.applied_during_phase == DMG_CALC_PHASE_MULTIPLICATIVE) {
+		result = str_concat(result, str_lit("% increased"), alloc);
+	    } else {
+		ASSERT(0);
+	    }
+
+	    result = str_concat(result, str_lit(" "), alloc);
+	    result = str_concat(result, damage_type_to_string(dmg_mod.affected_damage_kind), alloc);
+	} break;
+
+	case MODIFIER_RESISTANCE: {
+	    ASSERT(0);
+	} break;
+    }
 
     return result;
 }

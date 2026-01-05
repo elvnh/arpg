@@ -3,9 +3,11 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <math.h>
 
 #include "base/linear_arena.h"
 #include "base/string8.h"
+#include "base/vector.h"
 
 static inline ssize digit_count_s64(s64 n)
 {
@@ -22,6 +24,7 @@ static inline ssize digit_count_s64(s64 n)
     return result;
 }
 
+// TODO: make into s64 to string
 static inline String ssize_to_string(ssize number, Allocator allocator)
 {
     b32 is_negative = number < 0;

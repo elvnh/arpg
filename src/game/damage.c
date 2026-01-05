@@ -269,3 +269,15 @@ DamageValue get_damage_value_of_type(DamageTypes damages, DamageKind type)
     DamageValue result = *get_damage_reference_of_type(&damages, type);
     return result;
 }
+
+String damage_type_to_string(DamageKind type)
+{
+    switch (type) {
+	case DMG_KIND_FIRE: return str_lit("Fire");
+	case DMG_KIND_LIGHTNING: return str_lit("Lightning");
+    }
+
+    ASSERT(0);
+
+    return (String){0};
+}

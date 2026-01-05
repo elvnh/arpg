@@ -116,8 +116,8 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
 	OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DEAL_DAMAGE);
 	effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
 
-	DamageTypes damage_roll = calculate_damage_dealt_from_damage_range(spell->damaging.base_damage);
-        DamageTypes damage_after_boosts = calculate_damage_after_boosts(damage_roll, caster, &world->item_manager);
+	DamageValues damage_roll = calculate_damage_dealt_from_damage_range(spell->damaging.base_damage);
+        DamageValues damage_after_boosts = calculate_damage_after_boosts(damage_roll, caster, &world->item_manager);
 
         // TODO: create_damage_instance function
         DamageInstance damage = { damage_after_boosts, spell->damaging.penetration_values };

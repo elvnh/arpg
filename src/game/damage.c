@@ -6,7 +6,7 @@
 #include "item_manager.h"
 #include "modifier.h"
 
-static DamageValue *get_damage_reference_of_type(DamageTypes *damages, DamageKind type)
+static DamageValue *get_damage_reference_of_type(DamageValues *damages, DamageKind type)
 {
     ssize index = (ssize)type;
     ASSERT((index >= 0) && (index < DMG_KIND_COUNT));
@@ -17,7 +17,7 @@ static DamageValue *get_damage_reference_of_type(DamageTypes *damages, DamageKin
 }
 
 static DamageValue calculate_damage_of_type_after_resistance(DamageInstance damage,
-    DamageTypes resistances, DamageKind dmg_type)
+    DamageValues resistances, DamageKind dmg_type)
 {
     DamageValue damage_amount = get_damage_value_of_type(damage.types, dmg_type);
     DamageValue resistance = get_damage_value_of_type(resistances, dmg_type);
@@ -30,9 +30,9 @@ static DamageValue calculate_damage_of_type_after_resistance(DamageInstance dama
     return result;
 }
 
-static DamageTypes damage_types_add(DamageTypes lhs, DamageTypes rhs)
+static DamageValues damage_types_add(DamageValues lhs, DamageValues rhs)
 {
-    DamageTypes result = lhs;
+    DamageValues result = lhs;
 
     for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
         DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
@@ -44,9 +44,9 @@ static DamageTypes damage_types_add(DamageTypes lhs, DamageTypes rhs)
     return result;
 }
 
-static DamageTypes damage_types_multiply(DamageTypes lhs, DamageTypes rhs)
+static DamageValues damage_types_multiply(DamageValues lhs, DamageValues rhs)
 {
-    DamageTypes result = lhs;
+    DamageValues result = lhs;
 
     for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
         DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
@@ -60,11 +60,11 @@ static DamageTypes damage_types_multiply(DamageTypes lhs, DamageTypes rhs)
     return result;
 }
 
-static DamageTypes damage_types_add_scalar(DamageTypes lhs, DamageValue value,
+static DamageValues damage_types_add_scalar(DamageValues lhs, DamageValue value,
     DamageKind type)
 {
     // TODO: implement damage_types_add in terms of this
-    DamageTypes result = lhs;
+    DamageValues result = lhs;
 
     DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
     *lhs_ptr += value;
@@ -72,11 +72,11 @@ static DamageTypes damage_types_add_scalar(DamageTypes lhs, DamageValue value,
     return result;
 }
 
-static DamageTypes damage_types_multiply_scalar(DamageTypes lhs, DamageValue value,
+static DamageValues damage_types_multiply_scalar(DamageValues lhs, DamageValue value,
     DamageKind type)
 {
     // TODO: implement damage_types_multiply in terms of this
-    DamageTypes result = lhs;
+    DamageValues result = lhs;
 
     DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
     f32 n = 1.0f + (f32)(value) / 100.0f;
@@ -86,10 +86,10 @@ static DamageTypes damage_types_multiply_scalar(DamageTypes lhs, DamageValue val
     return result;
 }
 
-static DamageTypes apply_damage_value_modifier(DamageTypes value, Modifier modifier,
-    ModifierKind interesting_mods, DamageCalculationPhase phase)
+static DamageValues apply_damage_value_modifier(DamageValues value, StatModifier modifier,
+    ModifierKind interesting_mods, NumericModifierType phase)
 {
-    DamageTypes result = value;
+    DamageValues result = value;
 
     b32 is_interesting = (modifier.kind & interesting_mods) != 0;
 
@@ -100,10 +100,10 @@ static DamageTypes apply_damage_value_modifier(DamageTypes value, Modifier modif
 
 		// TODO: break out into function
 		if (dmg_mod.applied_during_phase == phase) {
-		    if (phase == DMG_CALC_PHASE_ADDITIVE) {
+		    if (phase == NUMERIC_MOD_FLAT_ADDED) {
 			result = damage_types_add_scalar(result,
 			    dmg_mod.value, dmg_mod.affected_damage_kind);
-		    } else if (phase == DMG_CALC_PHASE_MULTIPLICATIVE) {
+		    } else if (phase == NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE) {
 			result = damage_types_multiply_scalar(result,
 			    dmg_mod.value, dmg_mod.affected_damage_kind);
 		    } else {
@@ -113,7 +113,7 @@ static DamageTypes apply_damage_value_modifier(DamageTypes value, Modifier modif
             } break;
 
             case MODIFIER_RESISTANCE: {
-                if (phase == DMG_CALC_PHASE_ADDITIVE) {
+                if (phase == NUMERIC_MOD_FLAT_ADDED) {
                     result = damage_types_add_scalar(result, modifier.as.resistance_modifier.value,
 			modifier.as.resistance_modifier.type);
                 } else {
@@ -126,10 +126,10 @@ static DamageTypes apply_damage_value_modifier(DamageTypes value, Modifier modif
     return result;
 }
 
-static DamageTypes apply_damage_value_status_effects(DamageTypes value, struct Entity *entity,
-    ModifierKind interesting_mods, DamageCalculationPhase phase)
+static DamageValues apply_damage_value_status_effects(DamageValues value, struct Entity *entity,
+    ModifierKind interesting_mods, NumericModifierType phase)
 {
-    DamageTypes result = value;
+    DamageValues result = value;
 
     StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
 
@@ -145,11 +145,11 @@ static DamageTypes apply_damage_value_status_effects(DamageTypes value, struct E
     return result;
 }
 
-static DamageTypes apply_damage_modifiers_in_slot(DamageTypes value, Equipment *eq,
-    EquipmentSlot slot, ModifierKind interesting_mods, DamageCalculationPhase phase,
+static DamageValues apply_damage_modifiers_in_slot(DamageValues value, Equipment *eq,
+    EquipmentSlot slot, ModifierKind interesting_mods, NumericModifierType phase,
     ItemManager *item_mgr)
 {
-    DamageTypes result = value;
+    DamageValues result = value;
 
     ItemID item_id = get_equipped_item_in_slot(eq, slot);
 
@@ -160,7 +160,7 @@ static DamageTypes apply_damage_modifiers_in_slot(DamageTypes value, Equipment *
 
         // TODO: break this out into function and unit test
         for (s32 i = 0; i < item->modifiers.modifier_count; ++i) {
-            Modifier mod = item->modifiers.modifiers[i];
+            StatModifier mod = item->modifiers.modifiers[i];
 
             result = apply_damage_value_modifier(result, mod, interesting_mods, phase);
         }
@@ -169,10 +169,10 @@ static DamageTypes apply_damage_modifiers_in_slot(DamageTypes value, Equipment *
     return result;
 }
 
-static DamageTypes apply_damage_value_equipment_modifiers(DamageTypes value, struct Entity *entity,
-    ModifierKind interesting_mods, DamageCalculationPhase phase, ItemManager *item_mgr)
+static DamageValues apply_damage_value_equipment_modifiers(DamageValues value, struct Entity *entity,
+    ModifierKind interesting_mods, NumericModifierType phase, ItemManager *item_mgr)
 {
-    DamageTypes result = value;
+    DamageValues result = value;
     EquipmentComponent *equipment = es_get_component(entity, EquipmentComponent);
 
     if (equipment) {
@@ -186,11 +186,11 @@ static DamageTypes apply_damage_value_equipment_modifiers(DamageTypes value, str
 }
 
 // TODO: I don't like that ItemManager is a parameter here
-DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *entity, struct ItemManager *item_mgr)
+DamageValues calculate_damage_after_boosts(DamageValues damage, struct Entity *entity, struct ItemManager *item_mgr)
 {
-    DamageTypes result = damage;
+    DamageValues result = damage;
 
-    for (DamageCalculationPhase phase = 0; phase < DMG_CALC_PHASE_COUNT; ++phase) {
+    for (NumericModifierType phase = 0; phase < NUMERIC_MOD_TYPE_COUNT; ++phase) {
         result = apply_damage_value_status_effects(result, entity, MODIFIER_DAMAGE, phase);
         result = apply_damage_value_equipment_modifiers(result, entity, MODIFIER_DAMAGE, phase, item_mgr);
     }
@@ -199,22 +199,22 @@ DamageTypes calculate_damage_after_boosts(DamageTypes damage, struct Entity *ent
 }
 
 // TODO: make this not require base_resistances as parameter
-DamageTypes calculate_resistances_after_boosts(DamageTypes base_resistances, struct Entity *entity,
+DamageValues calculate_resistances_after_boosts(DamageValues base_resistances, struct Entity *entity,
     struct ItemManager *item_mgr)
 {
-    DamageTypes result = base_resistances;
+    DamageValues result = base_resistances;
 
     // NOTE: resistances only have an additive phase
-    result = apply_damage_value_status_effects(result, entity, MODIFIER_RESISTANCE, DMG_CALC_PHASE_ADDITIVE);
-    result = apply_damage_value_equipment_modifiers(result, entity, MODIFIER_RESISTANCE, DMG_CALC_PHASE_ADDITIVE, item_mgr);
+    result = apply_damage_value_status_effects(result, entity, MODIFIER_RESISTANCE, NUMERIC_MOD_FLAT_ADDED);
+    result = apply_damage_value_equipment_modifiers(result, entity, MODIFIER_RESISTANCE, NUMERIC_MOD_FLAT_ADDED, item_mgr);
 
     return result;
 }
 
-DamageTypes calculate_damage_dealt_from_damage_range(DamageRange damage_range)
+DamageValues calculate_damage_dealt_from_damage_range(DamageRange damage_range)
 {
     // TODO: make caster stats influence damage roll
-    DamageTypes result = {0};
+    DamageValues result = {0};
 
     for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
 	DamageValue low = get_damage_value_of_type(damage_range.low_roll, type);
@@ -234,13 +234,13 @@ void set_damage_range_for_type(DamageRange *range, DamageKind type,
     set_damage_value_of_type(&range->high_roll, type, high);
 }
 
-void set_damage_value_of_type(DamageTypes *damages, DamageKind kind, DamageValue new_value)
+void set_damage_value_of_type(DamageValues *damages, DamageKind kind, DamageValue new_value)
 {
     DamageValue *old_value = get_damage_reference_of_type(damages, kind);
     *old_value = new_value;
 }
 
-DamageInstance calculate_damage_received(DamageTypes resistances, DamageInstance damage)
+DamageInstance calculate_damage_received(DamageValues resistances, DamageInstance damage)
 {
     DamageInstance result = {0};
 
@@ -253,7 +253,7 @@ DamageInstance calculate_damage_received(DamageTypes resistances, DamageInstance
 }
 
 
-DamageValue calculate_damage_sum(DamageTypes damage)
+DamageValue calculate_damage_sum(DamageValues damage)
 {
     DamageValue result = 0;
 
@@ -264,7 +264,7 @@ DamageValue calculate_damage_sum(DamageTypes damage)
     return result;
 }
 
-DamageValue get_damage_value_of_type(DamageTypes damages, DamageKind type)
+DamageValue get_damage_value_of_type(DamageValues damages, DamageKind type)
 {
     DamageValue result = *get_damage_reference_of_type(&damages, type);
     return result;

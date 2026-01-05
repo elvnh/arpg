@@ -10,7 +10,7 @@ typedef enum {
 } ModifierKind;
 
 typedef struct {
-    DamageCalculationPhase applied_during_phase;
+    NumericModifierType applied_during_phase;
     DamageKind affected_damage_kind;
     DamageValue value;
 } DamageModifier;
@@ -27,12 +27,12 @@ typedef struct {
         DamageModifier damage_modifier;
         ResistanceModifier resistance_modifier;
     } as;
-} Modifier;
+} StatModifier;
 
-static inline Modifier create_damage_modifier(DamageCalculationPhase boost_kind,
+static inline StatModifier create_damage_modifier(NumericModifierType boost_kind,
     DamageKind type, DamageValue value)
 {
-    Modifier result = {0};
+    StatModifier result = {0};
     result.kind = MODIFIER_DAMAGE;
 
     DamageModifier *dmg_mod = &result.as.damage_modifier;
@@ -43,7 +43,7 @@ static inline Modifier create_damage_modifier(DamageCalculationPhase boost_kind,
     return result;
 }
 
-static inline String modifier_to_string(Modifier modifier, Allocator alloc)
+static inline String modifier_to_string(StatModifier modifier, Allocator alloc)
 {
     String result = {0};
 
@@ -52,9 +52,9 @@ static inline String modifier_to_string(Modifier modifier, Allocator alloc)
 	    DamageModifier dmg_mod = modifier.as.damage_modifier;
 	    result = ssize_to_string(dmg_mod.value, alloc);
 
-	    if (dmg_mod.applied_during_phase == DMG_CALC_PHASE_ADDITIVE) {
+	    if (dmg_mod.applied_during_phase == NUMERIC_MOD_FLAT_ADDED) {
 		result = str_concat(str_lit("+"), result, alloc);
-	    } else if (dmg_mod.applied_during_phase == DMG_CALC_PHASE_MULTIPLICATIVE) {
+	    } else if (dmg_mod.applied_during_phase == NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE) {
 		result = str_concat(result, str_lit("% increased"), alloc);
 	    } else {
 		ASSERT(0);

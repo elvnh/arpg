@@ -44,7 +44,7 @@ typedef struct {
     } equipment;
 
     struct {
-        Modifier modifiers[6];
+        StatModifier modifiers[6];
         s32 modifier_count;
     } modifiers;
 } Item;
@@ -81,7 +81,7 @@ static inline b32 item_id_is_null(ItemID id)
     return result;
 }
 
-static inline void item_add_modifier(Item *item, Modifier mod)
+static inline void item_add_modifier(Item *item, StatModifier mod)
 {
     ASSERT(item_has_prop(item, ITEM_PROP_HAS_MODIFIERS));
     ASSERT(item->modifiers.modifier_count < ARRAY_COUNT(item->modifiers.modifiers));

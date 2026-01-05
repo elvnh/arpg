@@ -205,7 +205,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
 
     if (es_has_component(entity, StatsComponent)) {
         StatsComponent *stats = es_get_component(entity, StatsComponent);
-        DamageTypes resistances = calculate_resistances_after_boosts(stats->base_resistances, entity, &world->item_manager);
+        DamageValues resistances = calculate_resistances_after_boosts(stats->base_resistances, entity, &world->item_manager);
 
         damage_taken = calculate_damage_received(resistances, damage);
     } else {
@@ -875,7 +875,7 @@ void world_initialize(World *world, LinearArena *arena)
             item->equipment.slot = EQUIP_SLOT_WEAPON;
 
 #if 1
-            Modifier dmg_mod = create_damage_modifier(DMG_CALC_PHASE_ADDITIVE, DMG_KIND_FIRE, 1000);
+            StatModifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDED, DMG_KIND_FIRE, 1000);
             item_add_modifier(item, dmg_mod);
             //item_add_modifier(item, res_mod);
 #endif

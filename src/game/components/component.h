@@ -73,7 +73,7 @@ typedef struct {
 } OnDeathComponent;
 
 typedef struct {
-    DamageTypes base_resistances;
+    DamageValues base_resistances;
 } StatsComponent;
 
 typedef struct {

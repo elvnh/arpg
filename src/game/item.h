@@ -18,18 +18,21 @@ typedef enum {
     ITEM_PROP_HAS_MODIFIERS = (1 << 1),
 } ItemProperty;
 
-// TODO: these probably don't need to be a bitmask
 typedef enum {
-    EQUIP_SLOT_HEAD = (1 << 0),
-    EQUIP_SLOT_LEFT_FINGER = (1 << 1),
-    EQUIP_SLOT_RIGHT_FINGER = (1 << 2),
-    EQUIP_SLOT_FINGERS = (EQUIP_SLOT_LEFT_FINGER | EQUIP_SLOT_RIGHT_FINGER),
-    EQUIP_SLOT_GLOVES = (1 << 3),
-    EQUIP_SLOT_BODY = (1 << 4),
-    EQUIP_SLOT_LEGS = (1 << 5),
-    EQUIP_SLOT_FEET = (1 << 6),
-    EQUIP_SLOT_NECK = (1 << 7),
-    EQUIP_SLOT_WEAPON = (1 << 8),
+    EQUIP_SLOT_HEAD,
+    EQUIP_SLOT_LEFT_FINGER,
+    EQUIP_SLOT_RIGHT_FINGER,
+    EQUIP_SLOT_GLOVES,
+    EQUIP_SLOT_BODY,
+    EQUIP_SLOT_LEGS,
+    EQUIP_SLOT_FEET,
+    EQUIP_SLOT_NECK,
+    EQUIP_SLOT_WEAPON,
+
+    EQUIP_SLOT_COUNT,
+
+    // NOTE: not an actual slot, only to show that an item is equippable in either left or right finger slot
+    EQUIPPABLE_IN_FINGER_SLOT,
 } EquipmentSlot;
 
 typedef struct {

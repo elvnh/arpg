@@ -7,15 +7,7 @@
 #define NULL_ITEM_ID (ItemID){0}
 
 typedef struct {
-    ItemID head;
-    ItemID neck;
-    ItemID left_finger;
-    ItemID right_finger;
-    ItemID hands;
-    ItemID body;
-    ItemID legs;
-    ItemID feet;
-    ItemID weapon;
+    ItemID items[EQUIP_SLOT_COUNT];
 } Equipment;
 
 ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot);

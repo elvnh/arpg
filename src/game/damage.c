@@ -2,6 +2,7 @@
 #include "base/utils.h"
 #include "components/status_effect.h"
 #include "entity_system.h"
+#include "item.h"
 #include "item_manager.h"
 #include "modifier.h"
 
@@ -175,11 +176,10 @@ static DamageTypes apply_damage_value_equipment_modifiers(DamageTypes value, str
     EquipmentComponent *equipment = es_get_component(entity, EquipmentComponent);
 
     if (equipment) {
-        // TODO: make it possible to for loop over all slots
-        result = apply_damage_modifiers_in_slot(result, &equipment->equipment, EQUIP_SLOT_HEAD,
-            interesting_mods, phase, item_mgr);
-        result = apply_damage_modifiers_in_slot(result, &equipment->equipment, EQUIP_SLOT_WEAPON,
-            interesting_mods, phase, item_mgr);
+	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+	    result = apply_damage_modifiers_in_slot(result, &equipment->equipment, slot,
+		interesting_mods, phase, item_mgr);
+	}
     }
 
     return result;

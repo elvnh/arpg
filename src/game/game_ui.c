@@ -40,15 +40,9 @@ static void equipment_menu(GameUIState *ui_state, GameState *game_state, GameMem
 	ASSERT(eq);
 	ASSERT(inv);
 
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_HEAD);
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_NECK);
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEFT_FINGER);
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_RIGHT_FINGER);
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_GLOVES);
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_BODY);
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_LEGS);
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_FEET);
-	equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, EQUIP_SLOT_WEAPON);
+	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+	    equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, slot);
+	}
     } ui_pop_container(ui);
 }
 

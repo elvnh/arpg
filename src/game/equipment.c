@@ -9,49 +9,9 @@ typedef struct {
 
 static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
 {
-    ItemID *result = 0;
+    ASSERT(slot < EQUIP_SLOT_COUNT);
 
-    switch (slot) {
-        case EQUIP_SLOT_HEAD: {
-            result = &eq->head;
-        } break;
-
-        case EQUIP_SLOT_NECK: {
-            result = &eq->neck;
-        } break;
-
-        case EQUIP_SLOT_LEFT_FINGER: {
-            result = &eq->left_finger;
-        } break;
-
-        case EQUIP_SLOT_RIGHT_FINGER: {
-            result = &eq->right_finger;
-        } break;
-
-        case EQUIP_SLOT_GLOVES: {
-            result = &eq->hands;
-        } break;
-
-        case EQUIP_SLOT_BODY: {
-            result = &eq->body;
-        } break;
-
-        case EQUIP_SLOT_LEGS: {
-            result = &eq->legs;
-        } break;
-
-        case EQUIP_SLOT_FEET: {
-            result = &eq->feet;
-        } break;
-
-        case EQUIP_SLOT_WEAPON: {
-            result = &eq->weapon;
-        } break;
-
-        INVALID_DEFAULT_CASE;
-    }
-
-    ASSERT(result);
+    ItemID *result = &eq->items[slot];
 
     return result;
 }

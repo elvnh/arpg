@@ -10,6 +10,7 @@
   TODO:
   - Better way of setting resistance/damage values
   - Better naming
+  - Clean up .c-file function ordering
  */
 
 struct ItemManager;
@@ -27,9 +28,16 @@ typedef enum {
 // TODO: additive percentage bonuses
 typedef enum {
     NUMERIC_MOD_FLAT_ADDED,
-    NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE, // Multiplicative percentage bonuses
+    NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE,
     NUMERIC_MOD_TYPE_COUNT,
 } NumericModifierType;
+
+// TODO: move elsewhere
+// NOTE: these are broad categories of all mod types, not specific modifier types on items for example
+typedef enum ModifierKind {
+    MODIFIER_DAMAGE,
+    MODIFIER_RESISTANCE,
+} ModifierKind; // TODO: rename to modifiercategory
 
 typedef struct {
     DamageValue values[DMG_KIND_COUNT]; // Use DamageKind as index
@@ -45,17 +53,19 @@ typedef struct {
     DamageValues penetration;
 } DamageInstance;
 
-DamageValue    get_damage_value_of_type(DamageValues damages, DamageKind type);
-DamageValue    calculate_damage_sum(DamageValues damage);
-DamageInstance calculate_damage_received(DamageValues resistances, DamageInstance damage);
+DamageValues   get_numeric_modifiers_of_type(struct Entity *entity, NumericModifierType type,
+					     ModifierKind mod_category, struct ItemManager *item_mgr);
+DamageValues   calculate_damage_dealt(DamageValues base_damage, struct Entity *entity,
+				      struct ItemManager *item_mgr);
+DamageValues   calculate_resistances_after_boosts(struct Entity *entity, struct ItemManager *item_mgr);
+DamageValues   calculate_damage_received(DamageValues resistances, DamageInstance damage);
 void	       set_damage_value_of_type(DamageValues *damages, DamageKind kind, DamageValue new_value);
-DamageValues    calculate_damage_dealt_from_damage_range(DamageRange damage_range);
+DamageValues   roll_damage_in_range(DamageRange range);
+DamageValue    calculate_damage_sum(DamageValues damage);
+DamageValue    get_damage_value_for_type(DamageValues damages, DamageKind type);
+
+// TODO: make this return by value instead
 void	       set_damage_range_for_type(DamageRange *range, DamageKind type, DamageValue low,
 					 DamageValue high);
-DamageValues    calculate_damage_after_boosts(DamageValues damage, struct Entity *entity,
-					     struct ItemManager *item_mgr);
-DamageValues    calculate_resistances_after_boosts(DamageValues base_resistances, struct Entity *entity,
-						  struct ItemManager *item_mgr);
-String damage_type_to_string(DamageKind type);
 
 #endif //DAMAGE_H

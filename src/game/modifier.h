@@ -4,11 +4,6 @@
 #include "base/format.h"
 #include "damage.h"
 
-typedef enum {
-    MODIFIER_DAMAGE = (1 << 0),
-    MODIFIER_RESISTANCE = (1 << 1),
-} ModifierKind;
-
 typedef struct {
     NumericModifierType applied_during_phase;
     DamageKind affected_damage_kind;
@@ -43,6 +38,7 @@ static inline StatModifier create_damage_modifier(NumericModifierType boost_kind
     return result;
 }
 
+#if 0
 static inline String modifier_to_string(StatModifier modifier, Allocator alloc)
 {
     String result = {0};
@@ -71,5 +67,6 @@ static inline String modifier_to_string(StatModifier modifier, Allocator alloc)
 
     return result;
 }
+#endif
 
 #endif //MODIFIER_H

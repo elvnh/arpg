@@ -201,18 +201,19 @@ void world_add_collision_cooldown(World *world, EntityID a, EntityID b, s32 effe
 
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
 {
-    DamageInstance damage_taken = {0};
+    DamageValues damage_taken = {0};
 
     if (es_has_component(entity, StatsComponent)) {
         StatsComponent *stats = es_get_component(entity, StatsComponent);
-        DamageValues resistances = calculate_resistances_after_boosts(stats->base_resistances, entity, &world->item_manager);
+        DamageValues resistances = calculate_resistances_after_boosts(entity, &world->item_manager);
 
         damage_taken = calculate_damage_received(resistances, damage);
     } else {
-        damage_taken = damage;
+	ASSERT(0 && "Should this ever happen?");
+        damage_taken = damage.types;
     }
 
-    DamageValue dmg_sum = calculate_damage_sum(damage_taken.types);
+    DamageValue dmg_sum = calculate_damage_sum(damage_taken);
 
     health->health.hitpoints -= dmg_sum;
     hitsplat_create(world, entity->position, damage_taken);

@@ -30,7 +30,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
         Hitsplat *hitsplat = &world->active_hitsplats[i];
 
 	for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
-	    DamageValue value_of_type = get_damage_value_of_type(hitsplat->damage.types, type);
+	    DamageValue value_of_type = get_damage_value_for_type(hitsplat->damage, type);
 	    ASSERT(value_of_type >= 0);
 
 	    if (value_of_type > 0) {
@@ -61,7 +61,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
     }
 }
 
-void hitsplat_create(World *world, Vector2 position, DamageInstance damage)
+void hitsplat_create(World *world, Vector2 position, DamageValues damage)
 {
     ASSERT(world->hitsplat_count < ARRAY_COUNT(world->active_hitsplats));
 

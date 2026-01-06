@@ -12,7 +12,7 @@ struct FrameData;
 
 // TODO: make size and velocity depend on damage number
 typedef struct {
-    DamageInstance damage;
+    DamageValues damage;
     Vector2 position;
     Vector2 velocity;
     f32 timer;
@@ -21,6 +21,6 @@ typedef struct {
 
 void hitsplats_update(struct World *world, const struct FrameData *frame_data);
 void hitsplats_render(struct World *world, struct RenderBatch *rb, struct LinearArena *frame_arena);
-void hitsplat_create(struct World *world, Vector2 position, DamageInstance damage);
+void hitsplat_create(struct World *world, Vector2 position, DamageValues damage);
 
 #endif //HITSPLAT_H

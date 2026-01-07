@@ -6,6 +6,15 @@
 
 #define MAX_ITEMS 1024
 
+/*
+  TODO:
+  - Item names:
+    String interning will probably have to be used since many copies
+    of generic items will probably exist.
+  - If worlds only represent single levels, how should copying items over
+    (eg. in player inventory) to new level work?
+ */
+
 typedef struct {
     Item item;
     u32 generation;

@@ -139,6 +139,13 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
     }
 }
 
+static String get_visible_widget_text(String string)
+{
+    String result = str_substring_before_pattern(string, str_lit("##"));
+
+    return result;
+}
+
 static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, PlatformCode platform_code,
     Widget *parent, Axis axis)
 {
@@ -187,8 +194,9 @@ static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, Plat
 
     if (widget_has_flag(widget, WIDGET_TEXT)) {
         f32 baseline = platform_code.get_font_baseline_offset(widget->text.font, widget->text.size);
+	String visible_text = get_visible_widget_text(widget->text.string);
         Vector2 text_dims = platform_code.get_text_dimensions(widget->text.font,
-            widget->text.string, widget->text.size);
+            visible_text, widget->text.size);
 
         widget->final_size = text_dims;
         widget->text.baseline_y_offset = baseline;
@@ -341,7 +349,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
 	    }
 
 	    // NOTE: Characters after ## are hashed but not rendered
-	    String visible_substring = str_substring_before_pattern(widget->text.string, str_lit("##"));
+	    String visible_substring = get_visible_widget_text(widget->text.string);
 
             rb_push_clipped_text(rb, arena, visible_substring, text_position,
 		parent_bounds, widget->color, widget->text.size,

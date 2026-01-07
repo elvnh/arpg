@@ -38,6 +38,7 @@ typedef struct {
 
 typedef struct {
     b32 clicked;
+    b32 hovered;
 } WidgetInteraction;
 
 typedef struct {

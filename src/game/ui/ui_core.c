@@ -252,6 +252,10 @@ calculate_widget_interactions(UIState *ui, Widget *widget, const FrameData *fram
     }
 
     if (widget_is_hot(ui, widget)) {
+	if (mouse_inside) {
+	    widget->interaction_state.hovered = true;
+	}
+
         if (widget_has_flag(widget, WIDGET_CLICKABLE) && clicked_inside) {
             ui->active_widget = widget->id;
         }

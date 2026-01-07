@@ -839,7 +839,7 @@ void world_initialize(World *world, LinearArena *arena)
 #endif
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
-        set_damage_value_of_type(&stats->base_resistances, DMG_KIND_LIGHTNING, 0);
+        set_damage_value_for_type(&stats->base_resistances, DMG_TYPE_LIGHTNING, 0);
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
 
@@ -876,7 +876,7 @@ void world_initialize(World *world, LinearArena *arena)
             item->equipment.slot = EQUIP_SLOT_WEAPON;
 
 #if 1
-            StatModifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDED, DMG_KIND_FIRE, 1000);
+            Modifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDITIVE, DMG_TYPE_FIRE, 1000);
             item_add_modifier(item, dmg_mod);
             //item_add_modifier(item, res_mod);
 #endif

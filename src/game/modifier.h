@@ -6,29 +6,29 @@
 
 typedef struct {
     NumericModifierType applied_during_phase;
-    DamageKind affected_damage_kind;
+    DamageType affected_damage_kind;
     DamageValue value;
 } DamageModifier;
 
 typedef struct {
-    DamageKind type;
+    DamageType type;
     DamageValue value;
 } ResistanceModifier;
 
 typedef struct {
-    ModifierKind kind;
+    ModifierCategory kind;
 
     union {
         DamageModifier damage_modifier;
         ResistanceModifier resistance_modifier;
     } as;
-} StatModifier;
+} Modifier;
 
-static inline StatModifier create_damage_modifier(NumericModifierType boost_kind,
-    DamageKind type, DamageValue value)
+static inline Modifier create_damage_modifier(NumericModifierType boost_kind,
+    DamageType type, DamageValue value)
 {
-    StatModifier result = {0};
-    result.kind = MODIFIER_DAMAGE;
+    Modifier result = {0};
+    result.kind = MOD_CATEGORY_DAMAGE;
 
     DamageModifier *dmg_mod = &result.as.damage_modifier;
     dmg_mod->applied_during_phase = boost_kind;

@@ -29,7 +29,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
     for (s32 i = 0; i < world->hitsplat_count; ++i) {
         Hitsplat *hitsplat = &world->active_hitsplats[i];
 
-	for (DamageKind type = 0; type < DMG_KIND_COUNT; ++type) {
+	for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
 	    DamageValue value_of_type = get_damage_value_for_type(hitsplat->damage, type);
 	    ASSERT(value_of_type >= 0);
 
@@ -40,11 +40,11 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 		RGBA32 color = {0};
 
 		switch (type) {
-		    case DMG_KIND_FIRE: {
+		    case DMG_TYPE_FIRE: {
 			color = RGBA32_RED;
 		    } break;
 
-		    case DMG_KIND_LIGHTNING: {
+		    case DMG_TYPE_LIGHTNING: {
 			color = RGBA32_YELLOW;
 		    } break;
 

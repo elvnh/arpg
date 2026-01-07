@@ -6,7 +6,7 @@
 #include "modifier.h"
 
 typedef struct {
-    StatModifier modifier;
+    Modifier modifier;
     f32 time_remaining;
 } StatusEffect;
 
@@ -15,7 +15,7 @@ typedef struct {
     s32 effect_count;
 } StatusEffectComponent;
 
-static inline StatusEffect *status_effects_add(StatusEffectComponent *c, StatModifier modifier, f32 lifetime)
+static inline StatusEffect *status_effects_add(StatusEffectComponent *c, Modifier modifier, f32 lifetime)
 {
     ASSERT(c->effect_count < ARRAY_COUNT(c->effects));
 

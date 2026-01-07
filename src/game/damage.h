@@ -19,15 +19,16 @@ struct Entity;
 typedef s64 DamageValue;
 
 typedef enum {
-    DMG_KIND_FIRE,
-    DMG_KIND_LIGHTNING,
-    DMG_KIND_COUNT,
-} DamageKind;
+    DMG_TYPE_FIRE,
+    DMG_TYPE_LIGHTNING,
+    DMG_TYPE_COUNT,
+} DamageType;
 
 // NOTE: the ordering of these affects the order of calculations
 // TODO: additive percentage bonuses
+// TODO: unique modifiers that aren't just additive
 typedef enum {
-    NUMERIC_MOD_FLAT_ADDED,
+    NUMERIC_MOD_FLAT_ADDITIVE,
     NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE,
     NUMERIC_MOD_TYPE_COUNT,
 } NumericModifierType;
@@ -35,12 +36,12 @@ typedef enum {
 // TODO: move elsewhere
 // NOTE: these are broad categories of all mod types, not specific modifier types on items for example
 typedef enum ModifierKind {
-    MODIFIER_DAMAGE,
-    MODIFIER_RESISTANCE,
-} ModifierKind; // TODO: rename to modifiercategory
+    MOD_CATEGORY_DAMAGE,
+    MOD_CATEGORY_RESISTANCE,
+} ModifierCategory;
 
 typedef struct {
-    DamageValue values[DMG_KIND_COUNT]; // Use DamageKind as index
+    DamageValue values[DMG_TYPE_COUNT]; // Use DamageKind as index
 } DamageValues;
 
 typedef struct {
@@ -54,18 +55,18 @@ typedef struct {
 } DamageInstance;
 
 DamageValues   get_numeric_modifiers_of_type(struct Entity *entity, NumericModifierType type,
-					     ModifierKind mod_category, struct ItemManager *item_mgr);
+					     ModifierCategory mod_category, struct ItemManager *item_mgr);
 DamageValues   calculate_damage_dealt(DamageValues base_damage, struct Entity *entity,
 				      struct ItemManager *item_mgr);
 DamageValues   calculate_resistances_after_boosts(struct Entity *entity, struct ItemManager *item_mgr);
 DamageValues   calculate_damage_received(DamageValues resistances, DamageInstance damage);
-void	       set_damage_value_of_type(DamageValues *damages, DamageKind kind, DamageValue new_value);
+void	       set_damage_value_for_type(DamageValues *damages, DamageType kind, DamageValue new_value);
 DamageValues   roll_damage_in_range(DamageRange range);
 DamageValue    calculate_damage_sum(DamageValues damage);
-DamageValue    get_damage_value_for_type(DamageValues damages, DamageKind type);
+DamageValue    get_damage_value_for_type(DamageValues damages, DamageType type);
 
 // TODO: make this return by value instead
-void	       set_damage_range_for_type(DamageRange *range, DamageKind type, DamageValue low,
+void	       set_damage_range_for_type(DamageRange *range, DamageType type, DamageValue low,
 					 DamageValue high);
 
 #endif //DAMAGE_H

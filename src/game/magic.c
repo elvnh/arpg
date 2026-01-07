@@ -26,8 +26,8 @@ static Spell spell_fireball()
     spell.projectile.collider_size = v2(32, 32);
 
     DamageRange damage_range = {0};
-    set_damage_value_of_type(&damage_range.low_roll, DMG_KIND_FIRE, 10);
-    set_damage_value_of_type(&damage_range.high_roll, DMG_KIND_FIRE, 20);
+    set_damage_value_for_type(&damage_range.low_roll, DMG_TYPE_FIRE, 10);
+    set_damage_value_for_type(&damage_range.high_roll, DMG_TYPE_FIRE, 20);
 
     spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_NEVER;
@@ -53,8 +53,8 @@ static Spell spell_spark()
 
     spell.lifetime = 5.0f;
 
-    set_damage_range_for_type(&spell.damaging.base_damage, DMG_KIND_LIGHTNING, 1, 100);
-    set_damage_value_of_type(&spell.damaging.penetration_values, DMG_KIND_LIGHTNING, 20);
+    set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_LIGHTNING, 1, 100);
+    set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;
 
     return spell;

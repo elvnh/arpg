@@ -20,7 +20,7 @@ static inline ssize digit_count_s64(s64 n)
         n = -n;
     }
 
-    s64 result = (ssize)(log((f64)n) / log((f64)10)) + 1;
+    s64 result = (ssize)round(log((f64)n) / log((f64)10)) + 1;
     return result;
 }
 

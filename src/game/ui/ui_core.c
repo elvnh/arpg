@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "base/hash.h"
+#include "base/list.h"
 #include "base/matrix.h"
 #include "base/vector.h"
 #include "game/ui/widget.h"
@@ -83,6 +84,8 @@ void ui_core_begin_frame(UIState *ui)
 
     ui->hot_widget = UI_NULL_WIDGET_ID;
     ui->root_widget = 0;
+
+    list_clear(&ui->floating_widgets);
 }
 
 static b32 widget_is_hot(UIState *ui, Widget *widget)
@@ -165,7 +168,8 @@ static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, Plat
             f32 max_bounds = 0.0f;
 
             for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-                f32 child_bounds = *v2_index(&child->final_position, axis) + *v2_index(&child->final_size, axis)
+                f32 child_bounds = *v2_index(&child->final_position, axis)
+		    + *v2_index(&child->final_size, axis)
                     - *v2_index(&offset, axis);
 
                 max_bounds = MAX(max_bounds, child_bounds);
@@ -204,10 +208,22 @@ static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, Plat
 
 }
 
-static Rectangle widget_get_clipped_bounding_box(Widget *widget, Rectangle parent_bounds)
+typedef enum {
+    CLIP_TO_PARENT,
+    CLIP_NONE,
+} ClippingBehaviour;
+
+static Rectangle widget_get_clipped_bounding_box(Widget *widget, Rectangle parent_bounds,
+    ClippingBehaviour clipping)
 {
     Rectangle unclipped = widget_get_bounding_box(widget);
-    Rectangle result  = rect_overlap_area(unclipped, parent_bounds);
+    Rectangle result = {0};
+
+    if (clipping == CLIP_TO_PARENT) {
+	result = rect_overlap_area(unclipped, parent_bounds);
+    } else {
+	result = unclipped;
+    }
 
     return result;
 }
@@ -217,9 +233,8 @@ static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode
     widget->final_position = v2_add(offset, widget->offset_from_parent);
 
     for (Axis axis = 0; axis < AXIS_COUNT; ++axis) {
-        calculate_widget_layout_on_axis(widget, offset, platform_code, parent, axis);
+	calculate_widget_layout_on_axis(widget, offset, platform_code, parent, axis);
     }
-
 }
 
 typedef enum {
@@ -231,7 +246,7 @@ static CalculateInteractionResult
 calculate_widget_interactions(UIState *ui, Widget *widget, const FrameData *frame_data,
     Rectangle parent_bounds, YDirection y_dir, UIInteraction *interactions)
 {
-    Rectangle clipped_bounds = widget_get_clipped_bounding_box(widget, parent_bounds);
+    Rectangle clipped_bounds = widget_get_clipped_bounding_box(widget, parent_bounds, CLIP_TO_PARENT);
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         CalculateInteractionResult child_result =
@@ -316,11 +331,12 @@ static LinearArena *get_frame_arena(UIState *ui)
     return result;
 }
 
-static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize depth, Rectangle parent_bounds)
+static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize depth, Rectangle parent_bounds,
+    ClippingBehaviour clipping)
 {
     // TODO: depth isn't needed once a stable sort is implemented for render commands
 #if 1
-    Rectangle widget_rect = widget_get_clipped_bounding_box(widget, parent_bounds);
+    Rectangle widget_rect = widget_get_clipped_bounding_box(widget, parent_bounds, clipping);
 
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
         LinearArena *arena = get_frame_arena(ui);
@@ -392,7 +408,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
 #endif
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        render_widget(ui, child, rb, depth + 1, widget_rect);
+        render_widget(ui, child, rb, depth + 1, widget_rect, CLIP_TO_PARENT);
     }
 }
 
@@ -410,7 +426,18 @@ UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, Render
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
         calculate_widget_interactions(ui, ui->root_widget, frame_data, window_rect, rb->y_direction, &result);
 
-        render_widget(ui, ui->root_widget, rb, 0, window_rect);
+	// TODO: should root widget also not be clipped just like for floating widgets?
+        render_widget(ui, ui->root_widget, rb, 0, window_rect, CLIP_TO_PARENT);
+    }
+
+    for (Widget *child = list_head(&ui->floating_widgets); child; child = child->next_sibling) {
+	calculate_widget_layout(child, child->final_position, platform_code, 0);
+        calculate_widget_interactions(ui, child, frame_data, window_rect, rb->y_direction, &result);
+
+	// NOTE: for floating widgets each root widget isn't clipped to viewspace,
+	// but any children of that widget are clipped to it's bounds
+	// TODO: Don't hardcode the layer depth like this
+        render_widget(ui, child, rb, 100, window_rect, CLIP_NONE);
     }
 
     return result;
@@ -428,25 +455,33 @@ Widget *ui_core_get_top_container(UIState *ui)
     return result;
 }
 
-static void ui_core_push_widget(UIState *ui, Widget *widget)
+// TODO: floating should either not be a parameter or at least not a bool
+static void ui_core_push_widget(UIState *ui, Widget *widget, b32 floating)
 {
     widget_frame_table_push(&ui->current_frame_widgets, widget);
 
-    if (!ui->root_widget) {
-        ui->root_widget = widget;
-    }
+    if (!floating) {
+	if (!ui->root_widget && list_is_empty(&ui->container_stack)) {
+	    // The only way root_widget can be null while the container stack isn't empty
+	    // is if this is a child of a floating container
+	    ui->root_widget = widget;
+	}
 
-    Widget *top_container = ui_core_get_top_container(ui);
+	Widget *top_container = ui_core_get_top_container(ui);
+
+	if (top_container) {
+	    widget_add_to_children(top_container, widget);
+	}
+    } else {
+	// Floating widgets aren't set as root since they are rendered separately at end of frame
+	sl_list_push_back_x(&ui->floating_widgets, widget, next_sibling);
+    }
 
     widget->layout_direction = ui->current_layout_axis;
     ui->current_layout_axis = DEFAULT_LAYOUT_AXIS;
-
-    if (top_container) {
-        widget_add_to_children(top_container, widget);
-    }
 }
 
-Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id)
+Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floating)
 {
     Widget *widget = la_allocate_item(get_frame_arena(ui), Widget);
     widget->id = id;
@@ -454,14 +489,14 @@ Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id)
     widget->semantic_size[AXIS_HORIZONTAL] = (WidgetSize){ .value = size.x };
     widget->semantic_size[AXIS_VERTICAL] = (WidgetSize){ .value = size.y };
 
-    ui_core_push_widget(ui, widget);
+    ui_core_push_widget(ui, widget, floating);
 
     return widget;
 }
 
-Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id)
+Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id, b32 floating)
 {
-    Widget *widget = ui_core_create_widget(ui, size, id);
+    Widget *widget = ui_core_create_widget(ui, size, id, floating);
     widget_add_flag(widget, WIDGET_COLORED);
     widget->color = color;
 
@@ -501,7 +536,6 @@ void ui_core_same_line(UIState *ui)
 
 WidgetID ui_core_hash_string(String text)
 {
-    // TODO: hash but don't make visible characters after ##
     WidgetID result = hash_string(text);
     ASSERT(result != UI_NULL_WIDGET_ID);
 

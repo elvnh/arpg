@@ -8,7 +8,7 @@
 
 static Widget *ui_internal_text(UIState *ui, String text, Vector2 offset, RGBA32 color)
 {
-    Widget *widget = ui_core_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID);
+    Widget *widget = ui_core_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID, false);
 
     widget_add_flag(widget, WIDGET_TEXT);
 
@@ -28,7 +28,7 @@ void ui_text(UIState *ui, String text)
 
 static Widget *ui_create_non_interactible_button(UIState *ui, String text, WidgetID id)
 {
-    Widget *widget = ui_core_colored_box(ui, v2(0, 32.0f), RGBA32_BLUE, id);
+    Widget *widget = ui_core_colored_box(ui, v2(0, 32.0f), RGBA32_BLUE, id, false);
 
     // TODO: allow changing
     widget->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
@@ -68,7 +68,7 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     // TODO: fix vertical alignment with text
     ASSERT(b);
 
-    Widget *widget = ui_core_colored_box(ui, v2(12, 12), RGBA32_WHITE, ui_core_hash_string(text));
+    Widget *widget = ui_core_colored_box(ui, v2(12, 12), RGBA32_WHITE, ui_core_hash_string(text), false);
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_HOT_COLOR);
 
@@ -76,7 +76,7 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 
     ui_core_push_container(ui, widget);
 
-    Widget *child_box = ui_core_colored_box(ui, v2(1.0f, 1.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID);
+    Widget *child_box = ui_core_colored_box(ui, v2(1.0f, 1.0f), RGBA32_BLUE, UI_NULL_WIDGET_ID, false);
     child_box->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
     child_box->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
 
@@ -100,7 +100,7 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 
 void ui_spacing(UIState *ui, f32 amount)
 {
-    Widget *widget = ui_core_create_widget(ui, v2(amount, amount), UI_NULL_WIDGET_ID);
+    Widget *widget = ui_core_create_widget(ui, v2(amount, amount), UI_NULL_WIDGET_ID, false);
     widget_add_flag(widget, WIDGET_HIDDEN);
 
     if (widget->layout_direction == UI_LAYOUT_VERTICAL) {
@@ -112,7 +112,7 @@ void ui_spacing(UIState *ui, f32 amount)
 
 void ui_textbox(UIState *ui, StringBuilder *sb)
 {
-    Widget *widget = ui_core_colored_box(ui, v2(128, 32), RGBA32_WHITE, (u64)sb);
+    Widget *widget = ui_core_colored_box(ui, v2(128, 32), RGBA32_WHITE, (u64)sb, false);
     widget->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_ABSOLUTE;
     widget->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
 
@@ -129,9 +129,8 @@ void ui_textbox(UIState *ui, StringBuilder *sb)
 
 void ui_begin_list(UIState *ui, String name)
 {
-    Widget *container = ui_core_colored_box(ui, v2(256, 256), RGBA32_WHITE, ui_core_hash_string(name));
-    container->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_ABSOLUTE;
-    container->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_ABSOLUTE;
+    Widget *container = ui_core_colored_box(ui, v2(256, 256), RGBA32_WHITE, ui_core_hash_string(name), false);
+    widget_set_semantic_sizes(container, UI_SIZE_KIND_ABSOLUTE);
 
     ui_core_push_container(ui, container);
 }
@@ -150,7 +149,7 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
     // list that contains it and the text of the selectable
     u64 hash = list_widget->id ^ ui_core_hash_string(text);
 
-    Widget *selectable = ui_core_colored_box(ui, v2(1.0f, 0.0f), RGBA32_BLUE, hash);
+    Widget *selectable = ui_core_colored_box(ui, v2(1.0f, 0.0f), RGBA32_BLUE, hash, false);
     selectable->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
     selectable->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
 
@@ -169,7 +168,7 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
 WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, RGBA32 color,
     UISizeKind size_kind, f32 child_padding)
 {
-    Widget *widget = ui_core_colored_box(ui, size, color, ui_core_hash_string(title));
+    Widget *widget = ui_core_colored_box(ui, size, color, ui_core_hash_string(title), false);
 
     widget->child_padding = child_padding;
     widget->semantic_size[AXIS_HORIZONTAL].kind = size_kind;
@@ -183,5 +182,24 @@ WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, RG
 
 void ui_pop_container(UIState *ui)
 {
+    ui_core_pop_container(ui);
+}
+
+void ui_begin_mouse_menu(UIState *ui, Vector2 mouse_pos)
+{
+    // NOTE: null id because the container itself can't be interacted with
+    Widget *container = ui_core_colored_box(ui, V2_ZERO, RGBA32_BLUE, UI_NULL_WIDGET_ID, true);
+
+    container->final_position = mouse_pos;
+
+    widget_set_semantic_sizes(container, UI_SIZE_KIND_SUM_OF_CHILDREN);
+
+    ui_core_push_container(ui, container);
+}
+
+void ui_end_mouse_menu(UIState *ui)
+{
+    ASSERT(!list_is_empty(&ui->floating_widgets) && "Only use this function for ending floating containers");
+    // TODO: this function is unneccessary
     ui_core_pop_container(ui);
 }

@@ -103,4 +103,11 @@ static inline void widget_add_to_children(Widget *widget, Widget *child)
     sl_list_push_back_x(&widget->children, child, next_sibling);
 }
 
+static inline void widget_set_semantic_sizes(Widget *widget, UISizeKind kind)
+{
+    for (Axis axis = 0; axis < AXIS_COUNT; ++axis) {
+	widget->semantic_size[axis].kind = kind;
+    }
+}
+
 #endif //WIDGET_H

@@ -104,11 +104,17 @@ static void merge_render_entry_arrays(RenderEntry *dst, RenderEntry *left, ssize
     for (ssize dst_idx = 0; dst_idx < end; ++dst_idx) {
         b32 left_half_done = left_idx == left_count;
         b32 right_half_done = right_idx == right_count;
-        b32 left_element_smaller = left[left_idx].key <= right[right_idx].key;
 
-        if (!left_half_done && (left_element_smaller || right_half_done)) {
+	ASSERT(!(left_half_done && right_half_done));
+
+        if (!left_half_done && (right_half_done || (left[left_idx].key <= right[right_idx].key))) {
+	    ASSERT(left_idx < left_count);
+
             dst[dst_idx] = left[left_idx++];
         } else {
+	    ASSERT(!right_half_done);
+	    ASSERT(right_idx < right_count);
+
             dst[dst_idx] = right[right_idx++];
         }
     }

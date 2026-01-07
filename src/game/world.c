@@ -1,4 +1,6 @@
 #include "world.h"
+#include "base/linear_arena.h"
+#include "game.h"
 #include "animation.h"
 #include "base/format.h"
 #include "base/rectangle.h"
@@ -21,7 +23,7 @@
 #include "tilemap.h"
 #include "asset_table.h"
 
-#define WORLD_ARENA_SIZE MB(64)
+#define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
 
 /* TODO:
    - Function for getting entity id from alive entity index
@@ -861,9 +863,10 @@ static void drop_ground_item(World *world, Vector2 pos, ItemID id)
     sprite->sprite = sprite_create(get_asset_table()->fireball_texture, v2(16, 16), SPRITE_ROTATE_NONE);
 }
 
-void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_system, ItemSystem *item_system)
+void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *item_system,
+    FreeListArena *parent_arena)
 {
-    world->world_arena = la_create(la_allocator(arena), WORLD_ARENA_SIZE);
+    world->world_arena = la_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
 
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);
@@ -1003,4 +1006,9 @@ void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_sys
         }
 #endif
     }
+}
+
+void world_destroy(World *world)
+{
+    la_destroy(&world->world_arena);
 }

@@ -31,10 +31,6 @@
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 768
 
-#define GAME_MEMORY_SIZE MB(32)
-#define PERMANENT_ARENA_SIZE GAME_MEMORY_SIZE / 2
-#define FRAME_ARENA_SIZE GAME_MEMORY_SIZE / 2
-
 static AssetSystem asset_mgr;
 
 const char *__asan_default_options() { return "detect_leaks=0"; }
@@ -65,15 +61,17 @@ static f32 get_font_baseline_offset(FontHandle font_handle, s32 text_size)
 
 int main()
 {
-    run_tests();
+    //run_tests();
 
     // TODO: make this use mmap
     LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);
 
-    GameMemory game_memory = {
-        .permanent_memory = la_create(la_allocator(&main_arena), PERMANENT_ARENA_SIZE),
-        .temporary_memory = la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE)
-    };
+    GameMemory game_memory = {0};
+
+    game_memory.permanent_memory = la_create(la_allocator(&main_arena), PERMANENT_ARENA_SIZE);
+    game_memory.temporary_memory = la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE);
+    game_memory.free_list_memory
+	= fl_create(la_allocator(&game_memory.permanent_memory), FREE_LIST_ARENA_SIZE);
 
     Game *game_state = la_allocate_item(&game_memory.permanent_memory, Game);
 

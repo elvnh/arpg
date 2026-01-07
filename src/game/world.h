@@ -23,7 +23,10 @@ struct RenderBatch;
 // TODO: move world arena to game, since that memory should be reused for new worlds?
 
 typedef struct World {
+    // All allocations specific to the world instance should go here, and when destroying
+    // a world, it should be destroyed so that the memory can be reused by other world instances
     LinearArena world_arena;
+
     Camera camera;
     Tilemap tilemap;
 
@@ -47,7 +50,9 @@ typedef struct World {
     QuadTreeLocation alive_entity_quad_tree_locations[MAX_ENTITIES];
 } World;
 
-void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_system, ItemSystem *item_system);
+void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *item_system,
+    FreeListArena *parent_arena);
+void world_destroy(World *world);
 
 // TODO: fix parameters
 void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena,

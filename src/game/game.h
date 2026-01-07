@@ -14,7 +14,13 @@
 /*
   TODO:
   - Move hovered_entity into game_state
+  - Fix camera panning at start of game
  */
+
+#define GAME_MEMORY_SIZE MB(128)
+#define PERMANENT_ARENA_SIZE GAME_MEMORY_SIZE / 2
+#define FRAME_ARENA_SIZE GAME_MEMORY_SIZE / 2
+#define FREE_LIST_ARENA_SIZE PERMANENT_ARENA_SIZE / 4
 
 struct RenderBatchList;
 
@@ -33,8 +39,14 @@ typedef struct Game {
 } Game;
 
 typedef struct GameMemory {
+    // For allocations will live for the entire program
     LinearArena permanent_memory;
+
+    // For allocations that are cleared each frame
     LinearArena temporary_memory;
+
+    // For allocations that will need to be allocated and freed randomly, is a subarena of permanent_memory
+    FreeListArena free_list_memory;
 } GameMemory;
 
 void game_update_and_render(Game *game_state, PlatformCode platform_code, struct RenderBatchList *rbs,

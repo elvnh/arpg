@@ -37,6 +37,8 @@ typedef struct {
 typedef struct AssetSystem {
     AssetID       next_asset_id;
     AssetSlot     registered_assets[MAX_REGISTERED_ASSETS];
+
+    // TODO: use free list arena in GameMemory instead
     FreeListArena asset_arena;
 } AssetSystem;
 

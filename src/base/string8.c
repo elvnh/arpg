@@ -194,3 +194,16 @@ b32 str_builder_has_capacity_for(const StringBuilder *sb, String str)
     b32 result  = sb->buffer.length + str.length <= sb->capacity;
     return result;
 }
+
+String str_substring_before_pattern(String str, String substr)
+{
+    ssize index = str_find_first_occurence(str, substr);
+
+    if (index == -1) {
+	index = str.length;
+    }
+
+    String result = str_create_span(str, 0, index);
+
+    return result;
+}

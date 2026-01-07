@@ -39,6 +39,7 @@ String  str_allocate(ssize length, Allocator allocator);
 ssize   str_get_null_terminated_length(String str);
 String  str_create_span(String str, ssize start_index, ssize length);
 ssize   str_get_common_prefix_length(String a, String b);
+String  str_substring_before_pattern(String str, String substr);
 
 // TODO: move to different file
 StringBuilder str_builder_allocate(ssize capacity, Allocator allocator);

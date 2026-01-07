@@ -312,6 +312,13 @@ static void tests_string()
     }
 
 
+    {
+	ASSERT(str_equal(str_substring_before_pattern(str_lit("abc!def"), str_lit("!")), str_lit("abc")));
+	ASSERT(str_equal(str_substring_before_pattern(str_lit("abc!def"), str_lit("!!")), str_lit("abc!def")));
+	ASSERT(str_equal(str_substring_before_pattern(str_lit("abc!!def"), str_lit("!!")), str_lit("abc")));
+	ASSERT(str_equal(str_substring_before_pattern(str_lit("!!abc"), str_lit("!!")), str_lit("")));
+	ASSERT(str_equal(str_substring_before_pattern(str_lit("abc"), str_lit("!!")), str_lit("abc")));
+    }
 
     la_destroy(&arena);
 }

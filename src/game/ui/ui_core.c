@@ -340,11 +340,16 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
 		text_position = v2_add(text_position, v2(0.0f, widget->text.baseline_y_offset));
 	    }
 
-            rb_push_clipped_text(rb, arena, widget->text.string, text_position,
+	    // NOTE: Characters after ## are hashed but not rendered
+	    String visible_substring = str_substring_before_pattern(widget->text.string, str_lit("##"));
+
+            rb_push_clipped_text(rb, arena, visible_substring, text_position,
 		parent_bounds, widget->color, widget->text.size,
                 get_asset_table()->texture_shader, widget->text.font, depth);
         }
     }
+
+    // TODO: remove this?
 #else
     if (true || !widget_has_flag(widget, WIDGET_HIDDEN)) {
         LinearArena *arena = get_frame_arena(ui);

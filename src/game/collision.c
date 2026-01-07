@@ -169,7 +169,7 @@ void collision_cooldown_add(CollisionCooldownTable *table, EntityID self, Entity
     }
 }
 
-void remove_expired_collision_cooldowns(struct World *world)
+void remove_expired_collision_cooldowns(World *world, EntitySystem *es)
 {
     for (ssize i = 0; i < ARRAY_COUNT(world->collision_effect_cooldowns.table); ++i) {
         CollisionCooldownList *exception_list = &world->collision_effect_cooldowns.table[i];
@@ -177,8 +177,8 @@ void remove_expired_collision_cooldowns(struct World *world)
         for (CollisionEffectCooldown *exc = list_head(exception_list); exc;) {
             CollisionEffectCooldown *next = exc->next;
 
-            Entity *owning = es_get_entity(&world->entity_system, exc->owning_entity);
-            Entity *collided = es_get_entity(&world->entity_system, exc->collided_entity);
+            Entity *owning = es_get_entity(es, exc->owning_entity);
+            Entity *collided = es_get_entity(es, exc->collided_entity);
             ASSERT(owning);
             ASSERT(collided);
 

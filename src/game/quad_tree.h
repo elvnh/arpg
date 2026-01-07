@@ -61,8 +61,6 @@ typedef struct {
     EntityIDNode *tail;
 } EntityIDList;
 
-// TODO: the EntityStorage* parameters are only temporary
-
 void qt_initialize(QuadTree *qt, Rectangle area);
 QuadTreeLocation qt_move_entity(QuadTree *qt, EntityID id,
     QuadTreeLocation location, Vector2 new_position, LinearArena *arena);

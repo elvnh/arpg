@@ -87,7 +87,7 @@ static const Spell *get_spell_by_id(SpellID id)
 static void cast_single_spell(struct World *world, const Spell *spell, struct Entity *caster,
     Vector2 pos, Vector2 dir)
 {
-    EntityWithID spell_entity_with_id = es_spawn_entity(&world->entity_system, caster->faction);
+    EntityWithID spell_entity_with_id = world_spawn_entity(world, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
 
     // TODO: remove, we set it at end of function
@@ -145,7 +145,7 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
     }
 
     // Offset so that spells center is 'pos'
-    Rectangle bounds = es_get_entity_bounding_box(spell_entity);
+    Rectangle bounds = world_get_entity_bounding_box(spell_entity);
     spell_entity->position = v2_sub(pos, v2_div_s(bounds.size, 2.0f));
 }
 

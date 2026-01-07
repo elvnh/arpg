@@ -18,7 +18,10 @@
 struct RenderBatchList;
 
 typedef struct Game {
-    World world;
+    // TODO: should entity system and item system be globals? Only one instance should exist
+    EntitySystem entity_system;
+
+    World world; // currently loaded world
     AssetTable asset_list;
     DebugState debug_state;
     SpellArray spells;

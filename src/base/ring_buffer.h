@@ -175,5 +175,4 @@ static inline void ring_impl_bounds_check(ssize idx, ssize length)
     ASSERT(idx < length);
 }
 
-
 #endif //RING_BUFFER_H

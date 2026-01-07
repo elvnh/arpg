@@ -7,6 +7,9 @@
 #include "entity.h"
 #include "components/component.h"
 
+struct World;
+struct EntitySystem;
+
 typedef enum {
     COLL_NOT_COLLIDING,
     COLL_ARE_INTERSECTING,
@@ -57,7 +60,7 @@ typedef struct {
     LinearArena         arena;
 } CollisionEventTable;
 
-struct World;
+
 
 /* Collision algorithms */
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,
@@ -67,7 +70,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 CollisionEffectCooldown *collision_cooldown_find(CollisionCooldownTable *table, EntityID a, EntityID b, s32 effect_index);
 void collision_cooldown_add(CollisionCooldownTable *table, EntityID a, EntityID b,
     s32 effect_index, LinearArena *arena);
-void remove_expired_collision_cooldowns(struct World *world);
+void remove_expired_collision_cooldowns(struct World *world, struct EntitySystem *es);
 
 /* Collision event table */
 CollisionEventTable collision_event_table_create(LinearArena *parent_arena);

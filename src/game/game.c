@@ -51,7 +51,7 @@ static void game_render(Game *game, RenderBatchList *rbs, const FrameData *frame
     world_render(&game->world, rb, frame_data, frame_arena, &game->debug_state);
 
     if (game->debug_state.quad_tree_overlay) {
-        render_tree(&game->world.entity_system.quad_tree.root, rb, frame_arena, 0);
+        render_tree(&game->world.quad_tree.root, rb, frame_arena, 0);
     }
 
     if (game->debug_state.render_origin) {
@@ -117,12 +117,12 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
     String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena: "), perm_arena_memory_usage, temp_alloc);
     String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, temp_alloc);
 
-    ssize qt_nodes = qt_get_node_count(&game->world.entity_system.quad_tree);
+    ssize qt_nodes = qt_get_node_count(&game->world.quad_tree);
     String node_string = str_concat(str_lit("Quad tree nodes: "), ssize_to_string(qt_nodes, temp_alloc), temp_alloc);
 
     String entity_string = str_concat(
         str_lit("Alive entity count: "),
-        ssize_to_string(game->world.entity_system.alive_entity_count, temp_alloc),
+        ssize_to_string(game->world.alive_entity_count, temp_alloc),
         temp_alloc
     );
 
@@ -169,7 +169,7 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
 
     // TODO: display more stats about hovered entity
     if (!entity_id_equal(game->debug_state.hovered_entity, NULL_ENTITY_ID)) {
-        Entity *entity = es_try_get_entity(&game->world.entity_system, game->debug_state.hovered_entity);
+        Entity *entity = es_try_get_entity(&game->entity_system, game->debug_state.hovered_entity);
 
         if (entity) {
             String entity_str = str_concat(
@@ -264,7 +264,7 @@ static void debug_update(Game *game, const FrameData *frame_data, LinearArena *f
     );
 
     Rectangle hovered_rect = {hovered_coords, {1, 1}};
-    EntityIDList hovered_entities = es_get_entities_in_area(&game->world.entity_system,
+    EntityIDList hovered_entities = qt_get_entities_in_area(&game->world.quad_tree,
 	hovered_rect, frame_arena);
 
     if (!list_is_empty(&hovered_entities)) {
@@ -373,7 +373,9 @@ void game_initialize(Game *game, GameMemory *game_memory)
 {
     set_global_asset_table(&game->asset_list);
     magic_initialize(&game->spells);
-    world_initialize(&game->world, &game_memory->permanent_memory);
+
+    es_initialize(&game->entity_system);
+    world_initialize(&game->world, &game_memory->permanent_memory, &game->entity_system);
     anim_initialize(&game->animations);
 
     game->debug_state.average_fps = 60.0f;

@@ -95,6 +95,7 @@ FLAGS="
       -Werror=discarded-qualifiers
       -Wsign-conversion
       -Wcast-align
+      -Werror=missing-braces
 
       -Isrc
       -Isrc/game

@@ -4,6 +4,7 @@
 #include "base/sl_list.h"
 #include "base/utils.h"
 #include "components/component.h"
+#include "quad_tree.h"
 
 #define ES_MEMORY_SIZE MB(2)
 
@@ -136,10 +137,9 @@ static EntityID id_queue_pop(EntityIDQueue *queue)
     return result;
 }
 
-void es_initialize(EntitySystem *es, Rectangle world_area)
+void es_initialize(EntitySystem *es)
 {
     id_queue_initialize(&es->free_id_queue);
-    qt_initialize(&es->quad_tree, world_area);
 
     for (EntityIndex i = FIRST_VALID_ENTITY_INDEX; i <= LAST_VALID_ENTITY_INDEX; ++i) {
         EntityID new_id = {
@@ -165,20 +165,15 @@ static inline EntityID create_entity(EntitySystem *es)
 {
     EntityID id = get_new_entity_id(es);
 
-    EntityIndex alive_index = es->alive_entity_count++;
-    es->alive_entity_ids[alive_index] = id;
-
     EntitySlot *slot = es_get_entity_slot_by_id(es, id);
     slot->entity = (Entity){0};
-    slot->alive_entity_array_index = alive_index;
-    slot->quad_tree_location = (QuadTreeLocation){0};
 
     ASSERT(slot->generation == id.generation);
 
     return id;
 }
 
-EntityWithID es_spawn_entity(EntitySystem *es, EntityFaction faction)
+EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
 {
     EntityID id = create_entity(es);
     Entity *entity = es_get_entity(es, id);
@@ -193,33 +188,12 @@ EntityWithID es_spawn_entity(EntitySystem *es, EntityFaction faction)
     return result;
 }
 
-static void es_remove_entity_from_quad_tree(QuadTree *qt, EntitySystem *es, Entity *entity)
-{
-    EntitySlot *slot = es_get_entity_slot(entity);
-    EntityID id = get_entity_id_from_slot(es, slot);
-
-    qt_remove_entity(qt, id, slot->quad_tree_location);
-    slot->quad_tree_location = QT_NULL_LOCATION;
-}
-
 void es_remove_entity(EntitySystem *es, EntityID id)
 {
     // TODO: clean up this function
     ASSERT(entity_id_is_valid(es, id));
 
     EntitySlot *removed_slot = es_get_entity_slot_by_id(es, id);
-    ASSERT(removed_slot->alive_entity_array_index < es->alive_entity_count);
-
-    EntityID *removed_id = &es->alive_entity_ids[removed_slot->alive_entity_array_index];
-    EntityID *last_alive =  &es->alive_entity_ids[es->alive_entity_count - 1];
-    ASSERT(removed_id->slot_id == id.slot_id);
-    ASSERT(removed_id->generation == id.generation);
-    EntitySlot *last_alive_slot = es_get_entity_slot_by_id(es, *last_alive);
-
-    *removed_id = *last_alive;
-    es->alive_entity_count--;
-
-    last_alive_slot->alive_entity_array_index = removed_slot->alive_entity_array_index;
 
     EntityGeneration new_generation;
     if (add_overflows_s32(id.generation, 1)) {
@@ -233,14 +207,11 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     id.generation = new_generation;
 
     id_queue_push(&es->free_id_queue, id);
-
-    es_remove_entity_from_quad_tree(&es->quad_tree, es, &removed_slot->entity);
 }
 
 Entity *es_get_entity(EntitySystem *es, EntityID id)
 {
     Entity *result = es_try_get_entity(es, id);
-
     ASSERT(result);
 
     return result;
@@ -257,25 +228,6 @@ Entity *es_try_get_entity(EntitySystem *es, EntityID id)
     return result;
 }
 
-void es_set_entity_area(EntitySystem *es, Entity *entity, Rectangle rectangle, LinearArena *arena)
-{
-    EntitySlot *slot = es_get_entity_slot(entity);
-    EntityID id = get_entity_id_from_slot(es, slot);
-
-    slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, id,
-	slot->quad_tree_location, rectangle, arena);
-}
-
-void es_set_entity_position(EntitySystem *es, Entity *entity, Vector2 new_pos, LinearArena *arena)
-{
-    EntitySlot *slot = es_get_entity_slot(entity);
-    EntityID id = get_entity_id_from_slot(es, slot);
-
-    slot->quad_tree_location = qt_move_entity(&es->quad_tree, id, slot->quad_tree_location,
-	new_pos, arena);
-}
-
-
 b32 es_entity_exists(EntitySystem *es, EntityID entity_id)
 {
     b32 result = es_get_entity(es, entity_id) != 0;
@@ -283,84 +235,14 @@ b32 es_entity_exists(EntitySystem *es, EntityID entity_id)
     return result;
 }
 
-EntityIDList es_get_inactive_entities(EntitySystem *es, LinearArena *scratch)
-{
-    EntityIDList result = {0};
-
-    for (EntityIndex i = 0; i < es->alive_entity_count; ++i) {
-        EntityID id = es->alive_entity_ids[i];
-        Entity *entity = es_get_entity(es, id);
-
-        if (entity->is_inactive) {
-            EntityIDNode *node = la_allocate_item(scratch, EntityIDNode);
-            node->id = id;
-
-            sl_list_push_back(&result, node);
-        }
-    }
-
-    return result;
-}
-
-void es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch)
-{
-    EntityIDList to_remove = es_get_inactive_entities(es, scratch);
-
-    for (EntityIDNode *node = list_head(&to_remove); node; node = list_next(node)) {
-        es_remove_entity(es, node->id);
-    }
-}
-
 void es_schedule_entity_for_removal(Entity *entity)
 {
     entity->is_inactive = true;
 }
 
-EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearArena *arena)
+b32 es_entity_is_inactive(Entity *entity)
 {
-    EntityIDList result = qt_get_entities_in_area(&es->quad_tree, area, arena);
-    return result;
-}
-
-Rectangle es_get_entity_bounding_box(Entity *entity)
-{
-    // NOTE: this minimum size is completely arbitrary
-    Vector2 size = {4, 4};
-
-    if (es_has_component(entity, ColliderComponent)) {
-        ColliderComponent *collider = es_get_component(entity, ColliderComponent);
-        size.x = MAX(size.x, collider->size.x);
-        size.y = MAX(size.y, collider->size.y);
-    }
-
-    if (es_has_component(entity, SpriteComponent)) {
-        SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
-	Sprite *sprite = &sprite_comp->sprite;
-
-        size.x = MAX(size.x, sprite->size.x);
-        size.y = MAX(size.y, sprite->size.y);
-    }
-
-    if (es_has_component(entity, AnimationComponent)) {
-        AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
-	AnimationInstance *current_anim = anim_get_current_animation(entity, anim_comp);
-	AnimationFrame current_frame = anim_get_current_frame(current_anim);
-
-        size.x = MAX(size.x, current_frame.sprite.size.x);
-        size.y = MAX(size.y, current_frame.sprite.size.y);
-    }
-
-
-    Rectangle result = {entity->position, size};
+    b32 result = entity->is_inactive;
 
     return result;
-}
-
-void es_update_entity_quad_tree_location(EntitySystem *es, Entity *entity, LinearArena *arena)
-{
-    EntitySlot *slot = es_get_entity_slot(entity);
-    EntityID id = es_get_id_of_entity(es, entity);
-
-    Rectangle new_area = es_get_entity_bounding_box(entity);
-    slot->quad_tree_location = qt_set_entity_area(&es->quad_tree, id, slot->quad_tree_location, new_area, arena);
 }

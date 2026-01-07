@@ -1,6 +1,8 @@
 #include "game_ui.h"
 #include "game.h"
+#include "item.h"
 #include "item_system.h"
+#include "modifier.h"
 #include "ui/ui_builder.h"
 
 #define GAME_UI_COLOR (RGBA32) {0, 1, 0, 0.5f}
@@ -20,6 +22,7 @@ static String item_widget_string(ItemID id, Item *item, GameMemory *memory)
 static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *equipment,
     Inventory *inventory, EquipmentSlot slot, GameMemory *game_memory, const Input *input)
 {
+    Allocator alloc = la_allocator(&game_memory->temporary_memory);
     UIState *ui = &ui_state->backend_state;
 
     ui_text(ui, equipment_slot_spelling(slot));
@@ -34,7 +37,21 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
 
 	if (interaction.hovered && !interaction.clicked) {
 	    ui_begin_mouse_menu(ui, input->mouse_position); {
-		ui_text(ui, str_lit("(item stats)"));
+		ui_text(ui, item->name);
+
+		ui_spacing(ui, 12);
+
+		if (item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
+		    for (ssize i = 0; i < item->modifiers.modifier_count; ++i) {
+			Modifier mod = item->modifiers.modifiers[i];
+			String mod_string = modifier_to_string(mod, alloc);
+
+			ui_text(ui, mod_string);
+			ui_spacing(ui, 12);
+		    }
+		}
+		//for (ssize i = 0; i < )
+
 	    } ui_end_mouse_menu(ui);
 	} else if (interaction.clicked) {
 	    bool unequip_success = unequip_item_and_put_in_inventory(equipment, inventory, slot);

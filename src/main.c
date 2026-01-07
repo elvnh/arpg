@@ -61,7 +61,7 @@ static f32 get_font_baseline_offset(FontHandle font_handle, s32 text_size)
 
 int main()
 {
-    //run_tests();
+    run_tests();
 
     // TODO: make this use mmap
     LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);

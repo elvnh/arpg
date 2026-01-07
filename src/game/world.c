@@ -993,6 +993,10 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 #if 1
             Modifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDITIVE, DMG_TYPE_FIRE, 1000);
             item_add_modifier(item, dmg_mod);
+
+	    Modifier dmg_mod2 = create_damage_modifier(NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE,
+		DMG_TYPE_FIRE, 278);
+            item_add_modifier(item, dmg_mod2);
             //item_add_modifier(item, res_mod);
 #endif
 

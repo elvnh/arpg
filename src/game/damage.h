@@ -69,4 +69,17 @@ DamageValue    get_damage_value_for_type(DamageValues damages, DamageType type);
 void	       set_damage_range_for_type(DamageRange *range, DamageType type, DamageValue low,
 					 DamageValue high);
 
+static inline String damage_type_to_string(DamageType type)
+{
+    switch (type) {
+	case DMG_TYPE_FIRE: return str_lit("Fire");
+	case DMG_TYPE_LIGHTNING: return str_lit("Fire");
+	case DMG_TYPE_COUNT: ASSERT(0);
+    }
+
+    ASSERT(0);
+
+    return (String){0};
+}
+
 #endif //DAMAGE_H

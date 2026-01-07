@@ -5,7 +5,7 @@
 #include "damage.h"
 
 typedef struct {
-    NumericModifierType applied_during_phase;
+    NumericModifierType applied_during_phase; // TODO: rename
     DamageType affected_damage_kind;
     DamageValue value;
 } DamageModifier;
@@ -16,7 +16,7 @@ typedef struct {
 } ResistanceModifier;
 
 typedef struct {
-    ModifierCategory kind;
+    ModifierCategory kind; // TODO: rename to category
 
     union {
         DamageModifier damage_modifier;
@@ -38,35 +38,35 @@ static inline Modifier create_damage_modifier(NumericModifierType boost_kind,
     return result;
 }
 
-#if 0
-static inline String modifier_to_string(StatModifier modifier, Allocator alloc)
+static inline String modifier_to_string(Modifier modifier, Allocator alloc)
 {
     String result = {0};
 
     switch (modifier.kind) {
-	case MODIFIER_DAMAGE: {
+	case MOD_CATEGORY_DAMAGE: {
 	    DamageModifier dmg_mod = modifier.as.damage_modifier;
-	    result = ssize_to_string(dmg_mod.value, alloc);
 
-	    if (dmg_mod.applied_during_phase == NUMERIC_MOD_FLAT_ADDED) {
-		result = str_concat(str_lit("+"), result, alloc);
+	    if (dmg_mod.applied_during_phase == NUMERIC_MOD_FLAT_ADDITIVE) {
+		result = str_concat(str_lit("+"), ssize_to_string(dmg_mod.value, alloc), alloc);
 	    } else if (dmg_mod.applied_during_phase == NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE) {
-		result = str_concat(result, str_lit("% increased"), alloc);
+		f32 damage_value = (f32)dmg_mod.value / 100.0f;
+
+		result = str_concat(f32_to_string(damage_value, 2, alloc), str_lit("x"), alloc);
 	    } else {
 		ASSERT(0);
 	    }
 
 	    result = str_concat(result, str_lit(" "), alloc);
 	    result = str_concat(result, damage_type_to_string(dmg_mod.affected_damage_kind), alloc);
+	    result = str_concat(result, str_lit(" damage"), alloc);
 	} break;
 
-	case MODIFIER_RESISTANCE: {
+	case MOD_CATEGORY_RESISTANCE: {
 	    ASSERT(0);
 	} break;
     }
 
     return result;
 }
-#endif
 
 #endif //MODIFIER_H

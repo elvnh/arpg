@@ -12,7 +12,7 @@ typedef struct {
     TextureHandle texture;
 } RendererState;
 
-static RendererState get_state_needed_for_entry(RenderKey key, AssetManager *assets)
+static RendererState get_state_needed_for_entry(RenderKey key, AssetSystem *assets)
 {
     RendererState result = {0};
 
@@ -40,7 +40,7 @@ static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
     return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
 }
 
-static RendererState switch_renderer_state(RendererState new_state, AssetManager *assets,
+static RendererState switch_renderer_state(RendererState new_state, AssetSystem *assets,
     RendererState old_state, RendererBackend *backend)
 {
     (void)backend;
@@ -104,7 +104,7 @@ static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f3
     renderer_backend_draw_quad(backend, vtl, vtr, vbr, vbl);
 }
 
-void execute_render_commands(RenderBatch *rb, AssetManager *assets,
+void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
     RendererBackend *backend, LinearArena *scratch)
 {
     if (rb->entry_count == 0) {

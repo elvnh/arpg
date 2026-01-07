@@ -12,7 +12,7 @@
 #include "asset.h"
 
 typedef struct FontAsset FontAsset;
-struct AssetManager;
+struct AssetSystem;
 
 /*
   TODO:
@@ -33,7 +33,7 @@ typedef struct {
     b32 is_visible;
 } RenderedGlyphInfo;
 
-FontAsset     *font_create_atlas(String font_path, struct AssetManager *assets, Allocator allocator, LinearArena *scratch);
+FontAsset     *font_create_atlas(String font_path, struct AssetSystem *assets, Allocator allocator, LinearArena *scratch);
 void           font_destroy_atlas(FontAsset *asset, Allocator allocator);
 TextureHandle  font_get_texture_handle(FontAsset *asset);
 RenderedGlyphInfo  font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 font_size,

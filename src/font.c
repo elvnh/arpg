@@ -5,7 +5,7 @@
 #include "base/rectangle.h"
 #include "base/utils.h"
 #include "font.h"
-#include "asset_manager.h"
+#include "asset_system.h"
 #include "platform.h"
 #include "renderer/renderer_backend.h"
 
@@ -49,7 +49,7 @@ static inline s32 char_index(char ch)
 }
 
 // TODO: Most calculations in this file are pretty hacky, fix them
-FontAsset *font_create_atlas(String font_path, struct AssetManager *assets, Allocator allocator,
+FontAsset *font_create_atlas(String font_path, struct AssetSystem *assets, Allocator allocator,
     LinearArena *scratch)
 {
     FontAsset *result = allocate_item(allocator, FontAsset);

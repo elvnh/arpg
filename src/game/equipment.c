@@ -1,6 +1,6 @@
 #include "equipment.h"
 #include "item.h"
-#include "item_manager.h"
+#include "item_system.h"
 
 typedef struct {
     b32 success;
@@ -16,7 +16,7 @@ static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
     return result;
 }
 
-b32 can_equip_item_in_slot(ItemManager *item_mgr, ItemID item_id, EquipmentSlot slot)
+b32 can_equip_item_in_slot(ItemSystem *item_mgr, ItemID item_id, EquipmentSlot slot)
 {
     Item *item = item_mgr_get_item(item_mgr, item_id);
 
@@ -49,7 +49,7 @@ static ItemID exchange_item_ids(ItemID *old, ItemID new_value)
     return old_value;
 }
 
-static EquipResult try_equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, ItemID item_id, EquipmentSlot slot)
+static EquipResult try_equip_item_in_slot(ItemSystem *item_mgr, Equipment *eq, ItemID item_id, EquipmentSlot slot)
 {
     EquipResult result = {0};
 
@@ -62,7 +62,7 @@ static EquipResult try_equip_item_in_slot(ItemManager *item_mgr, Equipment *eq, 
     return result;
 }
 
-bool equip_item_from_inventory(ItemManager *item_mgr, Equipment *eq, Inventory *inv, ItemID item_id)
+bool equip_item_from_inventory(ItemSystem *item_mgr, Equipment *eq, Inventory *inv, ItemID item_id)
 {
     ASSERT(inventory_contains_item(inv, item_id));
 

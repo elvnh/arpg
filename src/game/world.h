@@ -6,7 +6,7 @@
 #include "tilemap.h"
 #include "camera.h"
 #include "collision.h"
-#include "item_manager.h"
+#include "item_system.h"
 #include "hitsplat.h"
 
 /*
@@ -23,7 +23,7 @@ typedef struct World {
     Camera camera;
     Tilemap tilemap;
     EntitySystem entity_system;
-    ItemManager item_manager;
+    ItemSystem item_manager;
 
     CollisionCooldownTable collision_effect_cooldowns;
 

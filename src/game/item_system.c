@@ -1,15 +1,15 @@
-#include "item_manager.h"
+#include "item_system.h"
 #include "base/free_list_arena.h"
 #include "item.h"
 
 #define ITEM_SYSTEM_MEMORY_SIZE MB(8)
 
-void push_item_id(ItemManager *item_mgr, ItemID id)
+void push_item_id(ItemSystem *item_mgr, ItemID id)
 {
     ring_push(&item_mgr->id_queue, &id);
 }
 
-void item_mgr_initialize(ItemManager *item_mgr, Allocator allocator)
+void item_mgr_initialize(ItemSystem *item_mgr, Allocator allocator)
 {
     item_mgr->item_system_memory = fl_create(allocator, ITEM_SYSTEM_MEMORY_SIZE);
 
@@ -24,7 +24,7 @@ void item_mgr_initialize(ItemManager *item_mgr, Allocator allocator)
     }
 }
 
-static ItemID get_new_item_id(ItemManager *item_mgr)
+static ItemID get_new_item_id(ItemSystem *item_mgr)
 {
     ASSERT(!ring_is_empty(&item_mgr->id_queue));
     ItemID id = ring_pop_load(&item_mgr->id_queue);
@@ -32,7 +32,7 @@ static ItemID get_new_item_id(ItemManager *item_mgr)
     return id;
 }
 
-static ItemStorageSlot *get_item_storage_slot(ItemManager *item_mgr, ItemID id)
+static ItemStorageSlot *get_item_storage_slot(ItemSystem *item_mgr, ItemID id)
 {
     ItemStorageSlot *result = &item_mgr->item_slots[id.id - 1];
     ASSERT(result->generation == id.generation);
@@ -40,7 +40,7 @@ static ItemStorageSlot *get_item_storage_slot(ItemManager *item_mgr, ItemID id)
     return result;
 }
 
-Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id)
+Item *item_mgr_get_item(ItemSystem *item_mgr, ItemID id)
 {
     Item *result = 0;
 
@@ -53,7 +53,7 @@ Item *item_mgr_get_item(ItemManager *item_mgr, ItemID id)
     return result;
 }
 
-ItemWithID item_mgr_create_item(ItemManager *item_mgr)
+ItemWithID item_mgr_create_item(ItemSystem *item_mgr)
 {
     ItemID id = get_new_item_id(item_mgr);
     Item *item = item_mgr_get_item(item_mgr, id);
@@ -68,7 +68,7 @@ ItemWithID item_mgr_create_item(ItemManager *item_mgr)
 }
 
 // TODO: make it possible to set literal as name so it doesn't have to be copied
-void item_mgr_set_item_name(ItemManager *item_mgr, Item *item, String name)
+void item_mgr_set_item_name(ItemSystem *item_mgr, Item *item, String name)
 {
     if (item->name.data) {
 	fl_deallocate(&item_mgr->item_system_memory, item->name.data);
@@ -77,7 +77,7 @@ void item_mgr_set_item_name(ItemManager *item_mgr, Item *item, String name)
     item->name = str_copy(name, fl_allocator(&item_mgr->item_system_memory));
 }
 
-void item_mgr_destroy_item(ItemManager *item_mgr, ItemID id)
+void item_mgr_destroy_item(ItemSystem *item_mgr, ItemID id)
 {
     ItemStorageSlot *slot = get_item_storage_slot(item_mgr, id);
 

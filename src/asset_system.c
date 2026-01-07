@@ -1,4 +1,4 @@
-#include "asset_manager.h"
+#include "asset_system.h"
 #include "asset.h"
 #include "base/linear_arena.h"
 #include "base/string8.h"
@@ -16,7 +16,7 @@ typedef struct {
     AssetSlot *slot;
 } AssetSlotWithID;
 
-static AssetSlot *get_asset_slot(AssetManager *mgr, AssetID id)
+static AssetSlot *get_asset_slot(AssetSystem *mgr, AssetID id)
 {
     ASSERT(id >= FIRST_VALID_ASSET_ID);
     ASSERT(id < MAX_REGISTERED_ASSETS);
@@ -26,7 +26,7 @@ static AssetSlot *get_asset_slot(AssetManager *mgr, AssetID id)
     return result;
 }
 
-static AssetSlotWithID allocate_asset_slot(AssetManager *assets, String asset_path)
+static AssetSlotWithID allocate_asset_slot(AssetSystem *assets, String asset_path)
 {
     AssetID id = assets->next_asset_id++;
     ASSERT(id < MAX_REGISTERED_ASSETS);
@@ -67,7 +67,7 @@ static void assign_asset_slot_data(AssetSlot *slot, AssetKind kind, void *data)
     }
 }
 
-static void *get_asset_data(AssetManager *assets, AssetID id, AssetKind kind)
+static void *get_asset_data(AssetSystem *assets, AssetID id, AssetKind kind)
 {
     ASSERT(id < assets->next_asset_id);
 
@@ -85,13 +85,13 @@ static void *get_asset_data(AssetManager *assets, AssetID id, AssetKind kind)
     return 0;
 }
 
-void assets_initialize(AssetManager *asset_mgr, Allocator parent_allocator)
+void assets_initialize(AssetSystem *asset_mgr, Allocator parent_allocator)
 {
     asset_mgr->asset_arena = fl_create(parent_allocator, ASSET_ARENA_SIZE);
     asset_mgr->next_asset_id = FIRST_VALID_ASSET_ID;
 }
 
-AssetSlot *assets_get_asset_by_path(AssetManager *assets, String path, LinearArena *scratch)
+AssetSlot *assets_get_asset_by_path(AssetSystem *assets, String path, LinearArena *scratch)
 {
     // TODO: if number of assets grow large, linear search could become slow, but should be fine for now
     String abs_path = platform_get_canonical_path(path, la_allocator(scratch), scratch);
@@ -134,7 +134,7 @@ static String get_absolute_asset_path(String name, AssetKind kind, LinearArena *
     return result;
 }
 
-static ShaderAsset *load_asset_data_shader(AssetManager *assets, String path, LinearArena *scratch)
+static ShaderAsset *load_asset_data_shader(AssetSystem *assets, String path, LinearArena *scratch)
 {
     ShaderAsset *result = 0;
     String shader_source = platform_read_entire_file_as_string(path, la_allocator(scratch), scratch);
@@ -148,7 +148,7 @@ static ShaderAsset *load_asset_data_shader(AssetManager *assets, String path, Li
     return result;
 }
 
-ShaderHandle assets_register_shader(AssetManager *assets, String name, LinearArena *scratch)
+ShaderHandle assets_register_shader(AssetSystem *assets, String name, LinearArena *scratch)
 {
     String path = get_absolute_asset_path(name, ASSET_KIND_SHADER, scratch);
 
@@ -161,7 +161,7 @@ ShaderHandle assets_register_shader(AssetManager *assets, String name, LinearAre
     return (ShaderHandle){slot_and_id.id};
 }
 
-static TextureAsset *load_asset_data_texture(AssetManager *assets, String path, LinearArena *scratch)
+static TextureAsset *load_asset_data_texture(AssetSystem *assets, String path, LinearArena *scratch)
 {
     TextureAsset *result = 0;
     Span file_contents = platform_read_entire_file(path, la_allocator(scratch), scratch);
@@ -179,7 +179,7 @@ static TextureAsset *load_asset_data_texture(AssetManager *assets, String path, 
     return result;
 }
 
-TextureHandle assets_register_texture(AssetManager *assets, String name, LinearArena *scratch)
+TextureHandle assets_register_texture(AssetSystem *assets, String name, LinearArena *scratch)
 {
     String path = get_absolute_asset_path(name, ASSET_KIND_TEXTURE, scratch);
 
@@ -192,14 +192,14 @@ TextureHandle assets_register_texture(AssetManager *assets, String name, LinearA
     return (TextureHandle){slot_and_id.id};
 }
 
-static FontAsset *load_asset_data_font(AssetManager *assets, String path, LinearArena *scratch)
+static FontAsset *load_asset_data_font(AssetSystem *assets, String path, LinearArena *scratch)
 {
     FontAsset *result = font_create_atlas(path, assets, fl_allocator(&assets->asset_arena), scratch);
 
     return result;
 }
 
-FontHandle assets_register_font(AssetManager *assets, String name, LinearArena *scratch)
+FontHandle assets_register_font(AssetSystem *assets, String name, LinearArena *scratch)
 {
     // TODO: reduce code duplication in assets_register functions
     String path = get_absolute_asset_path(name, ASSET_KIND_FONT, scratch);
@@ -214,28 +214,28 @@ FontHandle assets_register_font(AssetManager *assets, String name, LinearArena *
     return result;
 }
 
-ShaderAsset *assets_get_shader(AssetManager *assets, ShaderHandle handle)
+ShaderAsset *assets_get_shader(AssetSystem *assets, ShaderHandle handle)
 {
     ShaderAsset *result = get_asset_data(assets, handle.id, ASSET_KIND_SHADER);
 
     return result;
 }
 
-TextureAsset *assets_get_texture(AssetManager *assets, TextureHandle handle)
+TextureAsset *assets_get_texture(AssetSystem *assets, TextureHandle handle)
 {
     TextureAsset *result = get_asset_data(assets, handle.id, ASSET_KIND_TEXTURE);
 
     return result;
 }
 
-FontAsset *assets_get_font(AssetManager *assets, FontHandle handle)
+FontAsset *assets_get_font(AssetSystem *assets, FontHandle handle)
 {
     FontAsset *result = get_asset_data(assets, handle.id, ASSET_KIND_FONT);
 
     return result;
 }
 
-static b32 assets_reload_shader(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
+static b32 assets_reload_shader(AssetSystem *assets, AssetSlot *slot, LinearArena *scratch)
 {
     ShaderAsset *new_shader = load_asset_data_shader(assets, slot->absolute_asset_path, scratch);
 
@@ -249,7 +249,7 @@ static b32 assets_reload_shader(AssetManager *assets, AssetSlot *slot, LinearAre
     return false;
 }
 
-static b32 assets_reload_texture(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
+static b32 assets_reload_texture(AssetSystem *assets, AssetSlot *slot, LinearArena *scratch)
 {
     TextureAsset *new_texture = load_asset_data_texture(assets, slot->absolute_asset_path, scratch);
 
@@ -263,7 +263,7 @@ static b32 assets_reload_texture(AssetManager *assets, AssetSlot *slot, LinearAr
     return false;
 }
 
-static b32 assets_reload_font(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
+static b32 assets_reload_font(AssetSystem *assets, AssetSlot *slot, LinearArena *scratch)
 {
     FontAsset *new_font = load_asset_data_font(assets, slot->absolute_asset_path, scratch);
 
@@ -275,7 +275,7 @@ static b32 assets_reload_font(AssetManager *assets, AssetSlot *slot, LinearArena
     return false;
 }
 
-b32 assets_reload_asset(AssetManager *assets, AssetSlot *slot, LinearArena *scratch)
+b32 assets_reload_asset(AssetSystem *assets, AssetSlot *slot, LinearArena *scratch)
 {
     switch (slot->kind) {
         case ASSET_KIND_SHADER: return assets_reload_shader(assets, slot, scratch);
@@ -288,7 +288,7 @@ b32 assets_reload_asset(AssetManager *assets, AssetSlot *slot, LinearArena *scra
     return false;
 }
 
-TextureHandle assets_create_texture_from_memory(AssetManager *assets, Image image)
+TextureHandle assets_create_texture_from_memory(AssetSystem *assets, Image image)
 {
     // TODO: ensure that this doesn't get unloaded since it's not tied to a path and
     // can't be reloaded

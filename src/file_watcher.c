@@ -139,7 +139,7 @@ void file_watcher_stop(AssetWatcherContext *ctx)
     mutex_destroy(ctx->lock, ctx->allocator);
 }
 
-void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, AssetManager *asset_mgr,
+void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, AssetSystem *asset_mgr,
     LinearArena *scratch)
 {
     mutex_lock(ctx->lock);

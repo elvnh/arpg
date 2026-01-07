@@ -5,7 +5,7 @@
 #include "entity_system.h"
 #include "equipment.h"
 #include "item.h"
-#include "item_manager.h"
+#include "item_system.h"
 #include "modifier.h"
 
 // TODO: use this in mods too
@@ -122,7 +122,7 @@ static DamageValues apply_damage_value_as(DamageValues lhs, TypedDamageValue val
 }
 
 static DamageValues get_modifiers_in_slot(Equipment *eq, EquipmentSlot slot,
-    NumericModifierType type, ModifierCategory mod_category, ItemManager *item_mgr)
+    NumericModifierType type, ModifierCategory mod_category, ItemSystem *item_mgr)
 {
     DamageValues result = {0};
 
@@ -170,7 +170,7 @@ static DamageValues get_status_effect_modifiers_of_type(Entity *entity, NumericM
 }
 
 static DamageValues get_equipment_modifiers_of_type(Entity *entity, NumericModifierType type,
-    ModifierCategory mod_category, ItemManager *item_mgr)
+    ModifierCategory mod_category, ItemSystem *item_mgr)
 {
     DamageValues result = {0};
 
@@ -189,7 +189,7 @@ static DamageValues get_equipment_modifiers_of_type(Entity *entity, NumericModif
 }
 
 DamageValues get_numeric_modifiers_of_type(Entity *entity, NumericModifierType type,
-    ModifierCategory mod_category, ItemManager *item_mgr)
+    ModifierCategory mod_category, ItemSystem *item_mgr)
 {
     DamageValues equipment_mods = get_equipment_modifiers_of_type(entity, type, mod_category, item_mgr);
     DamageValues status_mods = get_status_effect_modifiers_of_type(entity, type, mod_category);
@@ -219,7 +219,7 @@ DamageValue get_damage_value_for_type(DamageValues damages, DamageType type)
     return result;
 }
 
-DamageValues calculate_damage_dealt(DamageValues base_damage, Entity *entity, ItemManager *item_mgr)
+DamageValues calculate_damage_dealt(DamageValues base_damage, Entity *entity, ItemSystem *item_mgr)
 {
     DamageValues flat_added_mods = get_numeric_modifiers_of_type(
 	entity, NUMERIC_MOD_FLAT_ADDITIVE, MOD_CATEGORY_DAMAGE, item_mgr);
@@ -233,7 +233,7 @@ DamageValues calculate_damage_dealt(DamageValues base_damage, Entity *entity, It
     return result;
 }
 
-DamageValues calculate_resistances_after_boosts(Entity *entity, ItemManager *item_mgr)
+DamageValues calculate_resistances_after_boosts(Entity *entity, ItemSystem *item_mgr)
 {
     DamageValues result = {0};
 

@@ -18,7 +18,7 @@
 #include "input.h"
 #include "platform.h"
 #include "renderer/renderer_backend.h"
-#include "asset_manager.h"
+#include "asset_system.h"
 #include "game/renderer/render_command.h"
 #include "base/vertex.h"
 #include "game/renderer/render_batch.h"
@@ -35,7 +35,7 @@
 #define PERMANENT_ARENA_SIZE GAME_MEMORY_SIZE / 2
 #define FRAME_ARENA_SIZE GAME_MEMORY_SIZE / 2
 
-static AssetManager asset_mgr;
+static AssetSystem asset_mgr;
 
 const char *__asan_default_options() { return "detect_leaks=0"; }
 

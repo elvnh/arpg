@@ -209,7 +209,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
 
         damage_taken = calculate_damage_received(resistances, damage);
     } else {
-	ASSERT(0 && "Should this ever happen?");
+	ASSERT(0 && "Should this ever happen? An entity with no stats taking damage?");
         damage_taken = damage.types;
     }
 
@@ -230,8 +230,8 @@ static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *se
     }
 }
 
-static b32 should_execute_collision_effect(World *world, Entity *entity, Entity *other, OnCollisionEffect effect,
-    ObjectKind colliding_with_obj_kind, s32 effect_index)
+static b32 should_execute_collision_effect(World *world, Entity *entity, Entity *other,
+    OnCollisionEffect effect, ObjectKind colliding_with_obj_kind, s32 effect_index)
 {
     EntityID entity_id = es_get_id_of_entity(&world->entity_system, entity);
     b32 result = (effect.affects_object_kinds & colliding_with_obj_kind) != 0;

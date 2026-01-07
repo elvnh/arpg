@@ -1,6 +1,7 @@
 #include "game_ui.h"
 #include "game.h"
-#include "item_manager.h"
+#include "item_system.h"
+#include "ui/ui_builder.h"
 
 #define GAME_UI_COLOR (RGBA32) {0, 1, 0, 0.5f}
 
@@ -17,7 +18,7 @@ static String item_widget_string(ItemID id, Item *item, GameMemory *memory)
 }
 
 static void equipment_slot_widget(GameUIState *ui_state, GameState *game_state, Equipment *equipment,
-    Inventory *inventory, EquipmentSlot slot, GameMemory *game_memory)
+    Inventory *inventory, EquipmentSlot slot, GameMemory *game_memory, const Input *input)
 {
     UIState *ui = &ui_state->backend_state;
 
@@ -27,11 +28,15 @@ static void equipment_slot_widget(GameUIState *ui_state, GameState *game_state, 
     ItemID item_id = get_equipped_item_in_slot(equipment, slot);
     Item *item = item_mgr_get_item(&game_state->world.item_manager, item_id);
 
-
     if (item) {
 	String text = item_widget_string(item_id, item, game_memory);
+	WidgetInteraction interaction = ui_button(ui, text);
 
-	if (ui_button(ui, text).clicked) {
+	if (interaction.hovered && !interaction.clicked) {
+	    ui_begin_mouse_menu(ui, input->mouse_position); {
+		ui_text(ui, str_lit("(item stats)"));
+	    } ui_end_mouse_menu(ui);
+	} else if (interaction.clicked) {
 	    bool unequip_success = unequip_item_and_put_in_inventory(equipment, inventory, slot);
 	    ASSERT(unequip_success);
 	}
@@ -56,7 +61,7 @@ static void equipment_menu(GameUIState *ui_state, GameState *game_state, GameMem
 
 	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
 	    equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, slot,
-		game_memory);
+		game_memory, &frame_data->input);
 	}
     } ui_pop_container(ui);
 }
@@ -95,7 +100,6 @@ static void inventory_menu(GameUIState *ui_state, GameState *game_state, GameMem
 	} ui_end_list(ui);
     } ui_pop_container(ui);
 }
-
 
 void game_ui(GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
 {

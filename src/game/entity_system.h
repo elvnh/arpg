@@ -35,14 +35,13 @@ typedef struct EntityStorage {
 } EntitySystem;
 
 EntityWithID es_spawn_entity(EntitySystem *es, EntityFaction faction);
-
-void       es_initialize(EntitySystem *es, Rectangle world_area);
-Entity    *es_get_entity(EntitySystem *es, EntityID id);
-Entity    *es_try_get_entity(EntitySystem *es, EntityID id);
-EntityID   es_get_id_of_entity(EntitySystem *es, Entity *entity);
-b32        es_entity_exists(EntitySystem *es, EntityID entity_id);
-void       es_schedule_entity_for_removal(Entity *entity);
-void       es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch);
+void         es_initialize(EntitySystem *es, Rectangle world_area);
+Entity      *es_get_entity(EntitySystem *es, EntityID id);
+Entity      *es_try_get_entity(EntitySystem *es, EntityID id);
+EntityID     es_get_id_of_entity(EntitySystem *es, Entity *entity);
+b32          es_entity_exists(EntitySystem *es, EntityID entity_id);
+void         es_schedule_entity_for_removal(Entity *entity);
+void         es_remove_inactive_entities(EntitySystem *es, LinearArena *scratch);
 EntityIDList es_get_entities_in_area(EntitySystem *es, Rectangle area, LinearArena *arena);
 EntityIDList es_get_inactive_entities(EntitySystem *es, LinearArena *scratch);
 Rectangle    es_get_entity_bounding_box(Entity *entity);

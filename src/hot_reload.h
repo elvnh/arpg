@@ -5,8 +5,8 @@
 #include "platform.h"
 #include "renderer/render_batch.h"
 
-typedef void (GameInitialize)(GameState *, GameMemory *);
-typedef void (GameUpdateAndRender)(GameState *, PlatformCode, RenderBatchList *, FrameData, GameMemory *);
+typedef void (GameInitialize)(Game *, GameMemory *);
+typedef void (GameUpdateAndRender)(Game *, PlatformCode, RenderBatchList *, FrameData, GameMemory *);
 
 typedef struct {
     void *handle;

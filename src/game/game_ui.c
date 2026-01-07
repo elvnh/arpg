@@ -17,7 +17,7 @@ static String item_widget_string(ItemID id, Item *item, GameMemory *memory)
     return result;
 }
 
-static void equipment_slot_widget(GameUIState *ui_state, GameState *game_state, Equipment *equipment,
+static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *equipment,
     Inventory *inventory, EquipmentSlot slot, GameMemory *game_memory, const Input *input)
 {
     UIState *ui = &ui_state->backend_state;
@@ -26,7 +26,7 @@ static void equipment_slot_widget(GameUIState *ui_state, GameState *game_state, 
     ui_core_same_line(ui);
 
     ItemID item_id = get_equipped_item_in_slot(equipment, slot);
-    Item *item = item_mgr_get_item(&game_state->world.item_manager, item_id);
+    Item *item = item_mgr_get_item(&game->world.item_manager, item_id);
 
     if (item) {
 	String text = item_widget_string(item_id, item, game_memory);
@@ -45,11 +45,11 @@ static void equipment_slot_widget(GameUIState *ui_state, GameState *game_state, 
     }
 }
 
-static void equipment_menu(GameUIState *ui_state, GameState *game_state, GameMemory *game_memory,
+static void equipment_menu(GameUIState *ui_state, Game *game, GameMemory *game_memory,
     const FrameData *frame_data)
 {
     UIState *ui = &ui_state->backend_state;
-    Entity *player = world_get_player_entity(&game_state->world);
+    Entity *player = world_get_player_entity(&game->world);
 
     ui_begin_container(ui, str_lit("equipment"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 	ui_text(ui, str_lit("Equipment"));
@@ -60,17 +60,17 @@ static void equipment_menu(GameUIState *ui_state, GameState *game_state, GameMem
 	ASSERT(inv);
 
 	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-	    equipment_slot_widget(ui_state, game_state, &eq->equipment, &inv->inventory, slot,
+	    equipment_slot_widget(ui_state, game, &eq->equipment, &inv->inventory, slot,
 		game_memory, &frame_data->input);
 	}
     } ui_pop_container(ui);
 }
 
-static void inventory_menu(GameUIState *ui_state, GameState *game_state, GameMemory *game_memory,
+static void inventory_menu(GameUIState *ui_state, Game *game, GameMemory *game_memory,
     const FrameData *frame_data)
 {
     UIState *ui = &ui_state->backend_state;
-    Entity *player = world_get_player_entity(&game_state->world);
+    Entity *player = world_get_player_entity(&game->world);
 
     ui_begin_container(ui, str_lit("inventory"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 	ui_text(ui, str_lit("Inventory"));
@@ -84,7 +84,7 @@ static void inventory_menu(GameUIState *ui_state, GameState *game_state, GameMem
 	    ASSERT(eq);
 
 	    for (ssize i = 0; i < inv->inventory.item_count; ++i) {
-		Item *item = item_mgr_get_item(&game_state->world.item_manager, inv->inventory.items[i]);
+		Item *item = item_mgr_get_item(&game->world.item_manager, inv->inventory.items[i]);
 		ASSERT(item->name.data);
 
 		ItemID item_id = inv->inventory.items[i];
@@ -93,7 +93,7 @@ static void inventory_menu(GameUIState *ui_state, GameState *game_state, GameMem
 		ASSERT(item);
 
 		if (ui_selectable(ui, label_string).clicked) {
-		    equip_item_from_inventory(&game_state->world.item_manager, &eq->equipment,
+		    equip_item_from_inventory(&game->world.item_manager, &eq->equipment,
 			&inv->inventory, item_id);
 		}
 	    }
@@ -101,27 +101,27 @@ static void inventory_menu(GameUIState *ui_state, GameState *game_state, GameMem
     } ui_pop_container(ui);
 }
 
-void game_ui(GameState *game_state, GameMemory *game_memory, const FrameData *frame_data)
+void game_ui(Game *game, GameMemory *game_memory, const FrameData *frame_data)
 {
-    Entity *player = world_get_player_entity(&game_state->world);
-    UIState *ui = &game_state->game_ui.backend_state;
+    Entity *player = world_get_player_entity(&game->world);
+    UIState *ui = &game->game_ui.backend_state;
     ASSERT(player);
 
     if (input_is_key_pressed(&frame_data->input, KEY_I)) {
-	game_state->game_ui.inventory_menu_open = !game_state->game_ui.inventory_menu_open;
+	game->game_ui.inventory_menu_open = !game->game_ui.inventory_menu_open;
     }
 
-    if (!game_state->game_ui.inventory_menu_open) {
+    if (!game->game_ui.inventory_menu_open) {
 	return;
     }
 
     ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
-    inventory_menu(&game_state->game_ui, game_state, game_memory, frame_data);
+    inventory_menu(&game->game_ui, game, game_memory, frame_data);
 
     ui_core_same_line(ui);
 
-    equipment_menu(&game_state->game_ui, game_state, game_memory, frame_data);
+    equipment_menu(&game->game_ui, game, game_memory, frame_data);
 
     ui_pop_container(ui);
 }

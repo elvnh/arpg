@@ -75,7 +75,7 @@ int main()
         .temporary_memory = la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE)
     };
 
-    GameState *game_state = la_allocate_item(&game_memory.permanent_memory, GameState);
+    Game *game_state = la_allocate_item(&game_memory.permanent_memory, Game);
 
     platform_trap_on_fp_exceptions();
 

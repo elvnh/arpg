@@ -9,10 +9,10 @@ typedef struct {
     b32 inventory_menu_open;
 } GameUIState;
 
-struct GameState;
+struct Game;
 struct GameMemory;
 struct FrameData;
 
-void game_ui(struct GameState *game_state, struct GameMemory *game_memory, const struct FrameData *frame_data);
+void game_ui(struct Game *game, struct GameMemory *game_memory, const struct FrameData *frame_data);
 
 #endif //GAME_UI_H

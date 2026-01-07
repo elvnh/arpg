@@ -17,7 +17,7 @@
 
 struct RenderBatchList;
 
-typedef struct GameState {
+typedef struct Game {
     World world;
     AssetTable asset_list;
     DebugState debug_state;
@@ -25,15 +25,15 @@ typedef struct GameState {
     RNGState rng_state;
     AnimationTable animations;
     GameUIState game_ui;
-} GameState;
+} Game;
 
 typedef struct GameMemory {
     LinearArena permanent_memory;
     LinearArena temporary_memory;
 } GameMemory;
 
-void game_update_and_render(GameState *game_state, PlatformCode platform_code, struct RenderBatchList *rbs,
+void game_update_and_render(Game *game_state, PlatformCode platform_code, struct RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory);
-void game_initialize(GameState *game_state, GameMemory *game_memory);
+void game_initialize(Game *game_state, GameMemory *game_memory);
 
 #endif //GAME_H

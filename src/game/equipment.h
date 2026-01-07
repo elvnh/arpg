@@ -12,7 +12,7 @@ typedef struct {
 
 ItemID get_equipped_item_in_slot(Equipment *eq, EquipmentSlot slot);
 b32    has_item_equipped_in_slot(Equipment *eq, EquipmentSlot slot);
-bool   equip_item_from_inventory(ItemSystem *item_mgr, Equipment *eq, Inventory *inv, ItemID item);
+bool   equip_item_from_inventory(ItemSystem *item_sys, Equipment *eq, Inventory *inv, ItemID item);
 bool   unequip_item_and_put_in_inventory(Equipment *eq, Inventory *inv, EquipmentSlot slot);
 
 #endif //EQUIPMENT_H

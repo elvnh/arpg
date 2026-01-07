@@ -55,10 +55,10 @@ typedef struct {
 } DamageInstance;
 
 DamageValues   get_numeric_modifiers_of_type(struct Entity *entity, NumericModifierType type,
-					     ModifierCategory mod_category, struct ItemSystem *item_mgr);
+					     ModifierCategory mod_category, struct ItemSystem *item_sys);
 DamageValues   calculate_damage_dealt(DamageValues base_damage, struct Entity *entity,
-				      struct ItemSystem *item_mgr);
-DamageValues   calculate_resistances_after_boosts(struct Entity *entity, struct ItemSystem *item_mgr);
+				      struct ItemSystem *item_sys);
+DamageValues   calculate_resistances_after_boosts(struct Entity *entity, struct ItemSystem *item_sys);
 DamageValues   calculate_damage_received(DamageValues resistances, DamageInstance damage);
 void	       set_damage_value_for_type(DamageValues *damages, DamageType kind, DamageValue new_value);
 DamageValues   roll_damage_in_range(DamageRange range);

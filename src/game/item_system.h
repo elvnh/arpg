@@ -28,11 +28,11 @@ typedef struct ItemSystem {
     FreeListArena item_system_memory;
 } ItemSystem;
 
-void item_mgr_initialize(ItemSystem *item_mgr, Allocator allocator);
-ItemWithID item_mgr_create_item(ItemSystem *item_mgr);
-void item_mgr_set_item_name(ItemSystem *item_mgr, Item *item, String name);
-void item_mgr_destroy_item(ItemSystem *item_mgr, ItemID id);
-Item *item_mgr_get_item(ItemSystem *item_mgr, ItemID id);
-ItemID item_mgr_get_id_of_item(ItemSystem *item_mgr, Item *item);
+void item_sys_initialize(ItemSystem *item_sys, Allocator allocator);
+ItemWithID item_sys_create_item(ItemSystem *item_sys);
+void item_sys_set_item_name(ItemSystem *item_sys, Item *item, String name);
+void item_sys_destroy_item(ItemSystem *item_sys, ItemID id);
+Item *item_sys_get_item(ItemSystem *item_sys, ItemID id);
+ItemID item_sys_get_id_of_item(ItemSystem *item_sys, Item *item);
 
 #endif //ITEM_MANAGER_H

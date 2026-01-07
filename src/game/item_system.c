@@ -4,48 +4,48 @@
 
 #define ITEM_SYSTEM_MEMORY_SIZE MB(8)
 
-void push_item_id(ItemSystem *item_mgr, ItemID id)
+void push_item_id(ItemSystem *item_sys, ItemID id)
 {
-    ring_push(&item_mgr->id_queue, &id);
+    ring_push(&item_sys->id_queue, &id);
 }
 
-void item_mgr_initialize(ItemSystem *item_mgr, Allocator allocator)
+void item_sys_initialize(ItemSystem *item_sys, Allocator allocator)
 {
-    item_mgr->item_system_memory = fl_create(allocator, ITEM_SYSTEM_MEMORY_SIZE);
+    item_sys->item_system_memory = fl_create(allocator, ITEM_SYSTEM_MEMORY_SIZE);
 
     // TODO: be sure to change to regular init if this becomes heap allocated
-    ring_initialize_static(&item_mgr->id_queue);
+    ring_initialize_static(&item_sys->id_queue);
 
     u32 first_item_id = NULL_ITEM_ID.id + 1;
 
     for (u32 i = first_item_id; i < MAX_ITEMS + 1; ++i) {
         ItemID id = { .id = i, .generation = 0 };
-        push_item_id(item_mgr, id);
+        push_item_id(item_sys, id);
     }
 }
 
-static ItemID get_new_item_id(ItemSystem *item_mgr)
+static ItemID get_new_item_id(ItemSystem *item_sys)
 {
-    ASSERT(!ring_is_empty(&item_mgr->id_queue));
-    ItemID id = ring_pop_load(&item_mgr->id_queue);
+    ASSERT(!ring_is_empty(&item_sys->id_queue));
+    ItemID id = ring_pop_load(&item_sys->id_queue);
 
     return id;
 }
 
-static ItemStorageSlot *get_item_storage_slot(ItemSystem *item_mgr, ItemID id)
+static ItemStorageSlot *get_item_storage_slot(ItemSystem *item_sys, ItemID id)
 {
-    ItemStorageSlot *result = &item_mgr->item_slots[id.id - 1];
+    ItemStorageSlot *result = &item_sys->item_slots[id.id - 1];
     ASSERT(result->generation == id.generation);
 
     return result;
 }
 
-Item *item_mgr_get_item(ItemSystem *item_mgr, ItemID id)
+Item *item_sys_get_item(ItemSystem *item_sys, ItemID id)
 {
     Item *result = 0;
 
     if (!item_id_is_null(id)) {
-        ItemStorageSlot *slot = get_item_storage_slot(item_mgr, id);
+        ItemStorageSlot *slot = get_item_storage_slot(item_sys, id);
 
         result = &slot->item;
     }
@@ -53,10 +53,10 @@ Item *item_mgr_get_item(ItemSystem *item_mgr, ItemID id)
     return result;
 }
 
-ItemWithID item_mgr_create_item(ItemSystem *item_mgr)
+ItemWithID item_sys_create_item(ItemSystem *item_sys)
 {
-    ItemID id = get_new_item_id(item_mgr);
-    Item *item = item_mgr_get_item(item_mgr, id);
+    ItemID id = get_new_item_id(item_sys);
+    Item *item = item_sys_get_item(item_sys, id);
     mem_zero(item, SIZEOF(*item));
 
     ItemWithID result = {
@@ -68,18 +68,18 @@ ItemWithID item_mgr_create_item(ItemSystem *item_mgr)
 }
 
 // TODO: make it possible to set literal as name so it doesn't have to be copied
-void item_mgr_set_item_name(ItemSystem *item_mgr, Item *item, String name)
+void item_sys_set_item_name(ItemSystem *item_sys, Item *item, String name)
 {
     if (item->name.data) {
-	fl_deallocate(&item_mgr->item_system_memory, item->name.data);
+	fl_deallocate(&item_sys->item_system_memory, item->name.data);
     }
 
-    item->name = str_copy(name, fl_allocator(&item_mgr->item_system_memory));
+    item->name = str_copy(name, fl_allocator(&item_sys->item_system_memory));
 }
 
-void item_mgr_destroy_item(ItemSystem *item_mgr, ItemID id)
+void item_sys_destroy_item(ItemSystem *item_sys, ItemID id)
 {
-    ItemStorageSlot *slot = get_item_storage_slot(item_mgr, id);
+    ItemStorageSlot *slot = get_item_storage_slot(item_sys, id);
 
     // TODO: how to handle generation overflow?
     ItemID new_id = {
@@ -89,5 +89,5 @@ void item_mgr_destroy_item(ItemSystem *item_mgr, ItemID id)
 
     slot->generation = new_id.generation;
 
-    push_item_id(item_mgr, new_id);
+    push_item_id(item_sys, new_id);
 }

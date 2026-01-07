@@ -2,6 +2,7 @@
 #include "base/format.h"
 #include "base/matrix.h"
 #include "base/random.h"
+#include "item_system.h"
 #include "renderer/render_batch.h"
 #include "input.h"
 
@@ -212,7 +213,7 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
                 for (ssize i = 0; i < inv->inventory.item_count; ++i) {
                     ItemID id = inv->inventory.items[i];
 
-                    Item *item = item_mgr_get_item(&game->world.item_manager, id);
+                    Item *item = item_sys_get_item(game->world.item_system, id);
                     ASSERT(item);
 
                     String id_string = ssize_to_string((ssize)id.id, temp_alloc);
@@ -375,7 +376,9 @@ void game_initialize(Game *game, GameMemory *game_memory)
     magic_initialize(&game->spells);
 
     es_initialize(&game->entity_system);
-    world_initialize(&game->world, &game_memory->permanent_memory, &game->entity_system);
+    item_sys_initialize(&game->item_system, la_allocator(&game_memory->permanent_memory));
+
+    world_initialize(&game->world, &game_memory->permanent_memory, &game->entity_system, &game->item_system);
     anim_initialize(&game->animations);
 
     game->debug_state.average_fps = 60.0f;

@@ -122,14 +122,14 @@ static DamageValues apply_damage_value_as(DamageValues lhs, TypedDamageValue val
 }
 
 static DamageValues get_modifiers_in_slot(Equipment *eq, EquipmentSlot slot,
-    NumericModifierType type, ModifierCategory mod_category, ItemSystem *item_mgr)
+    NumericModifierType type, ModifierCategory mod_category, ItemSystem *item_sys)
 {
     DamageValues result = {0};
 
     ItemID item_id = get_equipped_item_in_slot(eq, slot);
 
     if (!item_id_is_null(item_id)) {
-	Item *item = item_mgr_get_item(item_mgr, item_id);
+	Item *item = item_sys_get_item(item_sys, item_id);
 
 	ASSERT(item_has_prop(item, ITEM_PROP_EQUIPPABLE));
 
@@ -170,7 +170,7 @@ static DamageValues get_status_effect_modifiers_of_type(Entity *entity, NumericM
 }
 
 static DamageValues get_equipment_modifiers_of_type(Entity *entity, NumericModifierType type,
-    ModifierCategory mod_category, ItemSystem *item_mgr)
+    ModifierCategory mod_category, ItemSystem *item_sys)
 {
     DamageValues result = {0};
 
@@ -179,7 +179,7 @@ static DamageValues get_equipment_modifiers_of_type(Entity *entity, NumericModif
     if (equipment) {
 	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
 	    DamageValues slot_mods = get_modifiers_in_slot(
-		&equipment->equipment, slot, type, mod_category, item_mgr);
+		&equipment->equipment, slot, type, mod_category, item_sys);
 
 	    result = apply_damage_values_as(result, slot_mods, type);
 	}
@@ -189,9 +189,9 @@ static DamageValues get_equipment_modifiers_of_type(Entity *entity, NumericModif
 }
 
 DamageValues get_numeric_modifiers_of_type(Entity *entity, NumericModifierType type,
-    ModifierCategory mod_category, ItemSystem *item_mgr)
+    ModifierCategory mod_category, ItemSystem *item_sys)
 {
-    DamageValues equipment_mods = get_equipment_modifiers_of_type(entity, type, mod_category, item_mgr);
+    DamageValues equipment_mods = get_equipment_modifiers_of_type(entity, type, mod_category, item_sys);
     DamageValues status_mods = get_status_effect_modifiers_of_type(entity, type, mod_category);
 
     DamageValues result = {0};
@@ -219,12 +219,12 @@ DamageValue get_damage_value_for_type(DamageValues damages, DamageType type)
     return result;
 }
 
-DamageValues calculate_damage_dealt(DamageValues base_damage, Entity *entity, ItemSystem *item_mgr)
+DamageValues calculate_damage_dealt(DamageValues base_damage, Entity *entity, ItemSystem *item_sys)
 {
     DamageValues flat_added_mods = get_numeric_modifiers_of_type(
-	entity, NUMERIC_MOD_FLAT_ADDITIVE, MOD_CATEGORY_DAMAGE, item_mgr);
+	entity, NUMERIC_MOD_FLAT_ADDITIVE, MOD_CATEGORY_DAMAGE, item_sys);
     DamageValues multiplicative_mods = get_numeric_modifiers_of_type(
-	entity, NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE, MOD_CATEGORY_DAMAGE, item_mgr);
+	entity, NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE, MOD_CATEGORY_DAMAGE, item_sys);
 
     DamageValues result = base_damage;
     result = apply_damage_values_as(result, flat_added_mods, NUMERIC_MOD_FLAT_ADDITIVE);
@@ -233,7 +233,7 @@ DamageValues calculate_damage_dealt(DamageValues base_damage, Entity *entity, It
     return result;
 }
 
-DamageValues calculate_resistances_after_boosts(Entity *entity, ItemSystem *item_mgr)
+DamageValues calculate_resistances_after_boosts(Entity *entity, ItemSystem *item_sys)
 {
     DamageValues result = {0};
 
@@ -243,7 +243,7 @@ DamageValues calculate_resistances_after_boosts(Entity *entity, ItemSystem *item
     }
 
     DamageValues res_mods = get_numeric_modifiers_of_type(entity, NUMERIC_MOD_FLAT_ADDITIVE,
-	MOD_CATEGORY_RESISTANCE, item_mgr);
+	MOD_CATEGORY_RESISTANCE, item_sys);
 
     result = apply_damage_values_as(result, res_mods, NUMERIC_MOD_FLAT_ADDITIVE);
 

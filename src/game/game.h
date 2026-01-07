@@ -1,6 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "item_system.h"
 #include "ui/ui_core.h"
 #include "game/magic.h"
 #include "platform.h"
@@ -20,6 +21,7 @@ struct RenderBatchList;
 typedef struct Game {
     // TODO: should entity system and item system be globals? Only one instance should exist
     EntitySystem entity_system;
+    ItemSystem item_system;
 
     World world; // currently loaded world
     AssetTable asset_list;

@@ -16,9 +16,9 @@ static ItemID *get_pointer_to_item_id_in_slot(Equipment *eq, EquipmentSlot slot)
     return result;
 }
 
-b32 can_equip_item_in_slot(ItemSystem *item_mgr, ItemID item_id, EquipmentSlot slot)
+b32 can_equip_item_in_slot(ItemSystem *item_sys, ItemID item_id, EquipmentSlot slot)
 {
-    Item *item = item_mgr_get_item(item_mgr, item_id);
+    Item *item = item_sys_get_item(item_sys, item_id);
 
     b32 item_is_equipment = item_has_prop(item, ITEM_PROP_EQUIPPABLE);
     b32 result = item_is_equipment && ((item->equipment.slot & slot) != 0);
@@ -49,11 +49,11 @@ static ItemID exchange_item_ids(ItemID *old, ItemID new_value)
     return old_value;
 }
 
-static EquipResult try_equip_item_in_slot(ItemSystem *item_mgr, Equipment *eq, ItemID item_id, EquipmentSlot slot)
+static EquipResult try_equip_item_in_slot(ItemSystem *item_sys, Equipment *eq, ItemID item_id, EquipmentSlot slot)
 {
     EquipResult result = {0};
 
-    if (can_equip_item_in_slot(item_mgr, item_id, slot)) {
+    if (can_equip_item_in_slot(item_sys, item_id, slot)) {
         ItemID *slot_ptr = get_pointer_to_item_id_in_slot(eq, slot);
         result.replaced_item = exchange_item_ids(slot_ptr, item_id);
         result.success = true;
@@ -62,14 +62,14 @@ static EquipResult try_equip_item_in_slot(ItemSystem *item_mgr, Equipment *eq, I
     return result;
 }
 
-bool equip_item_from_inventory(ItemSystem *item_mgr, Equipment *eq, Inventory *inv, ItemID item_id)
+bool equip_item_from_inventory(ItemSystem *item_sys, Equipment *eq, Inventory *inv, ItemID item_id)
 {
     ASSERT(inventory_contains_item(inv, item_id));
 
-    Item *item = item_mgr_get_item(item_mgr, item_id);
+    Item *item = item_sys_get_item(item_sys, item_id);
     ASSERT(item_has_prop(item, ITEM_PROP_EQUIPPABLE));
 
-    EquipResult equip_result = try_equip_item_in_slot(item_mgr, eq, item_id, item->equipment.slot);
+    EquipResult equip_result = try_equip_item_in_slot(item_sys, eq, item_id, item->equipment.slot);
 
     if (equip_result.success) {
 	if (!item_id_is_null(equip_result.replaced_item)) {

@@ -299,7 +299,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
 
     if (es_has_component(entity, StatsComponent)) {
         StatsComponent *stats = es_get_component(entity, StatsComponent);
-        DamageValues resistances = calculate_resistances_after_boosts(entity, &world->item_manager);
+        DamageValues resistances = calculate_resistances_after_boosts(entity, world->item_system);
 
         damage_taken = calculate_damage_received(resistances, damage);
     } else {
@@ -861,7 +861,7 @@ static void drop_ground_item(World *world, Vector2 pos, ItemID id)
     sprite->sprite = sprite_create(get_asset_table()->fireball_texture, v2(16, 16), SPRITE_ROTATE_NONE);
 }
 
-void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_system)
+void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_system, ItemSystem *item_system)
 {
     world->world_arena = la_create(la_allocator(arena), WORLD_ARENA_SIZE);
 
@@ -869,6 +869,7 @@ void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_sys
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);
 
     world->entity_system = entity_system;
+    world->item_system = item_system;
 
     // NOTE: testing code
     {
@@ -899,7 +900,7 @@ void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_sys
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
 
     qt_initialize(&world->quad_tree, tilemap_area);
-    item_mgr_initialize(&world->item_manager, la_allocator(&world->world_arena));
+    item_sys_initialize(world->item_system, la_allocator(&world->world_arena));
 
     for (s32 i = 0; i < 2; ++i) {
 #if 1
@@ -978,11 +979,11 @@ void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_sys
         (void)equipment;
 
         {
-            ItemWithID item_with_id = item_mgr_create_item(&world->item_manager);
+            ItemWithID item_with_id = item_sys_create_item(world->item_system);
             Item *item = item_with_id.item;
 
 
-            item_mgr_set_item_name(&world->item_manager, item, str_lit("Sword"));
+            item_sys_set_item_name(world->item_system, item, str_lit("Sword"));
             item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
             item->equipment.slot = EQUIP_SLOT_WEAPON;
 

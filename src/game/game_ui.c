@@ -26,7 +26,7 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
     ui_core_same_line(ui);
 
     ItemID item_id = get_equipped_item_in_slot(equipment, slot);
-    Item *item = item_mgr_get_item(&game->world.item_manager, item_id);
+    Item *item = item_sys_get_item(game->world.item_system, item_id);
 
     if (item) {
 	String text = item_widget_string(item_id, item, game_memory);
@@ -84,7 +84,7 @@ static void inventory_menu(GameUIState *ui_state, Game *game, GameMemory *game_m
 	    ASSERT(eq);
 
 	    for (ssize i = 0; i < inv->inventory.item_count; ++i) {
-		Item *item = item_mgr_get_item(&game->world.item_manager, inv->inventory.items[i]);
+		Item *item = item_sys_get_item(game->world.item_system, inv->inventory.items[i]);
 		ASSERT(item->name.data);
 
 		ItemID item_id = inv->inventory.items[i];
@@ -93,7 +93,7 @@ static void inventory_menu(GameUIState *ui_state, Game *game, GameMemory *game_m
 		ASSERT(item);
 
 		if (ui_selectable(ui, label_string).clicked) {
-		    equip_item_from_inventory(&game->world.item_manager, &eq->equipment,
+		    equip_item_from_inventory(game->world.item_system, &eq->equipment,
 			&inv->inventory, item_id);
 		}
 	    }

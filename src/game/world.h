@@ -19,14 +19,19 @@ struct FrameData;
 struct DebugState;
 struct RenderBatch;
 
+// TODO: keep a list of items that exist in this world to avoid having to iterate all items when destroying world
+// TODO: move world arena to game, since that memory should be reused for new worlds?
+
 typedef struct World {
     LinearArena world_arena;
     Camera camera;
     Tilemap tilemap;
 
-    // Pointer to the entity system is stored here to avoid having to pass it around along with World
+    // Pointer to the entity system and item system are stored here to avoid having to
+    // pass them around along with World.
+    // TODO: should they just be global instead?
     EntitySystem *entity_system;
-    ItemSystem item_manager; // TODO: move to Game
+    ItemSystem *item_system;
 
     CollisionCooldownTable collision_effect_cooldowns;
 
@@ -42,7 +47,7 @@ typedef struct World {
     QuadTreeLocation alive_entity_quad_tree_locations[MAX_ENTITIES];
 } World;
 
-void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_system);
+void world_initialize(World *world, LinearArena *arena, EntitySystem *entity_system, ItemSystem *item_system);
 
 // TODO: fix parameters
 void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena,

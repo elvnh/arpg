@@ -188,9 +188,10 @@ void ui_pop_container(UIState *ui)
 void ui_begin_mouse_menu(UIState *ui, Vector2 mouse_pos)
 {
     // NOTE: null id because the container itself can't be interacted with
-    Widget *container = ui_core_colored_box(ui, V2_ZERO, RGBA32_BLUE, UI_NULL_WIDGET_ID, true);
+    RGBA32 color = {0.2f, 0.5f, 0.8f, 0.85f};
+    Widget *container = ui_core_colored_box(ui, V2_ZERO, color, UI_NULL_WIDGET_ID, true);
 
-    container->final_position = mouse_pos;
+    container->final_position = v2_add(mouse_pos, v2(10, 0));
 
     widget_set_semantic_sizes(container, UI_SIZE_KIND_SUM_OF_CHILDREN);
 

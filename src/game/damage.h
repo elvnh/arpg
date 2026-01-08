@@ -79,7 +79,7 @@ static inline String damage_type_to_string(DamageType type)
 {
     switch (type) {
 	case DMG_TYPE_FIRE: return str_lit("Fire");
-	case DMG_TYPE_LIGHTNING: return str_lit("Fire");
+	case DMG_TYPE_LIGHTNING: return str_lit("Lightning");
 	case DMG_TYPE_COUNT: ASSERT(0);
     }
 

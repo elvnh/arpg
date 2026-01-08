@@ -992,11 +992,11 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
             item->equipment.slot = EQUIP_SLOT_WEAPON;
 
 #if 1
-            Modifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDITIVE, DMG_TYPE_LIGHTNING, 10);
+            Modifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDITIVE, DMG_TYPE_FIRE, 100);
             item_add_modifier(item, dmg_mod);
 
 	    Modifier dmg_mod2 = create_damage_modifier(NUMERIC_MOD_ADDITIVE_PERCENTAGE,
-		DMG_TYPE_LIGHTNING, 300);
+		DMG_TYPE_FIRE, 150);
             item_add_modifier(item, dmg_mod2);
             //item_add_modifier(item, res_mod);
 #endif

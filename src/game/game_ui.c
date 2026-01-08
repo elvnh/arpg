@@ -4,6 +4,7 @@
 #include "item_system.h"
 #include "modifier.h"
 #include "ui/ui_builder.h"
+#include "ui/widget.h"
 
 #define GAME_UI_COLOR (RGBA32) {0, 1, 0, 0.5f}
 
@@ -17,6 +18,27 @@ static String item_widget_string(ItemID id, Item *item, GameMemory *memory)
     String result = str_concat(item->name, non_visible_substring, alloc);
 
     return result;
+}
+
+static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, Allocator alloc)
+{
+    ui_begin_mouse_menu(ui, mouse_position); {
+	ui_text(ui, item->name);
+
+	ui_spacing(ui, 12);
+
+	if (item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
+	    for (ssize i = 0; i < item->modifiers.modifier_count; ++i) {
+		Modifier mod = item->modifiers.modifiers[i];
+		String mod_string = modifier_to_string(mod, alloc);
+
+		ui_text(ui, mod_string);
+		ui_spacing(ui, 12);
+	    }
+	}
+	//for (ssize i = 0; i < )
+
+    } ui_end_mouse_menu(ui);
 }
 
 static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *equipment,
@@ -35,27 +57,11 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
 	String text = item_widget_string(item_id, item, game_memory);
 	WidgetInteraction interaction = ui_button(ui, text);
 
-	if (interaction.hovered && !interaction.clicked) {
-	    ui_begin_mouse_menu(ui, input->mouse_position); {
-		ui_text(ui, item->name);
-
-		ui_spacing(ui, 12);
-
-		if (item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
-		    for (ssize i = 0; i < item->modifiers.modifier_count; ++i) {
-			Modifier mod = item->modifiers.modifiers[i];
-			String mod_string = modifier_to_string(mod, alloc);
-
-			ui_text(ui, mod_string);
-			ui_spacing(ui, 12);
-		    }
-		}
-		//for (ssize i = 0; i < )
-
-	    } ui_end_mouse_menu(ui);
-	} else if (interaction.clicked) {
+	if (interaction.clicked) {
 	    bool unequip_success = unequip_item_and_put_in_inventory(equipment, inventory, slot);
 	    ASSERT(unequip_success);
+	} else if (interaction.hovered) {
+	    item_hover_menu(ui, item, input->mouse_position, alloc);
 	}
     } else {
 	ui_non_interactible_button(ui, str_lit("(empty)"));
@@ -86,6 +92,7 @@ static void equipment_menu(GameUIState *ui_state, Game *game, GameMemory *game_m
 static void inventory_menu(GameUIState *ui_state, Game *game, GameMemory *game_memory,
     const FrameData *frame_data)
 {
+    Allocator alloc = la_allocator(&game_memory->temporary_memory);
     UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game->world);
 
@@ -109,9 +116,13 @@ static void inventory_menu(GameUIState *ui_state, Game *game, GameMemory *game_m
 
 		ASSERT(item);
 
-		if (ui_selectable(ui, label_string).clicked) {
+		WidgetInteraction interaction = ui_selectable(ui, label_string);
+
+		if (interaction.clicked) {
 		    equip_item_from_inventory(game->world.item_system, &eq->equipment,
 			&inv->inventory, item_id);
+		} else if (interaction.hovered) {
+		    item_hover_menu(ui, item, frame_data->input.mouse_position, alloc);
 		}
 	    }
 	} ui_end_list(ui);

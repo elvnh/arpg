@@ -368,7 +368,7 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     // but that really doesn't matter
     game->debug_state.scratch_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
     game->debug_state.permanent_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
-    game->debug_state.world_arena_memory_usage = la_get_memory_usage(&game->world.world_arena);
+    game->debug_state.world_arena_memory_usage = fl_get_memory_usage(&game->world.world_arena);
 }
 
 void game_initialize(Game *game, GameMemory *game_memory)

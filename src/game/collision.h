@@ -1,6 +1,7 @@
 #ifndef COLLISION_H
 #define COLLISION_H
 
+#include "base/free_list_arena.h"
 #include "base/vector.h"
 #include "base/rectangle.h"
 #include "base/linear_arena.h"
@@ -60,8 +61,6 @@ typedef struct {
     LinearArena         arena;
 } CollisionEventTable;
 
-
-
 /* Collision algorithms */
 CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_a, Rectangle rect_b,
     Vector2 velocity_a, Vector2 velocity_b, f32 dt);
@@ -69,11 +68,11 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 /* Collision cooldown table */
 CollisionEffectCooldown *collision_cooldown_find(CollisionCooldownTable *table, EntityID a, EntityID b, s32 effect_index);
 void collision_cooldown_add(CollisionCooldownTable *table, EntityID a, EntityID b,
-    s32 effect_index, LinearArena *arena);
+    s32 effect_index, FreeListArena *arena);
 void remove_expired_collision_cooldowns(struct World *world, struct EntitySystem *es);
 
 /* Collision event table */
-CollisionEventTable collision_event_table_create(LinearArena *parent_arena);
+CollisionEventTable collision_event_table_create(FreeListArena *parent_arena);
 CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID a, EntityID b);
 void collision_event_table_insert(CollisionEventTable *table, EntityID a, EntityID b);
 b32 entities_intersected_this_frame(struct World *world, EntityID a, EntityID b);

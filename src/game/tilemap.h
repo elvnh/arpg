@@ -1,6 +1,7 @@
 #ifndef TILEMAP_H
 #define TILEMAP_H
 
+#include "base/free_list_arena.h"
 #include "base/linear_arena.h"
 #include "base/vector.h"
 #include "base/rectangle.h"
@@ -31,7 +32,7 @@ typedef struct {
     s32 max_y;
 } Tilemap;
 
-void   tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena);
+void   tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, FreeListArena *arena);
 Tile  *tilemap_get_tile(Tilemap *tilemap, Vector2i coords);
 Rectangle tilemap_get_bounding_box(const Tilemap *tilemap);
 

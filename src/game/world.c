@@ -896,7 +896,7 @@ static void drop_ground_item(World *world, Vector2 pos, ItemID id)
 void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *item_system,
     FreeListArena *parent_arena)
 {
-    world->world_arena = la_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
+    world->world_arena = fl_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
 
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);
@@ -1033,5 +1033,5 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
 void world_destroy(World *world)
 {
-    la_destroy(&world->world_arena);
+    fl_destroy(&world->world_arena);
 }

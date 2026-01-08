@@ -1,6 +1,7 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include "base/free_list_arena.h"
 #include "entity_system.h"
 #include "item.h"
 #include "quad_tree.h"
@@ -32,7 +33,8 @@ struct GameUIState;
 typedef struct World {
     // All allocations specific to the world instance should go here, and when destroying
     // a world, it should be destroyed so that the memory can be reused by other world instances
-    LinearArena world_arena;
+    // TODO: split up arena into a linear arena and free list arena
+    FreeListArena world_arena;
 
     Camera camera;
     Tilemap tilemap;

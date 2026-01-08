@@ -146,7 +146,7 @@ CollisionEffectCooldown *collision_cooldown_find(CollisionCooldownTable *table, 
 }
 
 void collision_cooldown_add(CollisionCooldownTable *table, EntityID self, EntityID other,
-    s32 effect_index, LinearArena *arena)
+    s32 effect_index, FreeListArena *arena)
 {
     ASSERT(!entity_id_equal(self, other));
 
@@ -154,7 +154,7 @@ void collision_cooldown_add(CollisionCooldownTable *table, EntityID self, Entity
         CollisionEffectCooldown *cooldown = list_head(&table->free_node_list);
 
         if (!cooldown) {
-            cooldown = la_allocate_item(arena, CollisionEffectCooldown);
+            cooldown = fl_alloc_item(arena, CollisionEffectCooldown);
         } else {
             list_pop_head(&table->free_node_list);
         }
@@ -206,12 +206,12 @@ void remove_expired_collision_cooldowns(World *world, EntitySystem *es)
     }
 }
 
-CollisionEventTable collision_event_table_create(LinearArena *parent_arena)
+CollisionEventTable collision_event_table_create(FreeListArena *parent_arena)
 {
     CollisionEventTable result = {0};
-    result.table = la_allocate_array(parent_arena, CollisionEventList, INTERSECTION_TABLE_SIZE);
+    result.table = fl_alloc_array(parent_arena, CollisionEventList, INTERSECTION_TABLE_SIZE);
     result.table_size = INTERSECTION_TABLE_SIZE;
-    result.arena = la_create(la_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
+    result.arena = la_create(fl_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
 
     return result;
 }

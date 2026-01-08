@@ -43,7 +43,7 @@ static Spell spell_fireball()
 	.particle_lifetime = 1.0f,
 	.particle_speed = 30.0f,
 	.infinite = true,
-	.particles_per_second = 200
+	.particles_per_second = 150
     };
 
     return spell;
@@ -56,7 +56,7 @@ static Spell spell_spark()
     // TODO: erratic movement
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
-	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME;
+	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
 
     spell.sprite.texture = get_asset_table()->spark_texture;
     spell.sprite.size = v2(32, 32);
@@ -70,6 +70,17 @@ static Spell spell_spark()
     set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_LIGHTNING, 1, 100);
     set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;
+
+    spell.particle_spawner = (ParticleSpawnerConfig) {
+	.kind = PS_SPAWN_DISTRIBUTED,
+	.particle_color = {1.0f, 1.0f, 0, 0.07f},
+	.particle_size = 3.0f,
+	.particle_lifetime = 0.25f,
+	.particle_speed = 150.0f,
+	.infinite = true,
+	.particles_per_second = 50
+    };
+
 
     return spell;
 }

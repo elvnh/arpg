@@ -1,5 +1,6 @@
 #include "world.h"
 #include "base/linear_arena.h"
+#include "equipment.h"
 #include "game.h"
 #include "animation.h"
 #include "base/format.h"
@@ -1000,13 +1001,13 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
             //item_add_modifier(item, res_mod);
 #endif
 
-#if 1
+#if 0
 	    drop_ground_item(world, v2(400, 400), item_with_id.id);
 #else
             inventory_add_item(&inventory->inventory, item_with_id.id);
 #endif
-
-            //try_equip_item_in_slot(&world->item_manager, &equipment->equipment, item_with_id.id, EQUIP_SLOT_HEAD);
+	    equip_item_from_inventory(item_system, &equipment->equipment,
+		&inventory->inventory, item_with_id.id);
         }
 #endif
     }

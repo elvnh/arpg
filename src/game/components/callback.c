@@ -25,18 +25,24 @@ void add_callback_impl(struct Entity *entity, EventType event_type, CallbackFunc
     comp->callbacks[event_type] = cb;
 }
 
-void try_invoke_callback(CallbackComponent *comp, EventData event_data, World *world)
+void try_invoke_callback(Entity *entity, EventData event_data, World *world)
 {
     ASSERT(event_data.event_type >= 0);
     ASSERT(event_data.event_type < EVENT_COUNT);
 
-    Callback *current_cb = comp->callbacks[event_data.event_type];
+    CallbackComponent *comp = es_get_component(entity, CallbackComponent);
+    event_data.self = entity;
+    event_data.world = world;
 
-    while (current_cb) {
-	ASSERT(current_cb->function);
+    if (comp) {
+	Callback *current_cb = comp->callbacks[event_data.event_type];
 
-	current_cb->function(current_cb->user_data, event_data, world);
+	while (current_cb) {
+	    ASSERT(current_cb->function);
 
-	current_cb = current_cb->next;
+	    current_cb->function(current_cb->user_data, event_data);
+
+	    current_cb = current_cb->next;
+	}
     }
 }

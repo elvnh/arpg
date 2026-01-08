@@ -4,6 +4,8 @@
 #include "base/typedefs.h"
 #include "components/collider.h"
 
+// TODO: nicer API, don't require user to create EventData themselves
+
 #define add_callback(entity, type, func, data) add_callback_impl(entity, type, func, &user_data, \
 	SIZEOF(user_data), ALIGNOF(user_data))
 
@@ -19,6 +21,9 @@ typedef enum {
 typedef struct {
     EventType event_type;
 
+    struct Entity *self;
+    struct World *world;
+
     union {
 	struct {
 	    ObjectKind colliding_with_type;
@@ -31,7 +36,7 @@ typedef struct {
     } as;
 } EventData;
 
-typedef void (*CallbackFunction)(void *, EventData, struct World *);
+typedef void (*CallbackFunction)(void *, EventData);
 
 typedef struct Callback {
     void *user_data;
@@ -47,7 +52,7 @@ typedef struct {
 void add_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
     void *user_data, ssize data_size, ssize data_alignment);
 
-void try_invoke_callback(CallbackComponent *comp, EventData event_data, struct World *world);
+void try_invoke_callback(struct Entity *entity, EventData event_data, struct World *world);
 
 static inline EventData event_data_entity_collision(struct Entity *entity)
 {

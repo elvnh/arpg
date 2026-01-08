@@ -1,5 +1,7 @@
 #include "world.h"
 #include "base/linear_arena.h"
+#include "components/callback.h"
+#include "components/collider.h"
 #include "components/component.h"
 #include "components/particle.h"
 #include "equipment.h"
@@ -488,6 +490,9 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
 
         execute_collision_effects(world, b, a, collider_b, collision,
 	    ENTITY_PAIR_INDEX_SECOND, OBJECT_KIND_ENTITIES);
+
+	EventData event_data = event_data_entity_collision(a);
+	try_invoke_callback(a, event_data, world);
 
         movement_fraction_left = collision.movement_fraction_left;
 

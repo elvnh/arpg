@@ -12,11 +12,13 @@
 
 /*
   TODO:
-  - Should a World be a single level or something more persistent?
   - Handle player input in game instead
   - Add a free list arena to World then allocate a subarena from it for each
     entity. On entity death, destroy the arena and all memory tied to that entity is
     released
+  - Find out a way to cleanly tie a set of entity ids to a world instance
+  - Should entity/item system instead be per world, an when changing world, the
+    player entity and all items are automatically copied over to new world?
  */
 
 struct FrameData;

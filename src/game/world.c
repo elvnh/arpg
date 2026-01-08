@@ -933,7 +933,6 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
 
     qt_initialize(&world->quad_tree, tilemap_area);
-    item_sys_initialize(world->item_system, la_allocator(&world->world_arena));
 
     for (s32 i = 0; i < 2; ++i) {
 #if 1

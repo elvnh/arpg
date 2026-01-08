@@ -1,5 +1,6 @@
 #include "world.h"
 #include "base/linear_arena.h"
+#include "components/particle.h"
 #include "equipment.h"
 #include "game.h"
 #include "animation.h"
@@ -88,6 +89,26 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
     ASSERT(alive_entity_index < world->alive_entity_count);
 
     EntityID *id = &world->alive_entity_ids[alive_entity_index];
+    Entity *entity = es_get_entity(world->entity_system, *id);
+
+    if (es_has_component(entity, ParticleSpawner)) {
+	// If entity dies while particles are active, create a new particle spawner
+	// entity with the remaining particles
+	ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
+
+	if (ring_length(&ps->particle_buffer) > 0) {
+	    EntityWithID new_ps_entity = world_spawn_entity(world, FACTION_NEUTRAL);
+
+	    new_ps_entity.entity->position = entity->position;
+	    ParticleSpawner *new_ps = es_add_component(new_ps_entity.entity, ParticleSpawner);
+
+	    // TODO: if particle spawner get a non-static buffer, a deep copy will be required
+	    *new_ps = *ps;
+	    new_ps->particles_left_to_spawn = 0;
+	    new_ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+	}
+    }
+
     es_remove_entity(world->entity_system, *id);
 
     QuadTreeLocation *qt_location = &world->alive_entity_quad_tree_locations[alive_entity_index];

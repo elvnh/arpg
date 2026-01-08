@@ -16,8 +16,10 @@ void add_callback_impl(struct Entity *entity, EventType event_type, CallbackFunc
 
     Callback *cb = la_allocate_item(&entity->entity_arena, Callback);
 
-    cb->user_data = la_allocate(&entity->entity_arena, 1, data_size, data_alignment);
-    memcpy(cb->user_data, user_data, cast_ssize_to_usize(data_size));
+    if (user_data) {
+	cb->user_data = la_allocate(&entity->entity_arena, 1, data_size, data_alignment);
+	memcpy(cb->user_data, user_data, cast_ssize_to_usize(data_size));
+    }
 
     cb->function = func;
 

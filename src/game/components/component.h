@@ -22,7 +22,6 @@
     COMPONENT(ParticleSpawner)                  \
     COMPONENT(SpriteComponent)                  \
     COMPONENT(LifetimeComponent)                \
-    COMPONENT(OnDeathComponent)                 \
     COMPONENT(StatsComponent)                   \
     COMPONENT(StatusEffectComponent)            \
     COMPONENT(InventoryComponent)               \
@@ -58,23 +57,6 @@ typedef struct {
 typedef struct {
     f32 time_to_live;
 } LifetimeComponent;
-
-typedef enum {
-    DEATH_EFFECT_SPAWN_PARTICLES,
-} OnDeathEffectKind;
-
-typedef struct {
-    ParticleSpawnerConfig config;
-} DeathEffectSpawnParticles;
-
-// TODO: multiple on death effects
-typedef struct {
-    OnDeathEffectKind kind;
-
-    union {
-        DeathEffectSpawnParticles spawn_particles;
-    } as;
-} OnDeathComponent;
 
 typedef struct {
     DamageValues base_resistances;

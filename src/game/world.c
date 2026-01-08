@@ -126,6 +126,14 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
     --world->alive_entity_count;
 }
 
+static void kill_entity(World *world, Entity *entity)
+{
+    EventData death_event = event_data_death();
+    try_invoke_callback(entity, death_event, world);
+
+    es_schedule_entity_for_removal(entity);
+}
+
 static void world_update_entity_quad_tree_location(World *world, ssize alive_entity_index)
 {
     ASSERT(alive_entity_index < world->alive_entity_count);
@@ -217,24 +225,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (entity_should_die(entity)) {
         // NOTE: won't be removed until after this frame
-        es_schedule_entity_for_removal(entity);
-
-        if (es_has_component(entity, OnDeathComponent)) {
-            OnDeathComponent *on_death = es_get_component(entity, OnDeathComponent);
-
-            switch (on_death->kind) {
-                case DEATH_EFFECT_SPAWN_PARTICLES: {
-                    EntityWithID entity_with_id
-			= world_spawn_entity(world, FACTION_NEUTRAL);
-                    Entity *spawner = entity_with_id.entity;
-                    spawner->position = entity->position;
-
-                    ParticleSpawner *ps = es_add_component(spawner, ParticleSpawner);
-                    particle_spawner_initialize(ps, on_death->as.spawn_particles.config);
-                    ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
-                } break;
-            }
-        }
+	kill_entity(world, entity);
     }
 
     world_update_entity_quad_tree_location(world, alive_entity_index);
@@ -442,7 +433,7 @@ static void execute_collision_effects(World *world, Entity *entity, Entity *othe
             } break;
 
             case ON_COLLIDE_DIE: {
-                es_schedule_entity_for_removal(entity);
+		kill_entity(world, entity);
             } break;
 
             case ON_COLLIDE_PASS_THROUGH: {} break;

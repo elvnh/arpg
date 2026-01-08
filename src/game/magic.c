@@ -1,6 +1,7 @@
 #include "magic.h"
 #include "base/utils.h"
 #include "components/collider.h"
+#include "components/particle.h"
 #include "game/collision.h"
 #include "game/damage.h"
 #include "world.h"
@@ -16,7 +17,8 @@ static Spell spell_fireball()
     Spell spell = {0};
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
-	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION;
+	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
+	| SPELL_PROP_PARTICLE_SPAWNER;
 
     spell.sprite.texture = get_asset_table()->fireball_texture;
     spell.sprite.size = v2(32, 32);
@@ -31,6 +33,16 @@ static Spell spell_fireball()
 
     spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_NEVER;
+
+    spell.particle_spawner = (ParticleSpawnerConfig) {
+	.kind = PS_SPAWN_DISTRIBUTED,
+	.particle_color = {1, 0, 0, 0.15f},
+	.particle_size = 4.0f,
+	.particle_lifetime = 1.0f,
+	.particle_speed = 50.0f,
+	.total_particles_to_spawn = 10000, // TODO: infinite particles
+	.particles_per_second = 500
+    };
 
     return spell;
 }
@@ -142,6 +154,11 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
 
 	LifetimeComponent *lifetime = es_add_component(spell_entity, LifetimeComponent);
 	lifetime->time_to_live = spell->lifetime;
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_PARTICLE_SPAWNER)) {
+	ParticleSpawner *ps = es_get_or_add_component(spell_entity, ParticleSpawner);
+	particle_spawner_initialize(ps, spell->particle_spawner);
     }
 
     // Offset so that spells center is 'pos'

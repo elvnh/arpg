@@ -3,6 +3,7 @@
 
 #include "base/vector.h"
 #include "asset.h"
+#include "components/particle.h"
 #include "damage.h"
 #include "components/component.h"
 #include "components/collider.h"
@@ -21,6 +22,7 @@ typedef enum {
     SPELL_PROP_DIE_ON_WALL_COLLISION = (1 << 4),
     SPELL_PROP_DIE_ON_ENTITY_COLLISION = (1 << 5),
     SPELL_PROP_LIFETIME = (1 << 6),
+    SPELL_PROP_PARTICLE_SPAWNER = (1 << 7),
 } SpellProperties;
 
 typedef struct {
@@ -44,6 +46,7 @@ typedef struct {
 
     f32 lifetime;
 
+    ParticleSpawnerConfig particle_spawner;
     /*
       damaging
       healing

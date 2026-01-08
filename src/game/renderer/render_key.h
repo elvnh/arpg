@@ -26,9 +26,9 @@ typedef u64 RenderKey;
 
 typedef enum {
     RENDER_LAYER_FLOORS,
+    RENDER_LAYER_PARTICLES,
     RENDER_LAYER_ENTITIES,
     RENDER_LAYER_WALLS,
-    RENDER_LAYER_PARTICLES,
 } RenderLayer;
 
 // TODO: these should return the asset handles directly so caller doesn't have to create them

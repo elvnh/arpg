@@ -24,7 +24,7 @@ static Spell spell_fireball()
     spell.sprite.size = v2(32, 32);
     spell.sprite.rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
 
-    spell.projectile.projectile_speed = 100.0f;
+    spell.projectile.projectile_speed = 200.0f;
     spell.projectile.collider_size = v2(32, 32);
 
     DamageRange damage_range = {0};
@@ -34,14 +34,16 @@ static Spell spell_fireball()
     spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = COLL_RETRIGGER_NEVER;
 
+    // TODO: create explosion particle spawner on fireball death
+
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
-	.particle_color = {1, 0, 0, 0.15f},
+	.particle_color = {1, 0.2f, 0, 0.1f},
 	.particle_size = 4.0f,
 	.particle_lifetime = 1.0f,
-	.particle_speed = 50.0f,
+	.particle_speed = 30.0f,
 	.infinite = true,
-	.particles_per_second = 500
+	.particles_per_second = 200
     };
 
     return spell;

@@ -170,13 +170,13 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
     ui_spacing(ui, 8);
 
     // TODO: display more stats about hovered entity
-    if (!entity_id_equal(game->debug_state.hovered_entity, NULL_ENTITY_ID)) {
-        Entity *entity = es_try_get_entity(&game->entity_system, game->debug_state.hovered_entity);
+    if (!entity_id_equal(game->game_ui.hovered_entity, NULL_ENTITY_ID)) {
+        Entity *entity = es_try_get_entity(&game->entity_system, game->game_ui.hovered_entity);
 
         if (entity) {
             String entity_str = str_concat(
                 str_lit("Hovered entity: "),
-                s64_to_string(game->debug_state.hovered_entity.slot_id, temp_alloc),
+                s64_to_string(game->game_ui.hovered_entity.slot_id, temp_alloc),
                 temp_alloc
             );
 
@@ -270,9 +270,9 @@ static void debug_update(Game *game, const FrameData *frame_data, LinearArena *f
 	hovered_rect, frame_arena);
 
     if (!list_is_empty(&hovered_entities)) {
-        game->debug_state.hovered_entity = list_head(&hovered_entities)->id;
+        game->game_ui.hovered_entity = list_head(&hovered_entities)->id;
     } else {
-        game->debug_state.hovered_entity = NULL_ENTITY_ID;
+        game->game_ui.hovered_entity = NULL_ENTITY_ID;
     }
 
     f32 speed_modifier = game->debug_state.timestep_modifier;

@@ -2,10 +2,12 @@
 #define GAME_UI_H
 
 #include "ui/ui_builder.h"
+#include "entity.h"
 
 typedef struct GameUIState {
     UIState backend_state;
 
+    EntityID hovered_entity;
     b32 inventory_menu_open;
     ssize selected_spellbook_index;
 } GameUIState;

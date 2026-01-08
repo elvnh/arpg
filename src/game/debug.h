@@ -21,7 +21,7 @@ typedef struct DebugState {
     ssize permanent_arena_memory_usage;
     ssize world_arena_memory_usage;
 
-    EntityID hovered_entity;
+
 } DebugState;
 
 static inline void print_v2(Vector2 v)

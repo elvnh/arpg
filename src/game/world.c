@@ -677,8 +677,8 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     f32 speed = 350.0f;
 
     if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)
-	&& !entity_id_is_null(debug_state->hovered_entity)) {
-	Entity *hovered_entity = es_get_entity(world->entity_system, debug_state->hovered_entity);
+	&& !entity_id_is_null(game_ui->hovered_entity)) {
+	Entity *hovered_entity = es_get_entity(world->entity_system, game_ui->hovered_entity);
 	GroundItemComponent *ground_item = es_get_component(hovered_entity, GroundItemComponent);
 
 	if (ground_item) {

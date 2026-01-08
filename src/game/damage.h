@@ -11,6 +11,7 @@
   - Better way of setting resistance/damage values
   - Better naming
   - Clean up .c-file function ordering
+  - Clean up the way modifiers are accumulated and applied
  */
 
 struct ItemSystem;
@@ -24,11 +25,10 @@ typedef enum {
     DMG_TYPE_COUNT,
 } DamageType;
 
-// NOTE: the ordering of these affects the order of calculations
-// TODO: additive percentage bonuses
-// TODO: unique modifiers that aren't just additive
+// TODO: unique modifiers that aren't just numeric
 typedef enum {
     NUMERIC_MOD_FLAT_ADDITIVE,
+    NUMERIC_MOD_ADDITIVE_PERCENTAGE,
     NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE,
     NUMERIC_MOD_TYPE_COUNT,
 } NumericModifierType;

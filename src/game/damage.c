@@ -19,7 +19,7 @@ typedef struct {
     b32 ok;
 } GetModValueResult;
 
-static DamageValue *get_damage_reference_of_type(DamageValues *damages, DamageType type)
+static DamageValue *get_damage_reference_for_type(DamageValues *damages, DamageType type)
 {
     ssize index = (ssize)type;
     ASSERT((index >= 0) && (index < DMG_TYPE_COUNT));
@@ -31,11 +31,57 @@ static DamageValue *get_damage_reference_of_type(DamageValues *damages, DamageTy
 
 void set_damage_value_for_type(DamageValues *damages, DamageType kind, DamageValue new_value)
 {
-    DamageValue *old_value = get_damage_reference_of_type(damages, kind);
+    DamageValue *old_value = get_damage_reference_for_type(damages, kind);
     *old_value = new_value;
 }
 
-static DamageValues damage_types_add_scalar(DamageValues lhs, DamageValue value)
+// This function is used to ensure that if we are currently accumulating multiplicative
+// mods, the baseline is 100
+static DamageValues initialize_damage_values(NumericModifierType type)
+{
+    DamageValues result = {0};
+
+    if (type == NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE) {
+	for (DamageType dmg_type = 0; dmg_type < DMG_TYPE_COUNT; ++dmg_type) {
+	    set_damage_value_for_type(&result, dmg_type, 100);
+	}
+    }
+
+    return result;
+}
+
+static DamageValues change_damage_value_by_term(DamageValues lhs, DamageValues rhs)
+{
+    DamageValues result = lhs;
+
+    for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
+        DamageValue *lhs_ptr = get_damage_reference_for_type(&result, type);
+        DamageValue rhs_value = get_damage_value_for_type(rhs, type);
+
+        *lhs_ptr += rhs_value;
+    }
+
+    return result;
+}
+
+static DamageValues change_damage_value_by_percentage(DamageValues lhs, DamageValues rhs)
+{
+    DamageValues result = lhs;
+
+    for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
+        DamageValue *lhs_ptr = get_damage_reference_for_type(&result, type);
+        DamageValue rhs_value = get_damage_value_for_type(rhs, type);
+
+        f32 factor = (f32)rhs_value / 100.0f;
+	f32 value = (f32)(*lhs_ptr) * factor;
+
+        *lhs_ptr = (DamageValue)value;
+    }
+
+    return result;
+}
+
+static DamageValues add_scalar_to_damage(DamageValues lhs, DamageValue value)
 {
     DamageValues result = lhs;
 
@@ -46,32 +92,33 @@ static DamageValues damage_types_add_scalar(DamageValues lhs, DamageValue value)
     return result;
 }
 
-static DamageValues damage_types_add(DamageValues lhs, DamageValues rhs)
+static DamageValues accumulate_mod_value(DamageValues lhs, DamageValues rhs, NumericModifierType type)
 {
-    DamageValues result = lhs;
+    DamageValues result = {0};
 
-    for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
-        DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
-        DamageValue rhs_value = get_damage_value_for_type(rhs, type);
+    switch (type) {
+	case NUMERIC_MOD_FLAT_ADDITIVE:
+	case NUMERIC_MOD_ADDITIVE_PERCENTAGE: {
+	    result = change_damage_value_by_term(lhs, rhs);
+	} break;
 
-        *lhs_ptr += rhs_value;
+	case NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE: {
+	    result = change_damage_value_by_percentage(lhs, rhs);
+	} break;
+
+	INVALID_DEFAULT_CASE;
     }
 
     return result;
 }
 
-static DamageValues damage_types_multiply(DamageValues lhs, DamageValues rhs)
+static DamageValues accumulate_mod_value_single(DamageValues lhs, TypedDamageValue value,
+    NumericModifierType type)
 {
-    DamageValues result = lhs;
+    DamageValues extended_rhs = initialize_damage_values(type);
+    set_damage_value_for_type(&extended_rhs, value.type, value.value);
 
-    for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
-        DamageValue *lhs_ptr = get_damage_reference_of_type(&result, type);
-        DamageValue rhs_value = get_damage_value_for_type(rhs, type);
-
-        f32 n = (f32)rhs_value / 100.0f;
-
-        *lhs_ptr = (DamageValue)((f32)(*lhs_ptr) * n);
-    }
+    DamageValues result = accumulate_mod_value(lhs, extended_rhs, type);
 
     return result;
 }
@@ -114,48 +161,6 @@ static GetModValueResult try_get_mod_value_of_type(Modifier modifier, ModifierCa
     return result;
 }
 
-static DamageValues apply_damage_values_as(DamageValues lhs, DamageValues rhs, NumericModifierType type)
-{
-    DamageValues result = {0};
-
-    if ((type == NUMERIC_MOD_FLAT_ADDITIVE) || (type == NUMERIC_MOD_ADDITIVE_PERCENTAGE)) {
-	result = damage_types_add(lhs, rhs);
-    } else if (type == NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE) {
-	result = damage_types_multiply(lhs, rhs);
-    } else {
-	ASSERT(0);
-    }
-
-    return result;
-}
-
-// This function is used to ensure that if we are currently applying multiplicative
-// mods, the baseline is 100
-// TODO: make it so that multiplying instead adds 100 implicitly?
-static DamageValues initialize_damage_values(NumericModifierType type)
-{
-    DamageValues result = {0};
-
-    if (type == NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE) {
-	for (DamageType dmg_type = 0; dmg_type < DMG_TYPE_COUNT; ++dmg_type) {
-	    set_damage_value_for_type(&result, dmg_type, 100);
-	}
-    }
-
-    return result;
-}
-
-// TODO: rename to something like accumulate_damage_modifier
-static DamageValues apply_damage_value_as(DamageValues lhs, TypedDamageValue value, NumericModifierType type)
-{
-    DamageValues extended_rhs = initialize_damage_values(type);
-    set_damage_value_for_type(&extended_rhs, value.type, value.value);
-
-    DamageValues result = apply_damage_values_as(lhs, extended_rhs, type);
-
-    return result;
-}
-
 static DamageValues get_modifiers_in_slot(Equipment *eq, EquipmentSlot slot,
     NumericModifierType type, ModifierCategory mod_category, ItemSystem *item_sys)
 {
@@ -174,7 +179,7 @@ static DamageValues get_modifiers_in_slot(Equipment *eq, EquipmentSlot slot,
 		    item->modifiers.modifiers[i], mod_category, type);
 
 		if (item_mod_value.ok) {
-		    result = apply_damage_value_as(result, item_mod_value.value, type);
+		    result = accumulate_mod_value_single(result, item_mod_value.value, type);
 		}
 	    }
 	}
@@ -198,7 +203,7 @@ static DamageValues get_status_effect_modifiers_of_type(Entity *entity, NumericM
 		effect.modifier, mod_category, type);
 
 	    if (effect_mod_value.ok) {
-		result = apply_damage_value_as(result, effect_mod_value.value, type);
+		result = accumulate_mod_value_single(result, effect_mod_value.value, type);
 	    }
 	}
     }
@@ -218,7 +223,7 @@ static DamageValues get_equipment_modifiers_of_type(Entity *entity, NumericModif
 	    DamageValues slot_mods = get_modifiers_in_slot(
 		&equipment->equipment, slot, type, mod_category, item_sys);
 
-	    result = apply_damage_values_as(result, slot_mods, type);
+	    result = accumulate_mod_value(result, slot_mods, type);
 	}
     }
 
@@ -233,8 +238,14 @@ DamageValues get_numeric_modifiers_of_type(Entity *entity, NumericModifierType t
 
     DamageValues result = initialize_damage_values(type);
 
-    result = apply_damage_values_as(result, equipment_mods, type);
-    result = apply_damage_values_as(result, status_mods, type);
+    result = accumulate_mod_value(result, equipment_mods, type);
+    result = accumulate_mod_value(result, status_mods, type);
+
+    if (type == NUMERIC_MOD_ADDITIVE_PERCENTAGE) {
+	// Additive percentages need to get 100% added implicitly at the end so that
+	// increasing by 50% actually means a multiplier of 1.5
+	result = add_scalar_to_damage(result, 100);
+    }
 
     return result;
 }
@@ -252,7 +263,7 @@ DamageValue calculate_damage_sum(DamageValues damage)
 
 DamageValue get_damage_value_for_type(DamageValues damages, DamageType type)
 {
-    DamageValue result = *get_damage_reference_of_type(&damages, type);
+    DamageValue result = *get_damage_reference_for_type(&damages, type);
     return result;
 }
 
@@ -265,13 +276,11 @@ DamageValues calculate_damage_dealt(DamageValues base_damage, Entity *entity, It
     DamageValues additive_mods = get_numeric_modifiers_of_type(
 	entity, NUMERIC_MOD_ADDITIVE_PERCENTAGE, MOD_CATEGORY_DAMAGE, item_sys);
 
-    additive_mods = damage_types_add_scalar(additive_mods, 100);
-
     DamageValues result = base_damage;
 
-    result = damage_types_add(result, flat_added_mods);
-    result = damage_types_multiply(result, additive_mods);
-    result = damage_types_multiply(result, multiplicative_mods);
+    result = change_damage_value_by_term(result, flat_added_mods);
+    result = change_damage_value_by_percentage(result, additive_mods);
+    result = change_damage_value_by_percentage(result, multiplicative_mods);
 
     return result;
 }
@@ -281,6 +290,7 @@ DamageValues calculate_resistances_after_boosts(Entity *entity, ItemSystem *item
     DamageValues result = {0};
 
     StatsComponent *stats = es_get_component(entity, StatsComponent);
+
     if (stats) {
 	result = stats->base_resistances;
     }
@@ -288,7 +298,7 @@ DamageValues calculate_resistances_after_boosts(Entity *entity, ItemSystem *item
     DamageValues res_mods = get_numeric_modifiers_of_type(entity, NUMERIC_MOD_FLAT_ADDITIVE,
 	MOD_CATEGORY_RESISTANCE, item_sys);
 
-    result = damage_types_add(result, res_mods);
+    result = change_damage_value_by_term(result, res_mods);
 
     return result;
 }

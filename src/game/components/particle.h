@@ -39,6 +39,7 @@ typedef struct {
     f32 particle_lifetime;
     f32 particle_speed;
     s32 total_particles_to_spawn;
+    b32 infinite; // TODO: use particle flags instead?
 
     f32 particles_per_second;
 } ParticleSpawnerConfig;

@@ -40,7 +40,7 @@ static Spell spell_fireball()
 	.particle_size = 4.0f,
 	.particle_lifetime = 1.0f,
 	.particle_speed = 50.0f,
-	.total_particles_to_spawn = 10000, // TODO: infinite particles
+	.infinite = true,
 	.particles_per_second = 500
     };
 

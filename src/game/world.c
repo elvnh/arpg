@@ -106,6 +106,7 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
 	    *new_ps = *ps;
 	    new_ps->particles_left_to_spawn = 0;
 	    new_ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+	    new_ps->config.infinite = false;
 	}
     }
 

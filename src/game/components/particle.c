@@ -10,12 +10,19 @@ void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vect
         case PS_SPAWN_DISTRIBUTED: {
             ps->particle_timer += ps->config.particles_per_second * dt;
 
-            particles_to_spawn_this_frame = MIN((s32)ps->particle_timer, ps->particles_left_to_spawn);
+	    if (ps->config.infinite) {
+		particles_to_spawn_this_frame = (s32)ps->particle_timer;
+	    } else {
+		particles_to_spawn_this_frame = MIN((s32)ps->particle_timer, ps->particles_left_to_spawn);
+		ps->particles_left_to_spawn -= particles_to_spawn_this_frame;
+	    }
+
             ps->particle_timer -= (f32)particles_to_spawn_this_frame;
-            ps->particles_left_to_spawn -= particles_to_spawn_this_frame;
         } break;
 
         case PS_SPAWN_ALL_AT_ONCE: {
+	    ASSERT(!ps->config.infinite);
+
             particles_to_spawn_this_frame = ps->particles_left_to_spawn;
             ps->particles_left_to_spawn = 0;
         } break;
@@ -52,15 +59,16 @@ void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vect
         p->velocity = v2_add(p->velocity, v2_mul_s(p->velocity, -0.009f));
     }
 
-
     if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_COMPONENT) && particle_spawner_is_finished(ps)) {
         es_remove_component(entity, ParticleSpawner);
     }
 }
 
+// Particle spawners aren't considered done until the have spawned all remaining particles
+// and all particles in flight have died
 b32 particle_spawner_is_finished(ParticleSpawner *ps)
 {
-    b32 result = (ring_length(&ps->particle_buffer) == 0)
+    b32 result = !ps->config.infinite && (ring_length(&ps->particle_buffer) == 0)
         && (ps->particles_left_to_spawn <= 0);
 
     return result;

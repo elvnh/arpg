@@ -197,3 +197,42 @@ void magic_set_global_spell_array(SpellArray *spells)
 {
     g_spells = spells;
 }
+
+void magic_add_to_spellbook(SpellCasterComponent *spellcaster, SpellID id)
+{
+    ASSERT(spellcaster->spell_count < SPELL_COUNT);
+
+#if 1 // TODO: only in debug builds
+    for (ssize i = 0; i < spellcaster->spell_count; ++i) {
+	if (spellcaster->spellbook[i] == id) {
+	    ASSERT(0);
+	}
+    }
+#endif
+
+    ssize index = spellcaster->spell_count++;
+    spellcaster->spellbook[index] = id;
+}
+
+String spell_type_to_string(SpellID id)
+{
+    switch (id) {
+	case SPELL_FIREBALL: return str_lit("Fireball");
+	case SPELL_SPARK: return str_lit("Spark");
+	case SPELL_COUNT: ASSERT(0);
+    }
+
+    ASSERT(0);
+
+    return (String){0};
+}
+
+SpellID get_spell_at_spellbook_index(SpellCasterComponent *spellcaster, ssize index)
+{
+    ASSERT(index < spellcaster->spell_count);
+    ASSERT(index < SPELL_COUNT);
+
+    SpellID result = spellcaster->spellbook[index];
+
+    return result;
+}

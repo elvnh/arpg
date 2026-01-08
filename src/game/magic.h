@@ -5,8 +5,10 @@
 #include "asset.h"
 #include "components/particle.h"
 #include "damage.h"
-#include "components/component.h"
 #include "components/collider.h"
+#include "sprite.h"
+
+struct SpellCasterComponent;
 
 typedef enum {
     SPELL_FIREBALL,
@@ -76,5 +78,8 @@ struct World;
 void magic_initialize(SpellArray *spells);
 void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 pos, Vector2 dir);
 void magic_set_global_spell_array(SpellArray *spells);
+void magic_add_to_spellbook(struct SpellCasterComponent *spellcaster, SpellID id);
+String spell_type_to_string(SpellID id);
+SpellID get_spell_at_spellbook_index(struct SpellCasterComponent *spellcaster, ssize index);
 
 #endif //MAGIC_H

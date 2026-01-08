@@ -3,10 +3,11 @@
 
 #include "ui/ui_builder.h"
 
-typedef struct {
+typedef struct GameUIState {
     UIState backend_state;
 
     b32 inventory_menu_open;
+    ssize selected_spellbook_index;
 } GameUIState;
 
 struct Game;

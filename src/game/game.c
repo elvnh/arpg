@@ -15,7 +15,7 @@ static void game_update(Game *game, const FrameData *frame_data, LinearArena *fr
         DEBUG_BREAK;
     }
 
-    world_update(&game->world, frame_data, frame_arena, &game->debug_state);
+    world_update(&game->world, frame_data, frame_arena, &game->debug_state, &game->game_ui);
 }
 
 static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, ssize depth)

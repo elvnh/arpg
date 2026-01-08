@@ -13,6 +13,7 @@
 #include "inventory.h"
 #include "animation.h"
 #include "entity_state.h"
+#include "magic.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
@@ -27,6 +28,7 @@
     COMPONENT(EquipmentComponent)               \
     COMPONENT(AnimationComponent)               \
     COMPONENT(GroundItemComponent)		\
+    COMPONENT(SpellCasterComponent)		\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -92,5 +94,10 @@ typedef struct AnimationComponent {
 typedef struct {
     ItemID item_id;
 } GroundItemComponent;
+
+typedef struct SpellCasterComponent {
+    SpellID spellbook[SPELL_COUNT];
+    ssize spell_count;
+} SpellCasterComponent;
 
 #endif //COMPONENT_H

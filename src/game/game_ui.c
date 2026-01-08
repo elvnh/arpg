@@ -1,10 +1,14 @@
 #include "game_ui.h"
+#include "components/component.h"
+#include "entity_system.h"
 #include "game.h"
 #include "item.h"
 #include "item_system.h"
+#include "magic.h"
 #include "modifier.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
+#include "world.h"
 
 #define GAME_UI_COLOR (RGBA32) {0, 1, 0, 0.5f}
 
@@ -18,6 +22,33 @@ static String item_widget_string(ItemID id, Item *item, GameMemory *memory)
     String result = str_concat(item->name, non_visible_substring, alloc);
 
     return result;
+}
+
+static void spellbook_menu(GameUIState *ui_state, Game *game, GameMemory *game_memory,
+    const FrameData *frame_data)
+{
+    UIState *ui = &ui_state->backend_state;
+
+    ui_begin_container(ui, str_lit("spellbook"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+	ui_text(ui, str_lit("Spellbook"));
+
+	ui_begin_list(ui, str_lit("spells")); {
+	    Entity *player = world_get_player_entity(&game->world);
+	    SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
+	    ASSERT(spellcaster);
+
+	    for (ssize i = 0; i < spellcaster->spell_count; ++i) {
+		String spell_name = spell_type_to_string(spellcaster->spellbook[i]);
+		WidgetInteraction interaction = ui_selectable(ui, spell_name);
+
+		if (interaction.clicked) {
+		    ui_state->selected_spellbook_index = i;
+		}
+	    }
+
+	} ui_end_list(ui);
+    } ui_pop_container(ui);
+
 }
 
 static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, Allocator alloc)
@@ -150,6 +181,10 @@ void game_ui(Game *game, GameMemory *game_memory, const FrameData *frame_data)
     ui_core_same_line(ui);
 
     equipment_menu(&game->game_ui, game, game_memory, frame_data);
+
+    ui_core_same_line(ui);
+
+    spellbook_menu(&game->game_ui, game, game_memory, frame_data);
 
     ui_pop_container(ui);
 }

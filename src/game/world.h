@@ -13,11 +13,13 @@
 /*
   TODO:
   - Should a World be a single level or something more persistent?
+  - Handle player input in game instead
  */
 
 struct FrameData;
 struct DebugState;
 struct RenderBatch;
+struct GameUIState;
 
 // TODO: keep a list of items that exist in this world to avoid having to iterate all items when destroying world
 // TODO: move world arena to game, since that memory should be reused for new worlds?
@@ -56,7 +58,7 @@ void world_destroy(World *world);
 
 // TODO: fix parameters
 void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena,
-    struct DebugState *debug_state);
+    struct DebugState *debug_state, struct GameUIState *game_ui);
 void world_render(World *world, struct RenderBatch *rb, const struct FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, EntityFaction faction);

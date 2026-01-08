@@ -1,5 +1,6 @@
 #include "world.h"
 #include "base/linear_arena.h"
+#include "components/component.h"
 #include "components/particle.h"
 #include "equipment.h"
 #include "game.h"
@@ -633,7 +634,7 @@ Entity *world_get_player_entity(World *world)
 }
 
 void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena,
-    DebugState *debug_state)
+    DebugState *debug_state, GameUIState *game_ui)
 {
     if (world->alive_entity_count < 1) {
         return;
@@ -658,7 +659,13 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
             Vector2 mouse_dir = v2_sub(mouse_pos, player_center);
             mouse_dir = v2_norm(mouse_dir);
 
-            magic_cast_spell(world, SPELL_FIREBALL, player, player_center, mouse_dir);
+	    SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
+	    ASSERT(spellcaster);
+
+	    SpellID selected_spell = get_spell_at_spellbook_index(
+		spellcaster, game_ui->selected_spellbook_index);
+
+            magic_cast_spell(world, selected_spell, player, player_center, mouse_dir);
         }
 
         camera_set_target(&world->camera, target);
@@ -946,20 +953,10 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
         ASSERT(es_has_component(entity, ColliderComponent));
         ASSERT(es_has_component(entity, HealthComponent));
 
-#if 0
-        ParticleSpawner *spawner = es_add_component(entity, ParticleSpawner);
-        spawner->action_when_done = PS_WHEN_DONE_REMOVE_COMPONENT;
-        ParticleSpawnerConfig config = {
-            .particle_color = (RGBA32){0.2f, 0.9f, 0.1f, 0.4f},
-            .particle_size = 4.0f,
-            .particles_per_second = 250.0f,
-            .total_particles_to_spawn = 1000000.0f, // TODO: infinite particles
-            .particle_speed = 100.0f,
-            .particle_lifetime = 1.0f
-        };
+	SpellCasterComponent *spellcaster = es_add_component(entity, SpellCasterComponent);
+	magic_add_to_spellbook(spellcaster, SPELL_SPARK);
+	magic_add_to_spellbook(spellcaster, SPELL_FIREBALL);
 
-        particle_spawner_initialize(spawner, config);
-#endif
 
 #if 0
         SpriteComponent *sprite_comp = es_add_component(entity, SpriteComponent);

@@ -1,7 +1,7 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-#include "base/vector.h"
+#include "base/rectangle.h"
 
 typedef struct {
     u64 state[4];
@@ -13,5 +13,6 @@ s64     rng_s64(s64 min, s64 max);
 s32     rng_s32(s32 min, s32 max);
 f32     rng_f32(f32 min, f32 max);
 Vector2 rng_direction(f32 max_radians);
+Vector2 rng_position_in_rect(Rectangle rect);
 
 #endif //RANDOM_H

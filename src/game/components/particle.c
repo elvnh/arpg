@@ -1,6 +1,7 @@
 #include "particle.h"
 #include "entity_system.h"
 #include "base/random.h"
+#include "world.h"
 
 void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vector2 position, f32 dt)
 {
@@ -28,6 +29,8 @@ void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vect
         } break;
     }
 
+    Rectangle entity_bounds = world_get_entity_bounding_box(entity);
+
     for (s32 i = 0; i < particles_to_spawn_this_frame; ++i) {
         Vector2 dir = rng_direction(PI * 2);
 
@@ -35,11 +38,14 @@ void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vect
         f32 max_speed = ps->config.particle_speed * 1.5f;
         f32 speed = rng_f32(min_speed, max_speed);
 
+	// TODO: this doesn't look very good
+	Vector2 particle_position = rng_position_in_rect(entity_bounds);
+
         // TODO: color variance
         Particle new_particle = {
             .timer = 0.0f,
             .lifetime = ps->config.particle_lifetime,
-            .position = position,
+            .position = particle_position,
             .velocity = v2_mul_s(dir, speed)
         };
 

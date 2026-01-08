@@ -1,6 +1,7 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#include "base/linear_arena.h"
 #include "base/rgba.h"
 #include "base/rectangle.h"
 #include "components/component.h"
@@ -22,6 +23,8 @@ typedef enum {
 } EntityFaction;
 
 typedef struct Entity {
+    LinearArena entity_arena;
+
     ComponentBitset active_components;
     b32 is_inactive;
 

@@ -6,7 +6,7 @@
 #include "components/component.h"
 #include "quad_tree.h"
 
-#define ES_MEMORY_SIZE MB(2)
+#define ENTITY_ARENA_SIZE MB(1)
 
 #define FIRST_VALID_ENTITY_INDEX (NULL_ENTITY_ID.slot_id + 1)
 #define LAST_VALID_ENTITY_INDEX  (FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES - 1)
@@ -173,10 +173,12 @@ static inline EntityID create_entity(EntitySystem *es)
     return id;
 }
 
-EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
+EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction, FreeListArena *parent_arena)
 {
     EntityID id = create_entity(es);
     Entity *entity = es_get_entity(es, id);
+
+    entity->entity_arena = la_create(fl_allocator(parent_arena), ENTITY_ARENA_SIZE);
 
     entity->faction = faction;
 
@@ -194,6 +196,7 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     ASSERT(entity_id_is_valid(es, id));
 
     EntitySlot *removed_slot = es_get_entity_slot_by_id(es, id);
+    la_destroy(&removed_slot->entity.entity_arena);
 
     EntityGeneration new_generation;
     if (add_overflows_s32(id.generation, 1)) {
@@ -207,6 +210,7 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     id.generation = new_generation;
 
     id_queue_push(&es->free_id_queue, id);
+
 }
 
 Entity *es_get_entity(EntitySystem *es, EntityID id)

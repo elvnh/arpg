@@ -76,7 +76,7 @@ EntityWithID world_spawn_entity(World *world, EntityFaction faction)
 {
     ASSERT(world->alive_entity_count < MAX_ENTITIES);
 
-    EntityWithID result = es_create_entity(world->entity_system, faction);
+    EntityWithID result = es_create_entity(world->entity_system, faction, &world->world_arena);
 
     ssize alive_index = world->alive_entity_count++;
     world->alive_entity_ids[alive_index] = result.id;

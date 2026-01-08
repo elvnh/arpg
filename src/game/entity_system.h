@@ -28,7 +28,7 @@ typedef struct EntitySystem {
     EntityIDQueue  free_id_queue;
 } EntitySystem;
 
-EntityWithID  es_create_entity(EntitySystem *es, EntityFaction faction);
+EntityWithID  es_create_entity(EntitySystem *es, EntityFaction faction, FreeListArena *parent_arena);
 void	      es_remove_entity(EntitySystem *es, EntityID id);
 void          es_initialize(EntitySystem *es);
 Entity       *es_get_entity(EntitySystem *es, EntityID id);

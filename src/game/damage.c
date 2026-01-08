@@ -8,12 +8,6 @@
 #include "item_system.h"
 #include "modifier.h"
 
-// TODO: use this in mods too
-typedef struct {
-    DamageValue value;
-    DamageType type;
-} TypedDamageValue;
-
 typedef struct {
     TypedDamageValue value;
     b32 ok;
@@ -123,19 +117,20 @@ static DamageValues accumulate_mod_value_single(DamageValues lhs, TypedDamageVal
     return result;
 }
 
+// TODO: instead just return a baseline value so that accumulating it doesn't do anything
 static GetModValueResult try_get_mod_value_of_type(Modifier modifier, ModifierCategory mod_category,
     NumericModifierType type)
 {
     GetModValueResult result = {0};
 
-    if (modifier.kind == mod_category) {
-	switch (modifier.kind) {
+    if (modifier.category == mod_category) {
+	switch (modifier.category) {
 	    case MOD_CATEGORY_DAMAGE: {
 		DamageModifier dmg_mod = modifier.as.damage_modifier;
 
-		if (dmg_mod.applied_during_phase == type) {
+		if (dmg_mod.numeric_mod_type == type) {
 		    result.value.value = dmg_mod.value;
-		    result.value.type = dmg_mod.affected_damage_kind;
+		    result.value.type = dmg_mod.damage_type;
 		    result.ok = true;
 		}
 	    } break;

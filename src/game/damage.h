@@ -40,6 +40,12 @@ typedef enum ModifierKind {
     MOD_CATEGORY_RESISTANCE,
 } ModifierCategory;
 
+// TODO: use this in modifiers too
+typedef struct {
+    DamageValue value;
+    DamageType type;
+} TypedDamageValue;
+
 typedef struct {
     DamageValue values[DMG_TYPE_COUNT]; // Use DamageKind as index
 } DamageValues;

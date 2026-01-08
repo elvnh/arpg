@@ -313,7 +313,7 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
     DamageValue dmg_sum = calculate_damage_sum(damage_taken);
 
     health->health.hitpoints -= dmg_sum;
-    hitsplat_create(world, entity->position, damage_taken);
+    hitsplats_create(world, entity->position, damage_taken);
 }
 
 static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, DamageInstance damage)
@@ -992,11 +992,11 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
             item->equipment.slot = EQUIP_SLOT_WEAPON;
 
 #if 1
-            Modifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDITIVE, DMG_TYPE_FIRE, 1000);
+            Modifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDITIVE, DMG_TYPE_LIGHTNING, 10);
             item_add_modifier(item, dmg_mod);
 
-	    Modifier dmg_mod2 = create_damage_modifier(NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE,
-		DMG_TYPE_FIRE, 278);
+	    Modifier dmg_mod2 = create_damage_modifier(NUMERIC_MOD_ADDITIVE_PERCENTAGE,
+		DMG_TYPE_LIGHTNING, 300);
             item_add_modifier(item, dmg_mod2);
             //item_add_modifier(item, res_mod);
 #endif

@@ -5,7 +5,7 @@
 #include "base/rectangle.h"
 #include "components/component.h"
 
-#define NULL_ENTITY_ID ((EntityID){ 0, 0 })
+#define NULL_ENTITY_ID ((EntityID){0})
 
 typedef s32 EntityIndex;
 typedef s32 EntityGeneration;

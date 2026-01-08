@@ -1,6 +1,7 @@
 #ifndef COLLIDER_H
 #define COLLIDER_H
 
+// TODO: create generic game event callbacks and use for collision/on death effects
 typedef enum {
     ON_COLLIDE_STOP,
     ON_COLLIDE_PASS_THROUGH, // TODO: remove, absence of blocking effect is interpreted as passing through

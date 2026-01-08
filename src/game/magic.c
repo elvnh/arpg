@@ -24,7 +24,7 @@ static Spell spell_fireball()
     spell.sprite.size = v2(32, 32);
     spell.sprite.rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
 
-    spell.projectile.projectile_speed = 200.0f;
+    spell.projectile.projectile_speed = 300.0f;
     spell.projectile.collider_size = v2(32, 32);
 
     DamageRange damage_range = {0};
@@ -38,12 +38,12 @@ static Spell spell_fireball()
 
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
-	.particle_color = {1, 0.2f, 0, 0.1f},
+	.particle_color = {1, 0.4f, 0, 0.08f},
 	.particle_size = 4.0f,
 	.particle_lifetime = 1.0f,
 	.particle_speed = 30.0f,
 	.infinite = true,
-	.particles_per_second = 150
+	.particles_per_second = 100
     };
 
     return spell;
@@ -73,12 +73,12 @@ static Spell spell_spark()
 
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
-	.particle_color = {1.0f, 1.0f, 0, 0.07f},
+	.particle_color = {1.0f, 1.0f, 0, 0.15f},
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.25f,
 	.particle_speed = 150.0f,
 	.infinite = true,
-	.particles_per_second = 50
+	.particles_per_second = 40
     };
 
 

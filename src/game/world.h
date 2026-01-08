@@ -14,6 +14,9 @@
   TODO:
   - Should a World be a single level or something more persistent?
   - Handle player input in game instead
+  - Add a free list arena to World then allocate a subarena from it for each
+    entity. On entity death, destroy the arena and all memory tied to that entity is
+    released
  */
 
 struct FrameData;

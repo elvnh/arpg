@@ -195,7 +195,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
-        component_update_particle_spawner(entity, particle_spawner, entity->position, dt);
+        component_update_particle_spawner(entity, particle_spawner, dt);
     }
 
     if (es_has_component(entity, LifetimeComponent)) {

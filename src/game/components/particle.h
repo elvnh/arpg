@@ -58,6 +58,6 @@ void particle_spawner_initialize(ParticleSpawner *ps, ParticleSpawnerConfig conf
 b32 particle_spawner_is_finished(ParticleSpawner *ps);
 
 // TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
-void component_update_particle_spawner(struct Entity *entity, ParticleSpawner *ps, Vector2 position, f32 dt);
+void component_update_particle_spawner(struct Entity *entity, ParticleSpawner *ps, f32 dt);
 
 #endif //PARTICLE_H

@@ -4,6 +4,10 @@
 #include "ui/ui_builder.h"
 #include "entity.h"
 
+struct Game;
+struct GameMemory;
+struct FrameData;
+
 typedef struct GameUIState {
     UIState backend_state;
 
@@ -11,10 +15,6 @@ typedef struct GameUIState {
     b32 inventory_menu_open;
     ssize selected_spellbook_index;
 } GameUIState;
-
-struct Game;
-struct GameMemory;
-struct FrameData;
 
 void game_ui(struct Game *game, struct GameMemory *game_memory, const struct FrameData *frame_data);
 

@@ -3,7 +3,7 @@
 #include "base/random.h"
 #include "world.h"
 
-void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, Vector2 position, f32 dt)
+void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 dt)
 {
     s32 particles_to_spawn_this_frame = 0;
 

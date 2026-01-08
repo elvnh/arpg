@@ -120,11 +120,11 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
     String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, temp_alloc);
 
     ssize qt_nodes = qt_get_node_count(&game->world.quad_tree);
-    String node_string = str_concat(str_lit("Quad tree nodes: "), ssize_to_string(qt_nodes, temp_alloc), temp_alloc);
+    String node_string = str_concat(str_lit("Quad tree nodes: "), s64_to_string(qt_nodes, temp_alloc), temp_alloc);
 
     String entity_string = str_concat(
         str_lit("Alive entity count: "),
-        ssize_to_string(game->world.alive_entity_count, temp_alloc),
+        s64_to_string(game->world.alive_entity_count, temp_alloc),
         temp_alloc
     );
 
@@ -176,7 +176,7 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
         if (entity) {
             String entity_str = str_concat(
                 str_lit("Hovered entity: "),
-                ssize_to_string(game->debug_state.hovered_entity.slot_id, temp_alloc),
+                s64_to_string(game->debug_state.hovered_entity.slot_id, temp_alloc),
                 temp_alloc
             );
 
@@ -217,7 +217,7 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
                     Item *item = item_sys_get_item(game->world.item_system, id);
                     ASSERT(item);
 
-                    String id_string = ssize_to_string((ssize)id.id, temp_alloc);
+                    String id_string = s64_to_string((ssize)id.id, temp_alloc);
                     id_string = str_concat(id_string, str_lit(", "), temp_alloc);
                     ui_text(ui, id_string);
                 }
@@ -237,7 +237,7 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
                             ui_core_same_line(ui);
 
                             ItemID item_id = get_equipped_item_in_slot(&eq->equipment, EQUIP_SLOT_HEAD);
-                            String item_str = ssize_to_string((ssize)item_id.id, temp_alloc);
+                            String item_str = s64_to_string((ssize)item_id.id, temp_alloc);
                             ui_text(ui, item_str);
                         }
 

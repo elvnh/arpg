@@ -112,8 +112,8 @@ static inline String equipment_slot_spelling(EquipmentSlot slot)
 
 static inline String item_id_to_string(ItemID id, Allocator alloc)
 {
-    String a = ssize_to_string(id.id, alloc);
-    String b = ssize_to_string(id.generation, alloc);
+    String a = s64_to_string(id.id, alloc);
+    String b = s64_to_string(id.generation, alloc);
     String result = str_concat(
 	a,
 	str_concat(

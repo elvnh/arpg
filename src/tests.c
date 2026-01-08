@@ -1223,31 +1223,31 @@ static void tests_format()
 
     {
         s32 n = 0;
-        String str = ssize_to_string(n, allocator);
+        String str = s64_to_string(n, allocator);
         ASSERT(str_equal(str, str_lit("0")));
     }
 
     {
         s32 n = 10;
-        String str = ssize_to_string(n, allocator);
+        String str = s64_to_string(n, allocator);
         ASSERT(str_equal(str, str_lit("10")));
     }
 
     {
         s32 n = 12345;
-        String str = ssize_to_string(n, allocator);
+        String str = s64_to_string(n, allocator);
         ASSERT(str_equal(str, str_lit("12345")));
     }
 
     {
         s32 n = -1;
-        String str = ssize_to_string(n, allocator);
+        String str = s64_to_string(n, allocator);
         ASSERT(str_equal(str, str_lit("-1")));
     }
 
     {
         s32 n = -12345;
-        String str = ssize_to_string(n, allocator);
+        String str = s64_to_string(n, allocator);
         ASSERT(str_equal(str, str_lit("-12345")));
     }
 

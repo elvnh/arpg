@@ -20,12 +20,12 @@ static inline ssize digit_count_s64(s64 n)
         n = -n;
     }
 
-    s64 result = (ssize)round(log((f64)n) / log((f64)10)) + 1;
+    s64 result = (ssize)ceil(log((f64)n) / log((f64)10)) + 1;
     return result;
 }
 
 // TODO: make into s64 to string
-static inline String ssize_to_string(ssize number, Allocator allocator)
+static inline String s64_to_string(s64 number, Allocator allocator)
 {
     b32 is_negative = number < 0;
     ssize num_chars = digit_count_s64(number) + is_negative;
@@ -33,9 +33,9 @@ static inline String ssize_to_string(ssize number, Allocator allocator)
     ssize alloc_size = num_chars + 1;
     String result = str_allocate(alloc_size, allocator);
     s32 chars_written = snprintf(result.data, (usize)alloc_size, "%"PRId64, number);
-    ASSERT(chars_written == num_chars);
+    ASSERT(chars_written <= num_chars);
 
-    result.length = num_chars;
+    result.length = chars_written;
 
     return result;
 }
@@ -49,9 +49,9 @@ static inline String f32_to_string(f32 number, s32 precision, Allocator allocato
     ssize alloc_size = num_chars + 1;
     String result = str_allocate(alloc_size, allocator);
     s32 chars_written = snprintf(result.data, (usize)alloc_size, "%.*f", precision, (f64)number);
-    ASSERT(chars_written == num_chars);
+    ASSERT(chars_written <= num_chars);
 
-    result.length = num_chars;
+    result.length = chars_written;
 
     return result;
 }

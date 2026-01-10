@@ -3,6 +3,7 @@
 
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "collision_policy.h"
 #include "damage.h"
 #include "item.h"
 #include "particle.h"
@@ -30,6 +31,7 @@
     COMPONENT(GroundItemComponent)		\
     COMPONENT(SpellCasterComponent)		\
     COMPONENT(CallbackComponent)		\
+    COMPONENT(DamageFieldComponent)		\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -83,5 +85,10 @@ typedef struct SpellCasterComponent {
     SpellID spellbook[SPELL_COUNT];
     ssize spell_count;
 } SpellCasterComponent;
+
+typedef struct {
+    DamageInstance damage;
+    RetriggerBehaviour retrigger_behaviour;
+} DamageFieldComponent;
 
 #endif //COMPONENT_H

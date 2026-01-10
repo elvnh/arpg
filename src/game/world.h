@@ -10,6 +10,7 @@
 #include "collision.h"
 #include "item_system.h"
 #include "hitsplat.h"
+#include "collision_event.h"
 
 /*
   TODO:
@@ -45,7 +46,7 @@ typedef struct World {
     EntitySystem *entity_system;
     ItemSystem *item_system;
 
-    CollisionCooldownTable collision_effect_cooldowns;
+    TriggerCooldownTable trigger_cooldowns;
 
     CollisionEventTable  previous_frame_collisions;
     CollisionEventTable  current_frame_collisions;
@@ -70,6 +71,7 @@ void world_render(World *world, struct RenderBatch *rb, const struct FrameData *
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, EntityFaction faction);
 Rectangle world_get_entity_bounding_box(Entity *entity);
+void world_kill_entity(World *world, Entity *entity);
 
 Entity *world_get_player_entity(World *world);
 

@@ -197,6 +197,8 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
                 case FACTION_ENEMY: {
                     entity_faction_str = str_lit("Enemy");
                 } break;
+
+		INVALID_DEFAULT_CASE;
             }
 
             entity_faction_str = str_concat(str_lit("Faction: "), entity_faction_str, temp_alloc);

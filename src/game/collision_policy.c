@@ -1,0 +1,82 @@
+#include "collision_policy.h"
+#include "world.h"
+
+static void execute_collision_policy(World *world, Entity *entity, CollisionPolicy behaviour,
+    CollisionInfo collision, EntityPairIndex collision_pair_index, b32 should_block)
+{
+    // NOTE: This function handles both entity vs tilemap and entity vs entity collisions.
+    // If the collision is vs a tile, pass ENTITY_PAIR_INDEX_FIRST as collision_pair_index.
+
+    switch (behaviour.effect) {
+	case COLLIDE_EFFECT_STOP: {
+	    if (should_block) {
+		if (collision_pair_index == ENTITY_PAIR_INDEX_FIRST) {
+		    entity->position = collision.new_position_a;
+		    entity->velocity = collision.new_velocity_a;
+
+		} else {
+		    entity->position = collision.new_position_b;
+		    entity->velocity = collision.new_velocity_b;
+		}
+	    }
+	} break;
+
+	case COLLIDE_EFFECT_BOUNCE: {
+	    if (should_block) {
+		if (collision_pair_index == ENTITY_PAIR_INDEX_FIRST) {
+		    entity->position = collision.new_position_a;
+		    entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
+		} else {
+		    entity->position = collision.new_position_b;
+		    entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
+		}
+	    }
+	} break;
+
+	case COLLIDE_EFFECT_DIE: {
+	    world_kill_entity(world, entity);
+	} break;
+
+
+	case COLLIDE_EFFECT_PASS_THROUGH: {
+
+	} break;
+
+	INVALID_DEFAULT_CASE;
+    }
+}
+
+void execute_collision_policy_for_tilemap_collision(World *world, Entity *entity, CollisionInfo collision)
+{
+    ColliderComponent *collider = es_get_component(entity, ColliderComponent);
+    ASSERT(collider);
+
+    CollisionPolicy behaviour = collider->tilemap_collision_policy;
+
+    b32 should_block = behaviour.effect != COLLIDE_EFFECT_PASS_THROUGH;
+
+    execute_collision_policy(world, entity, behaviour, collision, ENTITY_PAIR_INDEX_FIRST, should_block);
+}
+
+void execute_entity_vs_entity_collision_policy(World *world, Entity *entity, Entity *other,
+    CollisionInfo collision, EntityPairIndex collision_index)
+{
+    ASSERT(entity);
+    ASSERT(other);
+
+    ColliderComponent *collider = es_get_component(entity, ColliderComponent);
+    ColliderComponent *other_collider = es_get_component(other, ColliderComponent);
+
+    CollisionPolicy our_behaviour_for_them =
+	collider->per_faction_collision_policies[other->faction];
+    CollisionPolicy their_behaviour_for_us =
+	other_collider->per_faction_collision_policies[entity->faction];
+
+    b32 should_block = (our_behaviour_for_them.effect != COLLIDE_EFFECT_PASS_THROUGH)
+	&& (their_behaviour_for_us.effect != COLLIDE_EFFECT_PASS_THROUGH);
+
+    // NOTE: we only execute OUR behaviour for THEM, this function is expected to be called
+    // twice for each collision pair
+    execute_collision_policy(world, entity, our_behaviour_for_them, collision,
+	collision_index, should_block);
+}

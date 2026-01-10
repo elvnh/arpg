@@ -1,9 +1,11 @@
 #include "magic.h"
 #include "base/utils.h"
+#include "components/callback.h"
 #include "components/collider.h"
 #include "components/particle.h"
 #include "game/collision.h"
 #include "game/damage.h"
+#include "trigger.h"
 #include "world.h"
 #include "components/component.h"
 #include "asset.h"
@@ -18,7 +20,7 @@ static Spell spell_fireball()
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	| SPELL_PROP_PARTICLE_SPAWNER;
+	/*| SPELL_PROP_PARTICLE_SPAWNER*/;
 
     spell.sprite.texture = get_asset_table()->fireball_texture;
     spell.sprite.size = v2(32, 32);
@@ -32,10 +34,10 @@ static Spell spell_fireball()
     set_damage_value_for_type(&damage_range.high_roll, DMG_TYPE_FIRE, 20);
 
     spell.damaging.base_damage = damage_range;
-    spell.damaging.retrigger_behaviour = COLL_RETRIGGER_NEVER;
+    spell.damaging.retrigger_behaviour = RETRIGGER_NEVER;
 
     // TODO: create explosion particle spawner on fireball death
-
+/*
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {1, 0.4f, 0, 0.08f},
@@ -45,7 +47,7 @@ static Spell spell_fireball()
 	.infinite = true,
 	.particles_per_second = 100
     };
-
+*/
     return spell;
 }
 
@@ -56,7 +58,7 @@ static Spell spell_spark()
     // TODO: erratic movement
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
-	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
+	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME/* | SPELL_PROP_PARTICLE_SPAWNER*/;
 
     spell.sprite.texture = get_asset_table()->spark_texture;
     spell.sprite.size = v2(32, 32);
@@ -69,8 +71,9 @@ static Spell spell_spark()
 
     set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_LIGHTNING, 1, 100);
     set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
-    spell.damaging.retrigger_behaviour = COLL_RETRIGGER_AFTER_NON_CONTACT;
+    spell.damaging.retrigger_behaviour = RETRIGGER_AFTER_NON_CONTACT;
 
+/*
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {1.0f, 1.0f, 0, 0.15f},
@@ -80,7 +83,7 @@ static Spell spell_spark()
 	.infinite = true,
 	.particles_per_second = 40
     };
-
+*/
 
     return spell;
 }
@@ -109,6 +112,43 @@ static const Spell *get_spell_by_id(SpellID id)
     return &g_spells->spells[id];
 }
 
+typedef struct {
+    int i;
+} UserData;
+
+static void collision_function(void *user_data, EventData event_data)
+{
+    (void)user_data;
+    (void)event_data;
+    /* UserData *data = user_data; */
+
+    printf("Colliding with: ");
+
+    if (event_data.as.collision.colliding_with_type == OBJECT_KIND_ENTITIES) {
+	printf("entity");
+    } else {
+	printf("wall");
+    }
+
+    printf("\n");
+
+    /* DEBUG_BREAK; */
+}
+
+static void spawn_particles_on_death(void *user_data, EventData event_data)
+{
+    //DEBUG_BREAK;
+
+    ParticleSpawnerConfig *particle_config = user_data;
+
+    EntityWithID ps_entity = world_spawn_entity(event_data.world, FACTION_NEUTRAL);
+    ps_entity.entity->position = event_data.self->position;
+
+    ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
+    particle_spawner_initialize(ps, *particle_config);
+    ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+}
+
 static void cast_single_spell(struct World *world, const Spell *spell, struct Entity *caster,
     Vector2 pos, Vector2 dir)
 {
@@ -133,33 +173,27 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
     }
 
     if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
-	OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_BOUNCE);
-	effect->affects_object_kinds |= OBJECT_KIND_TILES;
+	set_collision_policy_vs_tilemaps(spell_collider, COLLIDE_EFFECT_BOUNCE);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
-	OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DEAL_DAMAGE);
-	effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
-
 	DamageValues damage_roll = roll_damage_in_range(spell->damaging.base_damage);
         DamageValues damage_after_boosts = calculate_damage_dealt(damage_roll, caster,
 	    world->item_system);
 
-        // TODO: create_damage_instance function
+	DamageFieldComponent *dmg_field = es_add_component(spell_entity, DamageFieldComponent);
+        /* // TODO: create_damage_instance function */
         DamageInstance damage = { damage_after_boosts, spell->damaging.penetration_values };
-
-	effect->as.deal_damage.damage = damage;
-	effect->retrigger_behaviour = spell->damaging.retrigger_behaviour;
+	dmg_field->damage = damage;
+	dmg_field->retrigger_behaviour = spell->damaging.retrigger_behaviour;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
-	OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DIE);
-	effect->affects_object_kinds |= OBJECT_KIND_ENTITIES;
+	set_collision_policy_vs_hostile_faction(spell_collider, COLLIDE_EFFECT_DIE, caster->faction);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_WALL_COLLISION)) {
-	OnCollisionEffect *effect = get_or_add_collide_effect(spell_collider, ON_COLLIDE_DIE);
-	effect->affects_object_kinds |= OBJECT_KIND_TILES;
+	set_collision_policy_vs_tilemaps(spell_collider, COLLIDE_EFFECT_DIE);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_LIFETIME)) {
@@ -173,6 +207,21 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
 	ParticleSpawner *ps = es_get_or_add_component(spell_entity, ParticleSpawner);
 	particle_spawner_initialize(ps, spell->particle_spawner);
     }
+
+    // TODO: do this properly later
+    ParticleSpawnerConfig particle_config = {
+	.kind = PS_SPAWN_ALL_AT_ONCE,
+	.particle_color = {1, 0.4f, 0, 0.08f},
+	.particle_size = 4.0f,
+	.particle_lifetime = 1.0f,
+	.particle_speed = 30.0f,
+	.total_particles_to_spawn = 500
+    };
+
+    es_add_component(spell_entity, CallbackComponent);
+
+    //add_callback(spell_entity, EVENT_ENTITY_DIED, spawn_particles_on_death, &particle_config);
+    add_callback(spell_entity, EVENT_COLLISION, collision_function, &particle_config);
 
     // Offset so that spells center is 'pos'
     Rectangle bounds = world_get_entity_bounding_box(spell_entity);

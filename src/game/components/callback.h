@@ -4,8 +4,12 @@
 #include "base/typedefs.h"
 #include "components/collider.h"
 
-// TODO: nicer API, don't require user to create EventData themselves
-
+/* TODO:
+   - Nicer API, don't require user to create EventData themselves
+   - Callbacks when reaching animation frame
+   - Allow creating callbacks with no user data
+   - Report collision events
+ */
 #define add_callback(entity, type, func, data) add_callback_impl(entity, type, func, data, \
 	SIZEOF(*data), ALIGNOF(*data))
 

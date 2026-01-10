@@ -27,6 +27,7 @@
 #include "renderer/render_batch.h"
 #include "tilemap.h"
 #include "asset_table.h"
+#include "trigger.h"
 
 #define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
 
@@ -126,7 +127,7 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
     --world->alive_entity_count;
 }
 
-static void kill_entity(World *world, Entity *entity)
+void world_kill_entity(World *world, Entity *entity)
 {
     EventData death_event = event_data_death();
     try_invoke_callback(entity, death_event, world);
@@ -225,7 +226,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (entity_should_die(entity)) {
         // NOTE: won't be removed until after this frame
-	kill_entity(world, entity);
+	world_kill_entity(world, entity);
     }
 
     world_update_entity_quad_tree_location(world, alive_entity_index);
@@ -307,9 +308,9 @@ static void swap_and_reset_collision_tables(World *world)
     }
 }
 
-void world_add_collision_cooldown(World *world, EntityID a, EntityID b, s32 effect_index)
+void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, RetriggerBehaviour retrigger_behaviour)
 {
-    collision_cooldown_add(&world->collision_effect_cooldowns, a, b, effect_index, &world->world_arena);
+    add_trigger_cooldown(&world->trigger_cooldowns, a, b, retrigger_behaviour, &world->world_arena);
 }
 
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
@@ -343,114 +344,6 @@ static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *se
     }
 }
 
-// TODO: too many parameters
-static b32 should_execute_collision_effect(World *world, Entity *entity, Entity *other,
-    OnCollisionEffect effect, ObjectKind colliding_with_obj_kind, s32 effect_index)
-{
-    EntityID entity_id = es_get_id_of_entity(world->entity_system, entity);
-    b32 result = (effect.affects_object_kinds & colliding_with_obj_kind) != 0;
-
-    if (result && other) {
-        EntityID other_id = es_get_id_of_entity(world->entity_system, other);
-        b32 in_same_faction = entity->faction == other->faction;
-
-        b32 not_on_cooldown = !collision_cooldown_find(&world->collision_effect_cooldowns,
-	    entity_id, other_id, effect_index);
-
-        result = not_on_cooldown && (!in_same_faction || (effect.affects_same_faction_entities));
-    }
-
-    return result;
-}
-
-// TODO: make this take entitypair as parameter
-static void execute_collision_effects(World *world, Entity *entity, Entity *other, ColliderComponent *collider,
-    CollisionInfo collision, EntityPairIndex collision_index, ObjectKind colliding_with_obj_kind)
-{
-    // TODO: clean up this function
-    ASSERT(entity);
-
-    b32 should_block = !other;
-
-    // TODO: if no blocking effect is present, pass through
-    // If other entity has a pass through effect, we shouldn't be blocked by that entity
-    if (other) {
-        ColliderComponent *other_collider = es_get_component(other, ColliderComponent);
-        ASSERT(other_collider);
-
-        for (s32 i = 0; i < other_collider->on_collide_effects.count; ++i) {
-            OnCollisionEffect effect = other_collider->on_collide_effects.effects[i];
-
-            b32 should_execute = should_execute_collision_effect(world, other, entity, effect,
-		colliding_with_obj_kind, i);
-
-            if (should_execute && (effect.kind == ON_COLLIDE_STOP)) {
-                should_block = true;
-            }
-        }
-    }
-
-    for (s32 i = 0; i < collider->on_collide_effects.count; ++i) {
-        OnCollisionEffect effect = collider->on_collide_effects.effects[i];
-
-        b32 should_execute = should_execute_collision_effect(world, entity, other, effect,
-	    colliding_with_obj_kind, i);
-
-        if (!should_execute) {
-            continue;
-        }
-
-        switch (effect.kind) {
-            case ON_COLLIDE_STOP: {
-                if (should_block) {
-                    if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
-                        entity->position = collision.new_position_a;
-                        entity->velocity = collision.new_velocity_a;
-                    } else {
-                        entity->position = collision.new_position_b;
-                        entity->velocity = collision.new_velocity_b;
-                    }
-                }
-            } break;
-
-            case ON_COLLIDE_BOUNCE: {
-                if (should_block) {
-                    if (collision_index == ENTITY_PAIR_INDEX_FIRST) {
-                        entity->position = collision.new_position_a;
-                        entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
-                    } else {
-                        entity->position = collision.new_position_b;
-                        entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
-                    }
-                }
-            } break;
-
-            case ON_COLLIDE_DEAL_DAMAGE: {
-                ASSERT(other);
-                ASSERT(effect.affects_object_kinds == OBJECT_KIND_ENTITIES);
-
-                try_deal_damage_to_entity(world, other, entity, effect.as.deal_damage.damage);
-            } break;
-
-            case ON_COLLIDE_DIE: {
-		kill_entity(world, entity);
-            } break;
-
-            case ON_COLLIDE_PASS_THROUGH: {} break;
-
-            INVALID_DEFAULT_CASE;
-        }
-
-        if (other && (effect.retrigger_behaviour != COLL_RETRIGGER_WHENEVER)) {
-            EntityID entity_id = es_get_id_of_entity(world->entity_system, entity);
-            EntityID other_id = es_get_id_of_entity(world->entity_system, other);
-
-            s32 effect_index = i;
-            world_add_collision_cooldown(world, entity_id, other_id, effect_index);
-        }
-    }
-}
-
 static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent *collider)
 {
     Rectangle result = {
@@ -461,10 +354,39 @@ static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent
     return result;
 }
 
+static void perform_on_collision_effects(World *world, Entity *a, Entity *b)
+{
+    // TODO: clean up the way this is handled
+
+    EntityID id_a = es_get_id_of_entity(world->entity_system, a);
+    EntityID id_b = es_get_id_of_entity(world->entity_system, b);
+
+    b32 same_faction = a->faction == b->faction;
+
+    // TODO: make trigger cooldowns per component
+    if (!trigger_is_on_cooldown(&world->trigger_cooldowns, id_a, id_b)) {
+	if (es_has_component(a, DamageFieldComponent) && !same_faction) {
+	    DamageFieldComponent *dmg_field = es_get_component(a, DamageFieldComponent);
+
+	    try_deal_damage_to_entity(world, b, a, dmg_field->damage);
+
+	    if (dmg_field->retrigger_behaviour != RETRIGGER_WHENEVER) {
+		world_add_trigger_cooldown(world, id_a, id_b, dmg_field->retrigger_behaviour);
+	    }
+	}
+
+	// TODO: invoke collision callbacks
+
+    }
+}
+
 static f32 entity_vs_entity_collision(World *world, Entity *a,
     ColliderComponent *collider_a, Entity *b, ColliderComponent *collider_b,
     f32 movement_fraction_left, f32 dt)
 {
+    ASSERT(a);
+    ASSERT(b);
+
     EntityID id_a = es_get_id_of_entity(world->entity_system, a);
     EntityID id_b = es_get_id_of_entity(world->entity_system, b);
 
@@ -474,16 +396,14 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
     CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
         a->velocity, b->velocity, dt);
 
-    if ((collision.collision_state != COLL_NOT_COLLIDING)
+    if ((collision.collision_status != COLLISION_STATUS_NOT_COLLIDING)
 	&& !entities_intersected_this_frame(world, id_a, id_b)) {
-        execute_collision_effects(world, a, b, collider_a, collision,
-	    ENTITY_PAIR_INDEX_FIRST, OBJECT_KIND_ENTITIES);
 
-        execute_collision_effects(world, b, a, collider_b, collision,
-	    ENTITY_PAIR_INDEX_SECOND, OBJECT_KIND_ENTITIES);
+        execute_entity_vs_entity_collision_policy(world, a, b, collision, ENTITY_PAIR_INDEX_FIRST);
+        execute_entity_vs_entity_collision_policy(world, b, a, collision, ENTITY_PAIR_INDEX_SECOND);
 
-	EventData event_data = event_data_entity_collision(a);
-	try_invoke_callback(a, event_data, world);
+	perform_on_collision_effects(world, a, b);
+	perform_on_collision_effects(world, b, a);
 
         movement_fraction_left = collision.movement_fraction_left;
 
@@ -492,7 +412,6 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
 
     return movement_fraction_left;
 }
-
 
 static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collider,
     World *world, f32 movement_fraction_left, f32 dt)
@@ -537,20 +456,18 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
                 CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
 		    tile_rect, entity->velocity, V2_ZERO, dt);
 
-                if ((collision.collision_state != COLL_NOT_COLLIDING)
+                if ((collision.collision_status != COLLISION_STATUS_NOT_COLLIDING)
                     && (collision.movement_fraction_left < closest_collision.movement_fraction_left)) {
                     closest_collision = collision;
-
                 }
             }
         }
     }
 
-    if (closest_collision.collision_state != COLL_NOT_COLLIDING) {
+    if (closest_collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) {
         movement_fraction_left = closest_collision.movement_fraction_left;
 
-        execute_collision_effects(world, entity, 0, collider, closest_collision,
-	    ENTITY_PAIR_INDEX_FIRST, OBJECT_KIND_TILES);
+	execute_collision_policy_for_tilemap_collision(world, entity, closest_collision);
     }
 
     return movement_fraction_left;
@@ -744,7 +661,7 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     hitsplats_update(world, frame_data);
 
     // TODO: should this be done at beginning of each frame so inactive entities are rendered?
-    remove_expired_collision_cooldowns(world, world->entity_system);
+    remove_expired_trigger_cooldowns(world, world->entity_system);
 
     swap_and_reset_collision_tables(world);
 
@@ -940,7 +857,8 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
         ColliderComponent *collider = es_add_component(entity, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
-        add_blocking_collide_effect(collider, OBJECT_KIND_ENTITIES | OBJECT_KIND_TILES, true);
+	set_collision_policy_vs_entities(collider, COLLIDE_EFFECT_STOP);
+	set_collision_policy_vs_tilemaps(collider, COLLIDE_EFFECT_STOP);
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->health.hitpoints = 100000;

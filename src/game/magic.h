@@ -7,6 +7,7 @@
 #include "damage.h"
 #include "components/collider.h"
 #include "sprite.h"
+#include "trigger.h"
 
 struct SpellCasterComponent;
 
@@ -37,7 +38,7 @@ typedef struct {
 	// TODO: pack base_damage and penetration_values into struct
 	DamageRange base_damage;
 	DamageValues penetration_values;
-	CollisionRetriggerBehaviour retrigger_behaviour;
+	RetriggerBehaviour retrigger_behaviour;
     } damaging;
 
     struct {

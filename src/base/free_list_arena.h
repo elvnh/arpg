@@ -15,7 +15,7 @@
   - Total capacity
 */
 
-typedef struct {
+typedef struct FreeListArena {
     struct FreeListBuffer *head;
     struct FreeListBuffer *tail;
 

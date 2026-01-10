@@ -26,7 +26,10 @@ src/asset_system.c
 GAME_SOURCES="
 src/game/game.c
 src/game/world.c
+src/game/trigger.c
 src/game/collision.c
+src/game/collision_event.c
+src/game/collision_policy.c
 src/game/components/callback.c
 src/game/animation.c
 src/game/hitsplat.c

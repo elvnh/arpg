@@ -4,8 +4,6 @@
 #include "world.h"
 #include "base/sl_list.h"
 
-#define INTERSECTION_TABLE_ARENA_SIZE (128 * SIZEOF(CollisionEvent))
-#define INTERSECTION_TABLE_SIZE 512
 #define INTERSECTION_EPSILON   0.00001f
 #define COLLISION_MARGIN       0.015f
 
@@ -32,7 +30,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
         .new_velocity_a = velocity_a,
         .new_velocity_b = velocity_b,
         .movement_fraction_left = movement_fraction_left,
-        .collision_state = COLL_NOT_COLLIDING,
+        .collision_status = COLLISION_STATUS_NOT_COLLIDING,
         .collision_normal = {0}
     };
 
@@ -57,7 +55,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 	}
 
 	result.new_position_a = v2_add(new_pos, v2_mul_s(collision_normal, COLLISION_MARGIN));
-        result.collision_state = COLL_ARE_INTERSECTING;
+        result.collision_status = COLLISION_STATUS_ARE_INTERSECTING;
         result.collision_normal = collision_normal;
 
         rect_collision_reset_velocities(&result.new_velocity_a, &result.new_velocity_b, penetration.side);
@@ -91,7 +89,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
 
 	    f32 remaining = result.movement_fraction_left - intersection.time_of_impact;
             result.movement_fraction_left = MAX(0.0f, remaining);
-            result.collision_state = COLL_WILL_COLLIDE_THIS_FRAME;
+            result.collision_status = COLLISION_STATUS_WILL_COLLIDE_THIS_FRAME;
 
             switch (intersection.side_of_collision) {
                 case RECT_SIDE_TOP: {
@@ -112,155 +110,6 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
             }
         }
     }
-
-    return result;
-}
-
-static inline ssize collision_cooldown_hashed_index(const CollisionCooldownTable *table, EntityID self,
-    EntityID other, s32 effect_index)
-{
-    // TODO: better hash
-    u64 hash = (entity_id_hash(self) ^ entity_id_hash(other)) + (u64)(effect_index * 17);
-    ssize result = mod_index(hash, ARRAY_COUNT(table->table));
-
-    return result;
-}
-
-CollisionEffectCooldown *collision_cooldown_find(CollisionCooldownTable *table, EntityID self, EntityID other,
-    s32 effect_index)
-{
-    ssize index = collision_cooldown_hashed_index(table, self, other, effect_index);
-
-    CollisionCooldownList *list = &table->table[index];
-
-    CollisionEffectCooldown *current;
-    for (current = list_head(list); current; current = list_next(current)) {
-        if (entity_id_equal(current->owning_entity, self)
-            && entity_id_equal(current->collided_entity, other)
-            && (effect_index == current->collision_effect_index)) {
-            break;
-        }
-    }
-
-    return current;
-}
-
-void collision_cooldown_add(CollisionCooldownTable *table, EntityID self, EntityID other,
-    s32 effect_index, FreeListArena *arena)
-{
-    ASSERT(!entity_id_equal(self, other));
-
-    if (!collision_cooldown_find(table, self, other, effect_index)) {
-        CollisionEffectCooldown *cooldown = list_head(&table->free_node_list);
-
-        if (!cooldown) {
-            cooldown = fl_alloc_item(arena, CollisionEffectCooldown);
-        } else {
-            list_pop_head(&table->free_node_list);
-        }
-
-        *cooldown = (CollisionEffectCooldown){0};
-        cooldown->owning_entity = self;
-        cooldown->collided_entity = other;
-        cooldown->collision_effect_index = effect_index;
-
-        ssize index = collision_cooldown_hashed_index(table, self, other, effect_index);
-        list_push_back(&table->table[index], cooldown);
-    }
-}
-
-void remove_expired_collision_cooldowns(World *world, EntitySystem *es)
-{
-    for (ssize i = 0; i < ARRAY_COUNT(world->collision_effect_cooldowns.table); ++i) {
-        CollisionCooldownList *exception_list = &world->collision_effect_cooldowns.table[i];
-
-        for (CollisionEffectCooldown *exc = list_head(exception_list); exc;) {
-            CollisionEffectCooldown *next = exc->next;
-
-            Entity *owning = es_get_entity(es, exc->owning_entity);
-            Entity *collided = es_get_entity(es, exc->collided_entity);
-            ASSERT(owning);
-            ASSERT(collided);
-
-            EntityID owning_id = exc->owning_entity;
-            EntityID collided_id = exc->collided_entity;
-
-            ColliderComponent *collider = es_get_component(owning, ColliderComponent);
-            ASSERT(collider);
-            ASSERT(exc->collision_effect_index < ARRAY_COUNT(collider->on_collide_effects.effects));
-
-            const OnCollisionEffect *effect = &collider->on_collide_effects.effects[exc->collision_effect_index];
-            ASSERT(effect->retrigger_behaviour != COLL_RETRIGGER_WHENEVER);
-
-            b32 should_remove = (owning->is_inactive || collided->is_inactive)
-                || ((effect->retrigger_behaviour == COLL_RETRIGGER_AFTER_NON_CONTACT)
-                    && !entities_intersected_this_frame(world, owning_id, collided_id));
-
-            if (should_remove) {
-                list_remove(exception_list, exc);
-                list_push_back(&world->collision_effect_cooldowns.free_node_list, exc);
-            }
-
-            exc = next;
-        }
-    }
-}
-
-CollisionEventTable collision_event_table_create(FreeListArena *parent_arena)
-{
-    CollisionEventTable result = {0};
-    result.table = fl_alloc_array(parent_arena, CollisionEventList, INTERSECTION_TABLE_SIZE);
-    result.table_size = INTERSECTION_TABLE_SIZE;
-    result.arena = la_create(fl_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
-
-    return result;
-}
-
-CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID a, EntityID b)
-{
-    EntityPair searched_pair = entity_pair_create(a, b);
-    u64 hash = entity_pair_hash(searched_pair);
-    ssize index = mod_index(hash, table->table_size);
-
-    CollisionEventList *list = &table->table[index];
-
-    CollisionEvent *node = 0;
-    for (node = list_head(list); node; node = list_next(node)) {
-        if (entity_pair_equal(searched_pair, node->entity_pair)) {
-            break;
-        }
-    }
-
-    return node;
-}
-
-void collision_event_table_insert(CollisionEventTable *table, EntityID a, EntityID b)
-{
-    if (!collision_event_table_find(table, a, b)) {
-        EntityPair entity_pair = entity_pair_create(a, b);
-        u64 hash = entity_pair_hash(entity_pair);
-        ssize index = mod_index(hash, table->table_size);
-
-        CollisionEvent *new_node = la_allocate_item(&table->arena, CollisionEvent);
-        new_node->entity_pair = entity_pair;
-
-        CollisionEventList *list = &table->table[index];
-        sl_list_push_back(list, new_node);
-    } else {
-        ASSERT(0);
-    }
-}
-
-b32 entities_intersected_this_frame(struct World *world, EntityID a, EntityID b)
-{
-    b32 result = collision_event_table_find(&world->current_frame_collisions, a, b) != 0;
-
-    return result;
-}
-
-b32 entities_intersected_previous_frame(struct World *world, EntityID a, EntityID b)
-{
-    b32 result = collision_event_table_find(&world->previous_frame_collisions, a, b) != 0;
 
     return result;
 }

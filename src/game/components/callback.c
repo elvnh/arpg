@@ -27,7 +27,7 @@ void add_callback_impl(struct Entity *entity, EventType event_type, CallbackFunc
     comp->callbacks[event_type] = cb;
 }
 
-void try_invoke_callback(Entity *entity, EventData event_data, World *world)
+void send_event(Entity *entity, EventData event_data, World *world)
 {
     ASSERT(event_data.event_type >= 0);
     ASSERT(event_data.event_type < EVENT_COUNT);

@@ -2,6 +2,7 @@
 #define CALLBACK_H
 
 #include "base/typedefs.h"
+#include "collision_policy.h"
 #include "components/collider.h"
 
 /* TODO:
@@ -57,7 +58,7 @@ typedef struct {
 void add_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
     void *user_data, ssize data_size, ssize data_alignment);
 
-void try_invoke_callback(struct Entity *entity, EventData event_data, struct World *world);
+void send_event(struct Entity *entity, EventData event_data, struct World *world);
 
 static inline EventData event_data_death()
 {
@@ -66,7 +67,6 @@ static inline EventData event_data_death()
 
     return result;
 }
-
 
 static inline EventData event_data_entity_collision(struct Entity *entity)
 {
@@ -84,7 +84,7 @@ static inline EventData event_data_tilemap_collision(Vector2i tilemap_coords)
     EventData result = {0};
     result.event_type = EVENT_COLLISION;
 
-    result.as.collision.colliding_with_type = OBJECT_KIND_ENTITIES;
+    result.as.collision.colliding_with_type = OBJECT_KIND_TILES;
     result.as.collision.collidee_as.tilemap_coords = tilemap_coords;
 
     return result;

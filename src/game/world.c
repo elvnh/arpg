@@ -130,7 +130,7 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
 void world_kill_entity(World *world, Entity *entity)
 {
     EventData death_event = event_data_death();
-    try_invoke_callback(entity, death_event, world);
+    send_event(entity, death_event, world);
 
     es_schedule_entity_for_removal(entity);
 }
@@ -354,29 +354,32 @@ static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent
     return result;
 }
 
-static void perform_on_collision_effects(World *world, Entity *a, Entity *b)
+static void perform_entity_vs_entity_collision_effects(World *world, Entity *self, Entity *other)
 {
     // TODO: clean up the way this is handled
 
-    EntityID id_a = es_get_id_of_entity(world->entity_system, a);
-    EntityID id_b = es_get_id_of_entity(world->entity_system, b);
+    EntityID self_id = es_get_id_of_entity(world->entity_system, self);
+    EntityID other_id = es_get_id_of_entity(world->entity_system, other);
 
-    b32 same_faction = a->faction == b->faction;
+    b32 same_faction = self->faction == other->faction;
 
     // TODO: make trigger cooldowns per component
-    if (!trigger_is_on_cooldown(&world->trigger_cooldowns, id_a, id_b)) {
-	if (es_has_component(a, DamageFieldComponent) && !same_faction) {
-	    DamageFieldComponent *dmg_field = es_get_component(a, DamageFieldComponent);
+    if (!trigger_is_on_cooldown(&world->trigger_cooldowns, self_id, other_id)) {
+	if (es_has_component(self, DamageFieldComponent) && !same_faction) {
+	    DamageFieldComponent *dmg_field = es_get_component(self, DamageFieldComponent);
 
-	    try_deal_damage_to_entity(world, b, a, dmg_field->damage);
+	    try_deal_damage_to_entity(world, other, self, dmg_field->damage);
 
 	    if (dmg_field->retrigger_behaviour != RETRIGGER_WHENEVER) {
-		world_add_trigger_cooldown(world, id_a, id_b, dmg_field->retrigger_behaviour);
+		world_add_trigger_cooldown(world, self_id, other_id, dmg_field->retrigger_behaviour);
 	    }
 	}
 
-	// TODO: invoke collision callbacks
-
+	// TODO: should we invoke even when same faction?
+	if (!same_faction) {
+	    EventData event_data = event_data_entity_collision(other);
+	    send_event(self, event_data, world);
+	}
     }
 }
 
@@ -402,8 +405,8 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
         execute_entity_vs_entity_collision_policy(world, a, b, collision, ENTITY_PAIR_INDEX_FIRST);
         execute_entity_vs_entity_collision_policy(world, b, a, collision, ENTITY_PAIR_INDEX_SECOND);
 
-	perform_on_collision_effects(world, a, b);
-	perform_on_collision_effects(world, b, a);
+	perform_entity_vs_entity_collision_effects(world, a, b);
+	perform_entity_vs_entity_collision_effects(world, b, a);
 
         movement_fraction_left = collision.movement_fraction_left;
 
@@ -439,6 +442,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     /* max_tile_y = MIN(max_tile_y, world->tilemap.max_y); */
 
     CollisionInfo closest_collision = { .movement_fraction_left = INFINITY };
+    Vector2i collision_coords = {0};
 
     for (s32 y = min_tile_y - 1; y <= max_tile_y + 1; ++y) {
         for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
@@ -459,6 +463,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
                 if ((collision.collision_status != COLLISION_STATUS_NOT_COLLIDING)
                     && (collision.movement_fraction_left < closest_collision.movement_fraction_left)) {
                     closest_collision = collision;
+		    collision_coords = tile_coords;
                 }
             }
         }
@@ -468,6 +473,9 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
         movement_fraction_left = closest_collision.movement_fraction_left;
 
 	execute_collision_policy_for_tilemap_collision(world, entity, closest_collision);
+
+	EventData event_data = event_data_tilemap_collision(collision_coords);
+	send_event(entity, event_data, world);
     }
 
     return movement_fraction_left;

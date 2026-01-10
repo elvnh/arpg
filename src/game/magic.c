@@ -1,5 +1,7 @@
 #include "magic.h"
 #include "base/utils.h"
+#include "callback.h"
+#include "collision_policy.h"
 #include "components/event_listener.h"
 #include "components/collider.h"
 #include "components/particle.h"
@@ -36,7 +38,6 @@ static Spell spell_fireball()
     spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = RETRIGGER_NEVER;
 
-    // TODO: create explosion particle spawner on fireball death
 /*
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
@@ -50,6 +51,7 @@ static Spell spell_fireball()
 */
     return spell;
 }
+
 
 static Spell spell_spark()
 {
@@ -66,6 +68,7 @@ static Spell spell_spark()
     spell.projectile.projectile_speed = 500.0f;
     spell.projectile.collider_size = v2(32, 32);
     spell.projectile.extra_projectile_count = 5;
+    spell.projectile.projectile_cone_in_radians = deg_to_rad(180);
 
     spell.lifetime = 5.0f;
 
@@ -88,6 +91,77 @@ static Spell spell_spark()
     return spell;
 }
 
+typedef struct {
+    EntityID caster_id;
+} SpellCallbackData;
+
+static void spell_unset_property(Spell *spell, SpellProperties prop)
+{
+    ASSERT(is_pow2(prop));
+
+    spell->properties &= ~prop;
+}
+
+static Spell spell_ice_shard();
+
+static Spell spell_ice_shard_trigger()
+{
+    Spell spell = spell_ice_shard();
+
+    spell_unset_property(&spell, SPELL_PROP_COLLISION_CALLBACK);
+
+    spell.collision_callback = 0;
+    spell.projectile.extra_projectile_count = 5;
+
+    return spell;
+}
+
+static void ice_shard_collision_callback(void *user_data, EventData event_data)
+{
+    SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
+
+    // TODO: separate event types for tiles and entities collisions
+    if (event_data.as.collision.colliding_with_type == OBJECT_KIND_TILES) {
+	return;
+    }
+
+    // TODO: make it so that the projectiles don't get immediately consumed since they spawn
+    // inside enemy body
+
+    Entity *caster = es_get_entity(event_data.world->entity_system, cb_data->caster_id);
+
+    magic_cast_spell(event_data.world, SPELL_SPARK, caster,
+	event_data.self->position, event_data.self->direction);
+}
+
+static Spell spell_ice_shard()
+{
+    Spell spell = {0};
+
+    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
+	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
+	| SPELL_PROP_COLLISION_CALLBACK;
+
+    spell.sprite.texture = get_asset_table()->ice_shard_texture;
+    spell.sprite.size = v2(16, 16);
+    spell.sprite.rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
+
+    spell.projectile.projectile_speed = 300.0f;
+    spell.projectile.collider_size = v2(32, 32);
+
+    DamageRange damage_range = {0};
+    set_damage_value_for_type(&damage_range.low_roll, DMG_TYPE_FIRE, 50);
+    set_damage_value_for_type(&damage_range.high_roll, DMG_TYPE_FIRE, 70);
+
+    spell.damaging.base_damage = damage_range;
+    spell.damaging.retrigger_behaviour = RETRIGGER_NEVER;
+
+    spell.collision_callback = ice_shard_collision_callback;
+
+    return spell;
+}
+
+
 static b32 spell_has_prop(const Spell *spell, SpellProperties prop)
 {
     b32 result = (spell->properties & prop) != 0;
@@ -100,6 +174,8 @@ void magic_initialize(SpellArray *spells)
 {
     spells->spells[SPELL_FIREBALL] = spell_fireball();
     spells->spells[SPELL_SPARK] = spell_spark();
+    spells->spells[SPELL_ICE_SHARD] = spell_ice_shard();
+    spells->spells[SPELL_ICE_SHARD_TRIGGER] = spell_ice_shard_trigger();
 
     magic_set_global_spell_array(spells);
 }
@@ -208,20 +284,15 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
 	particle_spawner_initialize(ps, spell->particle_spawner);
     }
 
-    // TODO: do this properly later
-    ParticleSpawnerConfig particle_config = {
-	.kind = PS_SPAWN_ALL_AT_ONCE,
-	.particle_color = {1, 0.4f, 0, 0.08f},
-	.particle_size = 4.0f,
-	.particle_lifetime = 1.0f,
-	.particle_speed = 30.0f,
-	.total_particles_to_spawn = 500
-    };
+    if (spell_has_prop(spell, SPELL_PROP_COLLISION_CALLBACK)) {
+	es_get_or_add_component(spell_entity, EventListenerComponent);
 
-    es_add_component(spell_entity, EventListenerComponent);
+	ASSERT(spell->collision_callback);
 
-    add_event_callback(spell_entity, EVENT_ENTITY_DIED, spawn_particles_on_death, &particle_config);
-    add_event_callback(spell_entity, EVENT_COLLISION, collision_function, &particle_config);
+	SpellCallbackData data = {0};
+	data.caster_id = es_get_id_of_entity(world->entity_system, caster);
+	add_event_callback(spell_entity, EVENT_COLLISION, spell->collision_callback, &data);
+    }
 
     // Offset so that spells center is 'pos'
     Rectangle bounds = world_get_entity_bounding_box(spell_entity);
@@ -238,7 +309,8 @@ void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Ve
 
     if (spell_count >= 2) {
 	// TODO: make it possible to configure cone size
-	f32 cone = (PI / 2.0f);
+	f32 cone = spell->projectile.projectile_cone_in_radians;
+
 	current_angle -= cone / 2.0f;
 	angle_step_size = cone / ((f32)(spell_count - 1));
     }
@@ -279,6 +351,8 @@ String spell_type_to_string(SpellID id)
     switch (id) {
 	case SPELL_FIREBALL: return str_lit("Fireball");
 	case SPELL_SPARK: return str_lit("Spark");
+	case SPELL_ICE_SHARD: return str_lit("Ice shard");
+	case SPELL_ICE_SHARD_TRIGGER: return str_lit("Ice shard trigger");
 	case SPELL_COUNT: ASSERT(0);
     }
 

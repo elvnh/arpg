@@ -874,6 +874,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
         ASSERT(es_has_component(entity, HealthComponent));
 
 	SpellCasterComponent *spellcaster = es_add_component(entity, SpellCasterComponent);
+	magic_add_to_spellbook(spellcaster, SPELL_ICE_SHARD);
 	magic_add_to_spellbook(spellcaster, SPELL_SPARK);
 	magic_add_to_spellbook(spellcaster, SPELL_FIREBALL);
 

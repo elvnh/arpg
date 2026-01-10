@@ -76,4 +76,10 @@ static inline u64 rotate_left_u64(u64 n, ssize shift_count)
     return result;
 }
 
+static inline f32 deg_to_rad(f32 degrees)
+{
+    f32 result = degrees * (PI / 180.0f);
+    return result;
+}
+
 #endif //MATHS_H

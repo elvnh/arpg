@@ -18,6 +18,8 @@ typedef struct AssetTable {
 
     TextureHandle floor_texture;
     TextureHandle wall_texture;
+
+    TextureHandle ice_shard_texture;
 } AssetTable;
 
 // TODO: make this return a const pointer

@@ -8,12 +8,17 @@
 #include "components/collider.h"
 #include "sprite.h"
 #include "trigger.h"
+#include "callback.h"
+
+// TODO: allow setting cone in which extra projectiles are cast
 
 struct SpellCasterComponent;
 
 typedef enum {
     SPELL_FIREBALL,
     SPELL_SPARK,
+    SPELL_ICE_SHARD,
+    SPELL_ICE_SHARD_TRIGGER,
     SPELL_COUNT,
 } SpellID;
 
@@ -26,6 +31,7 @@ typedef enum {
     SPELL_PROP_DIE_ON_ENTITY_COLLISION = (1 << 5),
     SPELL_PROP_LIFETIME = (1 << 6),
     SPELL_PROP_PARTICLE_SPAWNER = (1 << 7),
+    SPELL_PROP_COLLISION_CALLBACK = (1 << 8),
 } SpellProperties;
 
 typedef struct {
@@ -45,11 +51,15 @@ typedef struct {
 	f32 projectile_speed;
 	Vector2 collider_size;
 	s32 extra_projectile_count;
+	f32 projectile_cone_in_radians;
     } projectile;
 
     f32 lifetime;
 
     ParticleSpawnerConfig particle_spawner;
+
+    CallbackFunction collision_callback;
+
     /*
       damaging
       healing

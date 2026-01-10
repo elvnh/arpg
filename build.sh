@@ -30,7 +30,6 @@ src/game/trigger.c
 src/game/collision.c
 src/game/collision_event.c
 src/game/collision_policy.c
-src/game/components/callback.c
 src/game/animation.c
 src/game/hitsplat.c
 src/game/asset_table.c
@@ -46,6 +45,7 @@ src/game/renderer/render_batch.c
 src/game/ui/ui_core.c
 src/game/ui/ui_builder.c
 src/game/components/particle.c
+src/game/components/event_listener.c
 "
 
 RENDERER_SOURCES="

@@ -1,6 +1,5 @@
 #include "world.h"
 #include "base/linear_arena.h"
-#include "components/callback.h"
 #include "components/collider.h"
 #include "components/component.h"
 #include "components/particle.h"

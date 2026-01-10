@@ -15,7 +15,7 @@
 #include "animation.h"
 #include "entity_state.h"
 #include "magic.h"
-#include "callback.h"
+#include "event_listener.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
@@ -30,7 +30,7 @@
     COMPONENT(AnimationComponent)               \
     COMPONENT(GroundItemComponent)		\
     COMPONENT(SpellCasterComponent)		\
-    COMPONENT(CallbackComponent)		\
+    COMPONENT(EventListenerComponent)		\
     COMPONENT(DamageFieldComponent)		\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type

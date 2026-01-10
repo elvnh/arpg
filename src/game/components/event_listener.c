@@ -1,17 +1,19 @@
-#include "callback.h"
+#include "event_listener.h"
 #include "entity_system.h"
 #include "world.h"
 #include "base/utils.h"
 
 #include <string.h>
 
-void add_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
+// TODO: does this really need to be a separate file?
+
+void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
     void *user_data, ssize data_size, ssize data_alignment)
 {
     ASSERT(event_type >= 0);
     ASSERT(event_type < EVENT_COUNT);
 
-    CallbackComponent *comp = es_get_component(entity, CallbackComponent);
+    EventListenerComponent *comp = es_get_component(entity, EventListenerComponent);
     ASSERT(comp);
 
     Callback *cb = la_allocate_item(&entity->entity_arena, Callback);
@@ -32,7 +34,7 @@ void send_event(Entity *entity, EventData event_data, World *world)
     ASSERT(event_data.event_type >= 0);
     ASSERT(event_data.event_type < EVENT_COUNT);
 
-    CallbackComponent *comp = es_get_component(entity, CallbackComponent);
+    EventListenerComponent *comp = es_get_component(entity, EventListenerComponent);
     event_data.self = entity;
     event_data.world = world;
 

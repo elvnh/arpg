@@ -1,6 +1,6 @@
 #include "magic.h"
 #include "base/utils.h"
-#include "components/callback.h"
+#include "components/event_listener.h"
 #include "components/collider.h"
 #include "components/particle.h"
 #include "game/collision.h"
@@ -218,10 +218,10 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
 	.total_particles_to_spawn = 500
     };
 
-    es_add_component(spell_entity, CallbackComponent);
+    es_add_component(spell_entity, EventListenerComponent);
 
-    //add_callback(spell_entity, EVENT_ENTITY_DIED, spawn_particles_on_death, &particle_config);
-    add_callback(spell_entity, EVENT_COLLISION, collision_function, &particle_config);
+    add_event_callback(spell_entity, EVENT_ENTITY_DIED, spawn_particles_on_death, &particle_config);
+    add_event_callback(spell_entity, EVENT_COLLISION, collision_function, &particle_config);
 
     // Offset so that spells center is 'pos'
     Rectangle bounds = world_get_entity_bounding_box(spell_entity);

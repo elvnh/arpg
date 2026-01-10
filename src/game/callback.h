@@ -5,9 +5,6 @@
 #include "collision_policy.h"
 #include "components/collider.h"
 
-#define add_callback(entity, type, func, data) add_callback_impl(entity, type, func, data, \
-	SIZEOF(*data), ALIGNOF(*data))
-
 struct LinearArena;
 struct World;
 struct Entity;
@@ -44,14 +41,6 @@ typedef struct Callback {
     struct Callback *next;
 } Callback;
 
-typedef struct {
-    Callback *callbacks[EVENT_COUNT];
-} CallbackComponent;
-
-void send_event(struct Entity *entity, EventData event_data, struct World *world);
-void add_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
-    void *user_data, ssize data_size, ssize data_alignment);
-
 static inline EventData event_data_death()
 {
     EventData result = {0};
@@ -81,5 +70,6 @@ static inline EventData event_data_tilemap_collision(Vector2i tilemap_coords)
 
     return result;
 }
+
 
 #endif //CALLBACK_H

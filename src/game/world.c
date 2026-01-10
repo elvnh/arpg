@@ -472,7 +472,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     if (closest_collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) {
         movement_fraction_left = closest_collision.movement_fraction_left;
 
-	execute_collision_policy_for_tilemap_collision(world, entity, closest_collision);
+	execute_entity_vs_tilemap_collision_policy(world, entity, closest_collision);
 
 	EventData event_data = event_data_tilemap_collision(collision_coords);
 	send_event(entity, event_data, world);
@@ -865,8 +865,8 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
         ColliderComponent *collider = es_add_component(entity, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
-	set_collision_policy_vs_entities(collider, COLLIDE_EFFECT_STOP);
-	set_collision_policy_vs_tilemaps(collider, COLLIDE_EFFECT_STOP);
+	set_collision_policy_vs_entities(collider, COLLISION_POLICY_STOP);
+	set_collision_policy_vs_tilemaps(collider, COLLISION_POLICY_STOP);
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->health.hitpoints = 100000;

@@ -1,14 +1,14 @@
 #include "collision_policy.h"
 #include "world.h"
 
-static void execute_collision_policy(World *world, Entity *entity, CollisionPolicy behaviour,
+static void execute_collision_policy(World *world, Entity *entity, CollisionPolicy policy,
     CollisionInfo collision, EntityPairIndex collision_pair_index, b32 should_block)
 {
     // NOTE: This function handles both entity vs tilemap and entity vs entity collisions.
     // If the collision is vs a tile, pass ENTITY_PAIR_INDEX_FIRST as collision_pair_index.
 
-    switch (behaviour.effect) {
-	case COLLIDE_EFFECT_STOP: {
+    switch (policy) {
+	case COLLISION_POLICY_STOP: {
 	    if (should_block) {
 		if (collision_pair_index == ENTITY_PAIR_INDEX_FIRST) {
 		    entity->position = collision.new_position_a;
@@ -21,7 +21,7 @@ static void execute_collision_policy(World *world, Entity *entity, CollisionPoli
 	    }
 	} break;
 
-	case COLLIDE_EFFECT_BOUNCE: {
+	case COLLISION_POLICY_BOUNCE: {
 	    if (should_block) {
 		if (collision_pair_index == ENTITY_PAIR_INDEX_FIRST) {
 		    entity->position = collision.new_position_a;
@@ -33,12 +33,12 @@ static void execute_collision_policy(World *world, Entity *entity, CollisionPoli
 	    }
 	} break;
 
-	case COLLIDE_EFFECT_DIE: {
+	case COLLISION_POLICY_DIE: {
 	    world_kill_entity(world, entity);
 	} break;
 
 
-	case COLLIDE_EFFECT_PASS_THROUGH: {
+	case COLLISION_POLICY_PASS_THROUGH: {
 
 	} break;
 
@@ -46,16 +46,16 @@ static void execute_collision_policy(World *world, Entity *entity, CollisionPoli
     }
 }
 
-void execute_collision_policy_for_tilemap_collision(World *world, Entity *entity, CollisionInfo collision)
+void execute_entity_vs_tilemap_collision_policy(World *world, Entity *entity, CollisionInfo collision)
 {
     ColliderComponent *collider = es_get_component(entity, ColliderComponent);
     ASSERT(collider);
 
-    CollisionPolicy behaviour = collider->tilemap_collision_policy;
+    CollisionPolicy policy = collider->tilemap_collision_policy;
 
-    b32 should_block = behaviour.effect != COLLIDE_EFFECT_PASS_THROUGH;
+    b32 should_block = policy != COLLISION_POLICY_PASS_THROUGH;
 
-    execute_collision_policy(world, entity, behaviour, collision, ENTITY_PAIR_INDEX_FIRST, should_block);
+    execute_collision_policy(world, entity, policy, collision, ENTITY_PAIR_INDEX_FIRST, should_block);
 }
 
 void execute_entity_vs_entity_collision_policy(World *world, Entity *entity, Entity *other,
@@ -67,16 +67,16 @@ void execute_entity_vs_entity_collision_policy(World *world, Entity *entity, Ent
     ColliderComponent *collider = es_get_component(entity, ColliderComponent);
     ColliderComponent *other_collider = es_get_component(other, ColliderComponent);
 
-    CollisionPolicy our_behaviour_for_them =
+    CollisionPolicy our_policy_for_them =
 	collider->per_faction_collision_policies[other->faction];
-    CollisionPolicy their_behaviour_for_us =
+    CollisionPolicy their_policy_for_us =
 	other_collider->per_faction_collision_policies[entity->faction];
 
-    b32 should_block = (our_behaviour_for_them.effect != COLLIDE_EFFECT_PASS_THROUGH)
-	&& (their_behaviour_for_us.effect != COLLIDE_EFFECT_PASS_THROUGH);
+    b32 should_block = (our_policy_for_them != COLLISION_POLICY_PASS_THROUGH)
+	&& (their_policy_for_us != COLLISION_POLICY_PASS_THROUGH);
 
     // NOTE: we only execute OUR behaviour for THEM, this function is expected to be called
     // twice for each collision pair
-    execute_collision_policy(world, entity, our_behaviour_for_them, collision,
+    execute_collision_policy(world, entity, our_policy_for_them, collision,
 	collision_index, should_block);
 }

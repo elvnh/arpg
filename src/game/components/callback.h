@@ -5,12 +5,6 @@
 #include "collision_policy.h"
 #include "components/collider.h"
 
-/* TODO:
-   - Nicer API, don't require user to create EventData themselves
-   - Callbacks when reaching animation frame
-   - Allow creating callbacks with no user data
-   - Report collision events
- */
 #define add_callback(entity, type, func, data) add_callback_impl(entity, type, func, data, \
 	SIZEOF(*data), ALIGNOF(*data))
 
@@ -54,11 +48,9 @@ typedef struct {
     Callback *callbacks[EVENT_COUNT];
 } CallbackComponent;
 
-// NOTE: arena should always be the entity arena so that the callbacks get freed when entity destroyed
+void send_event(struct Entity *entity, EventData event_data, struct World *world);
 void add_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
     void *user_data, ssize data_size, ssize data_alignment);
-
-void send_event(struct Entity *entity, EventData event_data, struct World *world);
 
 static inline EventData event_data_death()
 {

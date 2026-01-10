@@ -173,7 +173,7 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
     }
 
     if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
-	set_collision_policy_vs_tilemaps(spell_collider, COLLIDE_EFFECT_BOUNCE);
+	set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_BOUNCE);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
@@ -189,11 +189,11 @@ static void cast_single_spell(struct World *world, const Spell *spell, struct En
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
-	set_collision_policy_vs_hostile_faction(spell_collider, COLLIDE_EFFECT_DIE, caster->faction);
+	set_collision_policy_vs_hostile_faction(spell_collider, COLLISION_POLICY_DIE, caster->faction);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_WALL_COLLISION)) {
-	set_collision_policy_vs_tilemaps(spell_collider, COLLIDE_EFFECT_DIE);
+	set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_DIE);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_LIFETIME)) {

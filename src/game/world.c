@@ -308,7 +308,7 @@ static void swap_and_reset_collision_tables(World *world)
     }
 }
 
-static void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentBitset component,
+void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentBitset component,
     RetriggerBehaviour retrigger_behaviour)
 {
     add_trigger_cooldown(&world->trigger_cooldowns, a, b, component,
@@ -356,7 +356,8 @@ static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent
     return result;
 }
 
-static void perform_entity_vs_entity_collision_effects(World *world, Entity *self, Entity *other)
+// TODO: move to trigger file
+static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *self, Entity *other)
 {
     EntityID self_id = es_get_id_of_entity(world->entity_system, self);
     EntityID other_id = es_get_id_of_entity(world->entity_system, other);
@@ -374,6 +375,7 @@ static void perform_entity_vs_entity_collision_effects(World *world, Entity *sel
 
 	    try_deal_damage_to_entity(world, other, self, dmg_field->damage);
 
+	    // TODO: make add_trigger_cooldown do this check
 	    if (dmg_field->retrigger_behaviour != RETRIGGER_WHENEVER) {
 		world_add_trigger_cooldown(world, self_id, other_id,
 		    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
@@ -400,20 +402,27 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
     Rectangle rect_b = get_entity_collider_rectangle(b, collider_b);
 
     CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
-        a->velocity, b->velocity, dt);
+	a->velocity, b->velocity, dt);
 
     if ((collision.collision_status != COLLISION_STATUS_NOT_COLLIDING)
 	&& !entities_intersected_this_frame(world, id_a, id_b)) {
+	b32 neither_collider_on_cooldown =
+	    !trigger_is_on_cooldown(&world->trigger_cooldowns, id_a, id_b,
+		component_flag(ColliderComponent))
+	    && !trigger_is_on_cooldown(&world->trigger_cooldowns, id_b, id_a,
+		component_flag(ColliderComponent));
 
-        execute_entity_vs_entity_collision_policy(world, a, b, collision, ENTITY_PAIR_INDEX_FIRST);
-        execute_entity_vs_entity_collision_policy(world, b, a, collision, ENTITY_PAIR_INDEX_SECOND);
+	if (neither_collider_on_cooldown) {
+	    execute_entity_vs_entity_collision_policy(world, a, b, collision, ENTITY_PAIR_INDEX_FIRST);
+	    execute_entity_vs_entity_collision_policy(world, b, a, collision, ENTITY_PAIR_INDEX_SECOND);
 
-	perform_entity_vs_entity_collision_effects(world, a, b);
-	perform_entity_vs_entity_collision_effects(world, b, a);
+	    invoke_entity_vs_entity_collision_triggers(world, a, b);
+	    invoke_entity_vs_entity_collision_triggers(world, b, a);
 
-        movement_fraction_left = collision.movement_fraction_left;
+	    movement_fraction_left = collision.movement_fraction_left;
+	}
 
-        collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);
+	collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);
     }
 
     return movement_fraction_left;

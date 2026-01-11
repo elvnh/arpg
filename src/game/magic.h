@@ -31,7 +31,7 @@ typedef enum {
     SPELL_PROP_DIE_ON_ENTITY_COLLISION = (1 << 5),
     SPELL_PROP_LIFETIME = (1 << 6),
     SPELL_PROP_PARTICLE_SPAWNER = (1 << 7),
-    SPELL_PROP_COLLISION_CALLBACK = (1 << 8),
+    SPELL_PROP_HOSTILE_COLLISION_CALLBACK = (1 << 8),
 } SpellProperties;
 
 typedef struct {

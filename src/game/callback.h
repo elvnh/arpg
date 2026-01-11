@@ -10,7 +10,8 @@ struct World;
 struct Entity;
 
 typedef enum {
-    EVENT_COLLISION,
+    EVENT_HOSTILE_COLLISION,
+    EVENT_TILE_COLLISION,
     EVENT_ENTITY_DIED,
     EVENT_COUNT,
 } EventType;
@@ -23,13 +24,12 @@ typedef struct {
 
     union {
 	struct {
-	    ObjectKind colliding_with_type;
+	    EntityID collided_with;
+	} hostile_collision;
 
-	    union {
-		struct Entity *entity;
-		Vector2i tilemap_coords;
-	    } collidee_as;
-	} collision;
+	struct {
+	    Vector2i tile_coords;
+	} tile_collision;
     } as;
 } EventData;
 
@@ -49,13 +49,12 @@ static inline EventData event_data_death()
     return result;
 }
 
-static inline EventData event_data_entity_collision(struct Entity *entity)
+static inline EventData event_data_hostile_collision(EntityID entity_id)
 {
     EventData result = {0};
-    result.event_type = EVENT_COLLISION;
+    result.event_type = EVENT_HOSTILE_COLLISION;
 
-    result.as.collision.colliding_with_type = OBJECT_KIND_ENTITIES;
-    result.as.collision.collidee_as.entity = entity;
+    result.as.hostile_collision.collided_with = entity_id;
 
     return result;
 }
@@ -63,10 +62,9 @@ static inline EventData event_data_entity_collision(struct Entity *entity)
 static inline EventData event_data_tilemap_collision(Vector2i tilemap_coords)
 {
     EventData result = {0};
-    result.event_type = EVENT_COLLISION;
+    result.event_type = EVENT_TILE_COLLISION;
 
-    result.as.collision.colliding_with_type = OBJECT_KIND_TILES;
-    result.as.collision.collidee_as.tilemap_coords = tilemap_coords;
+    result.as.tile_collision.tile_coords = tilemap_coords;
 
     return result;
 }

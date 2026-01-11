@@ -102,14 +102,14 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	particle_spawner_initialize(ps, spell->particle_spawner);
     }
 
-    if (spell_has_prop(spell, SPELL_PROP_COLLISION_CALLBACK)) {
+    if (spell_has_prop(spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK)) {
 	es_get_or_add_component(spell_entity, EventListenerComponent);
 
 	ASSERT(spell->collision_callback);
 
 	SpellCallbackData data = {0};
 	data.caster_id = es_get_id_of_entity(world->entity_system, caster);
-	add_event_callback(spell_entity, EVENT_COLLISION, spell->collision_callback, &data);
+	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, spell->collision_callback, &data);
     }
 
     // Offset so that spells center is 'pos'
@@ -242,13 +242,9 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
 {
     SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
 
-    // TODO: separate event types for tiles and entities collisions
-    if (event_data.as.collision.colliding_with_type == OBJECT_KIND_TILES) {
-	return;
-    }
-
     Entity *caster = es_get_entity(event_data.world->entity_system, cb_data->caster_id);
-    Entity *collide_target = event_data.as.collision.collidee_as.entity;
+    Entity *collide_target = es_get_entity(event_data.world->entity_system,
+	event_data.as.hostile_collision.collided_with);
 
     // TODO: should this kind of behaviour be encoded in a forking property of spells?
 
@@ -263,7 +259,7 @@ static Spell spell_ice_shard()
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	| SPELL_PROP_COLLISION_CALLBACK;
+	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK;
 
     spell.sprite.texture = get_asset_table()->ice_shard_texture;
     spell.sprite.size = v2(16, 16);
@@ -288,7 +284,7 @@ static Spell spell_ice_shard_trigger()
 {
     Spell spell = spell_ice_shard();
 
-    spell_unset_property(&spell, SPELL_PROP_COLLISION_CALLBACK);
+    spell_unset_property(&spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK);
 
     spell.collision_callback = 0;
     spell.projectile.extra_projectile_count = 10;

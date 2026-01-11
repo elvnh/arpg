@@ -381,8 +381,8 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 		    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
 	    }
 
-	    // TODO: should we invoke even when same faction?
-	    EventData event_data = event_data_entity_collision(other);
+	    // TODO: This shouldn't be tied to a specific component
+	    EventData event_data = event_data_hostile_collision(other_id);
 	    send_event(self, event_data, world);
 	}
     }

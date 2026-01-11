@@ -357,7 +357,7 @@ static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent
     return result;
 }
 
-// TODO: move to trigger file
+// TODO: move to trigger file?
 static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *self, Entity *other)
 {
     EntityID self_id = es_get_id_of_entity(world->entity_system, self);
@@ -366,23 +366,13 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 
     b32 same_faction = self->faction == other->faction;
 
-    // TODO: make this check simpler
-    if (es_has_component(self, DamageFieldComponent) &&
-	!trigger_is_on_cooldown(&world->trigger_cooldowns, self_id, other_id,
-	    component_flag(DamageFieldComponent))) {
+    if (should_invoke_trigger(world, self, other, DamageFieldComponent) && !same_faction) {
+	DamageFieldComponent *dmg_field = es_get_component(self, DamageFieldComponent);
 
-	if (!same_faction) {
-	    DamageFieldComponent *dmg_field = es_get_component(self, DamageFieldComponent);
+	try_deal_damage_to_entity(world, other, self, dmg_field->damage);
 
-	    try_deal_damage_to_entity(world, other, self, dmg_field->damage);
-
-	    // TODO: make add_trigger_cooldown do this check
-	    if (dmg_field->retrigger_behaviour != RETRIGGER_WHENEVER) {
-		world_add_trigger_cooldown(world, self_id, other_id,
-		    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
-	    }
-
-	}
+	world_add_trigger_cooldown(world, self_id, other_id,
+	    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
     }
 }
 

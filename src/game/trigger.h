@@ -9,8 +9,17 @@
 // For now, trigger cooldowns are per ordered entity pair, but it should be easy
 // to encode additional information, so that for example cooldowns can be per component too.
 
+#define should_invoke_trigger(world, entity, other, component)	\
+    es_has_component(entity, component)				\
+    && !trigger_is_on_cooldown(					\
+	&world->trigger_cooldowns,				\
+	es_get_id_of_entity(world->entity_system, entity),	\
+	es_get_id_of_entity(world->entity_system, other),	\
+	component_flag(component))
+
 struct FreeListArena;
 struct EntitySystem;
+struct Entity;
 struct World;
 
 // TODO: retrigger after x amount of time

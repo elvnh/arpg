@@ -43,7 +43,8 @@ void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID o
 {
     ASSERT(!entity_id_equal(self, other));
 
-    if (!find_trigger_cooldown(table, self, other, component)) {
+    if ((retrigger_behaviour != RETRIGGER_WHENEVER)
+	&& !find_trigger_cooldown(table, self, other, component)) {
         TriggerCooldown *cooldown = list_head(&table->free_node_list);
 
         if (!cooldown) {

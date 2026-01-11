@@ -783,7 +783,10 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
                             && entity_intersects_wall
                             && (entity->position.y > tile_rect.position.y);
 
-                        if (entity_is_behind_wall && es_has_component(entity, SpriteComponent)) {
+			b32 entity_is_visible = es_has_component(entity, AnimationComponent)
+			    || es_has_component(entity, SpriteComponent);
+
+                        if (entity_is_behind_wall && entity_is_visible) {
                             tile_sprite_color.a = 0.5f;
                             break;
                         }

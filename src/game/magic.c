@@ -207,7 +207,7 @@ static Spell spell_spark()
     // TODO: erratic movement
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
-	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME/* | SPELL_PROP_PARTICLE_SPAWNER*/;
+	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
 
     spell.sprite.texture = get_asset_table()->spark_texture;
     spell.sprite.size = v2(32, 32);
@@ -223,7 +223,6 @@ static Spell spell_spark()
     set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
     spell.damaging.retrigger_behaviour = RETRIGGER_AFTER_NON_CONTACT;
 
-/*
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {1.0f, 1.0f, 0, 0.15f},
@@ -233,7 +232,6 @@ static Spell spell_spark()
 	.infinite = true,
 	.particles_per_second = 40
     };
-*/
 
     return spell;
 }
@@ -259,7 +257,7 @@ static Spell spell_ice_shard()
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK;
+	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK | SPELL_PROP_PARTICLE_SPAWNER;
 
     spell.sprite.texture = get_asset_table()->ice_shard_texture;
     spell.sprite.size = v2(16, 16);
@@ -276,6 +274,18 @@ static Spell spell_ice_shard()
     spell.damaging.retrigger_behaviour = RETRIGGER_NEVER;
 
     spell.collision_callback = ice_shard_collision_callback;
+
+
+    spell.particle_spawner = (ParticleSpawnerConfig) {
+	.kind = PS_SPAWN_DISTRIBUTED,
+	.particle_color = {0.0f, 0.5f, 1.0f, 0.5f},
+	.particle_size = 3.0f,
+	.particle_lifetime = 0.5f,
+	.particle_speed = 100.0f,
+	.infinite = true,
+	.particles_per_second = 40
+    };
+
 
     return spell;
 }

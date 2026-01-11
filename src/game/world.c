@@ -1,5 +1,6 @@
 #include "world.h"
 #include "base/linear_arena.h"
+#include "collision_event.h"
 #include "components/collider.h"
 #include "components/component.h"
 #include "components/particle.h"
@@ -381,9 +382,6 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 		    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
 	    }
 
-	    // TODO: This shouldn't be tied to a specific component
-	    EventData event_data = event_data_hostile_collision(other_id);
-	    send_event(self, event_data, world);
 	}
     }
 }
@@ -420,6 +418,12 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
 	    invoke_entity_vs_entity_collision_triggers(world, b, a);
 
 	    movement_fraction_left = collision.movement_fraction_left;
+	}
+
+	if (!entities_intersected_previous_frame(world, id_a, id_b)) {
+	    // Only send collision events on first contact
+	    EventData event_data = event_data_hostile_collision(id_b);
+	    send_event(a, event_data, world);
 	}
 
 	collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);

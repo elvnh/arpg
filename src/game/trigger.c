@@ -7,14 +7,15 @@
 
 static inline ssize trigger_cooldown_hashed_index(TriggerCooldownTable *table, EntityID self, EntityID other)
 {
-    // TODO: better hash, use something non-commutative since entity pairs are ordered
+    // TODO: better hash
     u64 hash = entity_id_hash(self) ^ entity_id_hash(other);
     ssize result = mod_index(hash, ARRAY_COUNT(table->table));
 
     return result;
 }
 
-static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other)
+static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
+    ComponentBitset component_id)
 {
     ASSERT(!entity_id_equal(self, other));
 
@@ -24,8 +25,11 @@ static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, Entit
 
     TriggerCooldown *current;
     for (current = list_head(list); current; current = list_next(current)) {
-        if (entity_id_equal(current->owning_entity, self)
-            && entity_id_equal(current->collided_entity, other)) {
+	b32 is_match = entity_id_equal(current->owning_entity, self)
+            && entity_id_equal(current->collided_entity, other)
+	    && (current->owning_component == component_id);
+
+        if (is_match) {
             break;
         }
     }
@@ -33,12 +37,13 @@ static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, Entit
     return current;
 }
 
+// TODO: allow setting multiple components
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    RetriggerBehaviour retrigger_behaviour, FreeListArena *arena)
+    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, FreeListArena *arena)
 {
     ASSERT(!entity_id_equal(self, other));
 
-    if (!find_trigger_cooldown(table, self, other)) {
+    if (!find_trigger_cooldown(table, self, other, component)) {
         TriggerCooldown *cooldown = list_head(&table->free_node_list);
 
         if (!cooldown) {
@@ -51,6 +56,7 @@ void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID o
         cooldown->owning_entity = self;
         cooldown->collided_entity = other;
 	cooldown->retrigger_behaviour = retrigger_behaviour;
+	cooldown->owning_component = component;
 
         ssize index = trigger_cooldown_hashed_index(table, self, other);
         list_push_back(&table->table[index], cooldown);
@@ -90,9 +96,9 @@ void remove_expired_trigger_cooldowns(World *world, EntitySystem *es)
     }
 }
 
-b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b)
+b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentBitset component)
 {
-    b32 result = find_trigger_cooldown(table, a, b) != 0;
+    b32 result = find_trigger_cooldown(table, a, b, component) != 0;
 
     return result;
 }

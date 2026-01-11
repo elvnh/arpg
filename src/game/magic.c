@@ -1,4 +1,5 @@
 #include "magic.h"
+#include "base/maths.h"
 #include "base/utils.h"
 #include "callback.h"
 #include "collision_policy.h"
@@ -68,7 +69,7 @@ static Spell spell_spark()
     spell.projectile.projectile_speed = 500.0f;
     spell.projectile.collider_size = v2(32, 32);
     spell.projectile.extra_projectile_count = 5;
-    spell.projectile.projectile_cone_in_radians = deg_to_rad(180);
+    spell.projectile.projectile_cone_in_radians = deg_to_rad(90);
 
     spell.lifetime = 5.0f;
 
@@ -111,7 +112,8 @@ static Spell spell_ice_shard_trigger()
     spell_unset_property(&spell, SPELL_PROP_COLLISION_CALLBACK);
 
     spell.collision_callback = 0;
-    spell.projectile.extra_projectile_count = 5;
+    spell.projectile.extra_projectile_count = 8;
+    spell.projectile.projectile_cone_in_radians = deg_to_rad(180);
 
     return spell;
 }
@@ -130,7 +132,10 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
 
     Entity *caster = es_get_entity(event_data.world->entity_system, cb_data->caster_id);
 
-    magic_cast_spell(event_data.world, SPELL_SPARK, caster,
+    // TODO: we know which entity we just collided with, pass it along to magic_cast_spell
+    // and have that function add a trigger cooldown between that entity and these spells
+
+    magic_cast_spell(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster,
 	event_data.self->position, event_data.self->direction);
 }
 

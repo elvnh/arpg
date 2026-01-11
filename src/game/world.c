@@ -3,6 +3,7 @@
 #include "components/collider.h"
 #include "components/component.h"
 #include "components/particle.h"
+#include "entity_id.h"
 #include "equipment.h"
 #include "game.h"
 #include "animation.h"
@@ -307,9 +308,11 @@ static void swap_and_reset_collision_tables(World *world)
     }
 }
 
-void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, RetriggerBehaviour retrigger_behaviour)
+static void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentBitset component,
+    RetriggerBehaviour retrigger_behaviour)
 {
-    add_trigger_cooldown(&world->trigger_cooldowns, a, b, retrigger_behaviour, &world->world_arena);
+    add_trigger_cooldown(&world->trigger_cooldowns, a, b, component,
+	retrigger_behaviour, &world->world_arena);
 }
 
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
@@ -355,27 +358,28 @@ static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent
 
 static void perform_entity_vs_entity_collision_effects(World *world, Entity *self, Entity *other)
 {
-    // TODO: clean up the way this is handled
-
     EntityID self_id = es_get_id_of_entity(world->entity_system, self);
     EntityID other_id = es_get_id_of_entity(world->entity_system, other);
+    ASSERT(!entity_id_equal(self_id, other_id));
 
     b32 same_faction = self->faction == other->faction;
 
-    // TODO: make trigger cooldowns per component
-    if (!trigger_is_on_cooldown(&world->trigger_cooldowns, self_id, other_id)) {
-	if (es_has_component(self, DamageFieldComponent) && !same_faction) {
+    // TODO: make this check simpler
+    if (es_has_component(self, DamageFieldComponent) &&
+	!trigger_is_on_cooldown(&world->trigger_cooldowns, self_id, other_id,
+	    component_flag(DamageFieldComponent))) {
+
+	if (!same_faction) {
 	    DamageFieldComponent *dmg_field = es_get_component(self, DamageFieldComponent);
 
 	    try_deal_damage_to_entity(world, other, self, dmg_field->damage);
 
 	    if (dmg_field->retrigger_behaviour != RETRIGGER_WHENEVER) {
-		world_add_trigger_cooldown(world, self_id, other_id, dmg_field->retrigger_behaviour);
+		world_add_trigger_cooldown(world, self_id, other_id,
+		    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
 	    }
-	}
 
-	// TODO: should we invoke even when same faction?
-	if (!same_faction) {
+	    // TODO: should we invoke even when same faction?
 	    EventData event_data = event_data_entity_collision(other);
 	    send_event(self, event_data, world);
 	}

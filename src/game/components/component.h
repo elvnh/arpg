@@ -3,6 +3,7 @@
 
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "component_id.h"
 #include "collision_policy.h"
 #include "damage.h"
 #include "item.h"
@@ -35,11 +36,6 @@
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
-#define ES_IMPL_COMP_ENUM_BIT_VALUE(e) ((u64)1 << (e))
-
-#define component_flag(type) ES_IMPL_COMP_ENUM_BIT_VALUE(ES_IMPL_COMP_ENUM_NAME(type))
-
-typedef u64 ComponentBitset;
 
 typedef enum {
     #define COMPONENT(type) ES_IMPL_COMP_ENUM_NAME(type),

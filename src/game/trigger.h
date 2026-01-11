@@ -2,6 +2,7 @@
 #define TRIGGER_H
 
 #include "entity_id.h"
+#include "components/component_id.h"
 
 // A trigger is any interaction between two entities. If this trigger needs a cooldown
 // before it can be retriggered, a cooldown can be inserted into a table.
@@ -23,8 +24,11 @@ typedef enum {
 typedef struct TriggerCooldown {
     struct TriggerCooldown *next;
     struct TriggerCooldown *prev;
+
     EntityID owning_entity; // TODO: use ordered entity pair here
     EntityID collided_entity;
+    ComponentBitset owning_component;
+
     RetriggerBehaviour retrigger_behaviour;
 } TriggerCooldown;
 
@@ -39,8 +43,8 @@ typedef struct {
 } TriggerCooldownTable;
 
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    RetriggerBehaviour retrigger_behaviour, struct FreeListArena *arena);
+    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, struct FreeListArena *arena);
 void remove_expired_trigger_cooldowns(struct World *world, struct EntitySystem *es);
-b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b);
+b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentBitset component);
 
 #endif //TRIGGER_H

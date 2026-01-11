@@ -749,7 +749,8 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
                     rb_push_sprite(rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
                         get_asset_table()->texture_shader, layer);
                 } else if (tile->type == TILE_WALL) {
-                    // NOTE: Walls are rendered in two segments and are made transparent if entities are behind them
+                    // NOTE: Walls are rendered in two segments and are made transparent if entities
+		    // are behind them
                     RGBA32 tile_sprite_color = RGBA32_WHITE;
 
                     Tile *tile_above = tilemap_get_tile(&world->tilemap,
@@ -782,7 +783,7 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
                             && entity_intersects_wall
                             && (entity->position.y > tile_rect.position.y);
 
-                        if (entity_is_behind_wall) {
+                        if (entity_is_behind_wall && es_has_component(entity, SpriteComponent)) {
                             tile_sprite_color.a = 0.5f;
                             break;
                         }

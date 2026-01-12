@@ -410,10 +410,12 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
 	    movement_fraction_left = collision.movement_fraction_left;
 	}
 
+	// Only send collision events on first contact
 	if (!entities_intersected_previous_frame(world, id_a, id_b)) {
-	    // Only send collision events on first contact
-	    EventData event_data = event_data_hostile_collision(id_b);
-	    send_event(a, event_data, world);
+	    if (a->faction != b->faction) {
+		EventData event_data = event_data_hostile_collision(id_b);
+		send_event(a, event_data, world);
+	    }
 	}
 
 	collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);

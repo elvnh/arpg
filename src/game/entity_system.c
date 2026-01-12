@@ -34,7 +34,6 @@ static EntitySlot *es_get_entity_slot(Entity *entity)
     return result;
 }
 
-
 static EntitySlot *es_get_entity_slot_by_id(EntitySystem *es, EntityID id)
 {
     ASSERT(id.slot_id <= LAST_VALID_ENTITY_INDEX);
@@ -178,6 +177,7 @@ EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction, FreeListA
     EntityID id = create_entity(es);
     Entity *entity = es_get_entity(es, id);
 
+    // TODO: instead of creating a new arena each time entity is created, just reset existing one
     entity->entity_arena = la_create(fl_allocator(parent_arena), ENTITY_ARENA_SIZE);
 
     entity->faction = faction;

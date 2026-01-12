@@ -34,11 +34,12 @@ typedef enum {
 } NumericModifierType;
 
 // TODO: move elsewhere
-// NOTE: these are broad categories of all mod types, not specific modifier types on items for example
-typedef enum ModifierKind {
-    MOD_CATEGORY_DAMAGE,
-    MOD_CATEGORY_RESISTANCE,
-} ModifierCategory;
+// TODO: once stats are implemented, stat enum could be used instead
+// Represents which stat is affected by a modifier
+typedef enum {
+    MOD_TARGET_DAMAGE,
+    MOD_TARGET_RESISTANCE,
+} ModifierTarget;
 
 // TODO: use this in modifiers too
 typedef struct {
@@ -61,7 +62,7 @@ typedef struct {
 } DamageInstance;
 
 DamageValues   get_numeric_modifiers_of_type(struct Entity *entity, NumericModifierType type,
-					     ModifierCategory mod_category, struct ItemSystem *item_sys);
+					     ModifierTarget mod_category, struct ItemSystem *item_sys);
 DamageValues   calculate_damage_dealt(DamageValues base_damage, struct Entity *entity,
 				      struct ItemSystem *item_sys);
 DamageValues   calculate_resistances_after_boosts(struct Entity *entity, struct ItemSystem *item_sys);

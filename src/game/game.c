@@ -5,6 +5,7 @@
 #include "item_system.h"
 #include "renderer/render_batch.h"
 #include "input.h"
+#include "renderer/render_key.h"
 #include "world.h"
 
 static void game_update(Game *game, const FrameData *frame_data, LinearArena *frame_arena)
@@ -40,7 +41,8 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
 	ASSERT(depth < ARRAY_COUNT(colors));
 
 	RGBA32 color = colors[depth];
-	rb_push_outlined_rect(rb, arena, tree->area, color, 4.0f, get_asset_table()->shape_shader, 2);
+	rb_push_outlined_rect(rb, arena, tree->area, color, 4.0f, get_asset_table()->shape_shader,
+	    RENDER_LAYER_OVERLAY);
     }
 }
 
@@ -149,10 +151,11 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
 
     ui_spacing(ui, 8);
 
-    ui_checkbox(ui, str_lit("Render quad tree"),     &game->debug_state.quad_tree_overlay);
-    ui_checkbox(ui, str_lit("Render colliders"),     &game->debug_state.render_colliders);
-    ui_checkbox(ui, str_lit("Render origin"),        &game->debug_state.render_origin);
-    ui_checkbox(ui, str_lit("Render entity bounds"), &game->debug_state.render_entity_bounds);
+    ui_checkbox(ui, str_lit("Render quad tree"),         &game->debug_state.quad_tree_overlay);
+    ui_checkbox(ui, str_lit("Render colliders"),         &game->debug_state.render_colliders);
+    ui_checkbox(ui, str_lit("Render origin"),            &game->debug_state.render_origin);
+    ui_checkbox(ui, str_lit("Render entity bounds"),     &game->debug_state.render_entity_bounds);
+    ui_checkbox(ui, str_lit("Render entity velocity"),   &game->debug_state.render_entity_velocity);
 
     ui_spacing(ui, 8);
 

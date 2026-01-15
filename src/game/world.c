@@ -27,6 +27,7 @@
 #include "modifier.h"
 #include "quad_tree.h"
 #include "renderer/render_batch.h"
+#include "renderer/render_key.h"
 #include "tilemap.h"
 #include "asset_table.h"
 #include "trigger.h"
@@ -295,6 +296,13 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
         rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
 	    get_asset_table()->shape_shader, RENDER_LAYER_ENTITIES);
     }
+
+    if (debug_state->render_entity_velocity) {
+	Vector2 dir = v2_norm(entity->velocity);
+
+	rb_push_line(rb, scratch, entity->position, v2_add(entity->position, v2_mul_s(dir, 20.0f)),
+	    RGBA32_GREEN, 2.0f, get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
+    }
 }
 
 static void swap_and_reset_collision_tables(World *world)
@@ -540,9 +548,13 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
             Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(a->velocity, movement_fraction_left), dt);
             a->position = v2_add(a->position, to_move_this_frame);
 
-            if (v2_mag(a->velocity) > 0.5f) {
+	    f32 mag = v2_mag(a->velocity);
+
+            if (mag > 0.5f) {
                 a->direction = v2_norm(a->velocity);
-            }
+            } else if (mag < 0.01f) {
+		a->velocity = V2_ZERO;
+	    }
         }
     }
 }

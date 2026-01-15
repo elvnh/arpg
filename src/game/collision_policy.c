@@ -63,6 +63,10 @@ void execute_entity_vs_entity_collision_policy(World *world, Entity *entity, Ent
 {
     ASSERT(entity);
     ASSERT(other);
+    ASSERT(entity->faction >= 0);
+    ASSERT(entity->faction < FACTION_COUNT);
+    ASSERT(other->faction >= 0);
+    ASSERT(other->faction < FACTION_COUNT);
 
     ColliderComponent *collider = es_get_component(entity, ColliderComponent);
     ColliderComponent *other_collider = es_get_component(other, ColliderComponent);

@@ -312,7 +312,7 @@ static Spell spell_ice_shard()
 	.particle_color = {0.0f, 0.5f, 1.0f, 0.5f},
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.5f,
-	.particle_speed = 100.0f,
+	.particle_speed = 50.0f,
 	.infinite = true,
 	.particles_per_second = 40
     };

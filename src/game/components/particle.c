@@ -38,8 +38,8 @@ void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 
     for (s32 i = 0; i < particles_to_spawn_this_frame; ++i) {
         Vector2 dir = rng_direction(PI * 2);
 
-        f32 min_speed = ps->config.particle_speed * 0.5f;
-        f32 max_speed = ps->config.particle_speed * 1.5f;
+        f32 min_speed = ps->config.particle_speed * 0.25f;
+        f32 max_speed = ps->config.particle_speed * 2.0f;
         f32 speed = rng_f32(min_speed, max_speed);
 
 	// TODO: this doesn't look very good

@@ -4,6 +4,7 @@
 #include "components/collider.h"
 #include "components/component.h"
 #include "components/particle.h"
+#include "entity_faction.h"
 #include "entity_id.h"
 #include "equipment.h"
 #include "game.h"
@@ -78,6 +79,8 @@ Rectangle world_get_entity_bounding_box(Entity *entity)
 
 EntityWithID world_spawn_entity(World *world, EntityFaction faction)
 {
+    ASSERT(faction >= 0);
+    ASSERT(faction < FACTION_COUNT);
     ASSERT(world->alive_entity_count < MAX_ENTITIES);
 
     EntityWithID result = es_create_entity(world->entity_system, faction, &world->world_arena);
@@ -424,71 +427,6 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
     return movement_fraction_left;
 }
 
-static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collider,
-    World *world, f32 movement_fraction_left, f32 dt)
-{
-    // TODO: use get_entity_collision_area here
-    Vector2 old_entity_pos = entity->position;
-    Vector2 new_entity_pos = v2_add(entity->position, v2_mul_s(entity->velocity, dt));
-    f32 entity_width = collider->size.x;
-    f32 entity_height = collider->size.y;
-
-    f32 min_x = MIN(old_entity_pos.x, new_entity_pos.x);
-    f32 max_x = MAX(old_entity_pos.x, new_entity_pos.x) + entity_width;
-    f32 min_y = MIN(old_entity_pos.y, new_entity_pos.y);
-    f32 max_y = MAX(old_entity_pos.y, new_entity_pos.y) + entity_height;
-
-    s32 min_tile_x = (s32)(min_x / TILE_SIZE);
-    s32 max_tile_x = (s32)(max_x / TILE_SIZE);
-    s32 min_tile_y = (s32)(min_y / TILE_SIZE);
-    s32 max_tile_y = (s32)(max_y / TILE_SIZE);
-
-    // TODO: fix this, should only check tiles that exist
-    /* min_tile_x = MAX(min_tile_x, world->tilemap.min_x); */
-    /* max_tile_x = MIN(max_tile_x, world->tilemap.max_x); */
-    /* min_tile_y = MAX(min_tile_y, world->tilemap.min_y); */
-    /* max_tile_y = MIN(max_tile_y, world->tilemap.max_y); */
-
-    CollisionInfo closest_collision = { .movement_fraction_left = INFINITY };
-    Vector2i collision_coords = {0};
-
-    for (s32 y = min_tile_y - 1; y <= max_tile_y + 1; ++y) {
-        for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
-            Vector2i tile_coords = {x, y};
-            Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
-
-            if (!tile || (tile->type == TILE_WALL)) {
-                Rectangle entity_rect = get_entity_collider_rectangle(entity, collider);
-                Rectangle tile_rect = {
-                    tile_to_world_coords(tile_coords),
-                    {(f32)TILE_SIZE, (f32)TILE_SIZE },
-                };
-
-                // TODO: only handle the closest collision
-                CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
-		    tile_rect, entity->velocity, V2_ZERO, dt);
-
-                if ((collision.collision_status != COLLISION_STATUS_NOT_COLLIDING)
-                    && (collision.movement_fraction_left < closest_collision.movement_fraction_left)) {
-                    closest_collision = collision;
-		    collision_coords = tile_coords;
-                }
-            }
-        }
-    }
-
-    if (closest_collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) {
-        movement_fraction_left = closest_collision.movement_fraction_left;
-
-	execute_entity_vs_tilemap_collision_policy(world, entity, closest_collision);
-
-	EventData event_data = event_data_tilemap_collision(collision_coords);
-	send_event(entity, event_data, world);
-    }
-
-    return movement_fraction_left;
-}
-
 static Rectangle get_entity_collision_area(const Entity *entity, ColliderComponent *collider, f32 dt)
 {
     Vector2 next_pos = v2_add(entity->position, v2_mul_s(entity->velocity, dt));
@@ -506,6 +444,61 @@ static Rectangle get_entity_collision_area(const Entity *entity, ColliderCompone
     return result;
 }
 
+static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collider,
+    World *world, f32 movement_fraction_left, f32 dt)
+{
+    Rectangle collision_area = get_entity_collision_area(entity, collider, dt);
+
+    f32 min_x = collision_area.position.x;
+    f32 max_x = min_x + collision_area.size.x;
+    f32 min_y = collision_area.position.y;
+    f32 max_y = min_y + collision_area.size.y;
+
+    s32 min_tile_x = (s32)(min_x / TILE_SIZE);
+    s32 max_tile_x = (s32)(max_x / TILE_SIZE);
+    s32 min_tile_y = (s32)(min_y / TILE_SIZE);
+    s32 max_tile_y = (s32)(max_y / TILE_SIZE);
+
+    min_tile_x = MAX(min_tile_x, world->tilemap.min_x);
+    max_tile_x = MIN(max_tile_x, world->tilemap.max_x);
+    min_tile_y = MAX(min_tile_y, world->tilemap.min_y);
+    max_tile_y = MIN(max_tile_y, world->tilemap.max_y);
+
+    Vector2i collision_coords = {0};
+
+    for (s32 y = min_tile_y - 1; y <= max_tile_y + 1; ++y) {
+        for (s32 x = min_tile_x - 1; x <= max_tile_x + 1; ++x) {
+            Vector2i tile_coords = {x, y};
+            Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
+
+            if (!tile || (tile->type == TILE_WALL)) {
+                Rectangle entity_rect = get_entity_collider_rectangle(entity, collider);
+                Rectangle tile_rect = {
+                    tile_to_world_coords(tile_coords),
+                    {(f32)TILE_SIZE, (f32)TILE_SIZE },
+                };
+
+                CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
+		    tile_rect, entity->velocity, V2_ZERO, dt);
+
+                if (collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) {
+		    movement_fraction_left = collision.movement_fraction_left;
+
+		    execute_entity_vs_tilemap_collision_policy(world, entity, collision);
+
+		    EventData event_data = event_data_tilemap_collision(collision_coords);
+		    send_event(entity, event_data, world);
+                }
+            }
+        }
+    }
+
+    ASSERT(movement_fraction_left >= 0.0f);
+
+    return movement_fraction_left;
+}
+
+
 static void handle_collision_and_movement(World *world, f32 dt, LinearArena *frame_arena)
 {
     // TODO: don't access alive entity array directly
@@ -522,6 +515,7 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
         if (collider_a) {
             movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, world,
 		movement_fraction_left, dt);
+	    ASSERT(movement_fraction_left >= 0.0f);
 
             Rectangle collision_area = get_entity_collision_area(a, collider_a, dt);
             EntityIDList entities_in_area =
@@ -869,7 +863,8 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
     for (s32 i = 0; i < 2; ++i) {
 #if 1
-        EntityWithID entity_with_id = world_spawn_entity(world, i + 1);
+        EntityWithID entity_with_id = world_spawn_entity(world,
+	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
         entity->position = v2(256, 256);
 

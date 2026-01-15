@@ -149,18 +149,22 @@ static void magic_cast_spell_with_trigger_cooldown(struct World *world, SpellID 
 
     for (s32 i = 0; i < spell_count; ++i) {
 	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
-        Vector2 current_pos = v2_add(pos, v2_mul_s(dir, 20.0f));
 
-	cast_single_spell(world, spell, caster, current_pos, current_dir,
+	cast_single_spell(world, spell, caster, pos, current_dir,
 	    cooldown_target, cooldown_retrigger);
 
 	current_angle += angle_step_size;
     }
 }
 
-void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 pos, Vector2 dir)
+void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 pos, Vector2 dir)
 {
-    magic_cast_spell_with_trigger_cooldown(world, id, caster, pos, dir, 0, 0);
+    // TODO: automatically set spell origin pos based on caster position
+
+    // Offset slightly from caster position
+    Vector2 cast_origin = v2_add(pos, v2_mul_s(dir, 20.0f));
+
+    magic_cast_spell_with_trigger_cooldown(world, id, caster, cast_origin, dir, 0, 0);
 }
 
 static Spell spell_fireball()
@@ -275,7 +279,6 @@ static Spell spell_ice_shard()
 
     spell.collision_callback = ice_shard_collision_callback;
 
-
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {0.0f, 0.5f, 1.0f, 0.5f},
@@ -295,8 +298,8 @@ static Spell spell_ice_shard_trigger()
     Spell spell = spell_ice_shard();
 
     spell_unset_property(&spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK);
-
     spell.collision_callback = 0;
+
     spell.projectile.extra_projectile_count = 10;
     spell.projectile.projectile_cone_in_radians = deg_to_rad(360);
 

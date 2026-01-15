@@ -623,26 +623,62 @@ Entity *world_get_player_entity(World *world)
     return result;
 }
 
-void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena,
+void update_player(World *world, const FrameData *frame_data, LinearArena *frame_arena,
     DebugState *debug_state, GameUIState *game_ui)
 {
-    if (world->alive_entity_count < 1) {
-        return;
-    }
-
     Entity *player = world_get_player_entity(world);
     ASSERT(player);
 
-    {
-        Vector2 target = player->position;
+    Vector2 camera_target = rect_center(world_get_entity_bounding_box(player));
+    camera_set_target(&world->camera, camera_target);
 
-        if (es_has_component(player, ColliderComponent)) {
-            ColliderComponent *collider = es_get_component(player, ColliderComponent);
-            target = v2_add(target, v2_div_s(collider->size, 2));
-        }
+    if (player->state.kind != ENTITY_STATE_ATTACKING) {
+	f32 speed = 350.0f;
 
-	// TODO: Separate player update logic based on player state
-        if (input_is_key_held(&frame_data->input, MOUSE_LEFT)
+	if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
+	    speed *= 3.0f;
+	}
+
+	Vector2 acceleration = {0};
+
+	if (input_is_key_down(&frame_data->input, KEY_W)) {
+	    acceleration.y = 1.0f;
+	} else if (input_is_key_down(&frame_data->input, KEY_S)) {
+	    acceleration.y = -1.0f;
+	}
+
+	if (input_is_key_down(&frame_data->input, KEY_A)) {
+	    acceleration.x = -1.0f;
+	} else if (input_is_key_down(&frame_data->input, KEY_D)) {
+	    acceleration.x = 1.0f;
+	}
+
+	acceleration = v2_norm(acceleration);
+
+	if (!v2_eq(acceleration, V2_ZERO)) {
+	    entity_try_transition_to_state(world, player, state_walking());
+	} else {
+	    entity_try_transition_to_state(world, player, state_idle());
+	}
+
+	f32 dt = frame_data->dt;
+	Vector2 v = player->velocity;
+	Vector2 p = player->position;
+
+	acceleration = v2_mul_s(acceleration, speed);
+	acceleration = v2_add(acceleration, v2_mul_s(v, -3.5f));
+
+	Vector2 new_pos = v2_add(
+	    v2_add(v2_mul_s(v2_mul_s(acceleration, dt * dt), 0.5f), v2_mul_s(v, dt)),
+	    p
+	);
+
+	Vector2 new_velocity = v2_add(v2_mul_s(acceleration, dt), v);
+
+	player->position = new_pos;
+	player->velocity = new_velocity;
+
+	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)
 	    && player->state.kind != ENTITY_STATE_ATTACKING) {
             Vector2 mouse_pos = frame_data->input.mouse_position;
             mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
@@ -660,14 +696,7 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 
 	    entity_transition_to_state(world, player, state_attacking(selected_spell, mouse_dir));
         }
-
-        camera_set_target(&world->camera, target);
     }
-
-    camera_zoom(&world->camera, (s32)frame_data->input.scroll_delta);
-    camera_update(&world->camera, frame_data->dt);
-
-    f32 speed = 350.0f;
 
     if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)
 	&& !entity_id_is_null(game_ui->hovered_entity)) {
@@ -684,50 +713,20 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 	}
     }
 
-    if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
-        speed *= 3.0f;
+}
+
+// TODO: move all controlling logic to game.c
+void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena,
+    DebugState *debug_state, GameUIState *game_ui)
+{
+    if (world->alive_entity_count < 1) {
+        return;
     }
 
-    if (player->state.kind != ENTITY_STATE_ATTACKING) {
-	Vector2 acceleration = {0};
+    update_player(world, frame_data, frame_arena, debug_state, game_ui);
 
-	if (input_is_key_down(&frame_data->input, KEY_W)) {
-	    acceleration.y = 1.0f;
-	} else if (input_is_key_down(&frame_data->input, KEY_S)) {
-	    acceleration.y = -1.0f;
-	}
-
-	if (input_is_key_down(&frame_data->input, KEY_A)) {
-	    acceleration.x = -1.0f;
-	} else if (input_is_key_down(&frame_data->input, KEY_D)) {
-	    acceleration.x = 1.0f;
-	}
-
-        acceleration = v2_norm(acceleration);
-
-        if (!v2_eq(acceleration, V2_ZERO)) {
-	    entity_try_transition_to_state(world, player, state_walking());
-        } else {
-	    entity_try_transition_to_state(world, player, state_idle());
-        }
-
-	f32 dt = frame_data->dt;
-        Vector2 v = player->velocity;
-        Vector2 p = player->position;
-
-        acceleration = v2_mul_s(acceleration, speed);
-        acceleration = v2_add(acceleration, v2_mul_s(v, -3.5f));
-
-        Vector2 new_pos = v2_add(
-            v2_add(v2_mul_s(v2_mul_s(acceleration, dt * dt), 0.5f), v2_mul_s(v, dt)),
-            p
-        );
-
-        Vector2 new_velocity = v2_add(v2_mul_s(acceleration, dt), v);
-
-        player->position = new_pos;
-        player->velocity = new_velocity;
-    }
+    camera_zoom(&world->camera, (s32)frame_data->input.scroll_delta);
+    camera_update(&world->camera, frame_data->dt);
 
     handle_collision_and_movement(world, frame_data->dt, frame_arena);
 

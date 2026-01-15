@@ -39,7 +39,7 @@ static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, Entit
 
 // TODO: allow setting multiple components
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, FreeListArena *arena)
+    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, f32 duration, FreeListArena *arena)
 {
     ASSERT(!entity_id_equal(self, other));
 
@@ -57,13 +57,14 @@ void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID o
         cooldown->owning_entity = self;
         cooldown->collided_entity = other;
 	cooldown->retrigger_behaviour = retrigger_behaviour;
+	cooldown->cooldown_duration = duration;
 	cooldown->owning_component = component;
 
         ssize index = trigger_cooldown_hashed_index(table, self, other);
         list_push_back(&table->table[index], cooldown);
     }
 }
-void remove_expired_trigger_cooldowns(World *world, EntitySystem *es)
+void update_trigger_cooldowns(World *world, EntitySystem *es, f32 dt)
 {
     for (ssize i = 0; i < ARRAY_COUNT(world->trigger_cooldowns.table); ++i) {
         TriggerCooldownList *cd_list = &world->trigger_cooldowns.table[i];
@@ -83,9 +84,15 @@ void remove_expired_trigger_cooldowns(World *world, EntitySystem *es)
             ASSERT(retrigger_behaviour != RETRIGGER_WHENEVER
 		  && "A trigger that can retrigger whenever shouldn't be found in cooldown list");
 
+	    if (retrigger_behaviour == RETRIGGER_AFTER_DURATION) {
+		curr_cd->cooldown_duration -= dt;
+	    }
+
             b32 should_remove = (owning->is_inactive || other->is_inactive)
                 || ((retrigger_behaviour == RETRIGGER_AFTER_NON_CONTACT)
-                    && !entities_intersected_this_frame(world, owning_id, other_id));
+                    && !entities_intersected_this_frame(world, owning_id, other_id))
+		|| ((retrigger_behaviour == RETRIGGER_AFTER_DURATION)
+		    && curr_cd->cooldown_duration <= 0.0f);
 
             if (should_remove) {
                 list_remove(cd_list, curr_cd);

@@ -22,12 +22,12 @@ struct EntitySystem;
 struct Entity;
 struct World;
 
-// TODO: retrigger after x amount of time
-
+// TODO: store cooldown behaviour and cooldown duration together
 typedef enum {
     RETRIGGER_WHENEVER,
     RETRIGGER_NEVER,
     RETRIGGER_AFTER_NON_CONTACT,
+    RETRIGGER_AFTER_DURATION,
 } RetriggerBehaviour;
 
 typedef struct TriggerCooldown {
@@ -39,6 +39,7 @@ typedef struct TriggerCooldown {
     ComponentBitset owning_component;
 
     RetriggerBehaviour retrigger_behaviour;
+    f32 cooldown_duration;
 } TriggerCooldown;
 
 typedef struct {
@@ -52,8 +53,9 @@ typedef struct {
 } TriggerCooldownTable;
 
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, struct FreeListArena *arena);
-void remove_expired_trigger_cooldowns(struct World *world, struct EntitySystem *es);
+    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, f32 duration,
+    struct FreeListArena *arena);
+void update_trigger_cooldowns(struct World *world, struct EntitySystem *es, f32 dt);
 b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentBitset component);
 
 #endif //TRIGGER_H

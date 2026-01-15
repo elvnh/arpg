@@ -8,7 +8,7 @@
 // TODO: does this really need to be a separate file?
 
 void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
-    void *user_data, ssize data_size, ssize data_alignment)
+    const void *user_data, ssize data_size, ssize data_alignment)
 {
     ASSERT(event_type >= 0);
     ASSERT(event_type < EVENT_COUNT);

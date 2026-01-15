@@ -16,6 +16,6 @@ typedef struct {
 
 void send_event(struct Entity *entity, EventData event_data, struct World *world);
 void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
-    void *user_data, ssize data_size, ssize data_alignment);
+    const void *user_data, ssize data_size, ssize data_alignment);
 
 #endif //EVENT_LISTENER_H

@@ -10,9 +10,9 @@
 #include "trigger.h"
 #include "callback.h"
 
-// TODO: allow setting cone in which extra projectiles are cast
-
 struct SpellCasterComponent;
+struct Entity;
+struct World;
 
 typedef enum {
     SPELL_FIREBALL,
@@ -31,7 +31,8 @@ typedef enum {
     SPELL_PROP_DIE_ON_ENTITY_COLLISION = (1 << 5),
     SPELL_PROP_LIFETIME = (1 << 6),
     SPELL_PROP_PARTICLE_SPAWNER = (1 << 7),
-    SPELL_PROP_HOSTILE_COLLISION_CALLBACK = (1 << 8),
+    SPELL_PROP_SPAWN_PARTICLES_ON_DEATH = (1 << 8),
+    SPELL_PROP_HOSTILE_COLLISION_CALLBACK = (1 << 9),
 } SpellProperties;
 
 typedef struct {
@@ -57,6 +58,7 @@ typedef struct {
     f32 lifetime;
 
     ParticleSpawnerConfig particle_spawner;
+    ParticleSpawnerConfig on_death_particle_spawner;
 
     CallbackFunction collision_callback;
 
@@ -82,9 +84,6 @@ typedef struct {
 typedef struct SpellArray {
     Spell spells[SPELL_COUNT];
 } SpellArray;
-
-struct Entity;
-struct World;
 
 void magic_initialize(SpellArray *spells);
 void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 pos, Vector2 dir);

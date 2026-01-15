@@ -21,6 +21,19 @@ typedef struct {
 
 static SpellArray *g_spells;
 
+// TODO: move to callback file
+static void spawn_particles_on_death(void *user_data, EventData event_data)
+{
+    ParticleSpawnerConfig *particle_config = user_data;
+
+    EntityWithID ps_entity = world_spawn_entity(event_data.world, FACTION_NEUTRAL);
+    ps_entity.entity->position = event_data.self->position;
+
+    ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
+    particle_spawner_initialize(ps, *particle_config);
+    ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+}
+
 static const Spell *get_spell_by_id(SpellID id)
 {
     ASSERT(id >= 0);
@@ -102,6 +115,19 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	particle_spawner_initialize(ps, spell->particle_spawner);
     }
 
+    if (spell_has_prop(spell, SPELL_PROP_SPAWN_PARTICLES_ON_DEATH)) {
+	ASSERT(!spell->on_death_particle_spawner.infinite);
+	ASSERT(spell->on_death_particle_spawner.total_particles_to_spawn > 0);
+	ASSERT(spell->on_death_particle_spawner.particle_size > 0.0f);
+	ASSERT(spell->on_death_particle_spawner.particle_speed > 0.0f);
+	ASSERT(spell->on_death_particle_spawner.particles_per_second > 0);
+
+	es_get_or_add_component(spell_entity, EventListenerComponent);
+
+	add_event_callback(spell_entity, EVENT_ENTITY_DIED, spawn_particles_on_death,
+	    &spell->on_death_particle_spawner);
+    }
+
     if (spell_has_prop(spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK)) {
 	es_get_or_add_component(spell_entity, EventListenerComponent);
 
@@ -113,6 +139,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     }
 
     // Offset so that spells center is 'pos'
+    // TODO: instead make components be offset from position
     Rectangle bounds = world_get_entity_bounding_box(spell_entity);
     spell_entity->position = v2_sub(pos, v2_div_s(bounds.size, 2.0f));
 
@@ -261,7 +288,8 @@ static Spell spell_ice_shard()
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK | SPELL_PROP_PARTICLE_SPAWNER;
+	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK | SPELL_PROP_PARTICLE_SPAWNER
+	| SPELL_PROP_SPAWN_PARTICLES_ON_DEATH;
 
     spell.sprite.texture = get_asset_table()->ice_shard_texture;
     spell.sprite.size = v2(16, 16);
@@ -289,6 +317,10 @@ static Spell spell_ice_shard()
 	.particles_per_second = 40
     };
 
+    spell.on_death_particle_spawner = spell.particle_spawner;
+    spell.on_death_particle_spawner.kind = PS_SPAWN_ALL_AT_ONCE;
+    spell.on_death_particle_spawner.infinite = false;
+    spell.on_death_particle_spawner.total_particles_to_spawn = 10;
 
     return spell;
 }
@@ -319,19 +351,6 @@ void magic_initialize(SpellArray *spells)
     magic_set_global_spell_array(spells);
 }
 
-static void spawn_particles_on_death(void *user_data, EventData event_data)
-{
-    //DEBUG_BREAK;
-
-    ParticleSpawnerConfig *particle_config = user_data;
-
-    EntityWithID ps_entity = world_spawn_entity(event_data.world, FACTION_NEUTRAL);
-    ps_entity.entity->position = event_data.self->position;
-
-    ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
-    particle_spawner_initialize(ps, *particle_config);
-    ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
-}
 
 
 void magic_set_global_spell_array(SpellArray *spells)

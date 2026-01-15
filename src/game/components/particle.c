@@ -5,6 +5,10 @@
 
 void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 dt)
 {
+    ASSERT(ps->config.particle_size > 0.0f);
+    ASSERT(ps->config.particle_speed > 0.0f);
+    ASSERT(ps->config.particles_per_second > 0);
+
     s32 particles_to_spawn_this_frame = 0;
 
     switch (ps->config.kind) {
@@ -82,6 +86,8 @@ b32 particle_spawner_is_finished(ParticleSpawner *ps)
 
 void particle_spawner_initialize(ParticleSpawner *ps, ParticleSpawnerConfig config)
 {
+    ASSERT(config.infinite || config.total_particles_to_spawn > 0);
+
     ring_initialize_static(&ps->particle_buffer);
     ps->config = config;
     ps->particles_left_to_spawn = config.total_particles_to_spawn;

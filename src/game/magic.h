@@ -48,7 +48,6 @@ typedef struct {
 	DamageRange base_damage;
 	DamageValues penetration_values;
 	RetriggerBehaviour retrigger_behaviour;
-	f32 cooldown; // NOTE: only valid if retrigger behaviour is RETRIGGER_AFTER_DURATION
     } damaging;
 
     struct {

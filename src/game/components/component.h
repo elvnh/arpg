@@ -86,7 +86,6 @@ typedef struct SpellCasterComponent {
 typedef struct {
     DamageInstance damage;
     RetriggerBehaviour retrigger_behaviour;
-    f32 cooldown;
 } DamageFieldComponent;
 
 #endif //COMPONENT_H

@@ -101,7 +101,6 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
         DamageInstance damage = { damage_after_boosts, spell->damaging.penetration_values };
 	dmg_field->damage = damage;
 	dmg_field->retrigger_behaviour = spell->damaging.retrigger_behaviour;
-	dmg_field->cooldown = spell->damaging.cooldown;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
@@ -165,7 +164,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	// triggered until it's off cooldown
 	// TODO: duration cooldowns
 	world_add_trigger_cooldown(world, spell_entity_id, target_id,
-	    component_flag(ColliderComponent), cooldown_retrigger, 0.0f);
+	    component_flag(ColliderComponent), cooldown_retrigger);
     }
 }
 
@@ -202,7 +201,7 @@ void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 pos, Vec
     // Offset slightly from caster position
     Vector2 cast_origin = v2_add(pos, v2_mul_s(dir, 20.0f));
 
-    magic_cast_spell_with_trigger_cooldown(world, id, caster, cast_origin, dir, 0, 0);
+    magic_cast_spell_with_trigger_cooldown(world, id, caster, cast_origin, dir, 0, retrigger_whenever());
 }
 
 static Spell spell_fireball()
@@ -225,7 +224,7 @@ static Spell spell_fireball()
     set_damage_value_for_type(&damage_range.high_roll, DMG_TYPE_FIRE, 20);
 
     spell.damaging.base_damage = damage_range;
-    spell.damaging.retrigger_behaviour = RETRIGGER_NEVER;
+    spell.damaging.retrigger_behaviour = retrigger_never();
 
 /*
     spell.particle_spawner = (ParticleSpawnerConfig) {
@@ -263,7 +262,7 @@ static Spell spell_spark()
 
     set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_LIGHTNING, 1, 100);
     set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
-    spell.damaging.retrigger_behaviour = RETRIGGER_AFTER_NON_CONTACT;
+    spell.damaging.retrigger_behaviour = retrigger_after_non_contact();
 
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
@@ -294,8 +293,7 @@ static Spell spell_blizzard()
 
     set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_LIGHTNING, 1, 100);
     set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
-    spell.damaging.retrigger_behaviour = RETRIGGER_AFTER_DURATION;
-    spell.damaging.cooldown = 1.0f;
+    spell.damaging.retrigger_behaviour = retrigger_after_duration(1.0f);
 
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
@@ -323,7 +321,7 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
 
     magic_cast_spell_with_trigger_cooldown(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster,
 	event_data.self->position, event_data.self->direction,
-	collide_target, RETRIGGER_NEVER);
+	collide_target, retrigger_never());
 }
 
 static Spell spell_ice_shard()
@@ -347,7 +345,7 @@ static Spell spell_ice_shard()
     set_damage_value_for_type(&damage_range.high_roll, DMG_TYPE_FIRE, 70);
 
     spell.damaging.base_damage = damage_range;
-    spell.damaging.retrigger_behaviour = RETRIGGER_NEVER;
+    spell.damaging.retrigger_behaviour = retrigger_never(); // TODO: unnecessary
 
     spell.collision_callback = ice_shard_collision_callback;
 

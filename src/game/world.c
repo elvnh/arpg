@@ -376,10 +376,10 @@ static void swap_and_reset_collision_tables(World *world)
 }
 
 void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentBitset component,
-    RetriggerBehaviour retrigger_behaviour, f32 duration)
+    RetriggerBehaviour retrigger_behaviour)
 {
     add_trigger_cooldown(&world->trigger_cooldowns, a, b, component,
-	retrigger_behaviour, duration, &world->world_arena);
+	retrigger_behaviour, &world->world_arena);
 }
 
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
@@ -438,7 +438,7 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 	try_deal_damage_to_entity(world, other, self, dmg_field->damage);
 
 	world_add_trigger_cooldown(world, self_id, other_id,
-	    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour, dmg_field->cooldown);
+	    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
     }
 }
 

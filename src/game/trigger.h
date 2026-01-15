@@ -22,12 +22,19 @@ struct EntitySystem;
 struct Entity;
 struct World;
 
-// TODO: store cooldown behaviour and cooldown duration together
 typedef enum {
     RETRIGGER_WHENEVER,
     RETRIGGER_NEVER,
     RETRIGGER_AFTER_NON_CONTACT,
     RETRIGGER_AFTER_DURATION,
+} RetriggerBehaviourKind;
+
+typedef struct {
+    RetriggerBehaviourKind kind;
+
+    union {
+	f32 duration_in_seconds;
+    } as;
 } RetriggerBehaviour;
 
 typedef struct TriggerCooldown {
@@ -39,7 +46,6 @@ typedef struct TriggerCooldown {
     ComponentBitset owning_component;
 
     RetriggerBehaviour retrigger_behaviour;
-    f32 cooldown_duration;
 } TriggerCooldown;
 
 typedef struct {
@@ -53,9 +59,42 @@ typedef struct {
 } TriggerCooldownTable;
 
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, f32 duration,
-    struct FreeListArena *arena);
+    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, struct FreeListArena *arena);
 void update_trigger_cooldowns(struct World *world, struct EntitySystem *es, f32 dt);
 b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentBitset component);
+
+static inline RetriggerBehaviour retrigger_whenever()
+{
+    RetriggerBehaviour result = {0};
+    result.kind = RETRIGGER_WHENEVER;
+
+    return result;
+}
+
+static inline RetriggerBehaviour retrigger_never()
+{
+    RetriggerBehaviour result = {0};
+    result.kind = RETRIGGER_NEVER;
+
+    return result;
+}
+
+
+static inline RetriggerBehaviour retrigger_after_non_contact()
+{
+    RetriggerBehaviour result = {0};
+    result.kind = RETRIGGER_AFTER_NON_CONTACT;
+
+    return result;
+}
+
+static inline RetriggerBehaviour retrigger_after_duration(f32 duration_in_seconds)
+{
+    RetriggerBehaviour result = {0};
+    result.kind = RETRIGGER_AFTER_DURATION;
+    result.as.duration_in_seconds = duration_in_seconds;
+
+    return result;
+}
 
 #endif //TRIGGER_H

@@ -16,10 +16,10 @@ typedef struct {
     RectangleFlip flip;
 } SpriteModifiers;
 
-// TODO: colored sprite
 typedef struct {
     TextureHandle texture;
     Vector2 size;
+    RGBA32 color;
     SpriteRotationBehaviour rotation_behaviour;
 } Sprite;
 
@@ -28,11 +28,22 @@ static inline Sprite sprite_create(TextureHandle texture, Vector2 size, SpriteRo
     Sprite result = (Sprite) {
 	.texture = texture,
 	.size = size,
-	.rotation_behaviour = rot_behaviour
+	.rotation_behaviour = rot_behaviour,
+	.color = RGBA32_WHITE
     };
 
     return result;
 }
+
+static inline Sprite sprite_create_colored(TextureHandle texture, Vector2 size,
+    SpriteRotationBehaviour rot_behaviour, RGBA32 color)
+{
+    Sprite result = sprite_create(texture, size, rot_behaviour);
+    result.color = color;
+
+    return result;
+}
+
 
 static inline SpriteModifiers
 sprite_get_modifiers(Vector2 direction, SpriteRotationBehaviour rotation_behaviour)

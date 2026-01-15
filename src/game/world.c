@@ -309,8 +309,8 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
 	SpriteModifiers sprite_mods = sprite_get_modifiers(entity->direction, sprite->rotation_behaviour);
 
         Rectangle sprite_rect = { entity->position, sprite->size };
-        rb_push_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods,
-	    get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
+        rb_push_colored_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods,
+	    sprite->color, get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {

@@ -3,6 +3,7 @@
 
 #include "asset.h"
 
+//TODO: organize animation frames in arrays of texture handles
 typedef struct AssetTable {
     ShaderHandle texture_shader;
     ShaderHandle shape_shader;
@@ -15,11 +16,15 @@ typedef struct AssetTable {
     TextureHandle player_idle2;
     TextureHandle player_walking1;
     TextureHandle player_walking2;
+    TextureHandle player_attack1;
+    TextureHandle player_attack2;
+    TextureHandle player_attack3;
 
     TextureHandle floor_texture;
     TextureHandle wall_texture;
 
     TextureHandle ice_shard_texture;
+
 } AssetTable;
 
 // TODO: make this return a const pointer

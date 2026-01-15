@@ -76,5 +76,6 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
     RetriggerBehaviour retrigger_behaviour);
 
 Entity *world_get_player_entity(World *world);
+void entity_transition_to_state(World *world, Entity *entity, EntityState state);
 
 #endif //WORLD_H

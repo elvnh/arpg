@@ -2,6 +2,7 @@
 #define ANIMATION_H
 
 #include "base/vector.h"
+#include "entity_state.h"
 #include "sprite.h"
 
 #define MAX_ANIMATION_FRAMES 8
@@ -11,13 +12,21 @@ struct Entity;
 struct RenderBatch;
 struct LinearArena;
 struct AnimationComponent;
+struct World;
 
 typedef enum {
     ANIM_NULL = 0,
     ANIM_PLAYER_IDLE,
     ANIM_PLAYER_WALKING,
+    ANIM_PLAYER_ATTACKING,
     ANIM_ANIMATION_COUNT,
 } AnimationID;
+
+typedef enum {
+    ANIM_ON_END_DO_NOTHING,
+    ANIM_ON_END_REPEAT,
+    ANIM_ON_END_TRANSITION_TO_STATE,
+} AnimationOnEnd;
 
 typedef struct {
     Sprite sprite;
@@ -28,8 +37,8 @@ typedef struct {
     AnimationFrame frames[MAX_ANIMATION_FRAMES];
     s32 frame_count;
 
-    b32 is_repeating;
-    AnimationID transition_to_animation_on_end;
+    AnimationOnEnd on_end_behaviour;
+    EntityState state_transition_when_done;
 } Animation;
 
 typedef struct AnimationInstance {
@@ -43,12 +52,13 @@ typedef struct AnimationTable {
 } AnimationTable;
 
 void anim_initialize(AnimationTable *anim_table);
-void anim_update_instance(struct AnimationInstance *anim_instance, f32 dt);
+void anim_update_instance(struct World *world, struct Entity *entity,
+    struct AnimationInstance *anim_instance, f32 dt);
 void anim_render_instance(struct AnimationInstance *anim_instance, struct Entity *owning_entity,
     struct RenderBatch *rb, struct LinearArena *scratch);
 void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim);
 AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance);
-AnimationInstance *anim_get_current_animation(struct Entity *entity, struct AnimationComponent *anim_comp);
+//AnimationInstance *anim_get_current_animation(struct Entity *entity, struct AnimationComponent *anim_comp);
 void anim_set_global_animation_table(AnimationTable *anim_table);
 
 #endif //ANIMATION_H

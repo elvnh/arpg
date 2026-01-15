@@ -1,4 +1,5 @@
 #include "collision_policy.h"
+#include "base/vector.h"
 #include "world.h"
 
 static void execute_collision_policy(World *world, Entity *entity, CollisionPolicy policy,
@@ -6,6 +7,7 @@ static void execute_collision_policy(World *world, Entity *entity, CollisionPoli
 {
     // NOTE: This function handles both entity vs tilemap and entity vs entity collisions.
     // If the collision is vs a tile, pass ENTITY_PAIR_INDEX_FIRST as collision_pair_index.
+    ASSERT(entity || (collision_pair_index == ENTITY_PAIR_INDEX_FIRST));
 
     switch (policy) {
 	case COLLISION_POLICY_STOP: {

@@ -68,9 +68,10 @@ typedef struct {
     Equipment equipment;
 } EquipmentComponent;
 
-// TODO: allow resetting animation when starting it anew
 typedef struct AnimationComponent {
-    AnimationInstance state_animations[ENTITY_STATE_COUNT];
+    // TODO: don't store the animations per component
+    AnimationID state_animations[ENTITY_STATE_COUNT];
+    AnimationInstance current_animation;
 } AnimationComponent;
 
 typedef struct {

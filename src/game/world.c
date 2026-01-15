@@ -6,6 +6,7 @@
 #include "components/particle.h"
 #include "entity_faction.h"
 #include "entity_id.h"
+#include "entity_state.h"
 #include "equipment.h"
 #include "game.h"
 #include "animation.h"
@@ -44,6 +45,59 @@
    - Pass in world size to world_initialize
  */
 
+// TODO: move somewhere else
+void entity_transition_to_state(World *world, Entity *entity, EntityState state)
+{
+    EntityState old_state = entity->state;
+
+    switch (old_state.kind) {
+	case ENTITY_STATE_ATTACKING: {
+	    SpellID spell = old_state.as.attacking.spell_being_cast;
+	    Vector2 cast_dir = old_state.as.attacking.attack_direction;
+	    Vector2 cast_pos = rect_center(world_get_entity_bounding_box(entity));
+
+	    magic_cast_spell(world, spell, entity, cast_pos, cast_dir);
+	} break;
+
+	default: {
+	} break;
+    }
+
+    entity->state = state;
+
+    if (es_has_component(entity, AnimationComponent)) {
+	AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
+	AnimationID next_anim = anim_comp->state_animations[state.kind];
+
+	// TODO: instead check if there is an animation for this state?
+	ASSERT(next_anim != ANIM_NULL);
+
+	// TODO: rename anim_transition_to_animation to start_animation or something
+	anim_transition_to_animation(&anim_comp->current_animation, next_anim);
+    }
+
+    switch (state.kind) {
+	case ENTITY_STATE_IDLE:
+	case ENTITY_STATE_WALKING: {
+	} break;
+
+	case ENTITY_STATE_ATTACKING: {
+	    entity->velocity = V2_ZERO;
+	    entity->direction = state.as.attacking.attack_direction;
+	} break;
+
+        INVALID_DEFAULT_CASE;
+    }
+}
+
+// First checks if current state can be cancelled and if we're not already in state
+static void entity_try_transition_to_state(World *world, Entity *entity, EntityState state)
+{
+    if (entity->state.kind != state.kind) {
+	entity_transition_to_state(world, entity, state);
+    }
+}
+
 Rectangle world_get_entity_bounding_box(Entity *entity)
 {
     // NOTE: this minimum size is completely arbitrary
@@ -65,7 +119,7 @@ Rectangle world_get_entity_bounding_box(Entity *entity)
 
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
-	AnimationInstance *current_anim = anim_get_current_animation(entity, anim_comp);
+	AnimationInstance *current_anim = &anim_comp->current_animation;
 	AnimationFrame current_frame = anim_get_current_frame(current_anim);
 
         size.x = MAX(size.x, current_frame.sprite.size.x);
@@ -226,7 +280,8 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
-	anim_update_instance(&anim_component->state_animations[entity->state], dt);
+	ASSERT(anim_component->current_animation.animation_id != ANIM_NULL);
+	anim_update_instance(world, entity, &anim_component->current_animation, dt);
     }
 
     if (entity_should_die(entity)) {
@@ -243,7 +298,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
 	// TODO: move into separate function
-        AnimationInstance *anim_instance = anim_get_current_animation(entity, anim_component);
+        AnimationInstance *anim_instance = &anim_component->current_animation;
 	anim_render_instance(anim_instance, entity, rb, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
@@ -586,7 +641,9 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
             target = v2_add(target, v2_div_s(collider->size, 2));
         }
 
-        if (input_is_key_released(&frame_data->input, MOUSE_LEFT)) {
+	// TODO: Separate player update logic based on player state
+        if (input_is_key_held(&frame_data->input, MOUSE_LEFT)
+	    && player->state.kind != ENTITY_STATE_ATTACKING) {
             Vector2 mouse_pos = frame_data->input.mouse_position;
             mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
 
@@ -600,7 +657,8 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 	    SpellID selected_spell = get_spell_at_spellbook_index(
 		spellcaster, game_ui->selected_spellbook_index);
 
-            magic_cast_spell(world, selected_spell, player, player_center, mouse_dir);
+
+	    entity_transition_to_state(world, player, state_attacking(selected_spell, mouse_dir));
         }
 
         camera_set_target(&world->camera, target);
@@ -630,7 +688,7 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
         speed *= 3.0f;
     }
 
-    {
+    if (player->state.kind != ENTITY_STATE_ATTACKING) {
 	Vector2 acceleration = {0};
 
 	if (input_is_key_down(&frame_data->input, KEY_W)) {
@@ -648,9 +706,9 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
         acceleration = v2_norm(acceleration);
 
         if (!v2_eq(acceleration, V2_ZERO)) {
-            player->state = ENTITY_STATE_WALKING;
+	    entity_try_transition_to_state(world, player, state_walking());
         } else {
-            player->state = ENTITY_STATE_IDLE;
+	    entity_try_transition_to_state(world, player, state_idle());
         }
 
 	f32 dt = frame_data->dt;
@@ -873,7 +931,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 1; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world,
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
@@ -910,8 +968,11 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 #else
 
         AnimationComponent *anim = es_add_component(entity, AnimationComponent);
-        anim->state_animations[ENTITY_STATE_IDLE].animation_id = ANIM_PLAYER_IDLE;
-        anim->state_animations[ENTITY_STATE_WALKING].animation_id = ANIM_PLAYER_WALKING;
+        anim->state_animations[ENTITY_STATE_IDLE] = ANIM_PLAYER_IDLE;
+        anim->state_animations[ENTITY_STATE_WALKING] = ANIM_PLAYER_WALKING;
+        anim->state_animations[ENTITY_STATE_ATTACKING] = ANIM_PLAYER_ATTACKING;
+
+	entity_transition_to_state(world, entity, state_idle());
 #endif
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);

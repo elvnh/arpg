@@ -100,6 +100,9 @@ int main()
         .floor_texture = assets_register_texture(&asset_mgr, str_lit("floor.png"), &game_memory.temporary_memory),
         .wall_texture = assets_register_texture(&asset_mgr, str_lit("wall.png"), &game_memory.temporary_memory),
 	.ice_shard_texture = assets_register_texture(&asset_mgr, str_lit("ice_shard.png"), &game_memory.temporary_memory),
+	.player_attack1 = assets_register_texture(&asset_mgr, str_lit("player_attack1.png"), &game_memory.temporary_memory),
+	.player_attack2 = assets_register_texture(&asset_mgr, str_lit("player_attack2.png"), &game_memory.temporary_memory),
+	.player_attack3 = assets_register_texture(&asset_mgr, str_lit("player_attack3.png"), &game_memory.temporary_memory),
     };
 
     PlatformCode platform_code = {

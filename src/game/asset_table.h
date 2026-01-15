@@ -24,6 +24,7 @@ typedef struct AssetTable {
     TextureHandle wall_texture;
 
     TextureHandle ice_shard_texture;
+    TextureHandle blizzard_texture;
 
 } AssetTable;
 

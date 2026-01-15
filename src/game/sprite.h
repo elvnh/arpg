@@ -16,6 +16,7 @@ typedef struct {
     RectangleFlip flip;
 } SpriteModifiers;
 
+// TODO: colored sprite
 typedef struct {
     TextureHandle texture;
     Vector2 size;

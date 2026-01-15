@@ -103,6 +103,7 @@ int main()
 	.player_attack1 = assets_register_texture(&asset_mgr, str_lit("player_attack1.png"), &game_memory.temporary_memory),
 	.player_attack2 = assets_register_texture(&asset_mgr, str_lit("player_attack2.png"), &game_memory.temporary_memory),
 	.player_attack3 = assets_register_texture(&asset_mgr, str_lit("player_attack3.png"), &game_memory.temporary_memory),
+	.blizzard_texture = assets_register_texture(&asset_mgr, str_lit("blizzard.png"), &game_memory.temporary_memory),
     };
 
     PlatformCode platform_code = {

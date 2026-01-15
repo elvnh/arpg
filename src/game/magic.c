@@ -74,9 +74,15 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     }
 
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
+	ASSERT(!spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT));
 	spell_collider->size = spell->projectile.collider_size;
 
 	spell_entity->velocity = v2_mul_s(dir, spell->projectile.projectile_speed);
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
+	ASSERT(!spell_has_prop(spell, SPELL_PROP_PROJECTILE));
+	spell_collider->size = spell->aoe.size;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
@@ -89,10 +95,13 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	    world->item_system);
 
 	DamageFieldComponent *dmg_field = es_add_component(spell_entity, DamageFieldComponent);
-        /* // TODO: create_damage_instance function */
+        // TODO: create_damage_instance function
+	// TODO: store cooldown behaviour and cooldown duration together
+
         DamageInstance damage = { damage_after_boosts, spell->damaging.penetration_values };
 	dmg_field->damage = damage;
 	dmg_field->retrigger_behaviour = spell->damaging.retrigger_behaviour;
+	dmg_field->cooldown = spell->damaging.cooldown;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
@@ -140,6 +149,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 
     // Offset so that spells center is 'pos'
     // TODO: instead make components be offset from position
+    // TODO: this should only happen for projectiles
     Rectangle bounds = world_get_entity_bounding_box(spell_entity);
     spell_entity->position = v2_sub(pos, v2_div_s(bounds.size, 2.0f));
 
@@ -153,8 +163,9 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	// TODO: allow customizing which components are on cooldown, and setting multiple at once
 	// For now, only add the collider so that nothing else can be
 	// triggered until it's off cooldown
+	// TODO: duration cooldowns
 	world_add_trigger_cooldown(world, spell_entity_id, target_id,
-	    component_flag(ColliderComponent), cooldown_retrigger);
+	    component_flag(ColliderComponent), cooldown_retrigger, 0.0f);
     }
 }
 
@@ -267,6 +278,39 @@ static Spell spell_spark()
     return spell;
 }
 
+static Spell spell_blizzard()
+{
+    Spell spell = {0};
+
+    spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
+	| SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
+
+    spell.sprite.texture = get_asset_table()->blizzard_texture;
+    spell.sprite.size = v2(64, 64);
+
+    spell.aoe.size = v2(64, 64); // TODO: aoe affected by caster
+
+    spell.lifetime = 15.0f;
+
+    set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_LIGHTNING, 1, 100);
+    set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
+    spell.damaging.retrigger_behaviour = RETRIGGER_AFTER_DURATION;
+    spell.damaging.cooldown = 1.0f;
+
+    spell.particle_spawner = (ParticleSpawnerConfig) {
+	.kind = PS_SPAWN_DISTRIBUTED,
+	.particle_color = {0.15f, 0.5f, 1.0f, 0.25f},
+	.particle_size = 3.0f,
+	.particle_lifetime = 0.25f,
+	.particle_speed = 150.0f,
+	.infinite = true,
+	.particles_per_second = 250
+    };
+
+    return spell;
+}
+
+
 static void ice_shard_collision_callback(void *user_data, EventData event_data)
 {
     SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
@@ -347,11 +391,10 @@ void magic_initialize(SpellArray *spells)
     spells->spells[SPELL_SPARK] = spell_spark();
     spells->spells[SPELL_ICE_SHARD] = spell_ice_shard();
     spells->spells[SPELL_ICE_SHARD_TRIGGER] = spell_ice_shard_trigger();
+    spells->spells[SPELL_BLIZZARD] = spell_blizzard();
 
     magic_set_global_spell_array(spells);
 }
-
-
 
 void magic_set_global_spell_array(SpellArray *spells)
 {
@@ -381,6 +424,7 @@ String spell_type_to_string(SpellID id)
 	case SPELL_SPARK: return str_lit("Spark");
 	case SPELL_ICE_SHARD: return str_lit("Ice shard");
 	case SPELL_ICE_SHARD_TRIGGER: return str_lit("Ice shard trigger");
+	case SPELL_BLIZZARD: return str_lit("Blizzard");
 	case SPELL_COUNT: ASSERT(0);
     }
 

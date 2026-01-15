@@ -929,7 +929,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 1; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world,
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
@@ -950,9 +950,9 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
         ASSERT(es_has_component(entity, HealthComponent));
 
 	SpellCasterComponent *spellcaster = es_add_component(entity, SpellCasterComponent);
-	magic_add_to_spellbook(spellcaster, SPELL_ICE_SHARD);
-	magic_add_to_spellbook(spellcaster, SPELL_SPARK);
-	magic_add_to_spellbook(spellcaster, SPELL_FIREBALL);
+	for (SpellID spell = 0; spell < SPELL_COUNT; ++spell) {
+	    magic_add_to_spellbook(spellcaster, spell);
+	}
 
 
 #if 0

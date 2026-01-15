@@ -19,6 +19,7 @@ typedef enum {
     SPELL_SPARK,
     SPELL_ICE_SHARD,
     SPELL_ICE_SHARD_TRIGGER,
+    SPELL_BLIZZARD,
     SPELL_COUNT,
 } SpellID;
 
@@ -33,6 +34,7 @@ typedef enum {
     SPELL_PROP_PARTICLE_SPAWNER = (1 << 7),
     SPELL_PROP_SPAWN_PARTICLES_ON_DEATH = (1 << 8),
     SPELL_PROP_HOSTILE_COLLISION_CALLBACK = (1 << 9),
+    SPELL_PROP_AREA_OF_EFFECT = (1 << 10),
 } SpellProperties;
 
 typedef struct {
@@ -46,6 +48,7 @@ typedef struct {
 	DamageRange base_damage;
 	DamageValues penetration_values;
 	RetriggerBehaviour retrigger_behaviour;
+	f32 cooldown; // NOTE: only valid if retrigger behaviour is RETRIGGER_AFTER_DURATION
     } damaging;
 
     struct {
@@ -54,6 +57,10 @@ typedef struct {
 	s32 extra_projectile_count;
 	f32 projectile_cone_in_radians;
     } projectile;
+
+    struct {
+	Vector2 size;
+    } aoe;
 
     f32 lifetime;
 

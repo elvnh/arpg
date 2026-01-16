@@ -18,7 +18,7 @@ typedef struct {
     union {
 	struct {
 	    SpellID spell_being_cast;
-	    Vector2 attack_direction;
+	    Vector2 target_position;
 	} attacking;
     } as;
 } EntityState;
@@ -39,15 +39,14 @@ static inline EntityState state_walking()
     return result;
 }
 
-static inline EntityState state_attacking(SpellID spell_being_cast, Vector2 direction)
+static inline EntityState state_attacking(SpellID spell_being_cast, Vector2 target_pos)
 {
     EntityState result = {0};
     result.kind = ENTITY_STATE_ATTACKING;
     result.as.attacking.spell_being_cast = spell_being_cast;
-    result.as.attacking.attack_direction = direction;
+    result.as.attacking.target_position = target_pos;
 
     return result;
 }
-
 
 #endif //ENTITY_STATE_H

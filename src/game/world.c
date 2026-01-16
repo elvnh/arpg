@@ -53,10 +53,9 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
     switch (old_state.kind) {
 	case ENTITY_STATE_ATTACKING: {
 	    SpellID spell = old_state.as.attacking.spell_being_cast;
-	    Vector2 cast_dir = old_state.as.attacking.attack_direction;
-	    Vector2 cast_pos = rect_center(world_get_entity_bounding_box(entity));
+	    Vector2 target_pos = old_state.as.attacking.target_position;
 
-	    magic_cast_spell(world, spell, entity, cast_pos, cast_dir);
+	    magic_cast_spell(world, spell, entity, target_pos);
 	} break;
 
 	default: {
@@ -83,7 +82,8 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 
 	case ENTITY_STATE_ATTACKING: {
 	    entity->velocity = V2_ZERO;
-	    entity->direction = state.as.attacking.attack_direction;
+	    entity->direction = v2_sub(state.as.attacking.target_position, entity->position);
+		//state.as.attacking.attack_direction;
 	} break;
 
         INVALID_DEFAULT_CASE;
@@ -678,23 +678,14 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 	player->position = new_pos;
 	player->velocity = new_velocity;
 
-	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)
-	    && player->state.kind != ENTITY_STATE_ATTACKING) {
+	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {
             Vector2 mouse_pos = frame_data->input.mouse_position;
             mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
-
-	    Vector2 player_center = rect_center(world_get_entity_bounding_box(player));
-            Vector2 mouse_dir = v2_sub(mouse_pos, player_center);
-            mouse_dir = v2_norm(mouse_dir);
-
-	    SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
-	    ASSERT(spellcaster);
 
 	    SpellID selected_spell = get_spell_at_spellbook_index(
 		spellcaster, game_ui->selected_spellbook_index);
 
-
-	    entity_transition_to_state(world, player, state_attacking(selected_spell, mouse_dir));
+	    entity_transition_to_state(world, player, state_attacking(selected_spell, mouse_pos));
         }
     }
 

@@ -57,13 +57,11 @@ static void spell_unset_property(Spell *spell, SpellProperties prop)
 }
 
 static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
-    Vector2 pos, Vector2 dir, Entity *cooldown_target, RetriggerBehaviour cooldown_retrigger)
+    Vector2 spell_origin, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
+    RetriggerBehaviour cooldown_retrigger)
 {
     EntityWithID spell_entity_with_id = world_spawn_entity(world, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
-
-    // TODO: remove, we set it at end of function
-    spell_entity->position = pos;
 
     ColliderComponent *spell_collider = es_get_or_add_component(spell_entity, ColliderComponent);
 
@@ -150,7 +148,13 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     // TODO: instead make components be offset from position
     // TODO: this should only happen for projectiles
     Rectangle bounds = world_get_entity_bounding_box(spell_entity);
-    spell_entity->position = v2_sub(pos, v2_div_s(bounds.size, 2.0f));
+
+    if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
+	//spell_entity->position = v2_sub(, v2_div_s(bounds.size, 2.0f));
+	spell_entity->position = spell_origin;
+    } else {
+	spell_entity->position = target_pos;
+    }
 
     // Spells may need to be spawned with a collision cooldown against a specific entity,
     // likely the entity just collided with for forking spells so that the child spells
@@ -168,8 +172,9 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     }
 }
 
-static void magic_cast_spell_with_trigger_cooldown(struct World *world, SpellID id, struct Entity *caster,
-    Vector2 pos, Vector2 dir, Entity *cooldown_target, RetriggerBehaviour cooldown_retrigger)
+static void cast_spell_impl(struct World *world, SpellID id, struct Entity *caster,
+    Vector2 spell_origin, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
+    RetriggerBehaviour cooldown_retrigger)
 {
     const Spell *spell = get_spell_by_id(id);
     s32 spell_count = 1 + spell->projectile.extra_projectile_count;
@@ -187,21 +192,19 @@ static void magic_cast_spell_with_trigger_cooldown(struct World *world, SpellID 
     for (s32 i = 0; i < spell_count; ++i) {
 	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
 
-	cast_single_spell(world, spell, caster, pos, current_dir,
+	cast_single_spell(world, spell, caster, spell_origin, target_pos, current_dir,
 	    cooldown_target, cooldown_retrigger);
 
 	current_angle += angle_step_size;
     }
 }
 
-void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 pos, Vector2 dir)
+void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 target_pos)
 {
-    // TODO: automatically set spell origin pos based on caster position
+    Vector2 dir = v2_sub(target_pos, caster->position);
 
-    // Offset slightly from caster position
-    Vector2 cast_origin = v2_add(pos, v2_mul_s(dir, 20.0f));
-
-    magic_cast_spell_with_trigger_cooldown(world, id, caster, cast_origin, dir, 0, retrigger_whenever());
+    cast_spell_impl(world, id, caster, caster->position, target_pos,
+	dir, 0, retrigger_whenever());
 }
 
 static Spell spell_fireball()
@@ -322,13 +325,15 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
     SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
 
     Entity *caster = es_get_entity(event_data.world->entity_system, cb_data->caster_id);
+    ASSERT(caster && "Entity died before impact, handle this");
+
     Entity *collide_target = es_get_entity(event_data.world->entity_system,
 	event_data.as.hostile_collision.collided_with);
 
     // TODO: should this kind of behaviour be encoded in a forking property of spells?
-
-    magic_cast_spell_with_trigger_cooldown(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster,
-	event_data.self->position, event_data.self->direction,
+    // NOTE: these have no target position, only origin and direction
+    cast_spell_impl(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster,
+	event_data.self->position, V2_ZERO, event_data.self->direction,
 	collide_target, retrigger_never());
 }
 

@@ -92,7 +92,7 @@ typedef struct SpellArray {
 } SpellArray;
 
 void magic_initialize(SpellArray *spells);
-void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 pos, Vector2 dir);
+void magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 target_pos);
 void magic_set_global_spell_array(SpellArray *spells);
 void magic_add_to_spellbook(struct SpellCasterComponent *spellcaster, SpellID id);
 String spell_type_to_string(SpellID id);

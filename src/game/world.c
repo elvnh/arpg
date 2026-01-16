@@ -682,6 +682,7 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
             Vector2 mouse_pos = frame_data->input.mouse_position;
             mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
 
+	    SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
 	    SpellID selected_spell = get_spell_at_spellbook_index(
 		spellcaster, game_ui->selected_spellbook_index);
 

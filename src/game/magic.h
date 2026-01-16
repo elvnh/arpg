@@ -58,7 +58,7 @@ typedef struct {
     } projectile;
 
     struct {
-	Vector2 size;
+	f32 base_radius;
     } aoe;
 
     f32 lifetime;

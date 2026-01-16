@@ -80,7 +80,13 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 
     if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
 	ASSERT(!spell_has_prop(spell, SPELL_PROP_PROJECTILE));
-	spell_collider->size = spell->aoe.size;
+	spell_collider->size = v2(spell->aoe.base_radius, spell->aoe.base_radius);
+
+	SpriteComponent *sprite_comp = es_get_component(spell_entity, SpriteComponent);
+
+	if (sprite_comp) {
+	    sprite_comp->sprite.size = spell_collider->size;
+	}
     }
 
     if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
@@ -292,14 +298,14 @@ static Spell spell_blizzard()
     spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
 
+    spell.aoe.base_radius = 128.0f;
+
     spell.sprite = sprite_create_colored(
 	get_asset_table()->blizzard_texture,
-	v2(64, 64),
+	V2_ZERO, // Sprite size is set equal to radius later on
 	SPRITE_ROTATE_NONE,
 	rgba32(1, 1, 1, 0.5f)
     );
-
-    spell.aoe.size = v2(64, 64); // TODO: aoe affected by caster
 
     spell.lifetime = 15.0f;
 
@@ -314,7 +320,7 @@ static Spell spell_blizzard()
 	.particle_lifetime = 0.25f,
 	.particle_speed = 150.0f,
 	.infinite = true,
-	.particles_per_second = 250
+	.particles_per_second = 300
     };
 
     return spell;
@@ -325,7 +331,7 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
     SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
 
     Entity *caster = es_get_entity(event_data.world->entity_system, cb_data->caster_id);
-    ASSERT(caster && "Entity died before impact, handle this");
+    ASSERT(caster && "Entity died before impact. TODO: handle this");
 
     Entity *collide_target = es_get_entity(event_data.world->entity_system,
 	event_data.as.hostile_collision.collided_with);

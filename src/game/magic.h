@@ -18,6 +18,7 @@ struct World;
   TODO:
   - Cast speed
   - Scaling of spell aoe etc by caster stats
+  - Don't define the SpellProperty bit values in declaration, do bitshift when needed
  */
 
 typedef enum {
@@ -72,7 +73,7 @@ typedef struct {
     ParticleSpawnerConfig particle_spawner;
     ParticleSpawnerConfig on_death_particle_spawner;
 
-    CallbackFunction collision_callback;
+    CallbackFunction hostile_collision_callback;
 
     /*
       damaging

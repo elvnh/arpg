@@ -143,11 +143,11 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     if (spell_has_prop(spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK)) {
 	es_get_or_add_component(spell_entity, EventListenerComponent);
 
-	ASSERT(spell->collision_callback);
+	ASSERT(spell->hostile_collision_callback);
 
 	SpellCallbackData data = {0};
 	data.caster_id = es_get_id_of_entity(world->entity_system, caster);
-	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, spell->collision_callback, &data);
+	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, spell->hostile_collision_callback, &data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
@@ -368,7 +368,7 @@ static Spell spell_ice_shard()
     spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = retrigger_never(); // TODO: unnecessary
 
-    spell.collision_callback = ice_shard_collision_callback;
+    spell.hostile_collision_callback = ice_shard_collision_callback;
 
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
@@ -393,7 +393,7 @@ static Spell spell_ice_shard_trigger()
     Spell spell = spell_ice_shard();
 
     spell_unset_property(&spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK);
-    spell.collision_callback = 0;
+    spell.hostile_collision_callback = 0;
 
     spell.projectile.extra_projectile_count = 10;
     spell.projectile.projectile_cone_in_radians = deg_to_rad(360);

@@ -212,9 +212,11 @@ static Spell spell_fireball()
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
 	/*| SPELL_PROP_PARTICLE_SPAWNER*/;
 
-    spell.sprite.texture = get_asset_table()->fireball_texture;
-    spell.sprite.size = v2(32, 32);
-    spell.sprite.rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
+    spell.sprite = sprite_create(
+	get_asset_table()->fireball_texture,
+	v2(32, 32),
+	SPRITE_ROTATE_BASED_ON_DIR
+    );
 
     spell.projectile.projectile_speed = 300.0f;
     spell.projectile.collider_size = v2(32, 32);
@@ -250,8 +252,11 @@ static Spell spell_spark()
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
 
-    spell.sprite.texture = get_asset_table()->spark_texture;
-    spell.sprite.size = v2(32, 32);
+    spell.sprite = sprite_create(
+	get_asset_table()->spark_texture,
+	v2(32, 32),
+	SPRITE_ROTATE_NONE
+    );
 
     spell.projectile.projectile_speed = 500.0f;
     spell.projectile.collider_size = v2(32, 32);
@@ -284,8 +289,12 @@ static Spell spell_blizzard()
     spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
 
-    spell.sprite.texture = get_asset_table()->blizzard_texture;
-    spell.sprite.size = v2(64, 64);
+    spell.sprite = sprite_create_colored(
+	get_asset_table()->blizzard_texture,
+	v2(64, 64),
+	SPRITE_ROTATE_NONE,
+	rgba32(1, 1, 1, 0.5f)
+    );
 
     spell.aoe.size = v2(64, 64); // TODO: aoe affected by caster
 
@@ -307,7 +316,6 @@ static Spell spell_blizzard()
 
     return spell;
 }
-
 
 static void ice_shard_collision_callback(void *user_data, EventData event_data)
 {
@@ -333,9 +341,11 @@ static Spell spell_ice_shard()
 	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK | SPELL_PROP_PARTICLE_SPAWNER
 	| SPELL_PROP_SPAWN_PARTICLES_ON_DEATH;
 
-    spell.sprite.texture = get_asset_table()->ice_shard_texture;
-    spell.sprite.size = v2(16, 16);
-    spell.sprite.rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
+    spell.sprite = sprite_create(
+	get_asset_table()->ice_shard_texture,
+	v2(16, 16),
+	SPRITE_ROTATE_BASED_ON_DIR
+    );
 
     spell.projectile.projectile_speed = 300.0f;
     spell.projectile.collider_size = spell.sprite.size;

@@ -14,6 +14,12 @@ struct SpellCasterComponent;
 struct Entity;
 struct World;
 
+/*
+  TODO:
+  - Cast speed
+  - Scaling of spell aoe etc by caster stats
+ */
+
 typedef enum {
     SPELL_FIREBALL,
     SPELL_SPARK,

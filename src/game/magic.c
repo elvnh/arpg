@@ -150,17 +150,16 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, spell->collision_callback, &data);
     }
 
-    // Offset so that spells center is 'pos'
-    // TODO: instead make components be offset from position
-    // TODO: this should only happen for projectiles
-    Rectangle bounds = world_get_entity_bounding_box(spell_entity);
-
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
-	//spell_entity->position = v2_sub(, v2_div_s(bounds.size, 2.0f));
 	spell_entity->position = spell_origin;
     } else {
+	ASSERT(spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT));
 	spell_entity->position = target_pos;
     }
+
+    // Offset so that spells center is centered on the target position
+    Rectangle bounds = world_get_entity_bounding_box(spell_entity);
+    spell_entity->position = v2_sub(spell_entity->position, v2_div_s(bounds.size, 2.0f));
 
     // Spells may need to be spawned with a collision cooldown against a specific entity,
     // likely the entity just collided with for forking spells so that the child spells
@@ -207,9 +206,10 @@ static void cast_spell_impl(struct World *world, SpellID id, struct Entity *cast
 
 void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 target_pos)
 {
-    Vector2 dir = v2_sub(target_pos, caster->position);
+    Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster));
+    Vector2 dir = v2_sub(target_pos, spell_origin);
 
-    cast_spell_impl(world, id, caster, caster->position, target_pos,
+    cast_spell_impl(world, id, caster, spell_origin, target_pos,
 	dir, 0, retrigger_whenever());
 }
 

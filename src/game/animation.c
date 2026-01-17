@@ -155,6 +155,29 @@ AnimationInstance anim_begin_animation(AnimationID next_anim, f32 speed_factor)
     return result;
 }
 
+f32 get_animation_duration(AnimationID anim)
+{
+    Animation *a = anim_get_by_id(anim);
+
+    f32 result = 0.0f;
+
+    for (ssize i = 0; i < a->frame_count; ++i) {
+	result += a->frames[i].duration;
+    }
+
+    return result;
+}
+
+AnimationInstance anim_begin_animation_with_duration(AnimationID anim, f32 duration, f32 speed_factor)
+{
+    f32 anim_duration = get_animation_duration(anim);
+    f32 total_speed_factor = (anim_duration / duration) * speed_factor;
+
+    AnimationInstance result = anim_begin_animation(anim, total_speed_factor);
+
+    return result;
+}
+
 AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance)
 {
     Animation *anim = anim_get_by_id(anim_instance->animation_id);

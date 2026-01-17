@@ -46,6 +46,7 @@ typedef enum {
 
 typedef struct {
     SpellProperties properties;
+    f32 cast_duration;
 
     /* Flag specific fields */
     Sprite sprite;
@@ -104,5 +105,6 @@ void magic_set_global_spell_array(SpellArray *spells);
 void magic_add_to_spellbook(struct SpellCasterComponent *spellcaster, SpellID id);
 String spell_type_to_string(SpellID id);
 SpellID get_spell_at_spellbook_index(struct SpellCasterComponent *spellcaster, ssize index);
+f32 get_spell_cast_duration(SpellID id);
 
 #endif //MAGIC_H

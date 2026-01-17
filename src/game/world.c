@@ -71,26 +71,29 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 
 	// TODO: instead check if there is an animation for this state?
 	ASSERT(next_anim != ANIM_NULL);
-	f32 speed_modifier = 1.0f;
 
 	if (state.kind == ENTITY_STATE_ATTACKING) {
-	    speed_modifier = (f32)state.as.attacking.cast_speed / 100.0f;
+	    f32 cast_speed = (f32)state.as.attacking.cast_speed / 100.0f;
+	    f32 spell_cast_duration = get_spell_cast_duration(state.as.attacking.spell_being_cast);
+
+	    anim_comp->current_animation = anim_begin_animation_with_duration(next_anim,
+		spell_cast_duration, cast_speed);
+	} else {
+	    anim_comp->current_animation = anim_begin_animation(next_anim, 1.0f);
 	}
 
-	anim_comp->current_animation = anim_begin_animation(next_anim, speed_modifier);
-    }
+	switch (state.kind) {
+	    case ENTITY_STATE_IDLE:
+	    case ENTITY_STATE_WALKING: {
+	    } break;
 
-    switch (state.kind) {
-	case ENTITY_STATE_IDLE:
-	case ENTITY_STATE_WALKING: {
-	} break;
+	    case ENTITY_STATE_ATTACKING: {
+		entity->velocity = V2_ZERO;
+		entity->direction = v2_sub(state.as.attacking.target_position, entity->position);
+	    } break;
 
-	case ENTITY_STATE_ATTACKING: {
-	    entity->velocity = V2_ZERO;
-	    entity->direction = v2_sub(state.as.attacking.target_position, entity->position);
-	} break;
-
-        INVALID_DEFAULT_CASE;
+	    INVALID_DEFAULT_CASE;
+	}
     }
 }
 

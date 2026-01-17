@@ -58,6 +58,7 @@ void anim_update_instance(struct World *world, struct Entity *entity,
 void anim_render_instance(struct AnimationInstance *anim_instance, struct Entity *owning_entity,
     struct RenderBatch *rb, struct LinearArena *scratch);
 AnimationInstance anim_begin_animation(AnimationID next_anim, f32 speed_factor);
+AnimationInstance anim_begin_animation_with_duration(AnimationID anim, f32 duration, f32 speed_factor);
 AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance);
 //AnimationInstance *anim_get_current_animation(struct Entity *entity, struct AnimationComponent *anim_comp);
 void anim_set_global_animation_table(AnimationTable *anim_table);

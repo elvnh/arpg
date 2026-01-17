@@ -220,6 +220,7 @@ static Spell spell_fireball()
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
 	/*| SPELL_PROP_PARTICLE_SPAWNER*/;
+    spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
 	get_asset_table()->fireball_texture,
@@ -260,6 +261,7 @@ static Spell spell_spark()
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
+    spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
 	get_asset_table()->spark_texture,
@@ -297,6 +299,7 @@ static Spell spell_blizzard()
 
     spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
+    spell.cast_duration = 0.5f;
 
     spell.aoe.base_radius = 128.0f;
 
@@ -351,6 +354,7 @@ static Spell spell_ice_shard()
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
 	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK | SPELL_PROP_PARTICLE_SPAWNER
 	| SPELL_PROP_SPAWN_PARTICLES_ON_DEATH;
+    spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
 	get_asset_table()->ice_shard_texture,
@@ -458,6 +462,15 @@ SpellID get_spell_at_spellbook_index(SpellCasterComponent *spellcaster, ssize in
     ASSERT(index < SPELL_COUNT);
 
     SpellID result = spellcaster->spellbook[index];
+
+    return result;
+}
+
+f32 get_spell_cast_duration(SpellID id)
+{
+    const Spell *spell = get_spell_by_id(id);
+
+    f32 result = spell->cast_duration;
 
     return result;
 }

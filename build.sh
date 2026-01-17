@@ -31,6 +31,7 @@ src/game/collision.c
 src/game/collision_event.c
 src/game/collision_policy.c
 src/game/animation.c
+src/game/debug.c
 src/game/hitsplat.c
 src/game/asset_table.c
 src/game/game_ui.c

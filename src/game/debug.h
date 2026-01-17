@@ -5,6 +5,13 @@
 
 #include "ui/ui_core.h"
 
+struct Game;
+struct GameMemory;
+struct FrameData;
+struct QuadTreeNode;
+struct RenderBatch;
+struct LinearArena;
+
 typedef struct DebugState {
     UIState debug_ui;
 
@@ -30,5 +37,11 @@ static inline void print_v2(Vector2 v)
 {
     printf("(%.2f, %.2f)\n", (f64)v.x, (f64)v.y);
 }
+
+void debug_update(struct Game *game, const struct FrameData *frame_data, LinearArena *frame_arena);
+void debug_ui(UIState *ui, struct Game *game, struct GameMemory *memory, const struct FrameData *frame_data);
+void render_quad_tree(struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena,
+    ssize depth);
+
 
 #endif //DEBUG_H

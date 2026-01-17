@@ -289,7 +289,7 @@ static void debug_update(Game *game, const FrameData *frame_data, LinearArena *f
         speed_modifier -= speed_modifier_step;
     }
 
-    game->debug_state.timestep_modifier = CLAMP(speed_modifier, speed_modifier_step, 5.0f);
+    game->debug_state.timestep_modifier = CLAMP(speed_modifier, 0.0f, 5.0f);
 }
 
 
@@ -354,7 +354,10 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
 
     frame_data.dt *= game->debug_state.timestep_modifier;
 
-    game_update(game, &frame_data, &game_memory->temporary_memory);
+    if (game->debug_state.timestep_modifier > 0.0f) {
+	game_update(game, &frame_data, &game_memory->temporary_memory);
+    }
+
     game_render(game, rbs, &frame_data, &game_memory->temporary_memory);
 
     if (input_is_key_pressed(&frame_data.input, KEY_T)) {

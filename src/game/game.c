@@ -70,7 +70,6 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     anim_set_global_animation_table(&game->animations);
     set_global_asset_table(&game->asset_list);
 
-    // NOTE: Spells and animations are re-initialized every frame so that they can be changed during runtime.
     magic_initialize(&game->spells);
     anim_initialize(&game->animations);
 #endif

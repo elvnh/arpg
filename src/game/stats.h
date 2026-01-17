@@ -7,6 +7,7 @@
 struct Entity;
 struct ItemSystem;
 
+// TODO: function for initializing to base values, eg. cast speed to 100
 // NOTE: flat added, additive percentage, multiplicative percentage etc are just
 // different ways of modifying the same base stat
 typedef enum {
@@ -15,6 +16,8 @@ typedef enum {
 
     STAT_FIRE_RESISTANCE,
     STAT_LIGHTNING_RESISTANCE,
+
+    STAT_CAST_SPEED,
 
     STAT_COUNT,
 } Stat;
@@ -41,6 +44,13 @@ StatValue get_total_stat_modifier_of_type(struct Entity *entity, Stat stat, Nume
 StatValue apply_modifier(StatValue lhs, StatValue rhs, NumericModifierType mod_type);
 StatValue modify_stat_by_percentage(StatValue lhs, StatValue percentage);
 
+static inline void set_stat_value(StatValues *stats, Stat stat, StatValue value)
+{
+    ASSERT(stat >= 0);
+    ASSERT(stat < STAT_COUNT);
+    stats->values[stat] = value;
+}
+
 static inline StatValue get_base_stat_value(StatValues stats, Stat stat)
 {
     ASSERT(stat >= 0);
@@ -58,6 +68,7 @@ static inline String stat_to_string(Stat stat)
 	case STAT_LIGHTNING_DAMAGE:	  return str_lit("Lightning damage");
 	case STAT_FIRE_RESISTANCE:	  return str_lit("Fire resistance");
 	case STAT_LIGHTNING_RESISTANCE:   return str_lit("Lightning resistance");
+	case STAT_CAST_SPEED:		  return str_lit("Cast speed");
 	case STAT_COUNT:		  ASSERT(0);
     }
 

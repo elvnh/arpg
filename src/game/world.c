@@ -71,8 +71,13 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 
 	// TODO: instead check if there is an animation for this state?
 	ASSERT(next_anim != ANIM_NULL);
+	f32 speed_modifier = 1.0f;
 
-	anim_comp->current_animation = anim_begin_animation(next_anim, 1.0f);
+	if (state.kind == ENTITY_STATE_ATTACKING) {
+	    speed_modifier = (f32)state.as.attacking.cast_speed / 100.0f;
+	}
+
+	anim_comp->current_animation = anim_begin_animation(next_anim, speed_modifier);
     }
 
     switch (state.kind) {
@@ -708,7 +713,9 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 	    SpellID selected_spell = get_spell_at_spellbook_index(
 		spellcaster, game_ui->selected_spellbook_index);
 
-	    entity_transition_to_state(world, player, state_attacking(selected_spell, mouse_pos));
+	    StatValue cast_speed = get_total_stat_value(player, STAT_CAST_SPEED, world->item_system);
+
+	    entity_transition_to_state(world, player, state_attacking(selected_spell, mouse_pos, cast_speed));
         }
     }
 
@@ -986,14 +993,14 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 	entity_transition_to_state(world, entity, state_idle());
 #endif
 
-        /* StatsComponent *stats = es_add_component(entity, StatsComponent); */
-        /* set_damage_value_for_type(&stats->base_resistances, DMG_TYPE_LIGHTNING, 0); */
+        StatsComponent *stats = es_add_component(entity, StatsComponent);
+	set_stat_value(&stats->stats, STAT_CAST_SPEED, 100);
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
-	/* Modifier dmg_mod = create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE); */
-	/* status_effects_add(effects, dmg_mod, 10.0f); */
 	Modifier res_mod = create_modifier(STAT_FIRE_RESISTANCE, 100, NUMERIC_MOD_FLAT_ADDITIVE);
 	status_effects_add(effects, res_mod, 10.0f);
+	Modifier cs_mod = create_modifier(STAT_CAST_SPEED, 500, NUMERIC_MOD_FLAT_ADDITIVE);
+	status_effects_add(effects, cs_mod, 10.0f);
 
         // TODO: ensure components are zeroed out
         InventoryComponent *inventory = es_add_component(entity, InventoryComponent);

@@ -608,7 +608,7 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
             if (mag > 0.5f) {
                 a->direction = v2_norm(a->velocity);
             } else if (mag < 0.01f) {
-		a->velocity = V2_ZERO;
+		//a->velocity = V2_ZERO;
 	    }
         }
     }
@@ -633,6 +633,7 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
     camera_set_target(&world->camera, camera_target);
 
     if (player->state.kind != ENTITY_STATE_ATTACKING) {
+#if 0
 	f32 speed = 350.0f;
 
 	if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
@@ -677,6 +678,39 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 
 	player->position = new_pos;
 	player->velocity = new_velocity;
+#else
+	f32 speed = 350.0f;
+
+	if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
+	    speed *= 3.0f;
+	}
+
+	Vector2 direction = {0};
+
+	if (input_is_key_down(&frame_data->input, KEY_W)) {
+	    direction.y = 1.0f;
+	} else if (input_is_key_down(&frame_data->input, KEY_S)) {
+	    direction.y = -1.0f;
+	}
+
+	if (input_is_key_down(&frame_data->input, KEY_A)) {
+	    direction.x = -1.0f;
+	} else if (input_is_key_down(&frame_data->input, KEY_D)) {
+	    direction.x = 1.0f;
+	}
+
+	direction = v2_norm(direction);
+
+	if (!v2_eq(direction, V2_ZERO)) {
+	    entity_try_transition_to_state(world, player, state_walking());
+	} else {
+	    entity_try_transition_to_state(world, player, state_idle());
+	}
+
+	direction = v2_mul_s(direction, speed);
+
+	player->velocity = direction;
+#endif
 
 	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {
             Vector2 mouse_pos = frame_data->input.mouse_position;
@@ -704,7 +738,6 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 	    es_schedule_entity_for_removal(hovered_entity);
 	}
     }
-
 }
 
 // TODO: move all controlling logic to game.c

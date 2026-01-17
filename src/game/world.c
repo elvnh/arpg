@@ -71,8 +71,7 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 	// TODO: instead check if there is an animation for this state?
 	ASSERT(next_anim != ANIM_NULL);
 
-	// TODO: rename anim_transition_to_animation to start_animation or something
-	anim_transition_to_animation(&anim_comp->current_animation, next_anim);
+	anim_comp->current_animation = anim_begin_animation(next_anim, 1.0f);
     }
 
     switch (state.kind) {
@@ -83,7 +82,6 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 	case ENTITY_STATE_ATTACKING: {
 	    entity->velocity = V2_ZERO;
 	    entity->direction = v2_sub(state.as.attacking.target_position, entity->position);
-		//state.as.attacking.attack_direction;
 	} break;
 
         INVALID_DEFAULT_CASE;
@@ -679,10 +677,10 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 	player->position = new_pos;
 	player->velocity = new_velocity;
 #else
-	f32 speed = 350.0f;
+	f32 speed = 225.0f;
 
 	if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
-	    speed *= 3.0f;
+	    speed *= 2.0f;
 	}
 
 	Vector2 direction = {0};

@@ -98,7 +98,7 @@ void anim_update_instance(World *world, Entity *entity, AnimationInstance *anim_
 
     AnimationFrame curr_frame = anim->frames[anim_instance->current_frame];
 
-    anim_instance->current_frame_elapsed_time += dt;
+    anim_instance->current_frame_elapsed_time += dt * anim_instance->animation_speed_factor;
 
     if (anim_instance->current_frame_elapsed_time >= curr_frame.duration) {
         anim_instance->current_frame_elapsed_time = 0.0f;
@@ -125,10 +125,7 @@ void anim_update_instance(World *world, Entity *entity, AnimationInstance *anim_
 	    }
 
         }
-
-
     }
-
 }
 
 void anim_render_instance(AnimationInstance *anim_instance, Entity *owning_entity, RenderBatch *rb,
@@ -144,13 +141,18 @@ void anim_render_instance(AnimationInstance *anim_instance, Entity *owning_entit
 	get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
 }
 
-void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim)
+AnimationInstance anim_begin_animation(AnimationID next_anim, f32 speed_factor)
 {
     ASSERT(next_anim != ANIM_NULL);
 
-    anim_instance->animation_id = next_anim;
-    anim_instance->current_frame = 0;
-    anim_instance->current_frame_elapsed_time = 0;
+    AnimationInstance result = {0};
+
+    result.animation_id = next_anim;
+    result.current_frame = 0;
+    result.current_frame_elapsed_time = 0;
+    result.animation_speed_factor = speed_factor;
+
+    return result;
 }
 
 AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance)
@@ -161,18 +163,6 @@ AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance)
 
     return frame;
 }
-
-/* AnimationInstance *anim_get_current_animation(Entity *entity, AnimationComponent *anim_comp) */
-/* { */
-/*     ASSERT(entity->state < ENTITY_STATE_COUNT); */
-/*     ASSERT(entity); */
-/*     ASSERT(anim_comp); */
-/*     ASSERT(es_has_component(entity, AnimationComponent)); */
-
-/*     AnimationInstance *result = &anim_comp->state_animations[entity->state]; */
-
-/*     return result; */
-/* } */
 
 void anim_set_global_animation_table(AnimationTable *anim_table)
 {

@@ -45,6 +45,7 @@ typedef struct AnimationInstance {
     AnimationID animation_id;
     s32 current_frame;
     f32 current_frame_elapsed_time;
+    f32 animation_speed_factor;
 } AnimationInstance;
 
 typedef struct AnimationTable {
@@ -56,7 +57,7 @@ void anim_update_instance(struct World *world, struct Entity *entity,
     struct AnimationInstance *anim_instance, f32 dt);
 void anim_render_instance(struct AnimationInstance *anim_instance, struct Entity *owning_entity,
     struct RenderBatch *rb, struct LinearArena *scratch);
-void anim_transition_to_animation(struct AnimationInstance *anim_instance, AnimationID next_anim);
+AnimationInstance anim_begin_animation(AnimationID next_anim, f32 speed_factor);
 AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance);
 //AnimationInstance *anim_get_current_animation(struct Entity *entity, struct AnimationComponent *anim_comp);
 void anim_set_global_animation_table(AnimationTable *anim_table);

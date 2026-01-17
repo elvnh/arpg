@@ -94,8 +94,8 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
-	DamageValues damage_roll = roll_damage_in_range(spell->damaging.base_damage);
-        DamageValues damage_after_boosts = calculate_damage_dealt(damage_roll, caster,
+	Damage damage_roll = roll_damage_in_range(spell->damaging.base_damage);
+        Damage damage_after_boosts = calculate_damage_dealt(damage_roll, caster,
 	    world->item_system);
 
 	DamageFieldComponent *dmg_field = es_add_component(spell_entity, DamageFieldComponent);
@@ -231,8 +231,8 @@ static Spell spell_fireball()
     spell.projectile.collider_size = v2(32, 32);
 
     DamageRange damage_range = {0};
-    set_damage_value_for_type(&damage_range.low_roll, DMG_TYPE_FIRE, 10);
-    set_damage_value_for_type(&damage_range.high_roll, DMG_TYPE_FIRE, 20);
+    set_damage_value(&damage_range.low_roll, DMG_TYPE_Fire, 10);
+    set_damage_value(&damage_range.high_roll, DMG_TYPE_Fire, 20);
 
     spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = retrigger_never();
@@ -274,8 +274,8 @@ static Spell spell_spark()
 
     spell.lifetime = 5.0f;
 
-    set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_LIGHTNING, 1, 100);
-    set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
+    set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_Lightning, 1, 100);
+    set_damage_value(&spell.damaging.penetration_values, DMG_TYPE_Lightning, 20);
     spell.damaging.retrigger_behaviour = retrigger_after_non_contact();
 
     spell.particle_spawner = (ParticleSpawnerConfig) {
@@ -309,8 +309,8 @@ static Spell spell_blizzard()
 
     spell.lifetime = 15.0f;
 
-    set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_LIGHTNING, 1, 100);
-    set_damage_value_for_type(&spell.damaging.penetration_values, DMG_TYPE_LIGHTNING, 20);
+    set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_Lightning, 1, 100);
+    set_damage_value(&spell.damaging.penetration_values, DMG_TYPE_Lightning, 20);
     spell.damaging.retrigger_behaviour = retrigger_after_duration(1.0f);
 
     spell.particle_spawner = (ParticleSpawnerConfig) {
@@ -362,8 +362,8 @@ static Spell spell_ice_shard()
     spell.projectile.collider_size = spell.sprite.size;
 
     DamageRange damage_range = {0};
-    set_damage_value_for_type(&damage_range.low_roll, DMG_TYPE_FIRE, 50);
-    set_damage_value_for_type(&damage_range.high_roll, DMG_TYPE_FIRE, 70);
+    set_damage_value(&damage_range.low_roll, DMG_TYPE_Fire, 50);
+    set_damage_value(&damage_range.high_roll, DMG_TYPE_Fire, 70);
 
     spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = retrigger_never(); // TODO: unnecessary

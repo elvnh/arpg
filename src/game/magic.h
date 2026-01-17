@@ -53,7 +53,7 @@ typedef struct {
     struct {
 	// TODO: pack base_damage and penetration_values into struct
 	DamageRange base_damage;
-	DamageValues penetration_values;
+	Damage penetration_values;
 	RetriggerBehaviour retrigger_behaviour;
     } damaging;
 

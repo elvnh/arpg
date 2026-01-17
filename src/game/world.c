@@ -29,6 +29,7 @@
 #include "quad_tree.h"
 #include "renderer/render_batch.h"
 #include "renderer/render_key.h"
+#include "stats.h"
 #include "tilemap.h"
 #include "asset_table.h"
 #include "trigger.h"
@@ -382,19 +383,8 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
 
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
 {
-    DamageValues damage_taken = {0};
-
-    if (es_has_component(entity, StatsComponent)) {
-        StatsComponent *stats = es_get_component(entity, StatsComponent);
-        DamageValues resistances = calculate_resistances_after_boosts(entity, world->item_system);
-
-        damage_taken = calculate_damage_received(resistances, damage);
-    } else {
-	ASSERT(0 && "Should this ever happen? An entity with no stats taking damage?");
-        damage_taken = damage.types;
-    }
-
-    DamageValue dmg_sum = calculate_damage_sum(damage_taken);
+    Damage damage_taken = calculate_damage_received(entity, damage, world->item_system);
+    StatValue dmg_sum = calculate_damage_sum(damage_taken);
 
     health->health.hitpoints -= dmg_sum;
     hitsplats_create(world, entity->position, damage_taken);
@@ -996,10 +986,10 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 	entity_transition_to_state(world, entity, state_idle());
 #endif
 
-        StatsComponent *stats = es_add_component(entity, StatsComponent);
-        set_damage_value_for_type(&stats->base_resistances, DMG_TYPE_LIGHTNING, 0);
+        /* StatsComponent *stats = es_add_component(entity, StatsComponent); */
+        /* set_damage_value_for_type(&stats->base_resistances, DMG_TYPE_LIGHTNING, 0); */
 
-        StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
+        //StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
 
 #if 0
         Modifier dmg_mod = {
@@ -1009,13 +999,13 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
         set_damage_value_of_type(&dmg_mod.as.damage_modifier.additive_modifiers, DMG_KIND_LIGHTNING, 1000);
         status_effects_add(effects, dmg_mod, 5.0f);
 
-        // TODO: easier way to add status effects and create modifiers
-        Modifier res_mod = {
-            .kind = MODIFIER_RESISTANCE,
-        };
+        /* // TODO: easier way to add status effects and create modifiers */
+        /* Modifier res_mod = { */
+        /*     .kind = MODIFIER_RESISTANCE, */
+        /* }; */
 
-        set_damage_value_of_type(&res_mod.as.resistance_modifier, DMG_KIND_LIGHTNING, 120);
-        status_effects_add(effects, res_mod, 3.0f);
+        /* set_damage_value_of_type(&res_mod.as.resistance_modifier, DMG_KIND_LIGHTNING, 120); */
+        /* status_effects_add(effects, res_mod, 3.0f); */
 #endif
 
         // TODO: ensure components are zeroed out
@@ -1028,17 +1018,15 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
             ItemWithID item_with_id = item_sys_create_item(world->item_system);
             Item *item = item_with_id.item;
 
-
             item_sys_set_item_name(world->item_system, item, str_lit("Sword"));
             item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
             item->equipment.slot = EQUIP_SLOT_WEAPON;
 
 #if 1
-            Modifier dmg_mod = create_damage_modifier(NUMERIC_MOD_FLAT_ADDITIVE, DMG_TYPE_FIRE, 100);
+            Modifier dmg_mod = create_modifier(STAT_FIRE_DAMAGE, 100, NUMERIC_MOD_FLAT_ADDITIVE);
             item_add_modifier(item, dmg_mod);
 
-	    Modifier dmg_mod2 = create_damage_modifier(NUMERIC_MOD_ADDITIVE_PERCENTAGE,
-		DMG_TYPE_FIRE, 150);
+	    Modifier dmg_mod2 = create_modifier(STAT_FIRE_DAMAGE, 150, NUMERIC_MOD_ADDITIVE_PERCENTAGE);
             item_add_modifier(item, dmg_mod2);
             //item_add_modifier(item, res_mod);
 #endif
@@ -1047,9 +1035,9 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 	    drop_ground_item(world, v2(400, 400), item_with_id.id);
 #else
             inventory_add_item(&inventory->inventory, item_with_id.id);
-#endif
 	    equip_item_from_inventory(item_system, &equipment->equipment,
 		&inventory->inventory, item_with_id.id);
+#endif
         }
 #endif
     }

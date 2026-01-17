@@ -35,14 +35,14 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 	String damage_str = s64_to_string(hitsplat->damage.value, la_allocator(frame_arena));
 
 	f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
-	RGBA32 color = {0};
+	RGBA32 color = get_damage_type_color(hitsplat->damage.type);
 
 	switch (hitsplat->damage.type) {
-	    case DMG_TYPE_FIRE: {
+	    case DMG_TYPE_Fire: {
 		color = RGBA32_RED;
 	    } break;
 
-	    case DMG_TYPE_LIGHTNING: {
+	    case DMG_TYPE_Lightning: {
 		color = RGBA32_YELLOW;
 	    } break;
 
@@ -57,7 +57,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
     }
 }
 
-void hitsplats_create(World *world, Vector2 position, DamageValues damage)
+void hitsplats_create(World *world, Vector2 position, Damage damage)
 {
     // NOTE: a single instance of damage can result in multiple hitsplats
     // if the instance contains multiple damage types
@@ -66,7 +66,7 @@ void hitsplats_create(World *world, Vector2 position, DamageValues damage)
 	// TODO: use ring buffer for hitsplats instead
 	ASSERT(world->hitsplat_count < ARRAY_COUNT(world->active_hitsplats));
 
-	DamageValue value = get_damage_value_for_type(damage, type);
+	StatValue value = damage.type_values[type];
 
 	if (value > 0) {
 	    // TODO: randomize size and position

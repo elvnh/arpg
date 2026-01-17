@@ -10,6 +10,7 @@
 #include "particle.h"
 #include "asset.h"
 #include "collider.h"
+#include "stats.h"
 #include "status_effect.h"
 #include "equipment.h"
 #include "inventory.h"
@@ -44,6 +45,7 @@ typedef enum {
     #undef COMPONENT
 } ComponentType;
 
+// TODO: maybe health should be a part of Stats?
 typedef struct {
     Health health;
 } HealthComponent;
@@ -57,7 +59,7 @@ typedef struct {
 } LifetimeComponent;
 
 typedef struct {
-    DamageValues base_resistances;
+    StatValues stats;
 } StatsComponent;
 
 typedef struct {

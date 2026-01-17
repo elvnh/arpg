@@ -67,7 +67,6 @@ static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, All
 		ui_spacing(ui, 12);
 	    }
 	}
-	//for (ssize i = 0; i < )
 
     } ui_end_mouse_menu(ui);
 }

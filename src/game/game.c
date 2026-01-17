@@ -2,10 +2,16 @@
 #include "base/format.h"
 #include "base/matrix.h"
 #include "base/random.h"
+#include "components/status_effect.h"
+#include "entity_id.h"
+#include "entity_system.h"
 #include "item_system.h"
+#include "modifier.h"
 #include "renderer/render_batch.h"
 #include "input.h"
 #include "renderer/render_key.h"
+#include "ui/ui_builder.h"
+#include "ui/widget.h"
 #include "world.h"
 
 static void game_update(Game *game, const FrameData *frame_data, LinearArena *frame_arena)
@@ -46,8 +52,6 @@ static void render_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
     }
 }
 
-
-
 static void game_render(Game *game, RenderBatchList *rbs, const FrameData *frame_data, LinearArena *frame_arena)
 {
     RenderBatch *rb = rb_list_push_new(rbs, game->world.camera, frame_data->window_size, Y_IS_UP, frame_arena);
@@ -81,6 +85,7 @@ static void game_render(Game *game, RenderBatchList *rbs, const FrameData *frame
     rb_sort_entries(rb, frame_arena);
 }
 
+// TODO: move debug functions to debug.c
 static String dbg_arena_usage_string(String name, ssize usage, Allocator allocator)
 {
     String result = str_concat(
@@ -93,6 +98,79 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
     );
 
     return result;
+}
+
+static void inspected_entity_debug_ui(UIState *ui, Game *game, GameMemory *game_memory,
+    const FrameData *frame_data)
+{
+    // TODO: allow locking on to entity
+    EntityID inspected_entity_id = game->game_ui.hovered_entity;
+
+    if (entity_id_is_null(inspected_entity_id)) {
+	return;
+    }
+
+    Entity *entity = es_get_entity(game->world.entity_system, inspected_entity_id);
+    Allocator alloc = la_allocator(&game_memory->temporary_memory);
+
+    // TODO: don't require name for containers
+    ui_begin_container(ui, str_lit("inspect"), V2_ZERO, RGBA32_GREEN, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+	// TODO: inventory and equipment
+	String entity_str = str_concat(
+	    str_lit("Hovered entity: "),
+	    s64_to_string(game->game_ui.hovered_entity.slot_id, alloc),
+	    alloc
+	);
+
+	String entity_pos_str = str_concat(
+	    str_lit("Position: "), v2_to_string(entity->position, alloc), alloc
+	);
+
+	String entity_faction_str = {0};
+	switch (entity->faction) {
+	    case FACTION_NEUTRAL: {
+		entity_faction_str = str_lit("Neutral");
+	    } break;
+
+	    case FACTION_PLAYER: {
+		entity_faction_str = str_lit("Player");
+	    } break;
+
+	    case FACTION_ENEMY: {
+		entity_faction_str = str_lit("Enemy");
+	    } break;
+
+		INVALID_DEFAULT_CASE;
+	}
+
+	entity_faction_str = str_concat(str_lit("Faction: "), entity_faction_str, alloc);
+
+	ui_text(ui, entity_str);
+	ui_text(ui, entity_pos_str);
+	ui_text(ui, entity_faction_str);
+
+	StatusEffectComponent *effects = es_get_component(entity, StatusEffectComponent);
+
+	if (effects) {
+	    ui_begin_list(ui, str_lit("status_effects")); {
+		for (ssize i = 0; i < effects->effect_count; ++i) {
+		    StatusEffect e = effects->effects[i];
+
+		    String mod_str = modifier_to_string(e.modifier, alloc);
+		    String duration_str = f32_to_string(e.time_remaining, 2, alloc);
+
+		    String str = str_concat(mod_str, str_lit("("), alloc);
+		    str = str_concat(str, duration_str, alloc);
+		    str = str_concat(str, str_lit(")"), alloc);
+
+		    // TODO: doesn't need to be selectable
+		    ui_selectable(ui, str);
+		}
+	    } ui_end_list(ui);
+	}
+    } ui_pop_container(ui);
+
+
 }
 
 static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const FrameData *frame_data)
@@ -171,87 +249,7 @@ static void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const Fra
     }
 
     ui_spacing(ui, 8);
-
-    // TODO: display more stats about hovered entity
-    if (!entity_id_equal(game->game_ui.hovered_entity, NULL_ENTITY_ID)) {
-        Entity *entity = es_try_get_entity(&game->entity_system, game->game_ui.hovered_entity);
-
-        if (entity) {
-            String entity_str = str_concat(
-                str_lit("Hovered entity: "),
-                s64_to_string(game->game_ui.hovered_entity.slot_id, temp_alloc),
-                temp_alloc
-            );
-
-            String entity_pos_str = str_concat(
-                str_lit("Position: "), v2_to_string(entity->position, temp_alloc), temp_alloc
-            );
-
-            String entity_faction_str = {0};
-            switch (entity->faction) {
-                case FACTION_NEUTRAL: {
-                    entity_faction_str = str_lit("Neutral");
-                } break;
-
-                case FACTION_PLAYER: {
-                    entity_faction_str = str_lit("Player");
-                } break;
-
-                case FACTION_ENEMY: {
-                    entity_faction_str = str_lit("Enemy");
-                } break;
-
-		INVALID_DEFAULT_CASE;
-            }
-
-            entity_faction_str = str_concat(str_lit("Faction: "), entity_faction_str, temp_alloc);
-
-            ui_text(ui, entity_str);
-            ui_text(ui, entity_pos_str);
-            ui_text(ui, entity_faction_str);
-
-            if (es_has_component(entity, InventoryComponent)) {
-                ui_spacing(ui, 8);
-
-                InventoryComponent *inv = es_get_component(entity, InventoryComponent);
-                ui_text(ui, str_lit("Inventory:"));
-
-                for (ssize i = 0; i < inv->inventory.item_count; ++i) {
-                    ItemID id = inv->inventory.items[i];
-
-                    Item *item = item_sys_get_item(game->world.item_system, id);
-                    ASSERT(item);
-
-                    String id_string = s64_to_string((ssize)id.id, temp_alloc);
-                    id_string = str_concat(id_string, str_lit(", "), temp_alloc);
-                    ui_text(ui, id_string);
-                }
-            }
-
-            if (es_has_component(entity, EquipmentComponent)) {
-                ui_spacing(ui, 8);
-
-                EquipmentComponent *eq = es_get_component(entity, EquipmentComponent);
-                ui_text(ui, str_lit("Equipment:"));
-
-                {
-                    {
-                        ui_text(ui, str_lit("Head: "));
-
-                        if (has_item_equipped_in_slot(&eq->equipment, EQUIP_SLOT_HEAD)) {
-                            ui_core_same_line(ui);
-
-                            ItemID item_id = get_equipped_item_in_slot(&eq->equipment, EQUIP_SLOT_HEAD);
-                            String item_str = s64_to_string((ssize)item_id.id, temp_alloc);
-                            ui_text(ui, item_str);
-                        }
-
-                    }
-                }
-
-            }
-        }
-    }
+    inspected_entity_debug_ui(ui, game, game_memory, frame_data);
 
     ui_pop_container(ui);
 }

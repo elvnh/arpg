@@ -989,24 +989,11 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
         /* StatsComponent *stats = es_add_component(entity, StatsComponent); */
         /* set_damage_value_for_type(&stats->base_resistances, DMG_TYPE_LIGHTNING, 0); */
 
-        //StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
-
-#if 0
-        Modifier dmg_mod = {
-            .kind = MODIFIER_DAMAGE,
-        };
-
-        set_damage_value_of_type(&dmg_mod.as.damage_modifier.additive_modifiers, DMG_KIND_LIGHTNING, 1000);
-        status_effects_add(effects, dmg_mod, 5.0f);
-
-        /* // TODO: easier way to add status effects and create modifiers */
-        /* Modifier res_mod = { */
-        /*     .kind = MODIFIER_RESISTANCE, */
-        /* }; */
-
-        /* set_damage_value_of_type(&res_mod.as.resistance_modifier, DMG_KIND_LIGHTNING, 120); */
-        /* status_effects_add(effects, res_mod, 3.0f); */
-#endif
+        StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
+	/* Modifier dmg_mod = create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE); */
+	/* status_effects_add(effects, dmg_mod, 10.0f); */
+	Modifier res_mod = create_modifier(STAT_FIRE_RESISTANCE, 100, NUMERIC_MOD_FLAT_ADDITIVE);
+	status_effects_add(effects, res_mod, 10.0f);
 
         // TODO: ensure components are zeroed out
         InventoryComponent *inventory = es_add_component(entity, InventoryComponent);

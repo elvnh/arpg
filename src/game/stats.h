@@ -21,6 +21,7 @@ typedef enum {
 
 // TODO: unique modifiers that aren't just numeric
 // NOTE: The order of these decide in which order they are applied
+// NOTE: resistances are flat additive bonuses
 typedef enum {
     NUMERIC_MOD_FLAT_ADDITIVE,
     NUMERIC_MOD_ADDITIVE_PERCENTAGE,

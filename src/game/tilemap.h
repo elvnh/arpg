@@ -24,7 +24,7 @@ typedef struct TileNode {
     struct TileNode  *next_in_hash;
 } TileNode;
 
-typedef struct {
+typedef struct Tilemap {
     TileNode *tile_nodes[TILEMAP_MAX_TILES]; // NOTE: must be power of 2
     s32 min_x;
     s32 min_y;

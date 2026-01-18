@@ -1,0 +1,79 @@
+#include "line_of_sight.h"
+#include "base/maths.h"
+#include "tilemap.h"
+#include "world.h"
+
+typedef enum {
+    SIDE_NULL = 0,
+    SIDE_NORTH_SOUTH,
+    SIDE_WEST_EAST,
+} WallSide;
+
+Vector2i find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir)
+{
+    // TODO: not needed?
+    //ASSERT(v2_mag(dir) == 0.0f);
+
+    // The current ray position
+    f64 pos_x = origin.x;
+    f64 pos_y = origin.y;
+
+    // The current integral map position
+    s32 map_x = (s32)pos_x;
+    s32 map_y = (s32)pos_y;
+
+    // The length from one x or y side to next one
+    f64 delta_dist_x = (dir.x == 0.0f) ? 1e30 : fabs(1.0 / (f64)dir.x);
+    f64 delta_dist_y = (dir.y == 0.0f) ? 1e30 : fabs(1.0 / (f64)dir.y);
+
+    // The current step direction
+    s32 step_x = 0;
+    s32 step_y = 0;
+
+    b32 wall_hit = false;
+    WallSide side = SIDE_NULL;
+
+    // The current length of the ray to next x or y side
+    f64 side_dist_x = 0.0;
+    f64 side_dist_y = 0.0;
+
+    if (dir.x < 0.0f) {
+	step_x = -1;
+	side_dist_x = (pos_x - map_x) * delta_dist_x;
+    } else {
+	step_x = 1;
+	side_dist_x = (map_x + 1.0 - pos_x) * delta_dist_x;
+    }
+
+    if (dir.y < 0) {
+	step_y = -1;
+	side_dist_y = (pos_y - map_y) * delta_dist_y;
+    } else {
+	step_y = 1;
+	side_dist_y = (map_y + 1.0 - pos_y) * delta_dist_y;
+    }
+
+    while (!wall_hit) {
+	if (side_dist_x < side_dist_y) {
+	    side_dist_x += delta_dist_x;
+	    map_x += step_x;
+	    side = SIDE_WEST_EAST; // correct?
+	} else {
+	    side_dist_y += delta_dist_y;
+	    map_y += step_y;
+	    side = SIDE_NORTH_SOUTH;
+	}
+
+	Vector2i map_coords = world_to_tile_coords(v2((f32)map_x, (f32)map_y));
+	Tile *tile = tilemap_get_tile(tilemap, map_coords);
+
+	if (!tile || (tile->type == TILE_WALL)) {
+	    wall_hit = true;
+	}
+    }
+
+    ASSERT(side != SIDE_NULL);
+    Vector2i result = world_to_tile_coords(v2((f32)map_x, (f32)map_y));
+
+    return result;
+}

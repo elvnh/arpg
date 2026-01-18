@@ -77,5 +77,7 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
 
 Entity *world_get_player_entity(World *world);
 void entity_transition_to_state(World *world, Entity *entity, EntityState state);
+Vector2i world_to_tile_coords(Vector2 world_coords);
+Vector2 tile_to_world_coords(Vector2i tile_coords);
 
 #endif //WORLD_H

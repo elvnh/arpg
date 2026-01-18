@@ -1,5 +1,6 @@
 #include "world.h"
 #include "base/linear_arena.h"
+#include "base/matrix.h"
 #include "collision_event.h"
 #include "components/collider.h"
 #include "components/component.h"
@@ -23,6 +24,7 @@
 #include "collision.h"
 #include "entity.h"
 #include "entity_system.h"
+#include "input.h"
 #include "item.h"
 #include "magic.h"
 #include "modifier.h"
@@ -33,6 +35,7 @@
 #include "tilemap.h"
 #include "asset_table.h"
 #include "trigger.h"
+#include "line_of_sight.h"
 
 #define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
 
@@ -215,7 +218,7 @@ static void world_update_entity_quad_tree_location(World *world, ssize alive_ent
     *loc = qt_set_entity_area(&world->quad_tree, id, *loc, entity_area, &world->world_arena);
 }
 
-static Vector2i world_to_tile_coords(Vector2 world_coords)
+Vector2i world_to_tile_coords(Vector2 world_coords)
 {
     Vector2i result = {
         (s32)((f32)world_coords.x / (f32)TILE_SIZE),
@@ -225,7 +228,7 @@ static Vector2i world_to_tile_coords(Vector2 world_coords)
     return result;
 }
 
-static Vector2 tile_to_world_coords(Vector2i tile_coords)
+Vector2 tile_to_world_coords(Vector2i tile_coords)
 {
     Vector2 result = {
         (f32)tile_coords.x * TILE_SIZE,

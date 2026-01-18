@@ -1,5 +1,6 @@
 #include "line_of_sight.h"
 #include "base/maths.h"
+#include "debug.h"
 #include "tilemap.h"
 #include "world.h"
 
@@ -9,11 +10,8 @@ typedef enum {
     SIDE_WEST_EAST,
 } WallSide;
 
-Vector2i find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir)
+Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir)
 {
-    // TODO: not needed?
-    //ASSERT(v2_mag(dir) == 0.0f);
-
     // The current ray position
     f64 pos_x = origin.x;
     f64 pos_y = origin.y;
@@ -73,7 +71,23 @@ Vector2i find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 di
     }
 
     ASSERT(side != SIDE_NULL);
-    Vector2i result = world_to_tile_coords(v2((f32)map_x, (f32)map_y));
+
+    // TODO: function for getting fractions
+    f32 fraction_x = 0.0f;
+    f32 fraction_y = 0.0f;
+
+    // If we hit a vertical line there will be no x fraction, and if we hit a horizontal
+    // line there will be no y fraction
+    if (side == SIDE_NORTH_SOUTH) {
+	fraction_x = (f32)(side_dist_x - (s32)side_dist_x);
+    } else {
+	fraction_y = (f32)(side_dist_y - (s32)side_dist_y);
+    }
+
+    Vector2 result = {
+	(f32)map_x + fraction_x,
+	(f32)map_y + fraction_y,
+    };
 
     return result;
 }

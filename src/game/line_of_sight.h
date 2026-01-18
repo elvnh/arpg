@@ -5,6 +5,6 @@
 
 struct Tilemap;
 
-Vector2i find_first_wall_along_path(struct Tilemap *tilemap, Vector2 origin, Vector2 dir);
+Vector2 find_first_wall_along_path(struct Tilemap *tilemap, Vector2 origin, Vector2 dir);
 
 #endif //LINE_OF_SIGHT_H

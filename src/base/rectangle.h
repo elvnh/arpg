@@ -32,6 +32,11 @@ typedef struct {
 } RectRayIntersection;
 
 typedef struct {
+    b32 is_intersecting;
+    Vector2 point;
+} RectangleIntersectionPoint;
+
+typedef struct {
     Vertex top_left;
     Vertex top_right;
     Vertex bottom_right;
@@ -62,6 +67,13 @@ typedef struct {
     Vector2 bottom_right;
     Vector2 bottom_left;
 } RectangleUVCoords;
+
+typedef struct {
+    Line left;
+    Line top;
+    Line right;
+    Line bottom;
+} RectangleLines;
 
 static inline Vector2 rect_top_left(Rectangle rect)
 {
@@ -344,9 +356,7 @@ static inline Rectangle rect_minkowski_diff(Rectangle a, Rectangle b)
     return result;
 }
 
-
-static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect, Line ray_line,
-    f32 epsilon)
+static inline RectangleLines rect_line_segments(Rectangle rect)
 {
     Line left = {
         rect_bottom_left(rect),
@@ -368,32 +378,47 @@ static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect,
         rect_bottom_left(rect)
     };
 
+    RectangleLines result = {
+	.left = left,
+	.top = top,
+	.right = right,
+	.bottom = bottom
+    };
+
+    return result;
+}
+
+static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect, Line ray_line,
+    f32 epsilon)
+{
+    RectangleLines rect_lines = rect_line_segments(rect);
+
     RectangleSide side_of_collision = 0;
     f32 min_fraction = INFINITY;
     f32 x = min_fraction;
 
-    x = line_intersection_fraction(ray_line, left, epsilon);
+    x = line_intersection_fraction(ray_line, rect_lines.left, epsilon);
 
     if (x < min_fraction) {
         min_fraction = x;
         side_of_collision = RECT_SIDE_LEFT;
     }
 
-    x = MIN(min_fraction, line_intersection_fraction(ray_line, top, epsilon));
+    x = MIN(min_fraction, line_intersection_fraction(ray_line, rect_lines.top, epsilon));
 
     if (x < min_fraction) {
         min_fraction = x;
         side_of_collision = RECT_SIDE_TOP;
     }
 
-    x = MIN(min_fraction, line_intersection_fraction(ray_line, right, epsilon));
+    x = MIN(min_fraction, line_intersection_fraction(ray_line, rect_lines.right, epsilon));
 
     if (x < min_fraction) {
         min_fraction = x;
         side_of_collision = RECT_SIDE_RIGHT;
     }
 
-    x = MIN(min_fraction, line_intersection_fraction(ray_line, bottom, epsilon));
+    x = MIN(min_fraction, line_intersection_fraction(ray_line, rect_lines.bottom, epsilon));
 
     if (x < min_fraction) {
         min_fraction = x;
@@ -406,6 +431,51 @@ static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect,
         result.is_intersecting = true;
         result.side_of_collision = side_of_collision;
         result.time_of_impact = min_fraction;
+    }
+
+    return result;
+}
+
+static inline RectangleIntersectionPoint rect_line_intersection(Rectangle rect, Line line)
+{
+    RectangleLines rect_lines = rect_line_segments(rect);
+
+    Vector2 closest_intersection = {0};
+    f32 closest_intersection_dist = INFINITY;
+
+    LineIntersection x = {0};
+    f32 epsilon = 0.0001f;
+
+    // TODO: simplify this
+    x = line_intersection(line, rect_lines.left, epsilon);
+    if (x.are_intersecting && (v2_dist_sq(line.start, x.intersection_point) < closest_intersection_dist)) {
+	closest_intersection = x.intersection_point;
+	closest_intersection_dist = v2_dist_sq(line.start, closest_intersection);
+    }
+
+    x = line_intersection(line, rect_lines.top, epsilon);
+    if (x.are_intersecting && (v2_dist_sq(line.start, x.intersection_point) < closest_intersection_dist)) {
+	closest_intersection = x.intersection_point;
+	closest_intersection_dist = v2_dist_sq(line.start, closest_intersection);
+    }
+
+    x = line_intersection(line, rect_lines.right, epsilon);
+    if (x.are_intersecting && (v2_dist_sq(line.start, x.intersection_point) < closest_intersection_dist)) {
+	closest_intersection = x.intersection_point;
+	closest_intersection_dist = v2_dist_sq(line.start, closest_intersection);
+    }
+
+    x = line_intersection(line, rect_lines.bottom, epsilon);
+    if (x.are_intersecting && (v2_dist_sq(line.start, x.intersection_point) < closest_intersection_dist)) {
+	closest_intersection = x.intersection_point;
+	closest_intersection_dist = v2_dist_sq(line.start, closest_intersection);
+    }
+
+    RectangleIntersectionPoint result = {0};
+
+    if (closest_intersection_dist != INFINITY) {
+	result.is_intersecting = true;
+	result.point = closest_intersection;
     }
 
     return result;

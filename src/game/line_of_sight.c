@@ -1,15 +1,19 @@
 #include "line_of_sight.h"
+#include "base/line.h"
 #include "base/maths.h"
+#include "base/rectangle.h"
+#include "base/utils.h"
+#include "base/vector.h"
 #include "debug.h"
 #include "tilemap.h"
 #include "world.h"
 
 typedef enum {
-    SIDE_NULL = 0,
     SIDE_NORTH_SOUTH,
     SIDE_WEST_EAST,
 } WallSide;
 
+// https://lodev.org/cgtutor/raycasting.html
 Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir)
 {
     // The current ray position
@@ -20,16 +24,16 @@ Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir
     s32 map_x = (s32)pos_x;
     s32 map_y = (s32)pos_y;
 
-    // The length from one x or y side to next one
-    f64 delta_dist_x = (dir.x == 0.0f) ? 1e30 : fabs(1.0 / (f64)dir.x);
-    f64 delta_dist_y = (dir.y == 0.0f) ? 1e30 : fabs(1.0 / (f64)dir.y);
-
     // The current step direction
     s32 step_x = 0;
     s32 step_y = 0;
 
+    // The length from one x or y side to next one
+    f64 delta_dist_x = (dir.x == 0.0f) ? 1e30 : fabs(1.0 / (f64)dir.x);
+    f64 delta_dist_y = (dir.y == 0.0f) ? 1e30 : fabs(1.0 / (f64)dir.y);
+
     b32 wall_hit = false;
-    WallSide side = SIDE_NULL;
+    WallSide side = 0;
 
     // The current length of the ray to next x or y side
     f64 side_dist_x = 0.0;
@@ -55,7 +59,7 @@ Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir
 	if (side_dist_x < side_dist_y) {
 	    side_dist_x += delta_dist_x;
 	    map_x += step_x;
-	    side = SIDE_WEST_EAST; // correct?
+	    side = SIDE_WEST_EAST;
 	} else {
 	    side_dist_y += delta_dist_y;
 	    map_y += step_y;
@@ -70,17 +74,15 @@ Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir
 	}
     }
 
-    ASSERT(side != SIDE_NULL);
-
     // TODO: function for getting fractions
     f32 fraction_x = 0.0f;
     f32 fraction_y = 0.0f;
 
     // If we hit a vertical line there will be no x fraction, and if we hit a horizontal
     // line there will be no y fraction
-    if (side == SIDE_NORTH_SOUTH) {
+    if ((side == SIDE_NORTH_SOUTH) && (dir.x != 0.0f)) {
 	fraction_x = (f32)(side_dist_x - (s32)side_dist_x);
-    } else {
+    } else if (dir.y != 0.0f) {
 	fraction_y = (f32)(side_dist_y - (s32)side_dist_y);
     }
 
@@ -88,6 +90,49 @@ Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir
 	(f32)map_x + fraction_x,
 	(f32)map_y + fraction_y,
     };
+
+    return result;
+}
+
+static b32 has_line_of_sight_to_point(Vector2 origin, Vector2 point, Tilemap *tilemap)
+{
+    // TODO: implement this in a better way by finding first wall but aborting if exceeding distance
+    Vector2 dir = v2_sub(point, origin);
+    Vector2 intersection = find_first_wall_along_path(tilemap, origin, dir);
+
+    f32 dist_to_point = v2_dist_sq(origin, point);
+    f32 dist_to_intersection = v2_dist_sq(origin, intersection);
+
+    b32 result = (dist_to_point <= dist_to_intersection) ;
+    return result;
+}
+
+b32 has_line_of_sight_to_entity(Entity *self, Entity *other, Tilemap *tilemap)
+{
+    b32 result = false;
+
+    // TODO: maybe origin should be center of entity bounds or something
+    Vector2 origin = self->position;
+    Rectangle other_bounds = world_get_entity_bounding_box(other);
+
+    Vector2 other_vertices[] = {
+	rect_top_left(other_bounds),
+	rect_top_right(other_bounds),
+	rect_bottom_right(other_bounds),
+	rect_bottom_left(other_bounds),
+	rect_center(other_bounds),
+    };
+
+    // Check if any of the rectangle corners or the center of the other entity are visible.
+    // This isn't exactly correct and may return false even in somme edge cases where the entity is
+    // obviously visible, but this should be a good enough approximation for now.
+    for (s32 i = 0; i < ARRAY_COUNT(other_vertices); ++i) {
+	if (has_line_of_sight_to_point(origin, other_vertices[i], tilemap)) {
+	    result = true;
+	    break;
+	}
+    }
+
 
     return result;
 }

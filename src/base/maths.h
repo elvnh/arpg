@@ -82,4 +82,10 @@ static inline f32 deg_to_rad(f32 degrees)
     return result;
 }
 
+static inline f32 fraction(f32 x)
+{
+    f32 result = (f32)(x - (s64)x);
+    return fabsf(result);
+}
+
 #endif //MATHS_H

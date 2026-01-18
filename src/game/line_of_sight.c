@@ -74,16 +74,15 @@ Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir
 	}
     }
 
-    // TODO: function for getting fractions
     f32 fraction_x = 0.0f;
     f32 fraction_y = 0.0f;
 
     // If we hit a vertical line there will be no x fraction, and if we hit a horizontal
     // line there will be no y fraction
     if ((side == SIDE_NORTH_SOUTH) && (dir.x != 0.0f)) {
-	fraction_x = (f32)(side_dist_x - (s32)side_dist_x);
+	fraction_x = fraction((f32)side_dist_x);
     } else if (dir.y != 0.0f) {
-	fraction_y = (f32)(side_dist_y - (s32)side_dist_y);
+	fraction_y = fraction((f32)side_dist_y);
     }
 
     Vector2 result = {

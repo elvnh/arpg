@@ -1590,6 +1590,10 @@ static void tests_maths()
 
     ASSERT(round_to_f32(-0.1f, 0.25f) == 0.0f);
     ASSERT(round_to_f32(-0.2f, 0.25f) == -0.25f);
+
+    ASSERT(fraction(0.5f) == 0.5f);
+    ASSERT(fraction(1.5f) == 0.5f);
+    ASSERT(fraction(-1.5f) == 0.5f);
 }
 
 static void run_tests()

@@ -49,65 +49,6 @@
    - Pass in world size to world_initialize
  */
 
-// TODO: move somewhere else
-void entity_transition_to_state(World *world, Entity *entity, EntityState state)
-{
-    EntityState old_state = entity->state;
-
-    switch (old_state.kind) {
-	case ENTITY_STATE_ATTACKING: {
-	    SpellID spell = old_state.as.attacking.spell_being_cast;
-	    Vector2 target_pos = old_state.as.attacking.target_position;
-
-	    magic_cast_spell(world, spell, entity, target_pos);
-	} break;
-
-	default: {
-	} break;
-    }
-
-    entity->state = state;
-
-    if (es_has_component(entity, AnimationComponent)) {
-	AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
-	AnimationID next_anim = anim_comp->state_animations[state.kind];
-
-	// TODO: instead check if there is an animation for this state?
-	ASSERT(next_anim != ANIM_NULL);
-
-	if (state.kind == ENTITY_STATE_ATTACKING) {
-	    f32 cast_speed = (f32)state.as.attacking.cast_speed / 100.0f;
-	    f32 spell_cast_duration = get_spell_cast_duration(state.as.attacking.spell_being_cast);
-
-	    anim_comp->current_animation = anim_begin_animation_with_duration(next_anim,
-		spell_cast_duration, cast_speed);
-	} else {
-	    anim_comp->current_animation = anim_begin_animation(next_anim, 1.0f);
-	}
-
-	switch (state.kind) {
-	    case ENTITY_STATE_IDLE:
-	    case ENTITY_STATE_WALKING: {
-	    } break;
-
-	    case ENTITY_STATE_ATTACKING: {
-		entity->velocity = V2_ZERO;
-		entity->direction = v2_sub(state.as.attacking.target_position, entity->position);
-	    } break;
-
-	    INVALID_DEFAULT_CASE;
-	}
-    }
-}
-
-// First checks if current state can be cancelled and if we're not already in state
-static void entity_try_transition_to_state(World *world, Entity *entity, EntityState state)
-{
-    if (entity->state.kind != state.kind) {
-	entity_transition_to_state(world, entity, state);
-    }
-}
-
 Rectangle world_get_entity_bounding_box(Entity *entity)
 {
     // NOTE: this minimum size is completely arbitrary
@@ -678,12 +619,6 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 	player->position = new_pos;
 	player->velocity = new_velocity;
 #else
-	f32 speed = 225.0f;
-
-	if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
-	    speed *= 2.0f;
-	}
-
 	Vector2 direction = {0};
 
 	if (input_is_key_down(&frame_data->input, KEY_W)) {
@@ -699,16 +634,7 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 	}
 
 	direction = v2_norm(direction);
-
-	if (!v2_eq(direction, V2_ZERO)) {
-	    entity_try_transition_to_state(world, player, state_walking());
-	} else {
-	    entity_try_transition_to_state(world, player, state_idle());
-	}
-
-	direction = v2_mul_s(direction, speed);
-
-	player->velocity = direction;
+	entity_try_transition_to_state(world, player, state_walking(direction));
 #endif
 
 	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {

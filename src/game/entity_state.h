@@ -4,8 +4,9 @@
 #include "magic.h"
 #include "stats.h"
 
-// NOTE: this needs to be in a separate file to avoid
-// a circular dependency
+struct World;
+struct Entity;
+
 typedef enum {
     ENTITY_STATE_IDLE,
     ENTITY_STATE_WALKING,
@@ -22,8 +23,15 @@ typedef struct {
 	    Vector2 target_position;
 	    StatValue cast_speed;
 	} attacking;
+
+	struct {
+	    Vector2 direction;
+	} walking;
     } as;
 } EntityState;
+
+void entity_transition_to_state(struct World *world, struct Entity *entity, EntityState state);
+b32 entity_try_transition_to_state(struct World *world, struct Entity *entity, EntityState state);
 
 static inline EntityState state_idle()
 {
@@ -33,10 +41,11 @@ static inline EntityState state_idle()
     return result;
 }
 
-static inline EntityState state_walking()
+static inline EntityState state_walking(Vector2 direction)
 {
     EntityState result = {0};
     result.kind = ENTITY_STATE_WALKING;
+    result.as.walking.direction = direction;
 
     return result;
 }

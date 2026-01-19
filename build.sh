@@ -131,9 +131,7 @@ else
     touch build/lock &&
 
     # Base
-    ${CC} ${BASE_SOURCES} ${FLAGS} -fPIC -c &&
-    mv *.o build/base &&
-    ar rcs libbase.a build/base/*.o &&
+    ${CC} ${BASE_SOURCES} ${FLAGS} -fPIC -shared -o libbase.so &&
 
     # Renderer
     ${CC} ${RENDERER_SOURCES} ${FLAGS} -fPIC -c &&
@@ -151,7 +149,7 @@ else
 
     # Main
     if [ $HOT_RELOAD = 1 ]; then
-        ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lrenderer -lstb_image -lstb_truetype \
+        ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -Wl,-rpath=. -L. -lbase -lrenderer -lstb_image -lstb_truetype \
               `pkg-config --libs --cflags --static glfw3 glew` -pthread -o a.out;
     else
         ${CC} ${PLATFORM_SOURCES} ${FLAGS} -fPIC -L. -lbase -lgame -lrenderer -lstb_image -lstb_truetype \

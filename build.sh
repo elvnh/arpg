@@ -39,6 +39,7 @@ src/game/quad_tree.c
 src/game/damage.c
 src/game/entity_system.c
 src/game/tilemap.c
+src/game/ai.c
 src/game/entity_state.c
 src/game/magic.c
 src/game/stats.c

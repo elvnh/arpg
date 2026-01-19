@@ -64,6 +64,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     Entity *spell_entity = spell_entity_with_id.entity;
 
     ColliderComponent *spell_collider = es_get_or_add_component(spell_entity, ColliderComponent);
+    spell_collider->collision_group = COLLISION_GROUP_PROJECTILES;
 
     if (spell_has_prop(spell, SPELL_PROP_SPRITE)) {
 	SpriteComponent *sprite_comp = es_get_or_add_component(spell_entity, SpriteComponent);

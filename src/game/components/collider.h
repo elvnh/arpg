@@ -6,11 +6,18 @@
 #include "collision_policy.h"
 #include "trigger.h"
 
+// Entities that are in the same collision group won't collide with eachother
+typedef enum {
+    COLLISION_GROUP_NONE,
+    COLLISION_GROUP_PROJECTILES,
+} CollisionGroup;
+
 typedef struct {
     // TODO: offset from pos
     Vector2 size;
     CollisionPolicy per_faction_collision_policies[FACTION_COUNT];
     CollisionPolicy tilemap_collision_policy;
+    CollisionGroup collision_group;
 } ColliderComponent;
 
 static inline void set_collision_policy_vs_tilemaps(ColliderComponent *collider, CollisionPolicy policy)

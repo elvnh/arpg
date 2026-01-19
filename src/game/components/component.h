@@ -18,6 +18,7 @@
 #include "entity_state.h"
 #include "magic.h"
 #include "event_listener.h"
+#include "ai.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
@@ -34,6 +35,7 @@
     COMPONENT(SpellCasterComponent)		\
     COMPONENT(EventListenerComponent)		\
     COMPONENT(DamageFieldComponent)		\
+    COMPONENT(AIComponent)			\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -89,5 +91,9 @@ typedef struct {
     DamageInstance damage;
     RetriggerBehaviour retrigger_behaviour;
 } DamageFieldComponent;
+
+typedef struct AIComponent {
+    AIState current_state;
+} AIComponent;
 
 #endif //COMPONENT_H

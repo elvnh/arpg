@@ -1,4 +1,5 @@
 #include "world.h"
+#include "ai.h"
 #include "base/linear_arena.h"
 #include "base/matrix.h"
 #include "collision_event.h"
@@ -214,6 +215,11 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
     EntityID id = world->alive_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(world->entity_system, id);
 
+    if (es_has_component(entity, AIComponent)) {
+	AIComponent *ai = es_get_component(entity, AIComponent);
+	entity_update_ai(world, entity, ai);
+    }
+
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
         component_update_particle_spawner(entity, particle_spawner, dt);
@@ -398,8 +404,11 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
     CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
 	a->velocity, b->velocity, dt);
 
+    b32 same_collision_group = (collider_a->collision_group == collider_b->collision_group)
+	&& (collider_a->collision_group != COLLISION_GROUP_NONE);
+
     if ((collision.collision_status != COLLISION_STATUS_NOT_COLLIDING)
-	&& !entities_intersected_this_frame(world, id_a, id_b)) {
+	&& !same_collision_group && !entities_intersected_this_frame(world, id_a, id_b)) {
 	b32 neither_collider_on_cooldown =
 	    !trigger_is_on_cooldown(&world->trigger_cooldowns, id_a, id_b,
 		component_flag(ColliderComponent))
@@ -501,7 +510,6 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
     return movement_fraction_left;
 }
 
-
 static void handle_collision_and_movement(World *world, f32 dt, LinearArena *frame_arena)
 {
     // TODO: don't access alive entity array directly
@@ -567,6 +575,7 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
     DebugState *debug_state, GameUIState *game_ui)
 {
     Entity *player = world_get_player_entity(world);
+
     ASSERT(player);
 
     Vector2 camera_target = rect_center(world_get_entity_bounding_box(player));
@@ -889,6 +898,12 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
         entity->position = v2(256, 256);
 
         ASSERT(!es_has_component(entity, ColliderComponent));
+
+	if (i == 1) {
+	    AIComponent *ai = es_add_component(entity, AIComponent);
+
+	    ai->current_state.kind = AI_STATE_IDLE;
+	}
 
         ColliderComponent *collider = es_add_component(entity, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);

@@ -53,6 +53,7 @@ static void play_state_animation(World *world, Entity *entity, EntityState state
 
 		case ENTITY_STATE_ATTACKING: {
 		    entity->velocity = V2_ZERO;
+
 		    entity->direction = v2_sub(state.as.attacking.target_position, entity->position);
 		} break;
 
@@ -76,8 +77,13 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 
     switch (state.kind) {
 	case ENTITY_STATE_WALKING: {
+	    f32 speed = 100.0f;
+	    if (world_get_player_entity(world) == entity) {
+		speed = 300.0f;
+	    }
+
 	    ASSERT(!v2_is_zero(state.as.walking.direction));
-	    entity->velocity = v2_mul_s(state.as.walking.direction, 220.0f);
+	    entity->velocity = v2_mul_s(state.as.walking.direction, speed);
 	} break;
 
 	default: {

@@ -78,8 +78,10 @@ void execute_entity_vs_entity_collision_policy(World *world, Entity *entity, Ent
     CollisionPolicy their_policy_for_us =
 	other_collider->per_faction_collision_policies[entity->faction];
 
-    b32 should_block = (our_policy_for_them != COLLISION_POLICY_PASS_THROUGH)
-	&& (their_policy_for_us != COLLISION_POLICY_PASS_THROUGH);
+    b32 should_block =
+	(our_policy_for_them != COLLISION_POLICY_PASS_THROUGH)
+	&& (their_policy_for_us != COLLISION_POLICY_PASS_THROUGH)
+	&& (their_policy_for_us != COLLISION_POLICY_DIE);
 
     // NOTE: we only execute OUR behaviour for THEM, this function is expected to be called
     // twice for each collision pair

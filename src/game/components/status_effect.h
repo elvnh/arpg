@@ -15,15 +15,14 @@ typedef struct {
     s32 effect_count;
 } StatusEffectComponent;
 
-static inline StatusEffect *status_effects_add(StatusEffectComponent *c, Modifier modifier, f32 lifetime)
+static inline StatusEffect *status_effects_add(StatusEffectComponent *c, StatusEffect effect)
 {
     ASSERT(c->effect_count < ARRAY_COUNT(c->effects));
 
     s32 index = c->effect_count++;
 
     StatusEffect *result = &c->effects[index];
-    result->modifier = modifier;
-    result->time_remaining = lifetime;
+    *result = effect;
 
     return result;
 }

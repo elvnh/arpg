@@ -6,6 +6,7 @@
 #include "components/particle.h"
 #include "damage.h"
 #include "components/collider.h"
+#include "components/status_effect.h"
 #include "sprite.h"
 #include "trigger.h"
 #include "callback.h"
@@ -42,6 +43,7 @@ typedef enum {
     SPELL_PROP_SPAWN_PARTICLES_ON_DEATH = (1 << 8),
     SPELL_PROP_HOSTILE_COLLISION_CALLBACK = (1 << 9),
     SPELL_PROP_AREA_OF_EFFECT = (1 << 10),
+    SPELL_PROP_APPLIES_STATUS_EFFECT = (1 << 11),
 } SpellProperties;
 
 typedef struct {
@@ -75,6 +77,11 @@ typedef struct {
     ParticleSpawnerConfig on_death_particle_spawner;
 
     CallbackFunction hostile_collision_callback;
+
+    struct {
+	StatusEffect effect;
+	RetriggerBehaviour retrigger_behaviour;
+    } applies_status_effects;
 
     /*
       damaging

@@ -36,6 +36,7 @@
     COMPONENT(EventListenerComponent)		\
     COMPONENT(DamageFieldComponent)		\
     COMPONENT(AIComponent)			\
+    COMPONENT(EffectApplierComponent)		\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -91,6 +92,11 @@ typedef struct {
     DamageInstance damage;
     RetriggerBehaviour retrigger_behaviour;
 } DamageFieldComponent;
+
+typedef struct {
+    StatusEffect effect;
+    RetriggerBehaviour retrigger_behaviour;
+} EffectApplierComponent;
 
 typedef struct AIComponent {
     AIState current_state;

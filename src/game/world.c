@@ -369,6 +369,26 @@ static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent
     return result;
 }
 
+static b32 try_apply_status_effect_to_entity(World *world, Entity *target, StatusEffect effect)
+{
+    b32 result = false;
+    StatusEffectComponent *effects = es_get_component(target, StatusEffectComponent);
+
+    if (effects) {
+	// TODO: check if can hold any more effects, if should extend duration of existing effect
+	if (effects->effect_count == 1) {
+	    // Extend duration
+	    effects->effects[0] = effect;
+	    result = true;
+	} else if (effects->effect_count == 0) {
+	    status_effects_add(effects, effect);
+	    result = true;
+	}
+    }
+
+    return result;
+}
+
 // TODO: move to trigger file?
 static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *self, Entity *other)
 {
@@ -378,13 +398,27 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 
     b32 same_faction = self->faction == other->faction;
 
-    if (should_invoke_trigger(world, self, other, DamageFieldComponent) && !same_faction) {
-	DamageFieldComponent *dmg_field = es_get_component(self, DamageFieldComponent);
+    // Hostile triggers
+    if (!same_faction) {
+	if (should_invoke_trigger(world, self, other, DamageFieldComponent)) {
+	    DamageFieldComponent *dmg_field = es_get_component(self, DamageFieldComponent);
 
-	try_deal_damage_to_entity(world, other, self, dmg_field->damage);
+	    try_deal_damage_to_entity(world, other, self, dmg_field->damage);
 
-	world_add_trigger_cooldown(world, self_id, other_id,
-	    component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
+	    world_add_trigger_cooldown(world, self_id, other_id,
+		component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
+	}
+
+	EffectApplierComponent *ea1 = es_get_component(self, EffectApplierComponent);
+	if (should_invoke_trigger(world, self, other, EffectApplierComponent)) {
+	    EffectApplierComponent *ea = es_get_component(self, EffectApplierComponent);
+	    b32 applied_effect = try_apply_status_effect_to_entity(world, other, ea->effect);
+
+	    if (applied_effect) {
+		world_add_trigger_cooldown(world, self_id, other_id,
+		    component_flag(EffectApplierComponent), ea->retrigger_behaviour);
+	    }
+	}
     }
 }
 
@@ -940,14 +974,17 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 	entity_transition_to_state(world, entity, state_idle());
 #endif
 
-        StatsComponent *stats = es_add_component(entity, StatsComponent);
-	set_stat_value(&stats->stats, STAT_CAST_SPEED, 100);
+        /* StatsComponent *stats = es_add_component(entity, StatsComponent); */
+	/* set_stat_value(&stats->stats, STAT_CAST_SPEED, 100); */
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
-	Modifier res_mod = create_modifier(STAT_FIRE_RESISTANCE, 100, NUMERIC_MOD_FLAT_ADDITIVE);
-	status_effects_add(effects, res_mod, 10.0f);
-	Modifier cs_mod = create_modifier(STAT_CAST_SPEED, 500, NUMERIC_MOD_FLAT_ADDITIVE);
-	status_effects_add(effects, cs_mod, 10.0f);
+	/* Modifier res_mod = create_modifier(STAT_FIRE_RESISTANCE, 100, NUMERIC_MOD_FLAT_ADDITIVE); */
+	/* status_effects_add(effects, res_mod, 10.0f); */
+	/* Modifier cs_mod = create_modifier(STAT_CAST_SPEED, 500, NUMERIC_MOD_FLAT_ADDITIVE); */
+	/* status_effects_add(effects, cs_mod, 10.0f); */
+	/* Modifier ms_mod = create_modifier(STAT_MOVEMENT_SPEED, 500, NUMERIC_MOD_FLAT_ADDITIVE); */
+	/* status_effects_add(effects, ms_mod, 10.0f); */
+
 
         // TODO: ensure components are zeroed out
         InventoryComponent *inventory = es_add_component(entity, InventoryComponent);

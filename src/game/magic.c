@@ -8,6 +8,7 @@
 #include "components/particle.h"
 #include "game/collision.h"
 #include "game/damage.h"
+#include "stats.h"
 #include "trigger.h"
 #include "world.h"
 #include "components/component.h"
@@ -149,6 +150,12 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	SpellCallbackData data = {0};
 	data.caster_id = es_get_id_of_entity(world->entity_system, caster);
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, spell->hostile_collision_callback, &data);
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_APPLIES_STATUS_EFFECT)) {
+	EffectApplierComponent *ea = es_get_or_add_component(spell_entity, EffectApplierComponent);
+	ea->effect = spell->applies_status_effects.effect;
+	ea->retrigger_behaviour = spell->applies_status_effects.retrigger_behaviour;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
@@ -299,7 +306,7 @@ static Spell spell_blizzard()
     Spell spell = {0};
 
     spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
-	| SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
+	| SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_APPLIES_STATUS_EFFECT;
     spell.cast_duration = 0.5f;
 
     spell.aoe.base_radius = 128.0f;
@@ -326,6 +333,11 @@ static Spell spell_blizzard()
 	.infinite = true,
 	.particles_per_second = 300
     };
+
+    spell.applies_status_effects.effect.modifier =
+	create_modifier(STAT_CAST_SPEED, -75, NUMERIC_MOD_FLAT_ADDITIVE);
+    spell.applies_status_effects.effect.time_remaining = 10.0f;
+    spell.applies_status_effects.retrigger_behaviour = retrigger_whenever();
 
     return spell;
 }

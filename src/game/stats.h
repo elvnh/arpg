@@ -18,6 +18,7 @@ typedef enum {
     STAT_LIGHTNING_RESISTANCE,
 
     STAT_CAST_SPEED,
+    STAT_MOVEMENT_SPEED,
 
     STAT_COUNT,
 } Stat;
@@ -69,6 +70,7 @@ static inline String stat_to_string(Stat stat)
 	case STAT_FIRE_RESISTANCE:	  return str_lit("Fire resistance");
 	case STAT_LIGHTNING_RESISTANCE:   return str_lit("Lightning resistance");
 	case STAT_CAST_SPEED:		  return str_lit("Cast speed");
+	case STAT_MOVEMENT_SPEED:	  return str_lit("Movement speed");
 	case STAT_COUNT:		  ASSERT(0);
     }
 

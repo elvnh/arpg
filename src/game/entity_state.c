@@ -1,5 +1,6 @@
 #include "entity_state.h"
 #include "base/vector.h"
+#include "stats.h"
 #include "world.h"
 
 static b32 can_transition_to_state(Entity *entity, EntityState state)
@@ -77,10 +78,11 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 
     switch (state.kind) {
 	case ENTITY_STATE_WALKING: {
-	    f32 speed = 100.0f;
-	    if (world_get_player_entity(world) == entity) {
-		speed = 300.0f;
-	    }
+	    f32 speed = 300.0f; // Base movement speed
+	    StatValue move_speed_bonus = get_total_stat_value(
+		entity, STAT_MOVEMENT_SPEED, world->item_system);
+
+	    speed = speed * ((f32)move_speed_bonus / 100.0f);
 
 	    ASSERT(!v2_is_zero(state.as.walking.direction));
 	    entity->velocity = v2_mul_s(state.as.walking.direction, speed);

@@ -163,8 +163,12 @@ StatValue get_total_stat_modifier_of_type(Entity *entity, Stat stat, NumericModi
 static StatValue get_default_stat_value(Stat stat)
 {
     switch (stat) {
-	case STAT_CAST_SPEED: return 100;
-	default:	      return 0;
+	case STAT_CAST_SPEED:
+	case STAT_MOVEMENT_SPEED:
+	    return 100;
+
+	default:
+	    return 0;
     }
 }
 

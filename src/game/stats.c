@@ -160,14 +160,23 @@ StatValue get_total_stat_modifier_of_type(Entity *entity, Stat stat, NumericModi
     return result;
 }
 
+static StatValue get_default_stat_value(Stat stat)
+{
+    switch (stat) {
+	case STAT_CAST_SPEED: return 100;
+	default:	      return 0;
+    }
+}
+
 StatValue get_total_stat_value(Entity *entity, Stat stat, ItemSystem *item_sys)
 {
     StatValue result = 0;
-
     StatsComponent *stats = es_get_component(entity, StatsComponent);
 
     if (stats) {
 	result = get_base_stat_value(stats->stats, stat);
+    } else {
+	result = get_default_stat_value(stat);
     }
 
     for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT; ++mod_type) {

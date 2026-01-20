@@ -1,4 +1,5 @@
 #include "debug.h"
+#include "components/status_effect.h"
 #include "game.h"
 #include "renderer/render_batch.h"
 
@@ -83,12 +84,13 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, GameMemory *game_
 	if (effects) {
 	    ui_begin_list(ui, str_lit("status_effects")); {
 		for (ssize i = 0; i < effects->effect_count; ++i) {
-		    StatusEffect e = effects->effects[i];
+		    StatusEffectInstance e = effects->effects[i];
 
-		    String mod_str = modifier_to_string(e.modifier, alloc);
 		    String duration_str = f32_to_string(e.time_remaining, 2, alloc);
 
-		    String str = str_concat(mod_str, str_lit("("), alloc);
+		    String str = status_effect_to_string(e.effect_id);
+
+		    str = str_concat(str, str_lit("("), alloc);
 		    str = str_concat(str, duration_str, alloc);
 		    str = str_concat(str, str_lit(")"), alloc);
 

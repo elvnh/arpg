@@ -6,6 +6,7 @@
 #include "components/event_listener.h"
 #include "components/collider.h"
 #include "components/particle.h"
+#include "components/status_effect.h"
 #include "game/collision.h"
 #include "game/damage.h"
 #include "stats.h"
@@ -334,9 +335,7 @@ static Spell spell_blizzard()
 	.particles_per_second = 300
     };
 
-    spell.applies_status_effects.effect.modifier =
-	create_modifier(STAT_CAST_SPEED, -75, NUMERIC_MOD_FLAT_ADDITIVE);
-    spell.applies_status_effects.effect.time_remaining = 10.0f;
+    spell.applies_status_effects.effect = STATUS_EFFECT_FROZEN;
     spell.applies_status_effects.retrigger_behaviour = retrigger_whenever();
 
     return spell;

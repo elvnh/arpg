@@ -79,7 +79,7 @@ typedef struct {
     CallbackFunction hostile_collision_callback;
 
     struct {
-	StatusEffect effect;
+	StatusEffectID effect;
 	RetriggerBehaviour retrigger_behaviour;
     } applies_status_effects;
 

@@ -148,12 +148,13 @@ void game_initialize(Game *game, GameMemory *game_memory)
 {
     set_global_asset_table(&game->asset_list);
     magic_initialize(&game->spells);
+    initialize_status_effect_system();
+    anim_initialize(&game->animations);
 
     es_initialize(&game->entity_system);
     item_sys_initialize(&game->item_system, la_allocator(&game_memory->permanent_memory));
 
     world_initialize(&game->world, &game->entity_system, &game->item_system, &game_memory->free_list_memory);
-    anim_initialize(&game->animations);
 
     game->debug_state.average_fps = 60.0f;
     game->debug_state.timestep_modifier = 1.0f;

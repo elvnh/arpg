@@ -94,12 +94,17 @@ typedef struct {
 } DamageFieldComponent;
 
 typedef struct {
-    StatusEffect effect;
+    StatusEffectID effect;
     RetriggerBehaviour retrigger_behaviour;
 } EffectApplierComponent;
 
 typedef struct AIComponent {
     AIState current_state;
 } AIComponent;
+
+typedef struct StatusEffectComponent {
+    StatusEffectInstance effects[64];
+    s32 effect_count;
+} StatusEffectComponent;
 
 #endif //COMPONENT_H

@@ -5,46 +5,25 @@
 #include "damage.h"
 #include "modifier.h"
 
+struct StatusEffectComponent;
+
+typedef enum {
+    STATUS_EFFECT_FROZEN,
+
+    STATUS_EFFECT_COUNT,
+} StatusEffectID;
+
 typedef struct {
-    Modifier modifier;
+    StatusEffectID effect_id;
     f32 time_remaining;
-} StatusEffect;
+} StatusEffectInstance;
 
-typedef struct {
-    StatusEffect effects[64];
-    s32 effect_count;
-} StatusEffectComponent;
-
-static inline StatusEffect *status_effects_add(StatusEffectComponent *c, StatusEffect effect)
-{
-    ASSERT(c->effect_count < ARRAY_COUNT(c->effects));
-
-    s32 index = c->effect_count++;
-
-    StatusEffect *result = &c->effects[index];
-    *result = effect;
-
-    return result;
-}
-
-static inline void status_effects_update(StatusEffectComponent *status_effects, f32 dt)
-{
-    for (s32 i = 0; i < status_effects->effect_count; ++i) {
-        StatusEffect *effect = &status_effects->effects[i];
-
-        if (effect->time_remaining <= 0.0f) {
-            *effect = status_effects->effects[status_effects->effect_count - 1];
-            status_effects->effect_count -= 1;
-
-            // TODO: check to see that this doesn't happen in any other places,
-	    // i.e swap-removing and then continuing the loop body even if count reached 0
-            if (status_effects->effect_count == 0) {
-                break;
-            }
-        }
-
-        effect->time_remaining -= dt;
-    }
-}
+void     initialize_status_effect_system();
+void     update_status_effects(struct StatusEffectComponent *status_effects, f32 dt);
+void     apply_status_effect(struct StatusEffectComponent *comp, StatusEffectID effect_id);
+void     try_apply_status_effect_to_entity(struct Entity *entity, StatusEffectID effect_id);
+b32      status_effect_modifies_stat(StatusEffectID effect_id, Stat stat, NumericModifierType mod_type);
+Modifier get_status_effect_stat_modifier(StatusEffectID effect_id);
+String	 status_effect_to_string(StatusEffectID effect_id);
 
 #endif //STATUS_EFFECT_H

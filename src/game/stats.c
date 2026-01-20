@@ -84,10 +84,12 @@ static StatValue sum_status_effect_modifiers_of_type(Entity *entity, Stat stat,
 
     if (status_effects) {
 	for (s32 i = 0; i < status_effects->effect_count; ++i) {
-	    StatusEffect effect = status_effects->effects[i];
+	    StatusEffectID effect_id = status_effects->effects[i].effect_id;
 
-	    if (modifier_is_relevant(effect.modifier, stat, mod_type)) {
-		result = accumulate_modifier_value(result, effect.modifier.value, mod_type);
+	    if (status_effect_modifies_stat(effect_id, stat, mod_type)) {
+		Modifier mod = get_status_effect_stat_modifier(effect_id);
+
+		result = accumulate_modifier_value(result, mod.value, mod_type);
 	    }
 	}
     }

@@ -63,6 +63,7 @@ set(
   src/game/renderer/render_batch.c
   src/game/ui/ui_core.c
   src/game/ui/ui_builder.c
+  src/game/components/status_effect.c
   src/game/components/particle.c
   src/game/components/event_listener.c
 )

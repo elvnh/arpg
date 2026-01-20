@@ -232,7 +232,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (es_has_component(entity, StatusEffectComponent)) {
         StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
-        status_effects_update(status_effects, dt);
+        update_status_effects(status_effects, dt);
     }
 
     if (es_has_component(entity, AnimationComponent)) {
@@ -369,26 +369,6 @@ static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent
     return result;
 }
 
-static b32 try_apply_status_effect_to_entity(World *world, Entity *target, StatusEffect effect)
-{
-    b32 result = false;
-    StatusEffectComponent *effects = es_get_component(target, StatusEffectComponent);
-
-    if (effects) {
-	// TODO: check if can hold any more effects, if should extend duration of existing effect
-	if (effects->effect_count == 1) {
-	    // Extend duration
-	    effects->effects[0] = effect;
-	    result = true;
-	} else if (effects->effect_count == 0) {
-	    status_effects_add(effects, effect);
-	    result = true;
-	}
-    }
-
-    return result;
-}
-
 // TODO: move to trigger file?
 static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *self, Entity *other)
 {
@@ -412,12 +392,10 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 	EffectApplierComponent *ea1 = es_get_component(self, EffectApplierComponent);
 	if (should_invoke_trigger(world, self, other, EffectApplierComponent)) {
 	    EffectApplierComponent *ea = es_get_component(self, EffectApplierComponent);
-	    b32 applied_effect = try_apply_status_effect_to_entity(world, other, ea->effect);
+	    try_apply_status_effect_to_entity(other, ea->effect);
 
-	    if (applied_effect) {
-		world_add_trigger_cooldown(world, self_id, other_id,
-		    component_flag(EffectApplierComponent), ea->retrigger_behaviour);
-	    }
+	    world_add_trigger_cooldown(world, self_id, other_id,
+		component_flag(EffectApplierComponent), ea->retrigger_behaviour);
 	}
     }
 }

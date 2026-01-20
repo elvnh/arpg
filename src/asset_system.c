@@ -111,7 +111,11 @@ static String get_absolute_asset_path(String name, AssetKind kind, LinearArena *
 {
     Allocator scratch = la_allocator(scratch_arena);
 
-    String result = str_concat(platform_get_executable_directory(scratch, scratch_arena), str_lit("/"), scratch);
+    String result = str_concat(
+	platform_get_executable_directory(scratch, scratch_arena),
+	str_lit("/../"ASSET_DIRECTORY),
+	scratch
+    );
 
     switch (kind) {
         case ASSET_KIND_SHADER: {

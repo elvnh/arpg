@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#include <linux/limits.h>
 
 #include "file_watcher.h"
 
@@ -11,7 +12,11 @@
 static String get_assets_directory(LinearArena *arena)
 {
     String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
-    String result = str_concat(executable_dir, str_lit("/"ASSET_DIRECTORY), la_allocator(arena));
+    String result = str_concat(
+	executable_dir,
+	str_lit("/../"ASSET_DIRECTORY),
+	la_allocator(arena)
+    );
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;
@@ -19,8 +24,8 @@ static String get_assets_directory(LinearArena *arena)
 
 static String get_shader_directory(LinearArena *arena)
 {
-    String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
-    String result = str_concat(executable_dir, str_lit("/"SHADER_DIRECTORY), la_allocator(arena));
+    String assets_dir = get_assets_directory(arena);
+    String result = str_concat(assets_dir, str_lit(SHADER_DIRECTORY), la_allocator(arena));
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;
@@ -28,8 +33,9 @@ static String get_shader_directory(LinearArena *arena)
 
 static String get_sprite_directory(LinearArena *arena)
 {
-    String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
-    String result = str_concat(executable_dir, str_lit("/"SPRITE_DIRECTORY), la_allocator(arena));
+    String assets_dir = get_assets_directory(arena);
+    String result = str_concat(assets_dir, str_lit(SPRITE_DIRECTORY), la_allocator(arena));
+
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;
@@ -37,8 +43,9 @@ static String get_sprite_directory(LinearArena *arena)
 
 static String get_font_directory(LinearArena *arena)
 {
-    String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
-    String result = str_concat(executable_dir, str_lit("/"FONT_DIRECTORY), la_allocator(arena));
+    String assets_dir = get_assets_directory(arena);
+    String result = str_concat(assets_dir, str_lit(FONT_DIRECTORY), la_allocator(arena));
+
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;

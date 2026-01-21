@@ -2,7 +2,7 @@
 #include "base/format.h"
 #include "base/matrix.h"
 #include "base/random.h"
-#include "components/status_effect.h"
+#include "status_effect.h"
 #include "entity_id.h"
 #include "entity_system.h"
 #include "item_system.h"

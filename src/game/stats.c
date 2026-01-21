@@ -1,7 +1,7 @@
 #include "stats.h"
 #include "base/utils.h"
 #include "components/component.h"
-#include "components/status_effect.h"
+#include "status_effect.h"
 #include "damage.h"
 #include "entity.h"
 #include "entity_system.h"

@@ -7,7 +7,7 @@
 struct Entity;
 struct ItemSystem;
 
-// TODO: function for initializing to base values, eg. cast speed to 100
+// TODO: X macros to define enum, stat name and default value in one place
 // NOTE: flat added, additive percentage, multiplicative percentage etc are just
 // different ways of modifying the same base stat
 typedef enum {

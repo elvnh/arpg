@@ -1,5 +1,5 @@
 #include "debug.h"
-#include "components/status_effect.h"
+#include "status_effect.h"
 #include "game.h"
 #include "renderer/render_batch.h"
 

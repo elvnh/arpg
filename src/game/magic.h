@@ -6,7 +6,7 @@
 #include "components/particle.h"
 #include "damage.h"
 #include "components/collider.h"
-#include "components/status_effect.h"
+#include "status_effect.h"
 #include "sprite.h"
 #include "trigger.h"
 #include "callback.h"

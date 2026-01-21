@@ -23,7 +23,7 @@ void     update_status_effects(struct StatusEffectComponent *status_effects, f32
 void     apply_status_effect(struct StatusEffectComponent *comp, StatusEffectID effect_id);
 void     try_apply_status_effect_to_entity(struct Entity *entity, StatusEffectID effect_id);
 b32      status_effect_modifies_stat(StatusEffectID effect_id, Stat stat, NumericModifierType mod_type);
-Modifier get_status_effect_stat_modifier(StatusEffectID effect_id);
+Modifier get_status_effect_stat_modifier(StatusEffectID effect_id); // TODO: return as ptr, null if none
 String	 status_effect_to_string(StatusEffectID effect_id);
 
 #endif //STATUS_EFFECT_H

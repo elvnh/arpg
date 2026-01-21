@@ -6,7 +6,7 @@
 #include "components/event_listener.h"
 #include "components/collider.h"
 #include "components/particle.h"
-#include "components/status_effect.h"
+#include "status_effect.h"
 #include "game/collision.h"
 #include "game/damage.h"
 #include "stats.h"

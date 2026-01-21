@@ -35,7 +35,7 @@ static StatusEffect *get_status_effect_by_id(StatusEffectID id)
     return result;
 }
 
-static StatusEffect status_effect_frozen()
+static StatusEffect status_effect_chilled()
 {
     StatusEffect result = {0};
 
@@ -51,18 +51,7 @@ static StatusEffect status_effect_frozen()
 
 void initialize_status_effect_system()
 {
-    g_status_effects[STATUS_EFFECT_FROZEN] = status_effect_frozen();
-}
-
-static void add_to_status_effect_array(StatusEffectComponent *effects, StatusEffectID effect_id)
-{
-    ASSERT(effects->effect_count < ARRAY_COUNT(effects->effects));
-    s32 index = effects->effect_count++;
-
-    StatusEffect *effect = get_status_effect_by_id(effect_id);
-
-    effects->effects[index].effect_id = effect_id;
-    effects->effects[index].time_remaining = effect->base_duration;
+    g_status_effects[STATUS_EFFECT_CHILLED] = status_effect_chilled();
 }
 
 void apply_status_effect(StatusEffectComponent *comp, StatusEffectID effect_id)
@@ -70,27 +59,22 @@ void apply_status_effect(StatusEffectComponent *comp, StatusEffectID effect_id)
     StatusEffect *effect = get_status_effect_by_id(effect_id);
     ASSERT(effect->base_duration > 0.0f);
 
+    comp->active_effects_bitset |= FLAG(effect_id);
+
     // Add to effect list
     if (effect_has_prop(effect, EFFECT_PROP_STACKABLE)) {
-	// TODO: max status effects
-	add_to_status_effect_array(comp, effect_id);
+	StatusEffectStack *stack = &comp->stackable_effects[effect_id];
+
+	if (stack->effect_count < ARRAY_COUNT(stack->effects)) {
+	    StatusEffectInstance instance = {effect->base_duration};
+	    stack->effects[stack->effect_count++] = instance;
+	} else {
+	    ASSERT(0 && "TODO");
+	}
     } else {
-	b32 found = false;
+	StatusEffectInstance *instance = &comp->non_stackable_effects[effect_id];
 
-	for (ssize i = 0; i < comp->effect_count; ++i) {
-	    StatusEffectInstance *curr = &comp->effects[i];
-
-	    if (curr->effect_id == effect_id) {
-		// Renew the duration of the non-stackable effect
-		curr->time_remaining = effect->base_duration;
-		found = true;
-		break;
-	    }
-	}
-
-	if (!found) {
-	    add_to_status_effect_array(comp, effect_id);
-	}
+	instance->time_remaining = effect->base_duration;
     }
 
     // Perform effect specific actions
@@ -107,23 +91,58 @@ void try_apply_status_effect_to_entity(Entity *entity, StatusEffectID effect_id)
     apply_status_effect(comp, effect_id);
 }
 
+static void remove_status_effects_of_type(StatusEffectComponent *status_effects, StatusEffectID type)
+{
+    u64 bit = FLAG(type);
+    status_effects->active_effects_bitset &= ~bit;
+}
+
+static void update_status_effects_stack(StatusEffectComponent *comp, StatusEffectStack *stack,
+    StatusEffectID id, f32 dt)
+{
+    ASSERT(stack->effect_count > 0 &&
+	"If effect instances of this type is zero, "
+	"the bit in the active effects bitset shouldn't be set");
+
+    for (ssize i = 0; i < stack->effect_count; ++i) {
+	StatusEffectInstance *instance = &stack->effects[i];
+
+	instance->time_remaining -= dt;
+
+	if (instance->time_remaining <= 0.0f) {
+	    *instance = stack->effects[stack->effect_count - 1];
+	    --stack->effect_count;
+	    --i;
+
+	    if (stack->effect_count == 0) {
+		remove_status_effects_of_type(comp, id);
+	    }
+	}
+    }
+}
+
 void update_status_effects(StatusEffectComponent *status_effects, f32 dt)
 {
-    for (s32 i = 0; i < status_effects->effect_count; ++i) {
-        StatusEffectInstance *effect = &status_effects->effects[i];
+    for (StatusEffectID id = 0; id < STATUS_EFFECT_COUNT; ++id) {
+	u64 bit = FLAG(id);
 
-        if (effect->time_remaining <= 0.0f) {
-            *effect = status_effects->effects[status_effects->effect_count - 1];
-            status_effects->effect_count -= 1;
+	if (status_effects->active_effects_bitset & bit) {
+	    StatusEffect *effect = get_status_effect_by_id(id);
 
-            // TODO: check to see that this doesn't happen in any other places,
-	    // i.e swap-removing and then continuing the loop body even if count reached 0
-            if (status_effects->effect_count == 0) {
-                break;
-            }
-        }
+	    if (effect_has_prop(effect, EFFECT_PROP_STACKABLE)) {
+		StatusEffectStack *stack = &status_effects->stackable_effects[id];
 
-        effect->time_remaining -= dt;
+		update_status_effects_stack(status_effects, stack, id, dt);
+	    } else {
+		StatusEffectInstance *instance = &status_effects->non_stackable_effects[id];
+
+		instance->time_remaining -= dt;
+
+		if (instance->time_remaining <= 0.0f) {
+		    remove_status_effects_of_type(status_effects, id);
+		}
+	    }
+	}
     }
 }
 
@@ -156,6 +175,22 @@ String status_effect_to_string(StatusEffectID effect_id)
     (void)effect_id;
 
     return str_lit("<unimplemented>");
+}
+
+b32 has_status_effect(struct StatusEffectComponent *comp, StatusEffectID id)
+{
+    b32 result = (comp->active_effects_bitset & FLAG(id)) != 0;
+
+    return result;
+}
+
+b32 status_effect_is_stackable(StatusEffectID id)
+{
+    StatusEffect *effect = get_status_effect_by_id(id);
+
+    b32 result = effect_has_prop(effect, EFFECT_PROP_STACKABLE);
+
+    return result;
 }
 
 // on tick

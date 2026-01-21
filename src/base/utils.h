@@ -21,6 +21,7 @@
 #define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
 #define zero_array(ptr, count) (mem_zero(ptr, count * SIZEOF(*ptr)))
 #define zero_struct(t) ((t){0})
+#define FLAG(e) ((u64)(1u << (u64)(e)))
 
 #define UNIMPLEMENTED                                                                     \
     fprintf(stderr, "\n*** UNIMPLEMENTED ***\n%s:\n%s:%d:\n", __func__, FILE_NAME, LINE); \

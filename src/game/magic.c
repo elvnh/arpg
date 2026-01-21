@@ -335,7 +335,7 @@ static Spell spell_blizzard()
 	.particles_per_second = 300
     };
 
-    spell.applies_status_effects.effect = STATUS_EFFECT_FROZEN;
+    spell.applies_status_effects.effect = STATUS_EFFECT_CHILLED;
     spell.applies_status_effects.retrigger_behaviour = retrigger_whenever();
 
     return spell;

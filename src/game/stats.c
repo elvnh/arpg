@@ -83,11 +83,9 @@ static StatValue sum_status_effect_modifiers_of_type(Entity *entity, Stat stat,
     StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
 
     if (status_effects) {
-	for (s32 i = 0; i < status_effects->effect_count; ++i) {
-	    StatusEffectID effect_id = status_effects->effects[i].effect_id;
-
-	    if (status_effect_modifies_stat(effect_id, stat, mod_type)) {
-		Modifier mod = get_status_effect_stat_modifier(effect_id);
+	for (StatusEffectID id = 0; id < STATUS_EFFECT_COUNT; ++id) {
+	    if (has_status_effect(status_effects, id) && status_effect_modifies_stat(id, stat, mod_type)) {
+		Modifier mod = get_status_effect_stat_modifier(id);
 
 		result = accumulate_modifier_value(result, mod.value, mod_type);
 	    }

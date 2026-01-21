@@ -1,4 +1,5 @@
 #include "debug.h"
+#include "base/format.h"
 #include "status_effect.h"
 #include "game.h"
 #include "renderer/render_batch.h"
@@ -83,19 +84,45 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, GameMemory *game_
 
 	if (effects) {
 	    ui_begin_list(ui, str_lit("status_effects")); {
-		for (ssize i = 0; i < effects->effect_count; ++i) {
-		    StatusEffectInstance e = effects->effects[i];
+		// TODO: for_each_status_effect
 
-		    String duration_str = f32_to_string(e.time_remaining, 2, alloc);
+		for (StatusEffectID id = 0; id < STATUS_EFFECT_COUNT; ++id) {
+		    if (has_status_effect(effects, id)) {
+			String str = {0};
 
-		    String str = status_effect_to_string(e.effect_id);
+			if (status_effect_is_stackable(id)) {
+			    StatusEffectStack *stack = &effects->stackable_effects[id];
 
-		    str = str_concat(str, str_lit("("), alloc);
-		    str = str_concat(str, duration_str, alloc);
-		    str = str_concat(str, str_lit(")"), alloc);
+			    for (ssize i = 0; i < stack->effect_count; ++i) {
+				StatusEffectInstance e = stack->effects[i];
 
-		    // TODO: doesn't need to be selectable
-		    ui_selectable(ui, str);
+				String duration_str = f32_to_string(e.time_remaining, 2, alloc);
+				str = status_effect_to_string(id);
+
+				str = str_concat(str, str_lit(" ("), alloc);
+				str = str_concat(str, duration_str, alloc);
+				str = str_concat(str, str_lit(")"), alloc);
+
+				String hash = str_concat(str_lit("##"), s64_to_string(i, alloc), alloc);
+				str = str_concat(str, hash, alloc);
+
+				ui_selectable(ui, str);
+			    }
+			} else {
+			    StatusEffectInstance e = effects->non_stackable_effects[id];
+
+			    String duration_str = f32_to_string(e.time_remaining, 2, alloc);
+			    str = status_effect_to_string(id);
+
+
+			    str = str_concat(str, str_lit(" ("), alloc);
+			    str = str_concat(str, duration_str, alloc);
+			    str = str_concat(str, str_lit(")"), alloc);
+
+			    ui_selectable(ui, str);
+			}
+
+		    }
 		}
 	    } ui_end_list(ui);
 	}

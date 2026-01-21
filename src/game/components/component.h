@@ -102,9 +102,4 @@ typedef struct AIComponent {
     AIState current_state;
 } AIComponent;
 
-typedef struct StatusEffectComponent {
-    StatusEffectInstance effects[64];
-    s32 effect_count;
-} StatusEffectComponent;
-
 #endif //COMPONENT_H

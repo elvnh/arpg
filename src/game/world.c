@@ -180,14 +180,15 @@ Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
-static b32 entity_should_die(Entity *entity)
+static b32 entity_should_die(World *world, Entity *entity)
 {
-    if (es_has_component(entity, HealthComponent)) {
-        HealthComponent *health = es_get_component(entity, HealthComponent);
+    if (es_has_component(entity, StatsComponent)) {
+	StatsComponent *stats = es_get_component(entity, StatsComponent);
+	StatValue health = get_total_stat_value(entity, STAT_HEALTH, world->item_system);
 
-        if (health->health.hitpoints <= 0) {
-            return true;
-        }
+	if (health <= 0) {
+	    return true;
+	}
     }
 
     if (es_has_component(entity, ParticleSpawner)) {
@@ -241,7 +242,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 	anim_update_instance(world, entity, &anim_component->current_animation, dt);
     }
 
-    if (entity_should_die(entity)) {
+    if (entity_should_die(world, entity)) {
         // NOTE: won't be removed until after this frame
 	world_kill_entity(world, entity);
     }
@@ -339,12 +340,14 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
 	retrigger_behaviour, &world->world_arena);
 }
 
-static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *health, DamageInstance damage)
+static void deal_damage_to_entity(World *world, Entity *entity, StatsComponent *stats, DamageInstance damage)
 {
     Damage damage_taken = calculate_damage_received(entity, damage, world->item_system);
     StatValue dmg_sum = calculate_damage_sum(damage_taken);
 
-    health->health.hitpoints -= dmg_sum;
+    StatValue *health = get_stat_reference(&stats->stats, STAT_HEALTH);
+    *health -= dmg_sum;
+
     hitsplats_create(world, entity->position, damage_taken);
 }
 
@@ -352,10 +355,10 @@ static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *se
 {
     (void)sender;
 
-    HealthComponent *receiver_health = es_get_component(receiver, HealthComponent);
+    StatsComponent *stats = es_get_component(receiver, StatsComponent);
 
-    if (receiver_health) {
-        deal_damage_to_entity(world, receiver, receiver_health, damage);
+    if (stats) {
+        deal_damage_to_entity(world, receiver, stats, damage);
     }
 }
 
@@ -901,7 +904,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 1; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world,
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
@@ -910,7 +913,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
         ASSERT(!es_has_component(entity, ColliderComponent));
 
-	if (i == 1) {
+	if (i == 1 && false) {
 	    AIComponent *ai = es_add_component(entity, AIComponent);
 
 	    ai->current_state.kind = AI_STATE_IDLE;
@@ -921,17 +924,12 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 	set_collision_policy_vs_entities(collider, COLLISION_POLICY_STOP);
 	set_collision_policy_vs_tilemaps(collider, COLLISION_POLICY_STOP);
 
-        HealthComponent *hp = es_add_component(entity, HealthComponent);
-        hp->health.hitpoints = 100000;
-
         ASSERT(es_has_component(entity, ColliderComponent));
-        ASSERT(es_has_component(entity, HealthComponent));
 
 	SpellCasterComponent *spellcaster = es_add_component(entity, SpellCasterComponent);
 	for (SpellID spell = 0; spell < SPELL_COUNT; ++spell) {
 	    magic_add_to_spellbook(spellcaster, spell);
 	}
-
 
 #if 0
         SpriteComponent *sprite_comp = es_add_component(entity, SpriteComponent);
@@ -951,8 +949,10 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 	entity_transition_to_state(world, entity, state_idle());
 #endif
 
-        /* StatsComponent *stats = es_add_component(entity, StatsComponent); */
-	/* set_stat_value(&stats->stats, STAT_CAST_SPEED, 100); */
+        StatsComponent *stats = es_add_component(entity, StatsComponent);
+	set_stat_value(&stats->stats, STAT_CAST_SPEED, 100);
+	set_stat_value(&stats->stats, STAT_HEALTH, 1000);
+	set_stat_value(&stats->stats, STAT_MOVEMENT_SPEED, 100);
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
 	apply_status_effect(effects, STATUS_EFFECT_CHILLED);

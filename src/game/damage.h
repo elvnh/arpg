@@ -1,7 +1,6 @@
 #ifndef DAMAGE_H
 #define DAMAGE_H
 
-#include "health.h"
 #include "stats.h"
 #include "base/utils.h"
 #include "base/random.h"

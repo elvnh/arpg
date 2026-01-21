@@ -20,6 +20,8 @@ typedef enum {
     STAT_CAST_SPEED,
     STAT_MOVEMENT_SPEED,
 
+    STAT_HEALTH,
+
     STAT_COUNT,
 } Stat;
 
@@ -33,11 +35,11 @@ typedef enum {
     NUMERIC_MOD_TYPE_COUNT,
 } NumericModifierType;
 
-typedef struct {
-    Stat values[STAT_COUNT];
-} StatValues;
-
 typedef s64 StatValue;
+
+typedef struct {
+    StatValue values[STAT_COUNT];
+} StatValues;
 
 StatValue get_total_stat_value(struct Entity *entity, Stat stat, struct ItemSystem *item_sys);
 StatValue get_total_stat_modifier_of_type(struct Entity *entity, Stat stat, NumericModifierType mod_type,
@@ -52,12 +54,19 @@ static inline void set_stat_value(StatValues *stats, Stat stat, StatValue value)
     stats->values[stat] = value;
 }
 
-static inline StatValue get_base_stat_value(StatValues stats, Stat stat)
+static inline StatValue *get_stat_reference(StatValues *stats, Stat stat)
 {
     ASSERT(stat >= 0);
     ASSERT(stat < STAT_COUNT);
 
-    StatValue result = stats.values[stat];
+    StatValue *result = &stats->values[stat];
+
+    return result;
+}
+
+static inline StatValue get_base_stat_value(StatValues stats, Stat stat)
+{
+    StatValue result = *get_stat_reference(&stats, stat);
 
     return result;
 }
@@ -71,6 +80,7 @@ static inline String stat_to_string(Stat stat)
 	case STAT_LIGHTNING_RESISTANCE:   return str_lit("Lightning resistance");
 	case STAT_CAST_SPEED:		  return str_lit("Cast speed");
 	case STAT_MOVEMENT_SPEED:	  return str_lit("Movement speed");
+	case STAT_HEALTH:		  return str_lit("Health");
 	case STAT_COUNT:		  ASSERT(0);
     }
 

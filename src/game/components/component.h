@@ -22,7 +22,6 @@
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
-    COMPONENT(HealthComponent)                  \
     COMPONENT(ParticleSpawner)                  \
     COMPONENT(SpriteComponent)                  \
     COMPONENT(LifetimeComponent)                \
@@ -47,11 +46,6 @@ typedef enum {
         COMPONENT_COUNT,
     #undef COMPONENT
 } ComponentType;
-
-// TODO: maybe health should be a part of Stats?
-typedef struct {
-    Health health;
-} HealthComponent;
 
 typedef struct {
     Sprite sprite;

@@ -24,7 +24,6 @@ static inline ssize digit_count_s64(s64 n)
     return result;
 }
 
-// TODO: make into s64 to string
 static inline String s64_to_string(s64 number, Allocator allocator)
 {
     b32 is_negative = number < 0;
@@ -34,6 +33,18 @@ static inline String s64_to_string(s64 number, Allocator allocator)
     String result = str_allocate(alloc_size, allocator);
     s32 chars_written = snprintf(result.data, (usize)alloc_size, "%"PRId64, number);
     ASSERT(chars_written <= num_chars);
+
+    result.length = chars_written;
+
+    return result;
+}
+
+static inline String ptr_to_string(void *ptr, Allocator allocator)
+{
+    ssize length = sizeof(ptr) * 2 + 1;
+    String result = str_allocate(length, allocator);
+    s32 chars_written = snprintf(result.data, (usize)length, "%p", ptr);
+    ASSERT(chars_written <= length);
 
     result.length = chars_written;
 

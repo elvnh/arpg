@@ -184,9 +184,23 @@ static StatValue get_default_stat_value(Stat stat)
 	case STAT_ACTION_SPEED:
 	    return 100;
 
+	case STAT_HEALTH:
+	    return 1;
+
 	default:
 	    return 0;
     }
+}
+
+StatValues create_base_stats()
+{
+    StatValues result = {0};
+
+    for (Stat stat = 0; stat < STAT_COUNT; ++stat) {
+	set_stat_value(&result, stat, get_default_stat_value(stat));
+    }
+
+    return result;
 }
 
 StatValue get_total_stat_value(Entity *entity, Stat stat, ItemSystem *item_sys)

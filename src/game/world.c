@@ -955,10 +955,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 #endif
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
-	set_stat_value(&stats->stats, STAT_CAST_SPEED, 100);
-	set_stat_value(&stats->stats, STAT_HEALTH, 1000);
-	set_stat_value(&stats->stats, STAT_ACTION_SPEED, 100);
-	set_stat_value(&stats->stats, STAT_MOVEMENT_SPEED, 100);
+	stats->stats = create_base_stats();
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
 	apply_status_effect(effects, STATUS_EFFECT_CHILLED);

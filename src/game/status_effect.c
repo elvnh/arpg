@@ -12,8 +12,8 @@ typedef struct {
     StatusEffectProperty properties;
     f32 base_duration;
 
+    /* Property specific fields */
     Modifier stat_modifier;
-    //s32 max_stack_size;
 } StatusEffect;
 
 StatusEffect g_status_effects[STATUS_EFFECT_COUNT];
@@ -62,7 +62,7 @@ void apply_status_effect(StatusEffectComponent *comp, StatusEffectID effect_id)
     comp->active_effects_bitset |= FLAG(effect_id);
 
     // Add to effect list
-    if (effect_has_prop(effect, EFFECT_PROP_STACKABLE)) {
+    if (status_effect_is_stackable(effect_id)) {
 	StatusEffectStack *stack = &comp->stackable_effects[effect_id];
 
 	if (stack->effect_count < ARRAY_COUNT(stack->effects)) {
@@ -77,7 +77,7 @@ void apply_status_effect(StatusEffectComponent *comp, StatusEffectID effect_id)
 	instance->time_remaining = effect->base_duration;
     }
 
-    // Perform effect specific actions
+    // Perform effect specific actions?
 }
 
 void try_apply_status_effect_to_entity(Entity *entity, StatusEffectID effect_id)
@@ -144,9 +144,13 @@ Modifier get_status_effect_stat_modifier(StatusEffectID effect_id)
 
 String status_effect_to_string(StatusEffectID effect_id)
 {
-    (void)effect_id;
+    switch (effect_id) {
+	case STATUS_EFFECT_CHILLED: return str_lit("Chilled");
+	case STATUS_EFFECT_COUNT:   ASSERT(0);
+    }
 
-    return str_lit("<unimplemented>");
+    ASSERT(0);
+    return (String){0};
 }
 
 b32 has_status_effect(struct StatusEffectComponent *comp, StatusEffectID id)
@@ -206,8 +210,3 @@ void for_each_active_status_effect(StatusEffectComponent *comp, StatusEffectCall
 	}
     }
 }
-
-// on tick
-// on apply
-// on remove
-// ?

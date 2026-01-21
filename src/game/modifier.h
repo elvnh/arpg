@@ -4,6 +4,11 @@
 #include "base/format.h"
 #include "stats.h"
 
+/*
+  TODO:
+  - Modifier setting stat to exact value
+ */
+
 typedef struct {
     Stat target_stat;
     StatValue value;

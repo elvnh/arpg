@@ -38,7 +38,7 @@ static void play_state_animation(World *world, Entity *entity, EntityState state
 	    ASSERT(next_anim != ANIM_NULL);
 
 	    if (state.kind == ENTITY_STATE_ATTACKING) {
-		f32 cast_speed = (f32)state.as.attacking.cast_speed / 100.0f;
+		f32 cast_speed = stat_value_percentage_as_factor(state.as.attacking.total_cast_speed);
 		f32 spell_cast_duration = get_spell_cast_duration(state.as.attacking.spell_being_cast);
 
 		anim_comp->current_animation = anim_begin_animation_with_duration(next_anim,
@@ -79,10 +79,14 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
     switch (state.kind) {
 	case ENTITY_STATE_WALKING: {
 	    f32 speed = 300.0f; // Base movement speed
-	    StatValue move_speed_bonus = get_total_stat_value(
+	    StatValue move_speed = get_total_stat_value(
 		entity, STAT_MOVEMENT_SPEED, world->item_system);
+	    StatValue action_speed = get_total_stat_value(
+		entity, STAT_ACTION_SPEED, world->item_system);
+	    StatValue final_move_speed = apply_modifier(move_speed, action_speed,
+		NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
 
-	    speed = speed * ((f32)move_speed_bonus / 100.0f);
+	    speed = speed * stat_value_percentage_as_factor(final_move_speed);
 
 	    ASSERT(!v2_is_zero(state.as.walking.direction));
 	    entity->velocity = v2_mul_s(state.as.walking.direction, speed);

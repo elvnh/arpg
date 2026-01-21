@@ -7,6 +7,11 @@
 struct Entity;
 struct ItemSystem;
 
+/*
+  TODO:
+  - Ensure that stats are clamped, for example negative movement speed doesn't make sense
+ */
+
 // TODO: X macros to define enum, stat name and default value in one place
 // NOTE: flat added, additive percentage, multiplicative percentage etc are just
 // different ways of modifying the same base stat
@@ -19,6 +24,7 @@ typedef enum {
 
     STAT_CAST_SPEED,
     STAT_MOVEMENT_SPEED,
+    STAT_ACTION_SPEED,
 
     STAT_HEALTH,
 
@@ -80,12 +86,20 @@ static inline String stat_to_string(Stat stat)
 	case STAT_LIGHTNING_RESISTANCE:   return str_lit("Lightning resistance");
 	case STAT_CAST_SPEED:		  return str_lit("Cast speed");
 	case STAT_MOVEMENT_SPEED:	  return str_lit("Movement speed");
+	case STAT_ACTION_SPEED:		  return str_lit("Action speed");
 	case STAT_HEALTH:		  return str_lit("Health");
 	case STAT_COUNT:		  ASSERT(0);
     }
 
     ASSERT(0);
     return str_lit("");
+}
+
+static inline f32 stat_value_percentage_as_factor(StatValue value)
+{
+    f32 result = (f32)value / 100.0f;
+
+    return result;
 }
 
 #endif //STATS_H

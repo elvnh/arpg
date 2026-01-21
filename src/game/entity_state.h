@@ -21,7 +21,7 @@ typedef struct {
 	struct {
 	    SpellID spell_being_cast;
 	    Vector2 target_position;
-	    StatValue cast_speed;
+	    StatValue total_cast_speed;
 	} attacking;
 
 	struct {
@@ -56,7 +56,7 @@ static inline EntityState state_attacking(SpellID spell_being_cast, Vector2 targ
     result.kind = ENTITY_STATE_ATTACKING;
     result.as.attacking.spell_being_cast = spell_being_cast;
     result.as.attacking.target_position = target_pos;
-    result.as.attacking.cast_speed = cast_speed;
+    result.as.attacking.total_cast_speed = cast_speed;
 
     return result;
 }

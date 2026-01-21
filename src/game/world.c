@@ -669,8 +669,13 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 		spellcaster, game_ui->selected_spellbook_index);
 
 	    StatValue cast_speed = get_total_stat_value(player, STAT_CAST_SPEED, world->item_system);
+	    StatValue action_speed = get_total_stat_value(player, STAT_ACTION_SPEED, world->item_system);
 
-	    entity_transition_to_state(world, player, state_attacking(selected_spell, mouse_pos, cast_speed));
+	    StatValue total_cast_speed = apply_modifier(cast_speed, action_speed,
+		NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
+
+	    entity_transition_to_state(world, player,
+		state_attacking(selected_spell, mouse_pos, total_cast_speed));
         }
     }
 
@@ -952,6 +957,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
         StatsComponent *stats = es_add_component(entity, StatsComponent);
 	set_stat_value(&stats->stats, STAT_CAST_SPEED, 100);
 	set_stat_value(&stats->stats, STAT_HEALTH, 1000);
+	set_stat_value(&stats->stats, STAT_ACTION_SPEED, 100);
 	set_stat_value(&stats->stats, STAT_MOVEMENT_SPEED, 100);
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);

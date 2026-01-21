@@ -181,6 +181,7 @@ static StatValue get_default_stat_value(Stat stat)
     switch (stat) {
 	case STAT_CAST_SPEED:
 	case STAT_MOVEMENT_SPEED:
+	case STAT_ACTION_SPEED:
 	    return 100;
 
 	default:

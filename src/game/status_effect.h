@@ -8,8 +8,6 @@
 /*
   TODO:
   - Come up with a better way to iterate through active effects
-    - debug.c
-    - status_effect.c
     - stats.c
   - Only make stackable effects array as large as number of stackable effect types, same
     for non-stackable effects
@@ -39,6 +37,19 @@ typedef struct StatusEffectComponent {
     StatusEffectInstance non_stackable_effects[STATUS_EFFECT_COUNT];
 } StatusEffectComponent;
 
+typedef enum {
+    STATUS_EFFECT_CALLBACK_PROCEED,
+    STATUS_EFFECT_CALLBACK_DELETE_CURRENT,
+} StatusEffectCallbackResult;
+
+typedef struct {
+    StatusEffectComponent *status_effects_component;
+    StatusEffectID status_effect_id;
+    StatusEffectInstance *instance;
+} StatusEffectCallbackParams;
+
+typedef StatusEffectCallbackResult (*StatusEffectCallback)(StatusEffectCallbackParams, void *);
+
 void     initialize_status_effect_system();
 void     update_status_effects(struct StatusEffectComponent *status_effects, f32 dt);
 void     apply_status_effect(struct StatusEffectComponent *comp, StatusEffectID effect_id);
@@ -48,5 +59,6 @@ b32	 has_status_effect(struct StatusEffectComponent *comp, StatusEffectID id);
 b32      status_effect_is_stackable(StatusEffectID id);
 Modifier get_status_effect_stat_modifier(StatusEffectID effect_id);
 b32      status_effect_modifies_stat(StatusEffectID effect_id, Stat stat, NumericModifierType mod_type);
+void     for_each_active_status_effect(StatusEffectComponent *comp, StatusEffectCallback fn, void *data);
 
 #endif //STATUS_EFFECT_H

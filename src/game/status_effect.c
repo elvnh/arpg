@@ -97,53 +97,25 @@ static void remove_status_effects_of_type(StatusEffectComponent *status_effects,
     status_effects->active_effects_bitset &= ~bit;
 }
 
-static void update_status_effects_stack(StatusEffectComponent *comp, StatusEffectStack *stack,
-    StatusEffectID id, f32 dt)
+static StatusEffectCallbackResult update_status_effects_callback(StatusEffectCallbackParams params,
+    void *user_data)
 {
-    ASSERT(stack->effect_count > 0 &&
-	"If effect instances of this type is zero, "
-	"the bit in the active effects bitset shouldn't be set");
+    StatusEffectCallbackResult result = STATUS_EFFECT_CALLBACK_PROCEED;
 
-    for (ssize i = 0; i < stack->effect_count; ++i) {
-	StatusEffectInstance *instance = &stack->effects[i];
+    f32 dt = *(f32 *)user_data;
 
-	instance->time_remaining -= dt;
+    params.instance->time_remaining -= dt;
 
-	if (instance->time_remaining <= 0.0f) {
-	    *instance = stack->effects[stack->effect_count - 1];
-	    --stack->effect_count;
-	    --i;
-
-	    if (stack->effect_count == 0) {
-		remove_status_effects_of_type(comp, id);
-	    }
-	}
+    if (params.instance->time_remaining <= 0.0f) {
+	result = STATUS_EFFECT_CALLBACK_DELETE_CURRENT;
     }
+
+    return result;
 }
 
 void update_status_effects(StatusEffectComponent *status_effects, f32 dt)
 {
-    for (StatusEffectID id = 0; id < STATUS_EFFECT_COUNT; ++id) {
-	u64 bit = FLAG(id);
-
-	if (status_effects->active_effects_bitset & bit) {
-	    StatusEffect *effect = get_status_effect_by_id(id);
-
-	    if (effect_has_prop(effect, EFFECT_PROP_STACKABLE)) {
-		StatusEffectStack *stack = &status_effects->stackable_effects[id];
-
-		update_status_effects_stack(status_effects, stack, id, dt);
-	    } else {
-		StatusEffectInstance *instance = &status_effects->non_stackable_effects[id];
-
-		instance->time_remaining -= dt;
-
-		if (instance->time_remaining <= 0.0f) {
-		    remove_status_effects_of_type(status_effects, id);
-		}
-	    }
-	}
-    }
+    for_each_active_status_effect(status_effects, update_status_effects_callback, &dt);
 }
 
 b32 status_effect_modifies_stat(StatusEffectID effect_id, Stat stat, NumericModifierType mod_type)
@@ -191,6 +163,48 @@ b32 status_effect_is_stackable(StatusEffectID id)
     b32 result = effect_has_prop(effect, EFFECT_PROP_STACKABLE);
 
     return result;
+}
+
+void for_each_active_status_effect(StatusEffectComponent *comp, StatusEffectCallback fn, void *data)
+{
+    StatusEffectCallbackParams params = {0};
+    params.status_effects_component = comp;
+
+    for (StatusEffectID id = 0; id < STATUS_EFFECT_COUNT; ++id) {
+	if (has_status_effect(comp, id)) {
+	    params.status_effect_id = id;
+
+	    if (status_effect_is_stackable(id)) {
+		StatusEffectStack *stack = &comp->stackable_effects[id];
+		ASSERT(stack->effect_count >= 0);
+
+		for (ssize i = 0; i < stack->effect_count; ++i) {
+		    StatusEffectInstance *instance = &stack->effects[i];
+		    params.instance = instance;
+
+		    StatusEffectCallbackResult result = fn(params, data);
+
+		    if (result == STATUS_EFFECT_CALLBACK_DELETE_CURRENT) {
+			*instance = stack->effects[stack->effect_count - 1];
+			--stack->effect_count;
+			--i;
+
+			if (stack->effect_count == 0) {
+			    remove_status_effects_of_type(comp, id);
+			}
+		    }
+		}
+	    } else {
+		params.instance = &comp->non_stackable_effects[id];
+
+		StatusEffectCallbackResult result = fn(params, data);
+
+		if (result == STATUS_EFFECT_CALLBACK_DELETE_CURRENT) {
+		    remove_status_effects_of_type(comp, id);
+		}
+	    }
+	}
+    }
 }
 
 // on tick

@@ -75,24 +75,40 @@ static b32 modifier_is_relevant(Modifier mod, Stat stat, NumericModifierType mod
     return result;
 }
 
+typedef struct {
+    Stat stat;
+    NumericModifierType mod_type;
+    StatValue result;
+} SumStatusEffectContext;
+
+static StatusEffectCallbackResult sum_status_effect_mods_callback(StatusEffectCallbackParams params,
+    void *user_data)
+{
+    SumStatusEffectContext *context = user_data;
+
+    if (status_effect_modifies_stat(params.status_effect_id, context->stat, context->mod_type)) {
+	Modifier mod = get_status_effect_stat_modifier(params.status_effect_id);
+
+	context->result = accumulate_modifier_value(context->result, mod.value, context->mod_type);
+    }
+
+    return STATUS_EFFECT_CALLBACK_PROCEED;
+}
+
 static StatValue sum_status_effect_modifiers_of_type(Entity *entity, Stat stat,
     NumericModifierType mod_type)
 {
-    StatValue result = initialize_stat_value(mod_type);
+    SumStatusEffectContext context = {
+	.stat = stat,
+	.mod_type = mod_type,
+	.result = initialize_stat_value(mod_type)
+    };
 
     StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
 
-    if (status_effects) {
-	for (StatusEffectID id = 0; id < STATUS_EFFECT_COUNT; ++id) {
-	    if (has_status_effect(status_effects, id) && status_effect_modifies_stat(id, stat, mod_type)) {
-		Modifier mod = get_status_effect_stat_modifier(id);
+    for_each_active_status_effect(status_effects, sum_status_effect_mods_callback, &context);
 
-		result = accumulate_modifier_value(result, mod.value, mod_type);
-	    }
-	}
-    }
-
-    return result;
+    return context.result;
 }
 
 static StatValue sum_modifiers_in_slot(Equipment *eq, Stat stat, EquipmentSlot slot,

@@ -7,8 +7,6 @@
 
 /*
   TODO:
-  - Come up with a better way to iterate through active effects
-    - stats.c
   - Only make stackable effects array as large as number of stackable effect types, same
     for non-stackable effects
  */

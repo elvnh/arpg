@@ -7,6 +7,9 @@
 #include "stats.h"
 #include "world.h"
 
+#define AI_CHASE_DISTANCE 250.0f
+#define AI_ATTACK_DISTANCE 200.0f
+
 static AIState ai_state_idle()
 {
     AIState result = {0};
@@ -25,6 +28,15 @@ static AIState ai_state_chasing(EntityID target_id)
 }
 
 
+static b32 is_valid_attack_target(Entity *self, Entity *other)
+{
+    b32 result = (other->faction != self->faction)
+	&& (other->faction != FACTION_NEUTRAL)
+	&& es_has_component(other, StatsComponent);
+
+    return result;
+}
+
 static void transition_to_ai_state(World *world, Entity *entity, AIComponent *ai, AIState new_state)
 {
     ai->current_state = new_state;
@@ -39,9 +51,6 @@ static void transition_to_ai_state(World *world, Entity *entity, AIComponent *ai
     }
 }
 
-#define AI_CHASE_DISTANCE 250.0f
-#define AI_ATTACK_DISTANCE 200.0f
-
 static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai)
 {
     // TODO: get entities in area around ourselves instead of checking everyone
@@ -50,7 +59,7 @@ static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai)
 	EntityID other_id = world->alive_entity_ids[i];
 	Entity *other = es_get_entity(world->entity_system, other_id);
 
-	if ((other->faction != entity->faction) && (other->faction != FACTION_NEUTRAL)) {
+	if (is_valid_attack_target(entity, other)) {
 	    f32 distance = v2_dist(other->position, entity->position);
 
 	    if (distance < AI_CHASE_DISTANCE) {

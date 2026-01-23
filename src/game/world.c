@@ -918,7 +918,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
         ASSERT(!es_has_component(entity, ColliderComponent));
 
-	if (i == 1 && false) {
+	if (i == 1) {
 	    AIComponent *ai = es_add_component(entity, AIComponent);
 
 	    ai->current_state.kind = AI_STATE_IDLE;
@@ -956,9 +956,9 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
 	stats->stats = create_base_stats();
+	set_stat_value(&stats->stats, STAT_HEALTH, 100000);
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
-	apply_status_effect(effects, STATUS_EFFECT_CHILLED);
 	//apply_status_effect(effects, STATUS_EFFECT_CHILLED);
 
         // TODO: ensure components are zeroed out

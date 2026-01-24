@@ -6,5 +6,6 @@ compile_commands.events.json
 *.a
 *.o
 *.so
+.#*
 test_runner.c
 tests

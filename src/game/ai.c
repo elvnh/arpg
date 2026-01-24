@@ -59,7 +59,7 @@ static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai)
 	EntityID other_id = world->alive_entity_ids[i];
 	Entity *other = es_get_entity(world->entity_system, other_id);
 
-	if (is_valid_attack_target(entity, other)) {
+ 	if (is_valid_attack_target(entity, other)) {
 	    f32 distance = v2_dist(other->position, entity->position);
 
 	    if (distance < AI_CHASE_DISTANCE) {

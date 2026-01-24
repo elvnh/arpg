@@ -41,6 +41,7 @@ set(
   src/game/game.c
   src/game/world.c
   src/game/trigger.c
+  src/game/health.c
   src/game/collision.c
   src/game/collision_event.c
   src/game/collision_policy.c

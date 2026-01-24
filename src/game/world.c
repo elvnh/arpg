@@ -18,6 +18,7 @@
 #include "base/random.h"
 #include "base/utils.h"
 #include "base/sl_list.h"
+#include "health.h"
 #include "status_effect.h"
 #include "damage.h"
 #include "debug.h"
@@ -182,11 +183,11 @@ Vector2 tile_to_world_coords(Vector2i tile_coords)
 
 static b32 entity_should_die(World *world, Entity *entity)
 {
-    if (es_has_component(entity, StatsComponent)) {
-	StatsComponent *stats = es_get_component(entity, StatsComponent);
-	StatValue health = get_total_stat_value(entity, STAT_HEALTH, world->item_system);
+    if (es_has_component(entity, HealthComponent)) {
+	HealthComponent *hp = es_get_component(entity, HealthComponent);
 
-	if (health <= 0) {
+	ASSERT(hp->health.current_hitpoints >= 0);
+	if (hp->health.current_hitpoints == 0) {
 	    return true;
 	}
     }
@@ -215,6 +216,12 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 {
     EntityID id = world->alive_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(world->entity_system, id);
+
+    if (es_has_component(entity, HealthComponent)) {
+	HealthComponent *hp = es_get_component(entity, HealthComponent);
+	StatValue max_hp = get_total_stat_value(entity, STAT_HEALTH, world->item_system);
+	set_max_health(&hp->health, max_hp);
+    }
 
     if (es_has_component(entity, AIComponent)) {
 	AIComponent *ai = es_get_component(entity, AIComponent);
@@ -340,13 +347,14 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
 	retrigger_behaviour, &world->world_arena);
 }
 
-static void deal_damage_to_entity(World *world, Entity *entity, StatsComponent *stats, DamageInstance damage)
+static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
 {
     Damage damage_taken = calculate_damage_received(entity, damage, world->item_system);
     StatValue dmg_sum = calculate_damage_sum(damage_taken);
+    ASSERT(dmg_sum >= 0);
 
-    StatValue *health = get_stat_reference(&stats->stats, STAT_HEALTH);
-    *health -= dmg_sum;
+    StatValue new_hp = hp->health.current_hitpoints - dmg_sum;
+    set_current_health(&hp->health, new_hp);
 
     hitsplats_create(world, entity->position, damage_taken);
 }
@@ -355,10 +363,10 @@ static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *se
 {
     (void)sender;
 
-    StatsComponent *stats = es_get_component(receiver, StatsComponent);
+    HealthComponent *hp = es_get_component(receiver, HealthComponent);
 
-    if (stats) {
-        deal_damage_to_entity(world, receiver, stats, damage);
+    if (hp) {
+        deal_damage_to_entity(world, receiver, hp, damage);
     }
 }
 
@@ -956,7 +964,10 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
 	stats->stats = create_base_stats();
-	set_stat_value(&stats->stats, STAT_HEALTH, 100000);
+	set_stat_value(&stats->stats, STAT_HEALTH, 1000);
+
+	HealthComponent *hp = es_add_component(entity, HealthComponent);
+	hp->health = create_health_instance(world, entity);
 
         StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
 	//apply_status_effect(effects, STATUS_EFFECT_CHILLED);

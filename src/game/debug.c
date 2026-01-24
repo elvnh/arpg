@@ -1,5 +1,6 @@
 #include "debug.h"
 #include "base/format.h"
+#include "components/component.h"
 #include "status_effect.h"
 #include "game.h"
 #include "renderer/render_batch.h"
@@ -105,9 +106,21 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, GameMemory *game_
 
 	entity_faction_str = str_concat(str_lit("Faction: "), entity_faction_str, alloc);
 
+
 	ui_text(ui, entity_str);
 	ui_text(ui, entity_pos_str);
 	ui_text(ui, entity_faction_str);
+
+	HealthComponent *hp = es_get_component(entity, HealthComponent);
+
+	if (hp) {
+	    String hp_str = str_concat(str_lit("HP: "),
+		s64_to_string(hp->health.current_hitpoints, alloc), alloc);
+	    hp_str = str_concat(hp_str, str_lit("/"), alloc);
+	    hp_str = str_concat(hp_str, s64_to_string(hp->health.max_hitpoints, alloc), alloc);
+
+	    ui_text(ui, hp_str);
+	}
 
 	StatusEffectComponent *effects = es_get_component(entity, StatusEffectComponent);
 

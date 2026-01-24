@@ -155,6 +155,7 @@ String status_effect_to_string(StatusEffectID effect_id)
 
 b32 has_status_effect(struct StatusEffectComponent *comp, StatusEffectID id)
 {
+    ASSERT(comp);
     b32 result = (comp->active_effects_bitset & FLAG(id)) != 0;
 
     return result;

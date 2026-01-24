@@ -105,8 +105,9 @@ static StatValue sum_status_effect_modifiers_of_type(Entity *entity, Stat stat,
     };
 
     StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
-
-    for_each_active_status_effect(status_effects, sum_status_effect_mods_callback, &context);
+    if (status_effects) {
+	for_each_active_status_effect(status_effects, sum_status_effect_mods_callback, &context);
+    }
 
     return context.result;
 }

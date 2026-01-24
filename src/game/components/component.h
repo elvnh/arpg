@@ -19,6 +19,7 @@
 #include "magic.h"
 #include "event_listener.h"
 #include "ai.h"
+#include "health.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(ColliderComponent)                \
@@ -36,6 +37,7 @@
     COMPONENT(DamageFieldComponent)		\
     COMPONENT(AIComponent)			\
     COMPONENT(EffectApplierComponent)		\
+    COMPONENT(HealthComponent)			\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -95,5 +97,9 @@ typedef struct {
 typedef struct AIComponent {
     AIState current_state;
 } AIComponent;
+
+typedef struct {
+    Health health;
+} HealthComponent;
 
 #endif //COMPONENT_H

@@ -122,7 +122,7 @@ add_compile_options(
 )
 
 add_compile_definitions(
-  -DHOT_RELOAD=${HOT_RELOAD}
+  HOT_RELOAD=${HOT_RELOAD}
 )
 
 add_link_options(

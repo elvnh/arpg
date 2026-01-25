@@ -4,6 +4,7 @@
 #include "base/utils.h"
 #include "base/rectangle.h"
 #include "base/string8.h"
+#include "base/triangle.h"
 #include "asset.h"
 
 // TODO: X macro to avoid defining new commands in multiple places
@@ -13,6 +14,7 @@
     RENDER_COMMAND(ClippedRectangleCmd)         \
     RENDER_COMMAND(OutlinedRectangleCmd)        \
     RENDER_COMMAND(CircleCmd)                   \
+    RENDER_COMMAND(TriangleCmd)                 \
     RENDER_COMMAND(LineCmd)                     \
     RENDER_COMMAND(TextCmd)                     \
     RENDER_COMMAND(ParticleGroupCmd)            \
@@ -48,6 +50,12 @@ typedef struct {
     RectangleFlip flip;
     f32 rotation_in_radians;
 } RectangleCmd;
+
+typedef struct {
+    RenderCmdHeader header;
+    Triangle triangle;
+    RGBA32 color;
+} TriangleCmd;
 
 typedef struct {
     RenderCmdHeader header;

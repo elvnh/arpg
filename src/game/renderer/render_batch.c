@@ -224,6 +224,19 @@ RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     return rb_push_colored_sprite(rb, arena, NULL_TEXTURE, rect, (SpriteModifiers){0}, color, shader, layer);
 }
 
+RenderEntry *rb_push_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
+    ShaderHandle shader, RenderLayer layer)
+{
+    TriangleCmd *cmd = allocate_render_cmd(arena, TriangleCmd);
+    cmd->triangle = triangle;
+    cmd->color = color;
+
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, triangle.a.y);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
     Rectangle viewport, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {

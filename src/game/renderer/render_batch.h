@@ -50,6 +50,8 @@ RenderEntry *rb_push_colored_sprite(RenderBatch *rb, LinearArena *arena, Texture
     ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     ShaderHandle shader, RenderLayer layer);
+RenderEntry *rb_push_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
+    ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rect, Rectangle viewport, RGBA32 color, ShaderHandle shader, RenderLayer layer);
 RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,

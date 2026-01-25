@@ -190,4 +190,14 @@ static inline Vector2 v2_rotate_around_point(Vector2 v, f32 rotation_in_radians,
     return result;
 }
 
+static inline f32 v2_half_plane_side(Vector2 point, Vector2 a, Vector2 b)
+{
+    Vector2 pb = v2_sub(a, b);
+    Vector2 pc = v2_sub(point, b);
+
+    f32 result = v2_cross(pb, pc);
+
+    return result;
+}
+
 #endif //VECTOR2_H

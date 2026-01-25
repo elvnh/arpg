@@ -202,6 +202,15 @@ void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
                 }
             } break;
 
+            case RENDER_COMMAND_ENUM_NAME(TriangleCmd): {
+                TriangleCmd *cmd = (TriangleCmd *)entry->data;
+                Triangle triangle = cmd->triangle;
+
+                TriangleVertices verts = triangle_get_vertices(triangle, cmd->color);
+
+                renderer_backend_draw_triangle(backend, verts.a, verts.b, verts.c);
+            } break;
+
             case RENDER_COMMAND_ENUM_NAME(OutlinedRectangleCmd): {
                 OutlinedRectangleCmd *cmd = (OutlinedRectangleCmd *)entry->data;
                 ASSERT(cmd->rect.size.x > 0.0f && cmd->rect.size.y > 0.0f);

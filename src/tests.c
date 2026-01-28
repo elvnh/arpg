@@ -15,6 +15,7 @@
 #include "base/utils.h"
 #include "base/maths.h"
 #include "base/format.h"
+#include "base/dynamic_array.h"
 #include "platform.h"
 #include <stdint.h>
 
@@ -1596,6 +1597,65 @@ static void tests_maths()
     ASSERT(fraction(-1.5f) == 0.5f);
 }
 
+typedef struct {
+    int *items;
+    ssize count;
+    ssize capacity;
+} IntArray;
+
+
+static void tests_dynamic_array()
+{
+    LinearArena arena = la_create(default_allocator, MB(1));
+    Allocator alloc = la_allocator(&arena);
+
+    // No init
+    {
+        IntArray arr = {0};
+
+        for (int i = 0; i < 10; ++i) {
+            da_push(&arr, i, alloc);
+        }
+
+        for (ssize i = 0; i < 10; ++i) {
+            ASSERT(arr.items[i] == i);
+        }
+    }
+
+    // Init
+    {
+        ssize cap = 4;
+        IntArray arr;
+        da_init(&arr, cap, alloc);
+
+        void *old_items = arr.items;
+
+        for (int i = 0; i < cap; ++i) {
+            da_push(&arr, i, alloc);
+        }
+
+        ASSERT(arr.items == old_items);
+    }
+
+    {
+        ssize cap = 4;
+        IntArray arr;
+        da_init(&arr, cap, alloc);
+
+        void *old_items = arr.items;
+
+        for (int i = 0; i < cap * 8; ++i) {
+            da_push(&arr, i, alloc);
+        }
+
+        ASSERT(arr.items != old_items);
+
+        for (int i = 0; i < cap * 8; ++i) {
+            ASSERT(arr.items[i] == i);
+        }
+    }
+}
+
 static void run_tests()
 {
     tests_arena();
@@ -1610,4 +1670,5 @@ static void run_tests()
     tests_types();
     tests_ring();
     tests_maths();
+    tests_dynamic_array();
 }

@@ -15,7 +15,7 @@ static inline ssize trigger_cooldown_hashed_index(TriggerCooldownTable *table, E
 }
 
 static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentBitset component_id)
+    ComponentID component_id)
 {
     ASSERT(!entity_id_equal(self, other));
 
@@ -39,7 +39,7 @@ static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, Entit
 
 // TODO: allow setting multiple components
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, FreeListArena *arena)
+    ComponentID component, RetriggerBehaviour retrigger_behaviour, FreeListArena *arena)
 {
     ASSERT(!entity_id_equal(self, other));
 
@@ -103,7 +103,7 @@ void update_trigger_cooldowns(World *world, EntitySystem *es, f32 dt)
     }
 }
 
-b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentBitset component)
+b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentID component)
 {
     b32 result = find_trigger_cooldown(table, a, b, component) != 0;
 

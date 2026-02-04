@@ -6,8 +6,6 @@
 
 // A trigger is any interaction between two entities. If this trigger needs a cooldown
 // before it can be retriggered, a cooldown can be inserted into a table.
-// For now, trigger cooldowns are per ordered entity pair, but it should be easy
-// to encode additional information, so that for example cooldowns can be per component too.
 
 #define should_invoke_trigger(world, entity, other, component)	\
     es_has_component(entity, component)				\
@@ -43,7 +41,7 @@ typedef struct TriggerCooldown {
 
     EntityID owning_entity; // TODO: use ordered entity pair here
     EntityID collided_entity;
-    ComponentBitset owning_component;
+    ComponentID owning_component;
 
     RetriggerBehaviour retrigger_behaviour;
 } TriggerCooldown;
@@ -59,9 +57,9 @@ typedef struct {
 } TriggerCooldownTable;
 
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentBitset component, RetriggerBehaviour retrigger_behaviour, struct FreeListArena *arena);
+    ComponentID component, RetriggerBehaviour retrigger_behaviour, struct FreeListArena *arena);
 void update_trigger_cooldowns(struct World *world, struct EntitySystem *es, f32 dt);
-b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentBitset component);
+b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentID component);
 
 static inline RetriggerBehaviour retrigger_whenever(void)
 {
@@ -78,7 +76,6 @@ static inline RetriggerBehaviour retrigger_never(void)
 
     return result;
 }
-
 
 static inline RetriggerBehaviour retrigger_after_non_contact(void)
 {

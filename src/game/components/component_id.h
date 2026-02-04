@@ -5,5 +5,6 @@
 #define ES_IMPL_COMP_ENUM_BIT_VALUE(e) ((u64)1 << (e))
 
 typedef u64 ComponentBitset;
+typedef ComponentBitset ComponentID;
 
 #endif //COMPONENT_ID_H

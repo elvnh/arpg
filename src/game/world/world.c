@@ -294,7 +294,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
-        component_update_particle_spawner(entity, particle_spawner, dt);
+        update_particle_spawner(entity, particle_spawner, dt);
     }
 
     if (es_has_component(entity, LifetimeComponent)) {
@@ -361,35 +361,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
 
-        if (ps->config.particle_texture.id == NULL_TEXTURE.id) {
-            ASSERT(ps->config.particle_color.a != 0.0f);
-
-            if (ps->config.emits_light) {
-                for (ssize i = 0; i < ring_length(&ps->particle_buffer); ++i) {
-                    Particle *p = ring_at(&ps->particle_buffer, i);
-                    // TODO: don't have the particles fade out linearly
-                    f32 intensity = 1.0f - p->timer / p->lifetime;
-
-                    render_light_source(world, rbs.lighting_rb, p->position, ps->config.light_source,
-                        intensity, scratch);
-                }
-            } else {
-                draw_particles(rbs.world_rb, scratch, &ps->particle_buffer, ps->config.particle_color,
-                    ps->config.particle_size, get_asset_table()->shape_shader, RENDER_LAYER_PARTICLES);
-            }
-
-
-        } else {
-            // If color isn't set, assume it to be white
-            RGBA32 particle_color = ps->config.particle_color;
-            if (particle_color.a == 0.0f) {
-                particle_color = RGBA32_WHITE;
-            }
-
-            draw_textured_particles(rbs.world_rb, scratch, &ps->particle_buffer,
-		get_asset_table()->default_texture, particle_color, ps->config.particle_size,
-		get_asset_table()->texture_shader, RENDER_LAYER_PARTICLES);
-        }
+        render_particle_spawner(world, ps, rbs, scratch);
     }
 
     if (es_has_component(entity, LightEmitter)) {

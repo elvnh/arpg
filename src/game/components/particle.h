@@ -7,8 +7,12 @@
 #include "base/rgba.h"
 #include "platform/asset.h"
 #include "light.h"
+#include "renderer/frontend/render_target.h"
 
 struct Entity;
+struct LinearArena;
+struct RenderBatch;
+struct World;
 
 typedef struct Particle {
     f32 timer;
@@ -62,6 +66,7 @@ void particle_spawner_initialize(ParticleSpawner *ps, ParticleSpawnerConfig conf
 b32 particle_spawner_is_finished(ParticleSpawner *ps);
 
 // TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
-void component_update_particle_spawner(struct Entity *entity, ParticleSpawner *ps, f32 dt);
+void update_particle_spawner(struct Entity *entity, ParticleSpawner *ps, f32 dt);
+void render_particle_spawner(struct World *world, ParticleSpawner *ps, RenderBatches rbs, struct LinearArena *arena);
 
 #endif //PARTICLE_H

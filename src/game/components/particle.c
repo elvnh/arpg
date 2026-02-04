@@ -2,8 +2,10 @@
 #include "entity/entity_system.h"
 #include "base/random.h"
 #include "world/world.h"
+#include "renderer/frontend/render_batch.h"
+#include "asset_table.h"
 
-void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 dt)
+void update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 dt)
 {
     ASSERT(ps->config.particle_size > 0.0f);
     ASSERT(ps->config.particle_speed > 0.0f);
@@ -71,6 +73,39 @@ void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 
 
     if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_COMPONENT) && particle_spawner_is_finished(ps)) {
         es_remove_component(entity, ParticleSpawner);
+    }
+}
+
+void render_particle_spawner(World *world, ParticleSpawner *ps, RenderBatches rbs, LinearArena *arena)
+{
+    if (ps->config.particle_texture.id == NULL_TEXTURE.id) {
+        ASSERT(ps->config.particle_color.a != 0.0f);
+
+        if (ps->config.emits_light) {
+            for (ssize i = 0; i < ring_length(&ps->particle_buffer); ++i) {
+                Particle *p = ring_at(&ps->particle_buffer, i);
+                // TODO: don't have the particles fade out linearly
+                f32 intensity = 1.0f - p->timer / p->lifetime;
+
+                render_light_source(world, rbs.lighting_rb, p->position, ps->config.light_source,
+                    intensity, arena);
+            }
+        } else {
+            draw_particles(rbs.world_rb, arena, &ps->particle_buffer, ps->config.particle_color,
+                ps->config.particle_size, get_asset_table()->shape_shader, RENDER_LAYER_PARTICLES);
+        }
+
+
+    } else {
+        // If color isn't set, assume it to be white
+        RGBA32 particle_color = ps->config.particle_color;
+        if (particle_color.a == 0.0f) {
+            particle_color = RGBA32_WHITE;
+        }
+
+        draw_textured_particles(rbs.world_rb, arena, &ps->particle_buffer,
+            get_asset_table()->default_texture, particle_color, ps->config.particle_size,
+            get_asset_table()->texture_shader, RENDER_LAYER_PARTICLES);
     }
 }
 

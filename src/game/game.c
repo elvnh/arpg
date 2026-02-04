@@ -26,11 +26,10 @@ typedef enum {
 static void set_global_state(Game *game)
 {
     rng_set_global_state(&game->rng_state);
-    anim_set_global_animation_table(&game->animations);
     set_global_asset_table(&game->asset_list);
 
     magic_initialize();
-    anim_initialize(&game->animations);
+    anim_initialize();
 }
 
 void update_player(World *world, const FrameData *frame_data,
@@ -292,7 +291,7 @@ void game_initialize(Game *game, GameMemory *game_memory)
     set_global_state(game);
 
     magic_initialize();
-    anim_initialize(&game->animations);
+    anim_initialize();
 
     initialize_status_effect_system();
     es_initialize(&game->entity_system);

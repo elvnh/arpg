@@ -33,7 +33,6 @@ typedef struct Game {
     AssetTable asset_list;
     DebugState debug_state;
     RNGState rng_state;
-    AnimationTable animations;
     GameUIState game_ui;
 } Game;
 

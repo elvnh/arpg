@@ -7,7 +7,11 @@
 #include "asset_table.h"
 #include "world.h"
 
-static AnimationTable *g_animation_table;
+typedef struct AnimationTable {
+    Animation animations[ANIM_ANIMATION_COUNT];
+} AnimationTable;
+
+static AnimationTable g_animation_table;
 
 static Animation animation_player_idle(void)
 {
@@ -72,21 +76,19 @@ static Animation animation_player_attack(void)
     return result;
 }
 
-void anim_initialize(AnimationTable *anim_table)
+void anim_initialize()
 {
-    anim_set_global_animation_table(anim_table);
-
-    g_animation_table->animations[ANIM_PLAYER_IDLE] = animation_player_idle();
-    g_animation_table->animations[ANIM_PLAYER_WALKING] = animation_player_walking();
-    g_animation_table->animations[ANIM_PLAYER_ATTACKING] = animation_player_attack();
+    g_animation_table.animations[ANIM_PLAYER_IDLE] = animation_player_idle();
+    g_animation_table.animations[ANIM_PLAYER_WALKING] = animation_player_walking();
+    g_animation_table.animations[ANIM_PLAYER_ATTACKING] = animation_player_attack();
 }
 
 static Animation *anim_get_by_id(AnimationID id)
 {
     ASSERT(id != ANIM_NULL);
     ASSERT(id >= 0);
-    ASSERT(id < ARRAY_COUNT(g_animation_table->animations));
-    Animation *result = &g_animation_table->animations[id];
+    ASSERT(id < ARRAY_COUNT(g_animation_table.animations));
+    Animation *result = &g_animation_table.animations[id];
 
     return result;
 }
@@ -185,9 +187,4 @@ AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance)
     AnimationFrame frame = anim->frames[anim_instance->current_frame];
 
     return frame;
-}
-
-void anim_set_global_animation_table(AnimationTable *anim_table)
-{
-    g_animation_table = anim_table;
 }

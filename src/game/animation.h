@@ -48,11 +48,7 @@ typedef struct AnimationInstance {
     f32 animation_speed_factor;
 } AnimationInstance;
 
-typedef struct AnimationTable {
-    Animation animations[ANIM_ANIMATION_COUNT];
-} AnimationTable;
-
-void anim_initialize(AnimationTable *anim_table);
+void anim_initialize(void);
 void anim_update_instance(struct World *world, struct Entity *entity,
     struct AnimationInstance *anim_instance, f32 dt);
 void anim_render_instance(struct AnimationInstance *anim_instance, struct Entity *owning_entity,
@@ -61,6 +57,5 @@ AnimationInstance anim_begin_animation(AnimationID next_anim, f32 speed_factor);
 AnimationInstance anim_begin_animation_with_duration(AnimationID anim, f32 duration, f32 speed_factor);
 AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance);
 //AnimationInstance *anim_get_current_animation(struct Entity *entity, struct AnimationComponent *anim_comp);
-void anim_set_global_animation_table(AnimationTable *anim_table);
 
 #endif //ANIMATION_H

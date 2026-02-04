@@ -10,7 +10,7 @@
 #define AI_CHASE_DISTANCE 250.0f
 #define AI_ATTACK_DISTANCE 200.0f
 
-static AIState ai_state_idle()
+static AIState ai_state_idle(void)
 {
     AIState result = {0};
     result.kind = AI_STATE_IDLE;

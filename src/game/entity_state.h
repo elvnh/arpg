@@ -33,7 +33,7 @@ typedef struct {
 void entity_transition_to_state(struct World *world, struct Entity *entity, EntityState state);
 b32 entity_try_transition_to_state(struct World *world, struct Entity *entity, EntityState state);
 
-static inline EntityState state_idle()
+static inline EntityState state_idle(void)
 {
     EntityState result = {0};
     result.kind = ENTITY_STATE_IDLE;

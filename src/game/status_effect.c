@@ -35,7 +35,7 @@ static StatusEffect *get_status_effect_by_id(StatusEffectID id)
     return result;
 }
 
-static StatusEffect status_effect_chilled()
+static StatusEffect status_effect_chilled(void)
 {
     StatusEffect result = {0};
 

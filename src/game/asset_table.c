@@ -3,7 +3,7 @@
 
 static AssetTable *g_asset_table;
 
-AssetTable *get_asset_table()
+AssetTable *get_asset_table(void)
 {
     ASSERT(g_asset_table);
     return g_asset_table;

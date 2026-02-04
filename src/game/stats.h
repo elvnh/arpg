@@ -52,7 +52,7 @@ StatValue  get_total_stat_modifier_of_type(struct Entity *entity, Stat stat, Num
 	   				  struct ItemSystem *item_sys);
 StatValue  apply_modifier(StatValue lhs, StatValue rhs, NumericModifierType mod_type);
 StatValue  modify_stat_by_percentage(StatValue lhs, StatValue percentage);
-StatValues create_base_stats();
+StatValues create_base_stats(void);
 
 static inline void set_stat_value(StatValues *stats, Stat stat, StatValue value)
 {

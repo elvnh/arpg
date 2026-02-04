@@ -229,7 +229,7 @@ void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 target_p
 	dir, 0, retrigger_whenever());
 }
 
-static Spell spell_fireball()
+static Spell spell_fireball(void)
 {
     Spell spell = {0};
 
@@ -275,7 +275,7 @@ static Spell spell_fireball()
 }
 
 
-static Spell spell_spark()
+static Spell spell_spark(void)
 {
     Spell spell = {0};
 
@@ -315,7 +315,7 @@ static Spell spell_spark()
     return spell;
 }
 
-static Spell spell_blizzard()
+static Spell spell_blizzard(void)
 {
     Spell spell = {0};
 
@@ -371,7 +371,7 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
 	collide_target, retrigger_never());
 }
 
-static Spell spell_ice_shard()
+static Spell spell_ice_shard(void)
 {
     Spell spell = {0};
 
@@ -417,7 +417,7 @@ static Spell spell_ice_shard()
     return spell;
 }
 
-static Spell spell_ice_shard_trigger()
+static Spell spell_ice_shard_trigger(void)
 {
     Spell spell = spell_ice_shard();
 

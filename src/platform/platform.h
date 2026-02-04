@@ -69,8 +69,8 @@ FileInfo       platform_get_file_info(String path, LinearArena *scratch);
 void           platform_for_each_file_in_dir(String directory, void (*callback)(String), LinearArena *scratch);
 
 /* Time */
-Timestamp      platform_get_time();
-f32            platform_get_seconds_since_launch();
+Timestamp      platform_get_time(void);
+f32            platform_get_seconds_since_launch(void);
 
 /* Mutex */
 typedef struct {
@@ -105,6 +105,6 @@ static inline void atomic_store_s32(s32 *ptr, s32 new_value)
 }
 
 /* Misc */
-void platform_trap_on_fp_exceptions();
+void platform_trap_on_fp_exceptions(void);
 
 #endif //PLATFORM_H

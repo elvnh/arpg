@@ -41,7 +41,7 @@ typedef struct Callback {
     struct Callback *next;
 } Callback;
 
-static inline EventData event_data_death()
+static inline EventData event_data_death(void)
 {
     EventData result = {0};
     result.event_type = EVENT_ENTITY_DIED;

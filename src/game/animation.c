@@ -9,7 +9,7 @@
 
 static AnimationTable *g_animation_table;
 
-static Animation animation_player_idle()
+static Animation animation_player_idle(void)
 {
     Animation result = {0};
 
@@ -26,7 +26,7 @@ static Animation animation_player_idle()
     return result;
 }
 
-static Animation animation_player_walking()
+static Animation animation_player_walking(void)
 {
     Animation result = {0};
 
@@ -43,7 +43,7 @@ static Animation animation_player_walking()
     return result;
 }
 
-static Animation animation_player_attack()
+static Animation animation_player_attack(void)
 {
     Animation result = {0};
 

@@ -14,7 +14,7 @@ typedef struct {
     f32 data[4][4];
 } Matrix4;
 
-inline static Matrix4 mat4_identity()
+inline static Matrix4 mat4_identity(void)
 {
     Matrix4 m = {0};
 

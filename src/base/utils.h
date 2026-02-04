@@ -38,7 +38,7 @@
     #error Unsupported compiler
 #endif
 
-void abort();
+void abort(void);
 
 static inline void assert_impl(const char *expr, const char *function_name, const char *file_name, s32 line_nr)
 {

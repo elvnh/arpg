@@ -35,7 +35,7 @@
 
 static AssetSystem asset_mgr;
 
-const char *__asan_default_options() { return "detect_leaks=0"; }
+const char *__asan_default_options(void) { return "detect_leaks=0"; }
 
 static Vector2 get_text_dimensions(FontHandle font_handle, String text, s32 text_size)
 {
@@ -61,7 +61,7 @@ static f32 get_font_baseline_offset(FontHandle font_handle, s32 text_size)
     return result;
 }
 
-int main()
+int main(void)
 {
     run_tests();
 

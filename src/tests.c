@@ -19,7 +19,7 @@
 #include "platform/platform.h"
 #include <stdint.h>
 
-static void tests_arena()
+static void tests_arena(void)
 {
     {
         LinearArena arena = la_create(default_allocator, 1024);
@@ -179,7 +179,7 @@ static void tests_arena()
     }
 }
 
-static void tests_string()
+static void tests_string(void)
 {
     LinearArena arena = la_create(default_allocator, MB(1));
     Allocator allocator = la_allocator(&arena);
@@ -324,7 +324,7 @@ static void tests_string()
     la_destroy(&arena);
 }
 
-static void tests_utils()
+static void tests_utils(void)
 {
     {
         char str[] = "hello";
@@ -388,7 +388,7 @@ static void tests_utils()
 }
 
 
-static void tests_file()
+static void tests_file(void)
 {
     {
         LinearArena arena = la_create(default_allocator, MB(1));
@@ -428,7 +428,7 @@ static void tests_file()
     la_destroy(&scratch);
 }
 
-static void tests_list()
+static void tests_list(void)
 {
     typedef struct s32_node {
         LIST_LINKS(s32_node);
@@ -708,7 +708,7 @@ static void tests_list()
     la_destroy(&arena);
 }
 
-void tests_path()
+void tests_path(void)
 {
     LinearArena arena = la_create(default_allocator, MB(2));
     Allocator alloc = la_allocator(&arena);
@@ -738,7 +738,7 @@ void tests_path()
     la_destroy(&arena);
 }
 
-static void tests_free_list()
+static void tests_free_list(void)
 {
     {
 	FreeListArena fl = fl_create(default_allocator, 1024);
@@ -1119,7 +1119,7 @@ static void tests_free_list()
     }
 }
 
-static void tests_sl_list()
+static void tests_sl_list(void)
 {
     typedef struct s32_node {
         s32 data;
@@ -1238,7 +1238,7 @@ static void tests_sl_list()
     la_destroy(&arena);
 }
 
-static void tests_format()
+static void tests_format(void)
 {
     LinearArena arena = la_create(default_allocator, MB(2));
     Allocator allocator = la_allocator(&arena);
@@ -1318,7 +1318,7 @@ static void tests_format()
     la_destroy(&arena);
 }
 
-static void tests_types()
+static void tests_types(void)
 {
     // TODO: make these tests independent of architecture
     /* Signed */
@@ -1346,7 +1346,7 @@ static void tests_types()
 }
 
 
-static void tests_ring()
+static void tests_ring(void)
 {
 
     /* Static buffers */
@@ -1597,7 +1597,7 @@ static void tests_ring()
     }
 }
 
-static void tests_maths()
+static void tests_maths(void)
 {
     ASSERT(round_to_f32(9.3f, 0.5f) == 9.5f);
     ASSERT(round_to_f32(9.6f, 0.5f) == 9.5f);
@@ -1625,7 +1625,7 @@ typedef struct {
 } IntArray;
 
 
-static void tests_dynamic_array()
+static void tests_dynamic_array(void)
 {
     LinearArena arena = la_create(default_allocator, MB(1));
     Allocator alloc = la_allocator(&arena);
@@ -1677,7 +1677,7 @@ static void tests_dynamic_array()
     }
 }
 
-static void run_tests()
+static void run_tests(void)
 {
     tests_arena();
     tests_string();

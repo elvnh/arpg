@@ -100,6 +100,7 @@ add_compile_options(
   -Wunused
   -Wpedantic
   -Wconversion
+  -Wstrict-prototypes
   -Wsign-conversion
   -Wsign-compare
   -Wnull-dereference

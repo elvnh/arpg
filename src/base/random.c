@@ -33,7 +33,7 @@ void rng_set_global_state(RNGState *rng)
     g_rng_state = rng;
 }
 
-u64 xoshiro256ss()
+u64 xoshiro256ss(void)
 {
     u64 *s = g_rng_state->state;
 

@@ -63,7 +63,7 @@ void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID o
 void update_trigger_cooldowns(struct World *world, struct EntitySystem *es, f32 dt);
 b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentBitset component);
 
-static inline RetriggerBehaviour retrigger_whenever()
+static inline RetriggerBehaviour retrigger_whenever(void)
 {
     RetriggerBehaviour result = {0};
     result.kind = RETRIGGER_WHENEVER;
@@ -71,7 +71,7 @@ static inline RetriggerBehaviour retrigger_whenever()
     return result;
 }
 
-static inline RetriggerBehaviour retrigger_never()
+static inline RetriggerBehaviour retrigger_never(void)
 {
     RetriggerBehaviour result = {0};
     result.kind = RETRIGGER_NEVER;
@@ -80,7 +80,7 @@ static inline RetriggerBehaviour retrigger_never()
 }
 
 
-static inline RetriggerBehaviour retrigger_after_non_contact()
+static inline RetriggerBehaviour retrigger_after_non_contact(void)
 {
     RetriggerBehaviour result = {0};
     result.kind = RETRIGGER_AFTER_NON_CONTACT;

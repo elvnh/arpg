@@ -49,7 +49,7 @@ typedef struct {
 
 typedef StatusEffectCallbackResult (*StatusEffectCallback)(StatusEffectCallbackParams, void *);
 
-void     initialize_status_effect_system();
+void     initialize_status_effect_system(void);
 void     update_status_effects(struct StatusEffectComponent *status_effects, f32 dt);
 void     apply_status_effect(struct StatusEffectComponent *comp, StatusEffectID effect_id);
 void     try_apply_status_effect_to_entity(struct Entity *entity, StatusEffectID effect_id);

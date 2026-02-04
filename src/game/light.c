@@ -155,13 +155,13 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
 
     switch (light.kind) {
         case LIGHT_REGULAR: {
-            entry = rb_push_circle(rb, arena, origin, color, light.radius,
+            entry = draw_circle(rb, arena, origin, color, light.radius,
                 get_asset_table()->light_shader, RENDER_LAYER_OVERLAY);
         } break;
 
         case LIGHT_RAYCASTED: {
             TriangleFan fan = get_visibility_polygon(origin, &world->tilemap, arena);
-            entry = rb_push_triangle_fan(rb, arena, fan, color,
+            entry = draw_triangle_fan(rb, arena, fan, color,
                 get_asset_table()->light_shader, RENDER_LAYER_OVERLAY);
         } break;
 

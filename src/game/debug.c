@@ -28,7 +28,7 @@ void render_quad_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, s
 	ASSERT(depth < ARRAY_COUNT(colors));
 
 	RGBA32 color = colors[depth];
-	rb_push_outlined_rect(rb, arena, tree->area, color, 4.0f, get_asset_table()->shape_shader,
+	draw_outlined_rectangle(rb, arena, tree->area, color, 4.0f, get_asset_table()->shape_shader,
 	    RENDER_LAYER_OVERLAY);
     }
 }

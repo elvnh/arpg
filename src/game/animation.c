@@ -139,7 +139,7 @@ void anim_render_instance(AnimationInstance *anim_instance, Entity *owning_entit
 	current_frame.sprite.rotation_behaviour);
 
     Rectangle sprite_rect = { owning_entity->position, current_frame.sprite.size };
-    rb_push_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods,
+    draw_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods,
 	get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
 }
 

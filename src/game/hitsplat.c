@@ -51,7 +51,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 
 	color.a = alpha;
 
-	rb_push_text(
+	draw_text(
 	    rb, frame_arena, damage_str, hitsplat->position, color, 28,
 	    get_asset_table()->texture_shader, get_asset_table()->default_font, 5);
     }

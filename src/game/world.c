@@ -342,7 +342,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 	SpriteModifiers sprite_mods = sprite_get_modifiers(entity->direction, sprite->rotation_behaviour);
 
         Rectangle sprite_rect = { entity->position, sprite->size };
-        rb_push_colored_sprite(rbs.world_rb, scratch, sprite->texture, sprite_rect, sprite_mods,
+        draw_colored_sprite(rbs.world_rb, scratch, sprite->texture, sprite_rect, sprite_mods,
 	    sprite->color, get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
     }
 
@@ -354,7 +354,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
             .size = collider->size
         };
 
-        rb_push_rect(rbs.worldspace_ui_rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f},
+        draw_rectangle(rbs.worldspace_ui_rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f},
 	    get_asset_table()->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
@@ -374,7 +374,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
                         intensity, scratch);
                 }
             } else {
-                rb_push_particles(rbs.world_rb, scratch, &ps->particle_buffer, ps->config.particle_color,
+                draw_particles(rbs.world_rb, scratch, &ps->particle_buffer, ps->config.particle_color,
                     ps->config.particle_size, get_asset_table()->shape_shader, RENDER_LAYER_PARTICLES);
             }
 
@@ -386,7 +386,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
                 particle_color = RGBA32_WHITE;
             }
 
-            rb_push_particles_textured(rbs.world_rb, scratch, &ps->particle_buffer,
+            draw_textured_particles(rbs.world_rb, scratch, &ps->particle_buffer,
 		get_asset_table()->default_texture, particle_color, ps->config.particle_size,
 		get_asset_table()->texture_shader, RENDER_LAYER_PARTICLES);
         }
@@ -402,14 +402,14 @@ static void entity_render(Entity *entity, RenderBatches rbs,
     if (debug_state->render_entity_bounds) {
         Rectangle entity_rect = world_get_entity_bounding_box(entity);
 
-        rb_push_rect(rbs.worldspace_ui_rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
+        draw_rectangle(rbs.worldspace_ui_rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
 	    get_asset_table()->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (debug_state->render_entity_velocity) {
 	Vector2 dir = v2_norm(entity->velocity);
 
-	rb_push_line(rbs.worldspace_ui_rb, scratch, entity->position, v2_add(entity->position, v2_mul_s(dir, 20.0f)),
+	draw_line(rbs.worldspace_ui_rb, scratch, entity->position, v2_add(entity->position, v2_mul_s(dir, 20.0f)),
 	    RGBA32_GREEN, 2.0f, get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
     }
 }
@@ -768,7 +768,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
 
 
                 if (tile->type == TILE_FLOOR) {
-                    rb_push_sprite(rb_list.world_rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
+                    draw_sprite(rb_list.world_rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
                         get_asset_table()->texture_shader, layer);
                 } else if (tile->type == TILE_WALL) {
                     Tile *tile_above = tilemap_get_tile(&world->tilemap,
@@ -811,7 +811,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
                         }
                     }
 
-                    rb_push_clipped_sprite(rb_list.world_rb, frame_arena, texture,
+                    draw_clipped_sprite(rb_list.world_rb, frame_arena, texture,
                         tile_rect, bottom_segment, RGBA32_WHITE, get_asset_table()->texture_shader,
 			RENDER_LAYER_FLOORS);
 
@@ -822,13 +822,13 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
                         top_segment_color.a = 0.5f;
                     }
 
-                    rb_push_clipped_sprite(rb_list.world_rb, frame_arena, texture,
+                    draw_clipped_sprite(rb_list.world_rb, frame_arena, texture,
                         tile_rect, top_segment, top_segment_color, get_asset_table()->texture_shader,
 			RENDER_LAYER_WALLS);
 
                     if (!make_wall_transparent) {
                         // Render top segment to lighting stencil buffer so that wall top sides are never lit
-                        rb_push_rect(rb_list.lighting_stencil_rb, frame_arena, top_segment, RGBA32_BLACK,
+                        draw_rectangle(rb_list.lighting_stencil_rb, frame_arena, top_segment, RGBA32_BLACK,
                             get_asset_table()->shape_shader, RENDER_LAYER_WALLS);
                     }
 
@@ -860,10 +860,10 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
             Vector2 origin = line_center(edge.line);
             Vector2 end = v2_add(origin, v2_mul_s(vec, 10.0f));
 
-            rb_push_line(rb_list.worldspace_ui_rb, frame_arena, origin, end, RGBA32_GREEN, 4.0f,
+            draw_line(rb_list.worldspace_ui_rb, frame_arena, origin, end, RGBA32_GREEN, 4.0f,
                 get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
 
-            rb_push_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start, edge.line.end, RGBA32_BLUE, 4.0f,
+            draw_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start, edge.line.end, RGBA32_BLUE, 4.0f,
                 get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
         }
     }

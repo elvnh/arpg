@@ -351,7 +351,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
                 color = RGBA32_RED;
             }
 
-            rb_push_rect(rb, &ui->current_frame_widgets.arena, widget_rect, color,
+            draw_rectangle(rb, &ui->current_frame_widgets.arena, widget_rect, color,
 		get_asset_table()->shape_shader, depth);
         }
 
@@ -366,7 +366,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
 	    // NOTE: Characters after ## are hashed but not rendered
 	    String visible_substring = get_visible_widget_text(widget->text.string);
 
-            rb_push_clipped_text(rb, arena, visible_substring, text_position,
+            draw_clipped_text(rb, arena, visible_substring, text_position,
 		parent_bounds, widget->color, widget->text.size,
                 get_asset_table()->texture_shader, widget->text.font, depth);
         }

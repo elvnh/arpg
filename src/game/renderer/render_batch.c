@@ -79,7 +79,7 @@ static RenderBatch rb_create(Camera camera, Vector2i viewport_size, YDirection y
     return result;
 }
 
-RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
+RenderBatch *push_new_render_batch(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
     FrameBuffer render_target, RGBA32 clear_color, BlendFunction blend_func, LinearArena *arena)
 {
     RenderBatchNode *node = rb_create_node(arena);
@@ -90,7 +90,7 @@ RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i vie
     return &node->render_batch;
 }
 
-RenderBatch *rb_add_stencil_pass(RenderBatch *rb, StencilFunction stencil_func, s32 stencil_func_arg,
+RenderBatch *add_stencil_pass(RenderBatch *rb, StencilFunction stencil_func, s32 stencil_func_arg,
     StencilOperation stencil_op, LinearArena *arena)
 {
     RenderBatch *stencil_batch = la_allocate_item(arena, RenderBatch);
@@ -209,7 +209,7 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
     return entry;
 }
 
-RenderEntry *rb_push_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+RenderEntry *draw_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, SpriteModifiers mods, RGBA32 color,
     ShaderHandle shader, RenderLayer layer)
 {
@@ -228,20 +228,20 @@ RenderEntry *rb_push_colored_sprite(RenderBatch *rb, LinearArena *arena, Texture
     return result;
 }
 
-RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+RenderEntry *draw_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, SpriteModifiers mods, ShaderHandle shader, RenderLayer layer)
 {
-    return rb_push_colored_sprite(rb, arena, texture, rectangle, mods,
+    return draw_colored_sprite(rb, arena, texture, rectangle, mods,
 	RGBA32_WHITE, shader, layer);
 }
 
-RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect,
+RenderEntry *draw_rectangle(RenderBatch *rb, LinearArena *arena, Rectangle rect,
     RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
-    return rb_push_colored_sprite(rb, arena, NULL_TEXTURE, rect, (SpriteModifiers){0}, color, shader, layer);
+    return draw_colored_sprite(rb, arena, NULL_TEXTURE, rect, (SpriteModifiers){0}, color, shader, layer);
 }
 
-RenderEntry *rb_push_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
+RenderEntry *draw_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
     ShaderHandle shader, RenderLayer layer)
 {
     TriangleCmd *cmd = allocate_render_cmd(arena, TriangleCmd);
@@ -254,7 +254,7 @@ RenderEntry *rb_push_triangle(RenderBatch *rb, LinearArena *arena, Triangle tria
     return result;
 }
 
-RenderEntry *rb_push_outlined_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
+RenderEntry *draw_outlined_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
     f32 thickness, ShaderHandle shader, RenderLayer layer)
 {
     OutlinedTriangleCmd *cmd = allocate_render_cmd(arena, OutlinedTriangleCmd);
@@ -268,7 +268,7 @@ RenderEntry *rb_push_outlined_triangle(RenderBatch *rb, LinearArena *arena, Tria
     return result;
 }
 
-RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
+RenderEntry *draw_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
     Rectangle viewport, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     ClippedRectangleCmd *cmd = allocate_render_cmd(arena, ClippedRectangleCmd);
@@ -282,7 +282,7 @@ RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, Texture
     return result;
 }
 
-RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
+RenderEntry *draw_outlined_rectangle(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     f32 thickness, ShaderHandle shader, RenderLayer layer)
 {
     OutlinedRectangleCmd *cmd = allocate_render_cmd(arena, OutlinedRectangleCmd);
@@ -296,7 +296,7 @@ RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangl
     return result;
 }
 
-RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+RenderEntry *draw_textured_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Vector2 position, RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer)
 {
     CircleCmd *cmd = allocate_render_cmd(arena, CircleCmd);
@@ -310,13 +310,13 @@ RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureH
     return result;
 }
 
-RenderEntry *rb_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
+RenderEntry *draw_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
     RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer)
 {
-    return rb_push_sprite_circle(rb, arena, NULL_TEXTURE, position, color, radius, shader, layer);
+    return draw_textured_circle(rb, arena, NULL_TEXTURE, position, color, radius, shader, layer);
 }
 
-RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
+RenderEntry *draw_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
     RGBA32 color, f32 thickness, ShaderHandle shader, RenderLayer layer)
 {
     LineCmd *cmd = allocate_render_cmd(arena, LineCmd);
@@ -331,7 +331,7 @@ RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Ve
     return result;
 }
 
-RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
+RenderEntry *draw_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer)
 {
     TextCmd *cmd = allocate_render_cmd(arena, TextCmd);
@@ -346,7 +346,7 @@ RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vect
     return result;
 }
 
-RenderEntry *rb_push_clipped_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
+RenderEntry *draw_clipped_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     Rectangle clip_rect, RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer)
 {
     TextCmd *cmd = allocate_render_cmd(arena, TextCmd);
@@ -363,7 +363,7 @@ RenderEntry *rb_push_clipped_text(RenderBatch *rb, LinearArena *arena, String te
     return result;
 }
 
-RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, ParticleBuffer *particles,
+RenderEntry *draw_particles(RenderBatch *rb, LinearArena *arena, ParticleBuffer *particles,
     RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {
     ParticleGroupCmd *cmd = allocate_render_cmd(arena, ParticleGroupCmd);
@@ -379,16 +379,16 @@ RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, ParticleBuff
     return result;
 }
 
-RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
+RenderEntry *draw_textured_particles(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
     TextureHandle texture, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {
-    RenderEntry *entry = rb_push_particles(rb, arena, particles, color, particle_size, shader, layer);
+    RenderEntry *entry = draw_particles(rb, arena, particles, color, particle_size, shader, layer);
     entry->key = render_key_create(rb, layer, shader, texture, NULL_FONT, 0);
 
     return entry;
 }
 
-RenderEntry *rb_push_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolygon polygon,
+RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolygon polygon,
     RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     PolygonCmd *cmd = allocate_render_cmd(arena, PolygonCmd);
@@ -401,7 +401,7 @@ RenderEntry *rb_push_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPo
     return result;
 }
 
-RenderEntry *rb_push_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan triangle_fan,
+RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan triangle_fan,
     RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     TriangleFanCmd *cmd = allocate_render_cmd(arena, TriangleFanCmd);

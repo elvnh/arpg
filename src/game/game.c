@@ -152,22 +152,22 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     f32 x = 0.2f;
     RGBA32 ambient_light = {x, x, x + 0.1f, 1.0f};
 
-    result.world_rb = rb_list_push_new(rbs, game->world.camera, frame_data->window_size,
+    result.world_rb = push_new_render_batch(rbs, game->world.camera, frame_data->window_size,
         Y_IS_UP, FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT,
         BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
-    result.lighting_rb = rb_list_push_new(rbs, game->world.camera, frame_data->window_size,
+    result.lighting_rb = push_new_render_batch(rbs, game->world.camera, frame_data->window_size,
         Y_IS_UP, FRAME_BUFFER_LIGHTING, ambient_light,
         BLEND_FUNCTION_ADDITIVE, scratch);
 
-    result.lighting_stencil_rb = rb_add_stencil_pass(result.lighting_rb,
+    result.lighting_stencil_rb = add_stencil_pass(result.lighting_rb,
         STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, scratch);
 
-    result.worldspace_ui_rb = rb_list_push_new(rbs, game->world.camera, frame_data->window_size,
+    result.worldspace_ui_rb = push_new_render_batch(rbs, game->world.camera, frame_data->window_size,
         Y_IS_UP, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
         BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
-    result.overlay_rb = rb_list_push_new(rbs, ui_camera, frame_data->window_size,
+    result.overlay_rb = push_new_render_batch(rbs, ui_camera, frame_data->window_size,
         Y_IS_DOWN, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
         BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
@@ -215,7 +215,7 @@ static void update_and_render_ui(Game *game, RenderBatches rbs, FrameData *frame
     }
 
     if (game->debug_state.render_origin) {
-        rb_push_rect(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
+        draw_rectangle(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
 	    get_asset_table()->shape_shader, 3);
     }
 }

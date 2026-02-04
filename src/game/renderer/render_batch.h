@@ -51,43 +51,43 @@ DEFINE_LIST(RenderBatchNode, RenderBatchList);
 
 struct Particle;
 
-RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
+RenderBatch *push_new_render_batch(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
     FrameBuffer render_target, RGBA32 clear_color, BlendFunction blend_func, LinearArena *arena);
-RenderBatch *rb_add_stencil_pass(RenderBatch *rb, StencilFunction stencil_func, s32 stencil_func_arg,
+RenderBatch *add_stencil_pass(RenderBatch *rb, StencilFunction stencil_func, s32 stencil_func_arg,
                                  StencilOperation stencil_op, LinearArena *arena);
 void         rb_sort_entries(RenderBatch *rb, LinearArena *scratch);
-RenderEntry *rb_push_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+RenderEntry *draw_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, SpriteModifiers mods, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+RenderEntry *draw_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, SpriteModifiers mods, RGBA32 color, // TODO: pack color into sprite mods
     ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
+RenderEntry *draw_rectangle(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
+RenderEntry *draw_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
     ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_outlined_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
+RenderEntry *draw_outlined_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
     f32 thickness, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+RenderEntry *draw_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rect, Rectangle viewport, RGBA32 color, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_outlined_rect(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
+RenderEntry *draw_outlined_rectangle(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     f32 thickness, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_sprite_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+RenderEntry *draw_textured_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Vector2 position, RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
+RenderEntry *draw_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
     RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
+RenderEntry *draw_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
     RGBA32 color, f32 thickness, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
+RenderEntry *draw_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer);
-RenderEntry *rb_push_clipped_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
+RenderEntry *draw_clipped_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     Rectangle clip_rect, RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer);
-RenderEntry *rb_push_particles(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
+RenderEntry *draw_particles(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
     RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
+RenderEntry *draw_textured_particles(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
     TextureHandle texture, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolygon polygon,
+RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolygon polygon,
     RGBA32 color, ShaderHandle shader, RenderLayer layer);
-RenderEntry *rb_push_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan triangle_fan,
+RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan triangle_fan,
     RGBA32 color, ShaderHandle shader, RenderLayer layer);
 
 void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec);

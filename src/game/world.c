@@ -246,7 +246,7 @@ Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
-static b32 entity_should_die(World *world, Entity *entity)
+static b32 entity_should_die(Entity *entity)
 {
     if (es_has_component(entity, HealthComponent)) {
 	HealthComponent *hp = es_get_component(entity, HealthComponent);
@@ -323,14 +323,14 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
         }
     }
 
-    if (entity_should_die(world, entity)) {
+    if (entity_should_die(entity)) {
         // NOTE: won't be removed until after this frame
 	world_kill_entity(world, entity);
     }
 }
 
 static void entity_render(Entity *entity, RenderBatches rbs,
-    LinearArena *scratch, struct DebugState *debug_state, World *world, const FrameData *frame_data)
+    LinearArena *scratch, struct DebugState *debug_state, World *world)
 {
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
@@ -493,7 +493,6 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 		component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
 	}
 
-	EffectApplierComponent *ea1 = es_get_component(self, EffectApplierComponent);
 	if (should_invoke_trigger(world, self, other, EffectApplierComponent)) {
 	    EffectApplierComponent *ea = es_get_component(self, EffectApplierComponent);
 
@@ -683,8 +682,8 @@ Entity *world_get_player_entity(World *world)
     return result;
 }
 
-void update_player(World *world, const FrameData *frame_data, LinearArena *frame_arena,
-    DebugState *debug_state, GameUIState *game_ui)
+void update_player(World *world, const FrameData *frame_data,
+    GameUIState *game_ui)
 {
     Entity *player = world_get_player_entity(world);
 
@@ -795,7 +794,7 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 
 // TODO: move all controlling logic to game.c
 void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena,
-    DebugState *debug_state, GameUIState *game_ui)
+    GameUIState *game_ui)
 {
     tilemap_get_tile(&world->tilemap, v2i(3, 3))->type = TILE_WALL;
 
@@ -803,7 +802,7 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
         return;
     }
 
-    update_player(world, frame_data, frame_arena, debug_state, game_ui);
+    update_player(world, frame_data, game_ui);
 
     camera_zoom(&world->camera, (s32)frame_data->input.scroll_delta);
     camera_update(&world->camera, frame_data->dt);
@@ -969,7 +968,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(world->entity_system, node->id);
 
-        entity_render(entity, rb_list, frame_arena, debug_state, world, frame_data);
+        entity_render(entity, rb_list, frame_arena, debug_state, world);
     }
 
     hitsplats_render(world, rb_list.worldspace_ui_rb, frame_arena);
@@ -1120,9 +1119,6 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 
 	HealthComponent *hp = es_add_component(entity, HealthComponent);
 	hp->health = create_health_instance(world, entity);
-
-        StatusEffectComponent *effects = es_add_component(entity, StatusEffectComponent);
-	//apply_status_effect(effects, STATUS_EFFECT_CHILLED);
 
         // TODO: ensure components are zeroed out
         InventoryComponent *inventory = es_add_component(entity, InventoryComponent);

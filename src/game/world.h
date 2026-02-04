@@ -68,7 +68,7 @@ void world_destroy(World *world);
 
 // TODO: fix parameters
 void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena,
-    struct DebugState *debug_state, struct GameUIState *game_ui);
+    struct GameUIState *game_ui);
 void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, EntityFaction faction);

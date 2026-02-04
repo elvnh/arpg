@@ -26,7 +26,7 @@ static void transition_out_of_current_state(World *world, Entity *entity)
     }
 }
 
-static void play_state_animation(World *world, Entity *entity, EntityState state)
+static void play_state_animation(Entity *entity, EntityState state)
 {
     if (es_has_component(entity, AnimationComponent)) {
 	AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
@@ -74,7 +74,7 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 
     entity->state = state;
 
-    play_state_animation(world, entity, state);
+    play_state_animation(entity, state);
 
     switch (state.kind) {
 	case ENTITY_STATE_WALKING: {

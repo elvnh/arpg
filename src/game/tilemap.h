@@ -10,8 +10,12 @@
 #define TILEMAP_MAX_TILES   2048
 #define TILE_SIZE           64
 
+/*
+  TODO:
+  - Don't return dynamic array from tilemap_get_edge_list
+  - Prebake static lights into texture
+ */
 
-// TODO: don't return this from tilemap_get_edge_list, client doesn't need dynamic array
 typedef struct {
     Line line;
     CardinalDirection direction;

@@ -8,6 +8,12 @@
 
 #define LIGHT_DEFAULT_FADE_OUT_TIME 0.15f
 
+/*
+  TODO:
+  - Maybe return edge list as copy and then sort by closest to light source
+    so that not as many checks are needed?
+ */
+
 struct Tilemap;
 struct LinearArena;
 struct RenderBatch;

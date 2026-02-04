@@ -21,7 +21,7 @@ static void game_update(Game *game, const FrameData *frame_data, LinearArena *fr
 {
     (void)frame_arena;
 
-    world_update(&game->world, frame_data, frame_arena, &game->debug_state, &game->game_ui);
+    world_update(&game->world, frame_data, frame_arena, &game->game_ui);
 }
 
 static void game_render(Game *game, RenderBatches rbs, const FrameData *frame_data, LinearArena *frame_arena)

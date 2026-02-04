@@ -62,8 +62,7 @@ static StatusEffectCallbackResult status_effect_list_callback(StatusEffectCallba
     return STATUS_EFFECT_CALLBACK_PROCEED;
 }
 
-static void inspected_entity_debug_ui(UIState *ui, Game *game, GameMemory *game_memory,
-    const FrameData *frame_data)
+static void inspected_entity_debug_ui(UIState *ui, Game *game, GameMemory *game_memory)
 {
     // TODO: allow locking on to entity
     EntityID inspected_entity_id = game->game_ui.hovered_entity;
@@ -235,7 +234,7 @@ void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const FrameData 
     }
 
     ui_spacing(ui, 8);
-    inspected_entity_debug_ui(ui, game, game_memory, frame_data);
+    inspected_entity_debug_ui(ui, game, game_memory);
 
     ui_pop_container(ui);
 }

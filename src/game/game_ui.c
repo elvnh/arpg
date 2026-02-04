@@ -24,8 +24,7 @@ static String item_widget_string(ItemID id, Item *item, GameMemory *memory)
     return result;
 }
 
-static void spellbook_menu(GameUIState *ui_state, Game *game, GameMemory *game_memory,
-    const FrameData *frame_data)
+static void spellbook_menu(GameUIState *ui_state, Game *game)
 {
     UIState *ui = &ui_state->backend_state;
 
@@ -183,7 +182,7 @@ void game_ui(Game *game, GameMemory *game_memory, const FrameData *frame_data)
 
     ui_core_same_line(ui);
 
-    spellbook_menu(&game->game_ui, game, game_memory, frame_data);
+    spellbook_menu(&game->game_ui, game);
 
     ui_pop_container(ui);
 }

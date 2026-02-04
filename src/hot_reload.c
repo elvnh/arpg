@@ -12,8 +12,6 @@ GameCode hot_reload_initialize_impl(GameMemory* game_memory)
 {
     GameCode result = {0};
 
-    Allocator allocator = la_allocator(&game_memory->permanent_memory);
-
     load_game_code(&result, &game_memory->temporary_memory);
 
     return result;

@@ -1,4 +1,4 @@
-#include "renderer_dispatch.h"
+#include "render_command_interpreter.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
 #include "base/triangle.h"

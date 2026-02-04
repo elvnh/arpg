@@ -28,7 +28,7 @@
 #include "tests.c"
 #include "platform/file_watcher.h"
 #include "platform/hot_reload.h"
-#include "renderer/backend/renderer_dispatch.h"
+#include "renderer/backend/render_command_interpreter.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 768

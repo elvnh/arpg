@@ -77,7 +77,7 @@ set(
 set(
   RENDERER_BACKEND_SOURCES
   src/renderer/backend/open_gl/renderer_backend.c
-  src/renderer/backend/renderer_dispatch.c
+  src/renderer/backend/render_command_interpreter.c
 )
 
 set(BASE_LIB_NAME base)

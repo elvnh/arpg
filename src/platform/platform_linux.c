@@ -116,9 +116,21 @@ static Keystate get_current_keystate(Key key, WindowHandle *window)
     return KEYSTATE_UP;
 }
 
+static f32 g_scroll_delta;
+
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    (void)window;
+    (void)xoffset;
+    g_scroll_delta = (f32)yoffset;
+}
+
 void platform_update_input(Input *input, WindowHandle *window)
 {
     memcpy(input->previous_keystates, input->keystates, KEY_COUNT * sizeof(*input->keystates));
+
+    input->scroll_delta = g_scroll_delta;
+    g_scroll_delta = 0.0f;
 
     double x, y;
     glfwGetCursorPos(window->window, &x, &y);
@@ -144,18 +156,9 @@ void platform_update_input(Input *input, WindowHandle *window)
     }
 }
 
-static f32 *g_scroll_value_storage_address;
-
-static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void platform_initialize_input(Input *input, struct WindowHandle *window)
 {
-    (void)window;
-    (void)xoffset;
-    *g_scroll_value_storage_address = (f32)yoffset;
-}
-
-void platform_set_scroll_value_storage(f32 *ptr, struct WindowHandle *window)
-{
-    g_scroll_value_storage_address = ptr;
+    input->mouse_click_position = v2(-1.0f, -1.0f);
     glfwSetScrollCallback(window->window, scroll_callback);
 }
 

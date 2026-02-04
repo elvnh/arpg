@@ -125,7 +125,7 @@ int main(void)
 #endif
 
     Input input = {0};
-    input_initialize(&input);
+    platform_initialize_input(&input, window);
 
     AssetWatcherContext asset_watcher = {0};
     file_watcher_start(&asset_watcher);
@@ -133,8 +133,7 @@ int main(void)
     f32 time_point_last = platform_get_seconds_since_launch();
     f32 time_point_new = time_point_last;
 
-    // TODO: do this some other way
-    platform_set_scroll_value_storage(&input.scroll_delta, window);
+
 
 #if HOT_RELOAD
     game_code.initialize(game_state, &game_memory);
@@ -192,7 +191,6 @@ int main(void)
             game_state->asset_list.screenspace_texture_shader);
         renderer_backend_draw_framebuffer_as_texture(backend, FRAME_BUFFER_OVERLAY, screenspace_texture_shader);
 
-        input.scroll_delta = 0.0f;
         platform_poll_events(window);
     }
 

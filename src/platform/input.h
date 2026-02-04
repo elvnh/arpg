@@ -53,11 +53,6 @@ typedef struct FrameData {
     Vector2i window_size;
 } FrameData;
 
-static inline void input_initialize(Input *input)
-{
-    input->mouse_click_position = v2(-1.0f, -1.0f);
-}
-
 static inline Keystate input_get_key(const Input *input, Key key)
 {
     ASSERT(key >= 0);

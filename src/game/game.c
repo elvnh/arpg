@@ -200,13 +200,9 @@ static void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
     }
 }
 
-static void game_render(Game *game, RenderBatchList *rb_list, FrameData *frame_data,
+static void update_and_render_ui(Game *game, RenderBatches rbs, FrameData *frame_data,
     LinearArena *frame_arena, PlatformCode platform_code)
 {
-    RenderBatches rbs = create_render_batches(game, rb_list, frame_data, frame_arena);
-
-    world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
-
     render_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_data, frame_arena,
         rbs.overlay_rb, platform_code);
 
@@ -223,6 +219,12 @@ static void game_render(Game *game, RenderBatchList *rb_list, FrameData *frame_d
         rb_push_rect(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
 	    get_asset_table()->shape_shader, 3);
     }
+}
+
+static void game_render(Game *game, RenderBatches rbs, RenderBatchList *rb_list, FrameData *frame_data,
+    LinearArena *frame_arena)
+{
+    world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
 
     for (RenderBatchNode *node = list_head(rb_list); node; node = list_next(node)) {
         rb_sort_entries(&node->render_batch, frame_arena);
@@ -270,8 +272,12 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
         DEBUG_BREAK;
     }
 
+    RenderBatches game_rbs = create_render_batches(game, rbs, &frame_data, &game_memory->temporary_memory);
+
+    update_and_render_ui(game, game_rbs, &frame_data, &game_memory->temporary_memory, platform_code);
+
     game_update(game, &frame_data, &game_memory->temporary_memory);
-    game_render(game, rbs, &frame_data, &game_memory->temporary_memory, platform_code);
+    game_render(game, game_rbs, rbs, &frame_data, &game_memory->temporary_memory);
 
     // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
     // have had time to be used during the frame. This means that the stats have 1 frame delay

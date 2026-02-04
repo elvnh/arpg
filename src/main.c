@@ -30,6 +30,19 @@
 #include "platform/hot_reload.h"
 #include "renderer/backend/render_command_interpreter.h"
 
+// If hot reloading is enabled, we call any game functions through the function pointers
+// loaded from the shared library. Otherwise, we just call the functions directly.
+#if HOT_RELOAD
+#    define GAME_INITIALIZE(game, mem, gc) (gc).initialize(game, mem);
+#    define GAME_UPDATE_AND_RENDER(game, pf_code, rbs, frame_data, mem, gc)     \
+        (gc).update_and_render(game, pf_code, rbs, frame_data, mem);
+#    define HOT_RELOAD_IF_RECOMPILED(gc, mem) reload_game_code_if_recompiled(gc, mem)
+#else
+#    define GAME_INITIALIZE(game, mem, gc) game_initialize(game_state, game_memory);
+#    define GAME_UPDATE_AND_RENDER(game, pf_code, rbs, frame_data, mem, gc) \
+        game_update_and_render(game, pf_code, rbs, frame_data, mem);
+#endif
+
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 768
 
@@ -133,13 +146,7 @@ int main(void)
     f32 time_point_last = platform_get_seconds_since_launch();
     f32 time_point_new = time_point_last;
 
-
-
-#if HOT_RELOAD
-    game_code.initialize(game_state, &game_memory);
-#else
-    game_initialize(game_state, &game_memory);
-#endif
+    GAME_INITIALIZE(game_state, &game_memory, game_code);
 
     RenderBatchList render_batches = {0};
 
@@ -151,11 +158,9 @@ int main(void)
         // TODO: should this be reset here or in game?
         la_reset(&game_memory.temporary_memory);
 
+        // TODO: guard behind macro too
         file_watcher_reload_modified_assets(&asset_watcher, &g_asset_system, &game_memory.temporary_memory);
-
-#if HOT_RELOAD
-        reload_game_code_if_recompiled(&game_code, &game_memory.temporary_memory);
-#endif
+        HOT_RELOAD_IF_RECOMPILED(&game_code, &game_memory.temporary_memory);
 
         platform_update_input(&input, window);
 
@@ -168,11 +173,7 @@ int main(void)
 
         list_clear(&render_batches);
 
-#if HOT_RELOAD
-        game_code.update_and_render(game_state, platform_code, &render_batches, frame_data, &game_memory);
-#else
-        game_update_and_render(game_state, platform_code, &render_batches, frame_data, &game_memory);
-#endif
+        GAME_UPDATE_AND_RENDER(game_state, platform_code, &render_batches, frame_data, &game_memory, game_code);
 
         renderer_backend_begin_frame(backend);
 

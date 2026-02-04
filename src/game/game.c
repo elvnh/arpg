@@ -3,6 +3,7 @@
 #include "base/matrix.h"
 #include "base/random.h"
 #include "base/rgba.h"
+#include "base/utils.h"
 #include "renderer/render_target.h"
 #include "renderer/renderer_backend.h"
 #include "status_effect.h"
@@ -16,6 +17,11 @@
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
 #include "world.h"
+
+typedef enum {
+    UI_OVERLAY_GAME,
+    UI_OVERLAY_DEBUG,
+} UIOverlayType;
 
 static void game_update(Game *game, const FrameData *frame_data, LinearArena *frame_arena)
 {
@@ -35,6 +41,31 @@ static void game_render(Game *game, RenderBatches rbs, const FrameData *frame_da
     if (game->debug_state.render_origin) {
         rb_push_rect(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
 	    get_asset_table()->shape_shader, 3);
+    }
+}
+
+void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, FrameData *frame_data,
+    GameMemory *game_memory, RenderBatch *rb, PlatformCode platform_code)
+{
+    ui_core_begin_frame(ui);
+
+    switch (overlay) {
+        case UI_OVERLAY_GAME: {
+            game_ui(game, game_memory, frame_data);
+        } break;
+
+        case UI_OVERLAY_DEBUG: {
+            debug_ui(ui, game, game_memory, frame_data);
+        } break;
+
+        INVALID_DEFAULT_CASE;
+    }
+
+    UIInteraction interaction = ui_core_end_frame(ui, frame_data, rb, platform_code);
+
+    // TODO: shouldn't click_began_inside_ui be counted as receiving mouse input?
+    if (interaction.received_mouse_input || interaction.click_began_inside_ui) {
+        input_consume_input(&frame_data->input, MOUSE_LEFT);
     }
 }
 
@@ -83,39 +114,12 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
         Y_IS_DOWN, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
         BLEND_FUNCTION_MULTIPLICATIVE, &game_memory->temporary_memory);
 
+    render_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, &frame_data, game_memory,
+        game_rbs.overlay_rb, platform_code);
 
-    // TODO: create function for these two UI updates
-    // Debug UI
-    {
-        if (game->debug_state.debug_menu_active) {
-            ui_core_begin_frame(&game->debug_state.debug_ui);
-
-            debug_ui(&game->debug_state.debug_ui,
-                game, game_memory, &frame_data);
-
-            UIInteraction dbg_ui_interaction =
-                ui_core_end_frame(&game->debug_state.debug_ui, &frame_data, game_rbs.overlay_rb,
-		    platform_code);
-
-            // TODO: shouldn't click_began_inside_ui be counted as receiving mouse input?
-            if (dbg_ui_interaction.received_mouse_input || dbg_ui_interaction.click_began_inside_ui) {
-                input_consume_input(&frame_data.input, MOUSE_LEFT);
-            }
-        }
-    }
-
-    // Game UI
-    {
-        ui_core_begin_frame(&game->game_ui.backend_state);
-
-        game_ui(game, game_memory, &frame_data);
-
-	UIInteraction game_ui_interaction =
-            ui_core_end_frame(&game->game_ui.backend_state, &frame_data, game_rbs.overlay_rb, platform_code);
-
-        if (game_ui_interaction.received_mouse_input || game_ui_interaction.click_began_inside_ui) {
-            input_consume_input(&frame_data.input, MOUSE_LEFT);
-        }
+    if (game->debug_state.debug_menu_active) {
+        render_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, &frame_data, game_memory,
+            game_rbs.overlay_rb, platform_code);
     }
 
     frame_data.dt *= game->debug_state.timestep_modifier;
@@ -131,8 +135,6 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
         frame_data.dt = 0.016f;
 	game_update(game, &frame_data, &game_memory->temporary_memory);
     }
-
-
 
     game_render(game, game_rbs, &frame_data, &game_memory->temporary_memory);
 

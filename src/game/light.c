@@ -169,7 +169,7 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
     }
 
     Vector4 extended_pos = {origin.x, origin.y, 0.0f, 0.0f};
-    re_set_uniform_vec4(entry, arena, LIGHT_SHADER_ORIGIN_UNIFORM_NAME, extended_pos);
+    set_vec4_uniform(entry, arena, LIGHT_SHADER_ORIGIN_UNIFORM_NAME, extended_pos);
 
-    re_set_uniform_float(entry, arena, LIGHT_SHADER_RADIUS_UNIFORM_NAME, light.radius);
+    set_f32_uniform(entry, arena, LIGHT_SHADER_RADIUS_UNIFORM_NAME, light.radius);
 }

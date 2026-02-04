@@ -450,7 +450,7 @@ static void *allocate_render_setup_cmd_impl(LinearArena *arena, RenderEntry *re,
     return result;
 }
 
-void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
+void set_vec4_uniform(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
 {
     ASSERT(re);
 
@@ -458,7 +458,7 @@ void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_nam
     cmd->value = vec;
 }
 
-void re_set_uniform_float(RenderEntry *re, LinearArena *arena, String uniform_name, f32 value)
+void set_f32_uniform(RenderEntry *re, LinearArena *arena, String uniform_name, f32 value)
 {
     ASSERT(re);
 

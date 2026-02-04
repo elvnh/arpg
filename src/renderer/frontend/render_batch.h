@@ -96,7 +96,7 @@ RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolyg
 RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan triangle_fan,
     RGBA32 color, ShaderHandle shader, RenderLayer layer);
 
-void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec);
-void re_set_uniform_float(RenderEntry *re, LinearArena *arena, String uniform_name, f32 value);
+void set_vec4_uniform(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec);
+void set_f32_uniform(RenderEntry *re, LinearArena *arena, String uniform_name, f32 value);
 
 #endif //RENDER_BATCH_H

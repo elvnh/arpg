@@ -5,7 +5,7 @@
 #include "base/rgba.h"
 #include "base/utils.h"
 #include "game/camera.h"
-#include "game/renderer/render_key.h"
+#include "renderer/frontend/render_key.h"
 #include "render_command.h"
 #include "game/components/particle.h"
 

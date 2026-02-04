@@ -4,7 +4,7 @@
 #include "platform/input.h"
 #include "status_effect.h"
 #include "game.h"
-#include "renderer/render_batch.h"
+#include "renderer/frontend/render_batch.h"
 
 void render_quad_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, ssize depth)
 {

@@ -30,7 +30,6 @@ set(
   src/main.c
   src/platform/file_watcher.c
   src/platform/font.c
-  src/platform/renderer_dispatch.c
   src/platform/platform_linux.c
   src/platform/asset_system.c
   src/platform/stb.c
@@ -63,7 +62,6 @@ set(
   src/game/line_of_sight.c
   src/game/item_system.c
   src/game/equipment.c
-  src/game/renderer/render_batch.c
   src/game/ui/ui_core.c
   src/game/ui/ui_builder.c
   src/game/status_effect.c
@@ -72,13 +70,19 @@ set(
 )
 
 set(
+  RENDERER_FRONTEND_SOURCES
+  src/renderer/frontend/render_batch.c
+)
+
+set(
   RENDERER_BACKEND_SOURCES
-  src/renderer/open_gl/renderer_backend.c
+  src/renderer/backend/open_gl/renderer_backend.c
+  src/renderer/backend/renderer_dispatch.c
 )
 
 set(BASE_LIB_NAME base)
-
 set(GAME_LIB_NAME game)
+set(RENDERER_LIB_NAME renderer)
 
 set(COMPILATION_LOCK_FILE ${CMAKE_CURRENT_BINARY_DIR}/lock)
 
@@ -142,6 +146,12 @@ include_directories(
   deps
 )
 
+add_library(
+    ${RENDERER_LIB_NAME}
+    SHARED
+    ${RENDERER_BACKEND_SOURCES}
+)
+
 if(${HOT_RELOAD} EQUAL 1)
 
   set(
@@ -159,12 +169,13 @@ if(${HOT_RELOAD} EQUAL 1)
     ${BASE_LIB_NAME}
     SHARED
     ${BASE_LAYER_SOURCES}
-  )
+    )
 
   add_library(
     ${GAME_LIB_NAME}
     SHARED
     ${GAME_SOURCES}
+    ${RENDERER_FRONTEND_SOURCES}
   )
 
   target_compile_definitions(
@@ -211,6 +222,7 @@ else()
     ${GAME_LIB_NAME}
     STATIC
     ${GAME_SOURCES}
+    ${RENDERER_FRONTEND_SOURCES}
   )
 
   target_link_libraries(

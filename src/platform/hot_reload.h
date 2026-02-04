@@ -3,7 +3,7 @@
 
 #include "game/game.h"
 #include "platform.h"
-#include "renderer/render_batch.h"
+#include "renderer/frontend/render_batch.h"
 
 #if HOT_RELOAD
     #define hot_reload_initialize(memory) hot_reload_initialize_impl((memory))

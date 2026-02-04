@@ -11,7 +11,7 @@
 #include "line_of_sight.h"
 #include "world.h"
 #include "base/utils.h"
-#include "renderer/render_batch.h"
+#include "renderer/frontend/render_batch.h"
 #include "asset_table.h"
 #include <math.h>
 

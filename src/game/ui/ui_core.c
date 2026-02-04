@@ -12,7 +12,7 @@
 #include "base/rgba.h"
 #include "base/utils.h"
 #include "base/sl_list.h"
-#include "game/renderer/render_batch.h"
+#include "renderer/frontend/render_batch.h"
 #include "platform/input.h"
 
 #define FRAME_WIDGET_TABLE_SIZE 1024

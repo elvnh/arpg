@@ -5,7 +5,7 @@
 #include "entity_system.h"
 #include "item.h"
 #include "quad_tree.h"
-#include "renderer/render_target.h"
+#include "renderer/frontend/render_target.h"
 #include "tilemap.h"
 #include "camera.h"
 #include "collision.h"

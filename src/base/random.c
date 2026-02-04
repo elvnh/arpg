@@ -2,7 +2,6 @@
 #include "base/maths.h"
 #include "base/utils.h"
 
-
 static RNGState *g_rng_state;
 
 static u64 splitmix(u64 *state)

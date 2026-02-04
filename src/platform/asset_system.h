@@ -6,7 +6,7 @@
 #include "base/linear_arena.h"
 #include "base/string8.h"
 #include "base/image.h"
-#include "renderer/renderer_backend.h"
+#include "renderer/backend/renderer_backend.h"
 #include "font.h"
 
 #define MAX_REGISTERED_ASSETS 256

@@ -3,7 +3,7 @@
 
 struct RenderBatch;
 
-// TODO: this doesn't need to be a separate file
+// TODO: this file needs a better name
 
 typedef enum {
     FRAME_BUFFER_GAMEPLAY,

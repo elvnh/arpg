@@ -3,7 +3,7 @@
 #include "components/component.h"
 #include "entity.h"
 #include "entity_system.h"
-#include "renderer/render_batch.h"
+#include "renderer/frontend/render_batch.h"
 #include "asset_table.h"
 #include "world.h"
 

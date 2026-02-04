@@ -4,7 +4,7 @@
 #include "base/string8.h"
 #include "base/utils.h"
 #include "font.h"
-#include "renderer/renderer_backend.h"
+#include "renderer/backend/renderer_backend.h"
 #include "base/image.h"
 #include "platform/platform.h"
 

@@ -9,9 +9,9 @@
 #include "camera.h"
 #include "render_command.h"
 #include "render_key.h"
-#include "renderer/renderer_backend.h"
+#include "renderer/backend/renderer_backend.h"
 #include "sprite.h"
-#include "renderer/render_target.h"
+#include "renderer/frontend/render_target.h"
 
 // TODO: make RenderEntry array into ring buffer in case it overflows
 // TODO: reduce amount of parameters, eg. create specialization for push_sprite in case

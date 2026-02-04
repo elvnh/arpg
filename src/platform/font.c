@@ -7,7 +7,6 @@
 #include "font.h"
 #include "asset_system.h"
 #include "platform.h"
-#include "renderer/renderer_backend.h"
 
 // TODO: dynamically decide size of atlas
 #define FONT_ATLAS_WIDTH             2048

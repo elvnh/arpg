@@ -29,7 +29,6 @@ typedef struct AssetTable {
 
     TextureHandle ice_shard_texture;
     TextureHandle blizzard_texture;
-
 } AssetTable;
 
 // TODO: make this return a const pointer

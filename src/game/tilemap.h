@@ -5,18 +5,11 @@
 #include "base/linear_arena.h"
 #include "base/vector.h"
 #include "base/rectangle.h"
+#include "base/direction.h"
 
 #define TILEMAP_MAX_TILES   2048
 #define TILE_SIZE           64
 
-// TODO: move elsewhere
-typedef enum {
-    CARDINAL_DIR_WEST,
-    CARDINAL_DIR_NORTH,
-    CARDINAL_DIR_EAST,
-    CARDINAL_DIR_SOUTH,
-    CARDINAL_DIR_COUNT,
-} CardinalDirection;
 
 // TODO: don't return this from tilemap_get_edge_list, client doesn't need dynamic array
 typedef struct {
@@ -65,20 +58,5 @@ void   tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, Fre
 Tile  *tilemap_get_tile(Tilemap *tilemap, Vector2i coords);
 Rectangle tilemap_get_bounding_box(const Tilemap *tilemap);
 EdgePool tilemap_get_edge_list(Tilemap *tilemap, Allocator alloc);
-
-// TODO: move elsewhere
-static inline Vector2 cardinal_direction_vector(CardinalDirection dir)
-{
-    switch (dir) {
-        case CARDINAL_DIR_NORTH: return (Vector2)  { 0,   1};
-        case CARDINAL_DIR_EAST:  return (Vector2)  { 1,   0};
-        case CARDINAL_DIR_SOUTH: return (Vector2)  { 0,  -1};
-        case CARDINAL_DIR_WEST:  return (Vector2)  {-1,   0};
-        case CARDINAL_DIR_COUNT: break;
-    }
-
-    ASSERT(0);
-    return (Vector2){0};
-}
 
 #endif //TILEMAP_H

@@ -192,7 +192,6 @@ EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction, FreeListA
 
 void es_remove_entity(EntitySystem *es, EntityID id)
 {
-    // TODO: clean up this function
     ASSERT(entity_id_is_valid(es, id));
 
     EntitySlot *removed_slot = es_get_entity_slot_by_id(es, id);
@@ -210,7 +209,6 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     id.generation = new_generation;
 
     id_queue_push(&es->free_id_queue, id);
-
 }
 
 Entity *es_get_entity(EntitySystem *es, EntityID id)

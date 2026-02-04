@@ -334,8 +334,7 @@ static LinearArena *get_frame_arena(UIState *ui)
 static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize depth, Rectangle parent_bounds,
     ClippingBehaviour clipping)
 {
-    // TODO: depth isn't needed once a stable sort is implemented for render commands
-#if 1
+    // TODO: depth is required despite the fact that render commands are sorted using stable sort, figure that out
     Rectangle widget_rect = widget_get_clipped_bounding_box(widget, parent_bounds, clipping);
 
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
@@ -372,40 +371,6 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
                 get_asset_table()->texture_shader, widget->text.font, depth);
         }
     }
-
-    // TODO: remove this?
-#else
-    if (true || !widget_has_flag(widget, WIDGET_HIDDEN)) {
-        LinearArena *arena = get_frame_arena(ui);
-
-        if (true || widget_has_flag(widget, WIDGET_COLORED)) {
-            Rectangle widget_rect = widget_get_bounding_box(widget);
-            RGBA32 color = widget->color;
-
-            if (widget_is_hot(ui, widget)) {
-                color = RGBA32_GREEN;
-            }
-
-            if (widget_is_active(ui, widget)) {
-                color = RGBA32_RED;
-            }
-
-            if (!widget_has_flag(widget, WIDGET_COLORED) || widget_has_flag(widget, WIDGET_HIDDEN)) {
-                color = (RGBA32){0, 1, 0, 0.5f};
-            }
-
-            rb_push_rect(rb, &ui->current_frame_widgets.arena, widget_rect, color, assets->shape_shader, depth);
-        }
-
-        if (widget_has_flag(widget, WIDGET_TEXT)) {
-            Vector2 text_position = v2_add(widget->final_position, v2(0.0f, widget->text.baseline_y_offset));
-
-            // TODO: newlines don't work properly
-            rb_push_text(rb, arena, widget->text.string, text_position, widget->color, widget->text.size,
-                assets->texture_shader, widget->text.font, depth);
-        }
-    }
-#endif
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         render_widget(ui, child, rb, depth + 1, widget_rect, CLIP_TO_PARENT);

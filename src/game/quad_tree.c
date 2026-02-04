@@ -49,8 +49,7 @@ static QuadTreeLocation qt_insert(QuadTree *qt, QuadTreeNode *node, EntityID id,
     ASSERT(area.size.x > 0);
     ASSERT(area.size.y > 0);
 
-    // TODO: is this assert needed?
-    //ASSERT(rect_intersects(node->area, area));
+    ASSERT(rect_intersects(node->area, area));
 
     b32 no_children = !node->top_left;
     RectangleQuadrants quadrants = rect_quadrants(node->area);

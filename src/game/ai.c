@@ -105,6 +105,8 @@ static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *a
 
 void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
 {
+    return;
+
     switch (ai->current_state.kind) {
 	case AI_STATE_IDLE: {
 	    update_ai_state_idle(world, entity, ai);

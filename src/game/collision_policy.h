@@ -16,12 +16,6 @@ typedef enum {
     COLLISION_POLICY_DIE,
 } CollisionPolicy;
 
-// TODO: not needed?
-typedef enum {
-    OBJECT_KIND_ENTITIES = FLAG(0),
-    OBJECT_KIND_TILES    = FLAG(1),
-} ObjectKind;
-
 void execute_entity_vs_tilemap_collision_policy(struct World *world, struct Entity *entity,
     CollisionInfo collision);
 void execute_entity_vs_entity_collision_policy(struct World *world, struct Entity *entity,

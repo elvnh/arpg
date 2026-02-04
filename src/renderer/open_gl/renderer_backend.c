@@ -62,13 +62,10 @@ struct RendererBackend {
 
     BackendFramebuffer framebuffers[FRAME_BUFFER_COUNT];
 
-    // TODO: ui fbo
-    // TODO: pack render targets into structs
-
-    Vertex  vertices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
+    Vertex  vertices[MAX_RENDERER_VERTICES];
     s32     vertex_count;
 
-    GLuint  indices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
+    GLuint  indices[MAX_RENDERER_VERTICES];
     s32     index_count;
 };
 
@@ -288,13 +285,13 @@ ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allo
     const char *vertex_srcs[] = { base_vertex_shader_source, split_result.vertex_shader.data };
     const s32 vertex_srcs_lengths[] = {
         ARRAY_COUNT(base_vertex_shader_source) - 1,
-        cast_ssize_to_s32(split_result.vertex_shader.length)
+        ssize_to_s32(split_result.vertex_shader.length)
     };
 
     const char *frag_srcs[] = { base_fragment_shader_source, split_result.fragment_shader.data };
     const s32 frag_srcs_lengths[] = {
         ARRAY_COUNT(base_fragment_shader_source) - 1,
-        cast_ssize_to_s32(split_result.fragment_shader.length)
+        ssize_to_s32(split_result.fragment_shader.length)
     };
 
     glShaderSource(vertex_shader_id, 2, vertex_srcs, vertex_srcs_lengths);

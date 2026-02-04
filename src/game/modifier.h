@@ -6,7 +6,7 @@
 
 /*
   TODO:
-  - Modifier setting stat to exact value
+  - Modifier setting stat to exact value rather than modifying
  */
 
 typedef struct {

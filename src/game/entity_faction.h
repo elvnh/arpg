@@ -5,7 +5,7 @@
 // TODO: fix this in a more proper way
 
 typedef enum {
-    FACTION_NEUTRAL, // TODO: implement neutral entities
+    FACTION_NEUTRAL,
     FACTION_PLAYER,
     FACTION_ENEMY,
     FACTION_COUNT,

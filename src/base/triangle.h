@@ -47,7 +47,6 @@ static inline TriangleVertices triangle_get_vertices(Triangle triangle, RGBA32 c
 {
     TriangleVertices result = {0};
 
-    // TODO: how to handle UV coordinates?
     result.a = (Vertex){triangle.a, V2_ZERO, color};
     result.b = (Vertex){triangle.b, V2_ZERO, color};
     result.c = (Vertex){triangle.c, V2_ZERO, color};

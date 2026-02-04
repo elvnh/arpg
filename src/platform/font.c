@@ -6,7 +6,7 @@
 #include "base/utils.h"
 #include "font.h"
 #include "asset_system.h"
-#include "platform/platform.h"
+#include "platform.h"
 #include "renderer/renderer_backend.h"
 
 // TODO: dynamically decide size of atlas
@@ -26,13 +26,13 @@ typedef struct {
     Vector2 uv_top_right;
     Vector2 uv_bottom_right;
     Vector2 uv_bottom_left;
-} GlyphInfo;
+} GlyphTexturePosition;
 
 struct FontAsset {
-    Span                 font_file_buffer; // NOTE: Must stay loaded
+    Span                 font_file_buffer; // NOTE: Must stay loaded for asset's entire lifetime
     TextureHandle        texture_handle;
     stbtt_fontinfo       font_info;
-    GlyphInfo            glyph_infos[FONT_CHAR_COUNT];
+    GlyphTexturePosition glyph_texture_positions[FONT_CHAR_COUNT];
 
     /* NOTE: These are unscaled */
     f32                  ascent;
@@ -92,7 +92,7 @@ FontAsset *font_create_atlas(String font_path, struct AssetSystem *assets, Alloc
         s32 advance_x, lsb;
         stbtt_GetCodepointHMetrics(&result->font_info, ch, &advance_x, &lsb);
 
-        result->glyph_infos[i] = (GlyphInfo) {
+        result->glyph_texture_positions[i] = (GlyphTexturePosition) {
             .advance_x = (f32)advance_x,
             .left_side_bearing = (f32)lsb,
             .uv_top_left = {quad.s0, quad.t0},
@@ -187,12 +187,12 @@ f32 font_get_newline_advance(FontAsset *asset, s32 text_size)
 RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vector2 position,
     Rectangle bounds, s32 text_size, RGBA32 color, YDirection y_dir)
 {
-    GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
+    GlyphTexturePosition glyph_pos = asset->glyph_texture_positions[char_index(ch)];
 
     f32 scale = get_text_scale(asset, text_size);
 
-    f32 advance_x = roundf(glyph_info.advance_x * scale);
-    f32 lsb = roundf(glyph_info.left_side_bearing * scale);
+    f32 advance_x = roundf(glyph_pos.advance_x * scale);
+    f32 lsb = roundf(glyph_pos.left_side_bearing * scale);
 
     s32 x0, y0, x1, y1;
     stbtt_GetCodepointBitmapBox(&asset->font_info, ch, scale, scale, &x0, &y0, &x1, &y1);
@@ -208,10 +208,10 @@ RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vec
 
     Rectangle glyph_rect = {glyph_bottom_left, glyph_size};
 
-    f32 uv_left = glyph_info.uv_top_left.x;
-    f32 uv_right = glyph_info.uv_top_right.x;
-    f32 uv_top = (y_dir == Y_IS_UP) ? glyph_info.uv_top_left.y : glyph_info.uv_bottom_left.y;
-    f32 uv_bottom = (y_dir == Y_IS_UP) ? glyph_info.uv_bottom_left.y : glyph_info.uv_top_left.y;
+    f32 uv_left = glyph_pos.uv_top_left.x;
+    f32 uv_right = glyph_pos.uv_top_right.x;
+    f32 uv_top = (y_dir == Y_IS_UP) ? glyph_pos.uv_top_left.y : glyph_pos.uv_bottom_left.y;
+    f32 uv_bottom = (y_dir == Y_IS_UP) ? glyph_pos.uv_bottom_left.y : glyph_pos.uv_top_left.y;
 
     RectangleUVCoords uv_coords = {
 	.top_left = {uv_left, uv_top},
@@ -262,12 +262,12 @@ Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
             result.x = 0.0f;
             result.y += font_height;
         } else if (ch == '\t') {
-            GlyphInfo glyph_info = asset->glyph_infos[char_index(' ')];
+            GlyphTexturePosition glyph_pos = asset->glyph_texture_positions[char_index(' ')];
 
-            result.x += (glyph_info.advance_x + glyph_info.left_side_bearing) * 4;
+            result.x += (glyph_pos.advance_x + glyph_pos.left_side_bearing) * 4;
             max_x = MAX(result.x, max_x);
         } else {
-            GlyphInfo glyph_info = asset->glyph_infos[char_index(ch)];
+            GlyphTexturePosition glyph_info = asset->glyph_texture_positions[char_index(ch)];
 
             result.x += glyph_info.advance_x + glyph_info.left_side_bearing;
             max_x = MAX(result.x, max_x);

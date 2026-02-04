@@ -91,7 +91,7 @@ void assets_initialize(AssetSystem *asset_mgr, Allocator parent_allocator)
 
 AssetSlot *assets_get_asset_by_path(AssetSystem *assets, String path, LinearArena *scratch)
 {
-    // TODO: if number of assets grow large, linear search could become slow, but should be fine for now
+    // NOTE: if number of assets grow large, linear search could become slow, but should be fine for now
     String abs_path = platform_get_canonical_path(path, la_allocator(scratch), scratch);
 
     for (ssize i = 0; i < assets->next_asset_id; ++i) {

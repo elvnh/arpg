@@ -12,7 +12,6 @@
 #include "render_target.h"
 
 // TODO: deinit backend?
-// TODO: only end_frame/flush needed
 // TODO: free memory allocated when destroying assets
 
 typedef enum {

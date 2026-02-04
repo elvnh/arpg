@@ -5,8 +5,6 @@
 
 #include "typedefs.h"
 
-// TODO: make assert trap
-
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
 #define ASSERT_BREAK(expr) do { if (!(expr)) { DEBUG_BREAK; } } while (0)
 #define INVALID_DEFAULT_CASE default: ASSERT(0); break;
@@ -16,7 +14,6 @@
 #define MB(n) (KB(n) * 1024)
 #define SIZEOF(t) ((ssize)(sizeof(t)))
 #define CLAMP(n, low, high) ((n) < (low) ? (low) : ((n) > (high) ? (high) : (n)))
-#define DEBUG_BREAK __asm volatile("int3")
 #define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
 #define zero_array(ptr, count) (mem_zero(ptr, count * SIZEOF(*ptr)))
 #define zero_struct(t) ((t){0})
@@ -50,11 +47,18 @@
     #error Unsupported compiler
 #endif
 
+#if defined(__x86_64__)
+    #define DEBUG_BREAK __asm volatile("int3")
+#else
+    #error Unsupported architecture
+#endif
+
 static inline bool is_pow2(s64 n)
 {
     return (n != 0) && ((n & (n - 1)) == 0);
 }
 
+// Returns a sequence of n consecutive bits in number shifted down to LSB
 inline static u64 bit_span(u64 n, u32 index, u32 length)
 {
     ASSERT(length >= 1);
@@ -134,8 +138,7 @@ static inline s64 align(s64 value, s64 alignment)
     return result;
 }
 
-// TODO: get rid of this
-static inline usize cast_ssize_to_usize(ssize value)
+static inline usize ssize_to_usize(ssize value)
 {
     ASSERT(value >= 0);
     ASSERT((usize)value <= USIZE_MAX);
@@ -143,7 +146,7 @@ static inline usize cast_ssize_to_usize(ssize value)
     return (usize)value;
 }
 
-static inline s32 cast_ssize_to_s32(ssize value)
+static inline s32 ssize_to_s32(ssize value)
 {
     ASSERT((value >= S32_MIN) && (value <= S32_MAX));
 

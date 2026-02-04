@@ -11,7 +11,6 @@
 
 #define MAX_REGISTERED_ASSETS 256
 
-// TODO: Define these paths in build system
 #define ASSET_DIRECTORY  "assets/"
 #define SHADER_DIRECTORY "shaders/"
 #define SPRITE_DIRECTORY "sprites/"

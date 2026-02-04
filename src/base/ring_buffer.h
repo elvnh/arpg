@@ -152,7 +152,7 @@ static inline void ring_impl_push(void *items, ssize *head, ssize *tail, ssize c
         *tail = 0;
     }
 
-    memcpy(byte_offset(items, *tail * item_size), item, cast_ssize_to_usize(item_size));
+    memcpy(byte_offset(items, *tail * item_size), item, ssize_to_usize(item_size));
     *tail = (*tail + 1) % capacity;
 }
 

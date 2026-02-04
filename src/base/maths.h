@@ -46,8 +46,7 @@ static inline f32 round_to_f32(f32 n, f32 multiple)
 
 static inline f32 interpolate(f32 a, f32 b, f32 t)
 {
-    // TODO: watch out for if result is too small to store in float,
-    // will result in NaN
+    // TODO: watch out for if result is too small to store in float, will result in NaN
     f32 result = (a * (1.0f - t)) + (b * t);
 
     return result;

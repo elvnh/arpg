@@ -95,7 +95,7 @@ void sort_polygon_vertices(Polygon *polygon, Vector2 center, LinearArena *arena)
 
     list_clear(polygon);
 
-    qsort_r(verts, cast_ssize_to_usize(point_count), sizeof(*verts), sort_polygon_cmp, &center);
+    qsort_r(verts, ssize_to_usize(point_count), sizeof(*verts), sort_polygon_cmp, &center);
 
     for (ssize i = 0; i < point_count; ++i) {
         PolygonVertex *vert = la_allocate_item(arena, PolygonVertex);

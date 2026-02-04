@@ -10,15 +10,15 @@ struct ItemSystem;
 /*
   TODO:
   - Ensure that stats are clamped, for example negative movement speed doesn't make sense
+  - X macros to define enum, stat name and default value in one place
+  - Unique modifiers that aren't just numeric
  */
 
-// TODO: X macros to define enum, stat name and default value in one place
-// NOTE: flat added, additive percentage, multiplicative percentage etc are just
-// different ways of modifying the same base stat
 typedef enum {
     STAT_FIRE_DAMAGE,
     STAT_LIGHTNING_DAMAGE,
 
+    // NOTE: resistances are flat additive bonuses
     STAT_FIRE_RESISTANCE,
     STAT_LIGHTNING_RESISTANCE,
 
@@ -31,9 +31,6 @@ typedef enum {
     STAT_COUNT,
 } Stat;
 
-// TODO: unique modifiers that aren't just numeric
-// NOTE: The order of these decide in which order they are applied
-// NOTE: resistances are flat additive bonuses
 typedef enum {
     NUMERIC_MOD_FLAT_ADDITIVE,
     NUMERIC_MOD_ADDITIVE_PERCENTAGE,

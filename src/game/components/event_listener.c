@@ -20,7 +20,7 @@ void add_event_callback_impl(struct Entity *entity, EventType event_type, Callba
 
     if (user_data) {
 	cb->user_data = la_allocate(&entity->entity_arena, 1, data_size, data_alignment);
-	memcpy(cb->user_data, user_data, cast_ssize_to_usize(data_size));
+	memcpy(cb->user_data, user_data, ssize_to_usize(data_size));
     }
 
     cb->function = func;

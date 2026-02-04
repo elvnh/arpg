@@ -23,7 +23,7 @@ static ArenaBlock *allocate_block(Allocator parent, ArenaBlock *previous, ssize 
     block->prev_block = previous;
     block->capacity = size;
 
-    mem_zero(block + 1, cast_ssize_to_usize(size));
+    mem_zero(block + 1, ssize_to_usize(size));
 
     return block;
 }
@@ -80,7 +80,7 @@ static void *try_allocate_in_top_block(LinearArena *arena, ssize byte_count, ssi
     byte *result = (byte *)(block_address + aligned_top_offset);
     ASSERT(is_aligned((ssize)result, alignment));
 
-    mem_zero(result, cast_ssize_to_usize(byte_count));
+    mem_zero(result, ssize_to_usize(byte_count));
 
     arena->offset_into_top_block = aligned_top_offset + byte_count;
 
@@ -223,7 +223,7 @@ void la_pop_to(LinearArena *arena, void *ptr)
 void *la_copy_allocation(void *context, void *arr, ssize item_count, ssize item_size, ssize alignment)
 {
     void *new_alloc = la_allocate(context, item_count, item_size, alignment);
-    memcpy(new_alloc, arr, cast_ssize_to_usize(item_count * item_size));
+    memcpy(new_alloc, arr, ssize_to_usize(item_count * item_size));
 
     return new_alloc;
 }

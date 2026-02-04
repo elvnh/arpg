@@ -82,7 +82,7 @@ static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f3
     // TODO: UV constants to make this easier to remember
     Vertex vtl = {
 	.position = tl,
-	.uv = {0,1},
+	.uv = {0, 1},
 	.color = color
     };
 

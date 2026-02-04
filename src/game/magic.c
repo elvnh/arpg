@@ -104,10 +104,8 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	    world->item_system);
 
 	DamageFieldComponent *dmg_field = es_add_component(spell_entity, DamageFieldComponent);
-        // TODO: create_damage_instance function
-	// TODO: store cooldown behaviour and cooldown duration together
 
-        DamageInstance damage = { damage_after_boosts, spell->damaging.penetration_values };
+        DamageInstance damage = {damage_after_boosts, spell->damaging.penetration_values};
 	dmg_field->damage = damage;
 	dmg_field->retrigger_behaviour = spell->damaging.retrigger_behaviour;
     }
@@ -187,7 +185,6 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	// TODO: allow customizing which components are on cooldown, and setting multiple at once
 	// For now, only add the collider so that nothing else can be
 	// triggered until it's off cooldown
-	// TODO: duration cooldowns
 	world_add_trigger_cooldown(world, spell_entity_id, target_id,
 	    component_flag(ColliderComponent), cooldown_retrigger);
     }
@@ -359,7 +356,8 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
     SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
 
     Entity *caster = es_get_entity(event_data.world->entity_system, cb_data->caster_id);
-    ASSERT(caster && "Entity died before impact. TODO: handle this");
+    ASSERT(caster && "Entity died before impact collision callback was called. "
+        "This should probably never happen?");
 
     Entity *collide_target = es_get_entity(event_data.world->entity_system,
 	event_data.as.hostile_collision.collided_with);

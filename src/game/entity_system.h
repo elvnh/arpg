@@ -22,7 +22,6 @@ typedef struct {
 
 DEFINE_STATIC_RING_BUFFER(EntityID, EntityIDQueue, MAX_ENTITIES);
 
-// TODO: should this be a global variable? System is shared between all World instances
 typedef struct EntitySystem {
     EntitySlot     entity_slots[MAX_ENTITIES];
     EntityIDQueue  free_id_queue;

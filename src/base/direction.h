@@ -11,6 +11,11 @@ typedef enum {
     CARDINAL_DIR_COUNT,
 } CardinalDirection;
 
+typedef enum {
+    Y_IS_UP,
+    Y_IS_DOWN
+} YDirection;
+
 static inline Vector2 cardinal_direction_vector(CardinalDirection dir)
 {
     switch (dir) {

@@ -85,6 +85,4 @@ void hitsplats_create(World *world, Vector2 position, Damage damage)
 	    world->active_hitsplats[index] = hitsplat;
 	}
     }
-
-
 }

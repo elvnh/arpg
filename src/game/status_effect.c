@@ -1,4 +1,5 @@
 #include "status_effect.h"
+#include "base/utils.h"
 #include "entity_system.h"
 #include "stats.h"
 #include "components/component.h"
@@ -40,11 +41,8 @@ static StatusEffect status_effect_chilled(void)
     StatusEffect result = {0};
 
     result.base_duration = 10.0f;
-
     result.properties = EFFECT_PROP_STAT_MODIFIER;
-
-    // TODO: reduce action speed, ie both cast speed and movement speed
-    result.stat_modifier = create_modifier(STAT_CAST_SPEED, -75, NUMERIC_MOD_FLAT_ADDITIVE);
+    result.stat_modifier = create_modifier(STAT_ACTION_SPEED, -75, NUMERIC_MOD_FLAT_ADDITIVE);
 
     return result;
 }
@@ -69,7 +67,7 @@ void apply_status_effect(StatusEffectComponent *comp, StatusEffectID effect_id)
 	    StatusEffectInstance instance = {effect->base_duration};
 	    stack->effects[stack->effect_count++] = instance;
 	} else {
-	    ASSERT(0 && "TODO");
+	    UNIMPLEMENTED;
 	}
     } else {
 	StatusEffectInstance *instance = &comp->non_stackable_effects[effect_id];

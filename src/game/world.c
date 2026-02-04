@@ -334,15 +334,12 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 {
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
-	// TODO: move into separate function
         AnimationInstance *anim_instance = &anim_component->current_animation;
 	anim_render_instance(anim_instance, entity, rbs.world_rb, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
 	Sprite *sprite = &sprite_comp->sprite;
         // TODO: how to handle if entity has both sprite and animation component?
-        // TODO: UI should be drawn on separate layer
-
 	SpriteModifiers sprite_mods = sprite_get_modifiers(entity->direction, sprite->rotation_behaviour);
 
         Rectangle sprite_rect = { entity->position, sprite->size };

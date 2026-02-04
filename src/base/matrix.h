@@ -1,14 +1,9 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#include "base/typedefs.h"
-#include "base/vector.h"
-
-// TODO: move elsewhere
-typedef enum {
-    Y_IS_UP,
-    Y_IS_DOWN
-} YDirection;
+#include "typedefs.h"
+#include "vector.h"
+#include "direction.h"
 
 typedef struct {
     f32 data[4][4];

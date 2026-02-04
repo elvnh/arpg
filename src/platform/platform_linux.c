@@ -137,7 +137,6 @@ void platform_update_input(Input *input, WindowHandle *window)
         }
 
         if ((key == MOUSE_LEFT) && (result == KEYSTATE_PRESSED)) {
-            // TODO: should this be initialized to -1 before first click?
             input->mouse_click_position = input->mouse_position;
         }
 
@@ -174,7 +173,7 @@ String platform_get_executable_path(Allocator allocator)
 
     ssize buffer_size = PATH_MAX;
     String result = str_allocate(buffer_size, allocator);
-    ssize bytes_written = readlink("/proc/self/exe", result.data, cast_ssize_to_usize(result.length));
+    ssize bytes_written = readlink("/proc/self/exe", result.data, ssize_to_usize(result.length));
 
     if (bytes_written == -1) {
         deallocate(allocator, result.data);
@@ -241,7 +240,7 @@ String platform_get_working_directory(Allocator allocator)
 {
     String result = str_allocate(PATH_MAX + 1, allocator);
 
-    char *getcwd_result = getcwd(result.data, cast_ssize_to_usize(result.length));
+    char *getcwd_result = getcwd(result.data, ssize_to_usize(result.length));
     ASSERT(getcwd_result == result.data);
 
     if (!getcwd_result) {
@@ -307,7 +306,7 @@ Span platform_read_entire_file(String path, Allocator allocator, LinearArena *sc
     byte *file_data = allocate_array(allocator, byte, alloc_size);
     ASSERT(file_data);
 
-    ssize bytes_read = read(fd, file_data, cast_ssize_to_usize(file_size));
+    ssize bytes_read = read(fd, file_data, ssize_to_usize(file_size));
     ASSERT(bytes_read == file_size);
 
     // TODO: is null terminating really necessary?

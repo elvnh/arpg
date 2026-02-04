@@ -3,6 +3,7 @@
 #include "base/list.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
+#include "base/sl_list.h"
 #include "base/utils.h"
 #include "game/camera.h"
 #include "renderer/frontend/render_key.h"
@@ -48,13 +49,6 @@ static inline RenderKey render_key_create(struct RenderBatch *rb, s32 layer, Sha
     return result;
 }
 
-static RenderBatchNode *rb_create_node(LinearArena *arena)
-{
-    RenderBatchNode *node = la_allocate_item(arena, RenderBatchNode);
-
-    return node;
-}
-
 static RenderBatch rb_create(Camera camera, Vector2i viewport_size, YDirection y_dir, FrameBuffer render_target,
     RGBA32 clear_color, BlendFunction blend_func)
 {
@@ -82,12 +76,12 @@ static RenderBatch rb_create(Camera camera, Vector2i viewport_size, YDirection y
 RenderBatch *push_new_render_batch(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
     FrameBuffer render_target, RGBA32 clear_color, BlendFunction blend_func, LinearArena *arena)
 {
-    RenderBatchNode *node = rb_create_node(arena);
-    node->render_batch = rb_create(camera, viewport_size, y_dir, render_target, clear_color, blend_func);
+    RenderBatch *batch = la_allocate_item(arena, RenderBatch);
+    *batch = rb_create(camera, viewport_size, y_dir, render_target, clear_color, blend_func);
 
-    list_push_back(list, node);
+    sl_list_push_back(list, batch);
 
-    return &node->render_batch;
+    return batch;
 }
 
 RenderBatch *add_stencil_pass(RenderBatch *rb, StencilFunction stencil_func, s32 stencil_func_arg,

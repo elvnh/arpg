@@ -177,8 +177,8 @@ int main(void)
 
         renderer_backend_begin_frame(backend);
 
-        for (RenderBatchNode *node = list_head(&render_batches); node; node = list_next(node)) {
-            execute_render_commands(&node->render_batch, &g_asset_system, backend, &game_memory.temporary_memory);
+        for (RenderBatch *batch = list_head(&render_batches); batch; batch = list_next(batch)) {
+            execute_render_commands(batch, &g_asset_system, backend, &game_memory.temporary_memory);
         }
 
         renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, 0);

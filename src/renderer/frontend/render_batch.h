@@ -13,6 +13,8 @@
 #include "sprite.h"
 #include "renderer/frontend/render_target.h"
 
+struct Particle;
+
 /*
   TODO:
   - make RenderEntry array into ring buffer in case it overflows?
@@ -45,16 +47,11 @@ typedef struct RenderBatch {
     StencilFunction     stencil_func;
     s32                 stencil_func_arg;
     StencilOperation    stencil_op;
+
+    struct RenderBatch *next;
 } RenderBatch;
 
-typedef struct RenderBatchNode {
-    RenderBatch  render_batch;
-    LIST_LINKS(RenderBatchNode);
-} RenderBatchNode;
-
-DEFINE_LIST(RenderBatchNode, RenderBatchList);
-
-struct Particle;
+DEFINE_LIST(RenderBatch, RenderBatchList);
 
 RenderBatch *push_new_render_batch(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
     FrameBuffer render_target, RGBA32 clear_color, BlendFunction blend_func, LinearArena *arena);

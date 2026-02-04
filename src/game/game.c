@@ -225,8 +225,8 @@ static void game_render(Game *game, RenderBatches rbs, RenderBatchList *rb_list,
 {
     world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
 
-    for (RenderBatchNode *node = list_head(rb_list); node; node = list_next(node)) {
-        sort_render_entries(&node->render_batch, frame_arena);
+    for (RenderBatch *batch = list_head(rb_list); batch; batch = list_next(batch)) {
+        sort_render_entries(batch, frame_arena);
     }
 }
 

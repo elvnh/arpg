@@ -10,6 +10,8 @@
 #include "renderer/backend/renderer_backend.h"
 #include "game/components/particle.h"
 
+#define INVALID_RENDERER_STATE (RendererState){{(AssetID)-1}, {(AssetID)-1}}
+
 typedef struct {
     ShaderHandle shader;
     TextureHandle texture;
@@ -64,7 +66,45 @@ static RendererState switch_renderer_state(RendererState new_state, AssetSystem 
     return new_state;
 }
 
-#define INVALID_RENDERER_STATE (RendererState){{(AssetID)-1}, {(AssetID)-1}}
+static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f32 thickness, RGBA32 color)
+{
+    Vector2 dir_r = v2_mul_s(v2_norm(v2_sub(end, start)), thickness / 2.0f);
+    Vector2 dir_l = v2_neg(dir_r);
+    Vector2 dir_u = { -dir_r.y, dir_r.x };
+    Vector2 dir_d = v2_neg(dir_u);
+
+    Vector2 tl = v2_add(v2_add(start, dir_l), dir_u);
+    Vector2 tr = v2_add(end, v2_add(dir_r, dir_u));
+    Vector2 br = v2_add(end, v2_add(dir_d, dir_r));
+    Vector2 bl = v2_add(start, v2_add(dir_d, dir_l));
+
+    // TODO: UV constants to make this easier to remember
+    Vertex vtl = {
+	.position = tl,
+	.uv = {0, 1},
+	.color = color
+    };
+
+    Vertex vtr = {
+	.position = tr,
+	.uv = {1, 1},
+	.color = color
+    };
+
+    Vertex vbr = {
+	.position = br,
+	.uv = {1, 0},
+	.color = color
+    };
+
+    Vertex vbl = {
+	.position = bl,
+	.uv = {0, 0},
+	.color = color
+    };
+
+    renderer_backend_draw_quad(backend, vtl, vtr, vbr, vbl);
+}
 
 static void execute_render_command(RenderEntry *entry, RenderBatch *rb, RendererState *current_state,
     RendererBackend *backend, AssetSystem *assets, LinearArena *scratch)
@@ -173,9 +213,9 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
             RGBA32 color = cmd->color;
             f32 thickness = cmd->thickness;
 
-            renderer_backend_draw_line(backend, triangle.a, triangle.b, thickness, color);
-            renderer_backend_draw_line(backend, triangle.b, triangle.c, thickness, color);
-            renderer_backend_draw_line(backend, triangle.c, triangle.a, thickness, color);
+            render_line(backend, triangle.a, triangle.b, thickness, color);
+            render_line(backend, triangle.b, triangle.c, thickness, color);
+            render_line(backend, triangle.c, triangle.a, thickness, color);
         } break;
 
         case RENDER_COMMAND_ENUM_NAME(OutlinedRectangleCmd): {
@@ -191,10 +231,10 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
             Vector2 bl = rect_bottom_left(cmd->rect);
 
             // TODO: These lines overlap which looks wrong when color is transparent
-            renderer_backend_draw_line(backend, tl, v2_sub(tr, v2(thick, 0.0f)), thick, color);
-            renderer_backend_draw_line(backend, tr, v2_add(br, v2(0.0f, thick)), thick, color);
-            renderer_backend_draw_line(backend, br, v2_add(bl, v2(thick, 0.0f)), thick, color);
-            renderer_backend_draw_line(backend, bl, v2_sub(tl, v2(0.0f, thick)), thick, color);
+            render_line(backend, tl, v2_sub(tr, v2(thick, 0.0f)), thick, color);
+            render_line(backend, tr, v2_add(br, v2(0.0f, thick)), thick, color);
+            render_line(backend, br, v2_add(bl, v2(thick, 0.0f)), thick, color);
+            render_line(backend, bl, v2_sub(tl, v2(0.0f, thick)), thick, color);
 
         } break;
 
@@ -234,7 +274,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
         case RENDER_COMMAND_ENUM_NAME(LineCmd): {
             LineCmd *cmd = (LineCmd *)entry->data;
 
-            renderer_backend_draw_line(backend, cmd->start, cmd->end, cmd->thickness, cmd->color);
+            render_line(backend, cmd->start, cmd->end, cmd->thickness, cmd->color);
         } break;
 
         case RENDER_COMMAND_ENUM_NAME(TextCmd): {

@@ -46,7 +46,6 @@ void             renderer_backend_clear_color_buffer(RGBA32 color);
 void             renderer_backend_flush(RendererBackend *backend);
 void             renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b, Vertex c);
 void             renderer_backend_draw_quad(RendererBackend *backend, Vertex a, Vertex b, Vertex c, Vertex d);
-void             renderer_backend_draw_line(RendererBackend *backend, Vector2 start, Vector2 end, f32 thickness, RGBA32 color);
 void             renderer_backend_change_framebuffer(RendererBackend *backend, FrameBuffer render_target);
 void             renderer_backend_change_to_main_framebuffer(RendererBackend *backend);
 void             renderer_backend_blend_framebuffers(RendererBackend *backend, FrameBuffer a, FrameBuffer b,

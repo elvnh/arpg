@@ -8,7 +8,6 @@
 // TODO: make assert trap
 
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
-#define ASSERT(expr) do { if (!(expr)) { assert_impl(#expr, __func__, FILE_NAME, LINE); } } while (0)
 #define ASSERT_BREAK(expr) do { if (!(expr)) { DEBUG_BREAK; } } while (0)
 #define INVALID_DEFAULT_CASE default: ASSERT(0); break;
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -24,9 +23,22 @@
 #define FLAG(e) ((u64)(1u << (u64)(e)))
 #define SQUARE(n) ((n) * (n))
 
+#define ASSERT(expr)                                    \
+    do {                                                \
+        if (!(expr)) {                                  \
+            fprintf(stderr,                             \
+                "\n*** ASSERTION FAILURE ***\n"         \
+                "Expression: '%s'\n\n"                  \
+                "%s:\n"                                 \
+                "%s:%d:\n",                             \
+                #expr, __func__, FILE_NAME, LINE);      \
+            DEBUG_BREAK;                                \
+        }                                               \
+    } while (0)
+
 #define UNIMPLEMENTED                                                                     \
     fprintf(stderr, "\n*** UNIMPLEMENTED ***\n%s:\n%s:%d:\n", __func__, FILE_NAME, LINE); \
-    abort()
+    DEBUG_BREAK
 
 #if defined(__GNUC__)
     #define ALIGNOF(t)    (ssize)__alignof__(t)
@@ -37,23 +49,6 @@
 #else
     #error Unsupported compiler
 #endif
-
-void abort(void);
-
-static inline void assert_impl(const char *expr, const char *function_name, const char *file_name, s32 line_nr)
-{
-    fprintf(
-        stderr,
-        "\n*** ASSERTION FAILURE ***\n"
-        "Expression: '%s'\n\n"
-        "%s:\n"
-        "%s:%d:\n",
-        expr,
-        function_name,
-        file_name, line_nr);
-
-    abort();
-}
 
 static inline bool is_pow2(s64 n)
 {

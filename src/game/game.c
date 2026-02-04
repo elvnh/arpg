@@ -2,6 +2,9 @@
 #include "base/format.h"
 #include "base/matrix.h"
 #include "base/random.h"
+#include "base/rgba.h"
+#include "renderer/render_target.h"
+#include "renderer/renderer_backend.h"
 #include "status_effect.h"
 #include "entity_id.h"
 #include "entity_system.h"
@@ -18,48 +21,25 @@ static void game_update(Game *game, const FrameData *frame_data, LinearArena *fr
 {
     (void)frame_arena;
 
-    if (input_is_key_pressed(&frame_data->input, KEY_ESCAPE)) {
-        DEBUG_BREAK;
-    }
-
     world_update(&game->world, frame_data, frame_arena, &game->debug_state, &game->game_ui);
 }
 
-
-static void game_render(Game *game, RenderBatchList *rbs, const FrameData *frame_data, LinearArena *frame_arena)
+static void game_render(Game *game, RenderBatches rbs, const FrameData *frame_data, LinearArena *frame_arena)
 {
-    RenderBatch *rb = rb_list_push_new(rbs, game->world.camera, frame_data->window_size, Y_IS_UP, frame_arena);
-
-    world_render(&game->world, rb, frame_data, frame_arena, &game->debug_state);
+    world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
 
     if (game->debug_state.quad_tree_overlay) {
-        render_quad_tree(&game->world.quad_tree.root, rb, frame_arena, 0);
+        render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
     }
 
     if (game->debug_state.render_origin) {
-        rb_push_rect(rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
+        rb_push_rect(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
 	    get_asset_table()->shape_shader, 3);
     }
-
-
-#if 0
-    Rectangle rect_a = {{0}, {128, 128}};
-    Rectangle rect_b = {{32, 64}, {128, 256}};
-
-    Rectangle overlap = rect_overlap_area(rect_a, rect_b);
-
-    rb_push_rect(rb, frame_arena, rect_a, (RGBA32){0, 1, 0, 0.5f},
-	game->asset_list.shape_shader, 3);
-    rb_push_rect(rb, frame_arena, rect_b, (RGBA32){0, 0, 1, 0.5f},
-	game->asset_list.shape_shader, 3);
-    rb_push_clipped_sprite(rb, frame_arena, game->asset_list.default_texture, rect_a, overlap,
-	RGBA32_WHITE, game->asset_list.texture_shader, 4);
-#endif
-
-    rb_sort_entries(rb, frame_arena);
 }
 
 // TODO: only send FrameData into this function, send dt etc to others
+// TODO: this function should basically just call update/render
 void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory)
 {
@@ -76,12 +56,33 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
 
     debug_update(game, &frame_data, &game_memory->temporary_memory);
 
-    Camera ui_camera = {
-        .position = {(f32)frame_data.window_size.x / 2.0f, (f32)frame_data.window_size.y / 2.0f}
-    };
+    RenderBatches game_rbs = {0};
 
-    RenderBatch debug_ui_rb = rb_create(ui_camera, frame_data.window_size, Y_IS_DOWN);
-    RenderBatch game_ui_rb = rb_create(ui_camera, frame_data.window_size, Y_IS_DOWN);
+    Camera ui_camera = {0};
+    ui_camera.position = v2_div_s(v2i_to_v2(frame_data.window_size), 2.0f);
+
+    f32 x = 0.2f;
+    RGBA32 ambient_light = {x, x, x + 0.1f, 1.0f};
+
+    game_rbs.world_rb = rb_list_push_new(rbs, game->world.camera, frame_data.window_size,
+        Y_IS_UP, FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT,
+        BLEND_FUNCTION_MULTIPLICATIVE, &game_memory->temporary_memory);
+
+    game_rbs.lighting_rb = rb_list_push_new(rbs, game->world.camera, frame_data.window_size,
+        Y_IS_UP, FRAME_BUFFER_LIGHTING, ambient_light,
+        BLEND_FUNCTION_ADDITIVE, &game_memory->temporary_memory);
+
+    game_rbs.lighting_stencil_rb = rb_add_stencil_pass(game_rbs.lighting_rb,
+        STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, &game_memory->temporary_memory);
+
+    game_rbs.worldspace_ui_rb = rb_list_push_new(rbs, game->world.camera, frame_data.window_size,
+        Y_IS_UP, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
+        BLEND_FUNCTION_MULTIPLICATIVE, &game_memory->temporary_memory);
+
+    game_rbs.overlay_rb = rb_list_push_new(rbs, ui_camera, frame_data.window_size,
+        Y_IS_DOWN, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
+        BLEND_FUNCTION_MULTIPLICATIVE, &game_memory->temporary_memory);
+
 
     // TODO: create function for these two UI updates
     // Debug UI
@@ -93,7 +94,7 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
                 game, game_memory, &frame_data);
 
             UIInteraction dbg_ui_interaction =
-                ui_core_end_frame(&game->debug_state.debug_ui, &frame_data, &debug_ui_rb,
+                ui_core_end_frame(&game->debug_state.debug_ui, &frame_data, game_rbs.overlay_rb,
 		    platform_code);
 
             // TODO: shouldn't click_began_inside_ui be counted as receiving mouse input?
@@ -110,7 +111,7 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
         game_ui(game, game_memory, &frame_data);
 
 	UIInteraction game_ui_interaction =
-            ui_core_end_frame(&game->game_ui.backend_state, &frame_data, &game_ui_rb, platform_code);
+            ui_core_end_frame(&game->game_ui.backend_state, &frame_data, game_rbs.overlay_rb, platform_code);
 
         if (game_ui_interaction.received_mouse_input || game_ui_interaction.click_began_inside_ui) {
             input_consume_input(&frame_data.input, MOUSE_LEFT);
@@ -119,22 +120,25 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
 
     frame_data.dt *= game->debug_state.timestep_modifier;
 
+    if (input_is_key_pressed(&frame_data.input, KEY_ESCAPE)) {
+        DEBUG_BREAK;
+    }
+
     if (game->debug_state.timestep_modifier > 0.0f) {
+	game_update(game, &frame_data, &game_memory->temporary_memory);
+    } else if (input_is_key_pressed(&frame_data.input, KEY_K)) {
+        // Single frame stepping
+        frame_data.dt = 0.016f;
 	game_update(game, &frame_data, &game_memory->temporary_memory);
     }
 
-    game_render(game, rbs, &frame_data, &game_memory->temporary_memory);
+
+
+    game_render(game, game_rbs, &frame_data, &game_memory->temporary_memory);
 
     if (input_is_key_pressed(&frame_data.input, KEY_T)) {
         game->debug_state.debug_menu_active = !game->debug_state.debug_menu_active;
     }
-
-    rb_sort_entries(&game_ui_rb, &game_memory->temporary_memory);
-    rb_sort_entries(&debug_ui_rb, &game_memory->temporary_memory);
-
-    // Debug UI is rendered on top of game UI
-    rb_list_push(rbs, &game_ui_rb, &game_memory->temporary_memory);
-    rb_list_push(rbs, &debug_ui_rb, &game_memory->temporary_memory);
 
     // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
     // have had time to be used during the frame. This means that the stats have 1 frame delay
@@ -142,6 +146,10 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     game->debug_state.scratch_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
     game->debug_state.permanent_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
     game->debug_state.world_arena_memory_usage = fl_get_memory_usage(&game->world.world_arena);
+
+    for (RenderBatchNode *node = list_head(rbs); node; node = list_next(node)) {
+        rb_sort_entries(&node->render_batch, &game_memory->temporary_memory);
+    }
 }
 
 void game_initialize(Game *game, GameMemory *game_memory)

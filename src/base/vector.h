@@ -23,9 +23,28 @@ typedef struct {
     f32 w;
 } Vector4;
 
+typedef struct Vector2Node {
+    struct Vector2Node *next;
+    struct Vector2Node *prev;
+    Vector2 vector;
+} Vector2Node;
+
+typedef struct {
+    Vector2Node *head;
+    Vector2Node *tail;
+} Vector2List;
+
 static inline Vector2 v2(f32 x, f32 y)
 {
     Vector2 result = {x, y};
+
+    return result;
+}
+
+static inline Vector2i v2i(s32 x, s32 y)
+{
+    Vector2i result = {x, y};
+
     return result;
 }
 
@@ -64,13 +83,6 @@ static inline Vector2 v2_neg(Vector2 v)
     return result;
 }
 
-static inline f32 v2_mag(Vector2 v)
-{
-    f32 result = sqrt_f32(v.x * v.x + v.y * v.y);
-
-    return result;
-}
-
 static inline f32 v2_dist_sq(Vector2 a, Vector2 b)
 {
     f32 result = ((b.x - a.x) * (b.x - a.x)) + ((b.y - a.y) * (b.y - a.y));
@@ -82,6 +94,20 @@ static inline f32 v2_dist(Vector2 a, Vector2 b)
 {
     f32 sq = v2_dist_sq(a, b);
     f32 result = sqrt_f32(sq);
+
+    return result;
+}
+
+static inline f32 v2_mag_sq(Vector2 v)
+{
+    f32 result = v2_dist_sq(v, V2_ZERO);
+
+    return result;
+}
+
+static inline f32 v2_mag(Vector2 v)
+{
+    f32 result = sqrt_f32(v2_mag_sq(v));
 
     return result;
 }
@@ -133,6 +159,33 @@ static inline b32 v2i_eq(Vector2i a, Vector2i b)
     return result;
 }
 
+static inline Vector2i v2i_sub(Vector2i a, Vector2i b)
+{
+    Vector2i result = {
+        a.x - b.x,
+        a.y - b.y,
+    };
+
+    return result;
+}
+
+static inline Vector2i v2i_add(Vector2i a, Vector2i b)
+{
+    Vector2i result = {
+        a.x + b.x,
+        a.y + b.y,
+    };
+
+    return result;
+}
+
+static inline s32 v2i_dist_sq(Vector2i a, Vector2i b)
+{
+    s32 result = ((b.x - a.x) * (b.x - a.x)) + ((b.y - a.y) * (b.y - a.y));
+
+    return result;
+}
+
 static inline Vector2 v2_interpolate(Vector2 a, Vector2 b, f32 t)
 {
     f32 new_x = interpolate_sin(a.x, b.x, t);
@@ -173,6 +226,12 @@ static inline f32 *v2_index(Vector2 *v, Axis index)
 static inline Vector2 v2i_to_v2(Vector2i from)
 {
     Vector2 result = {(f32)from.x, (f32)from.y};
+    return result;
+}
+
+static inline Vector2i v2_to_v2i(Vector2 from)
+{
+    Vector2i result = {(s32)from.x, (s32)from.y};
     return result;
 }
 

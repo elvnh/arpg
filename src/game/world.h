@@ -5,6 +5,7 @@
 #include "entity_system.h"
 #include "item.h"
 #include "quad_tree.h"
+#include "renderer/render_target.h"
 #include "tilemap.h"
 #include "camera.h"
 #include "collision.h"
@@ -26,6 +27,7 @@
 struct FrameData;
 struct DebugState;
 struct RenderBatch;
+struct RenderBatchList;
 struct GameUIState;
 
 // TODO: keep a list of items that exist in this world to avoid having to iterate all items when destroying world
@@ -67,7 +69,7 @@ void world_destroy(World *world);
 // TODO: fix parameters
 void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena,
     struct DebugState *debug_state, struct GameUIState *game_ui);
-void world_render(World *world, struct RenderBatch *rb, const struct FrameData *frame_data,
+void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, EntityFaction faction);
 Rectangle world_get_entity_bounding_box(Entity *entity);

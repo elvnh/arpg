@@ -1,6 +1,8 @@
 #ifndef DYNAMIC_ARRAY_H
 #define DYNAMIC_ARRAY_H
 
+#include <string.h>
+
 #include "base/allocator.h"
 
 #define da_init(arr, cap, alloc)                                        \

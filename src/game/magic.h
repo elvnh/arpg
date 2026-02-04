@@ -6,6 +6,7 @@
 #include "components/particle.h"
 #include "damage.h"
 #include "components/collider.h"
+#include "light.h"
 #include "status_effect.h"
 #include "sprite.h"
 #include "trigger.h"
@@ -44,6 +45,7 @@ typedef enum {
     SPELL_PROP_HOSTILE_COLLISION_CALLBACK = (1 << 9),
     SPELL_PROP_AREA_OF_EFFECT = (1 << 10),
     SPELL_PROP_APPLIES_STATUS_EFFECT = (1 << 11),
+    SPELL_PROP_LIGHT_EMITTER = (1 << 12),
 } SpellProperties;
 
 typedef struct {
@@ -82,6 +84,8 @@ typedef struct {
 	StatusEffectID effect;
 	RetriggerBehaviour retrigger_behaviour;
     } applies_status_effects;
+
+    LightSource light_emitter;
 
     /*
       damaging

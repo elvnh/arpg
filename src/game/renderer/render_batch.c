@@ -29,6 +29,7 @@ static inline s32 get_key_y_sort_order(struct RenderBatch *rb, f32 y_pos)
 static inline RenderKey render_key_create(struct RenderBatch *rb, s32 layer, ShaderHandle shader, TextureHandle texture,
     FontHandle font, f32 y_pos)
 {
+    ASSERT(rb);
     ASSERT(layer < pow(2, LAYER_KEY_BITS));
     ASSERT(shader.id < pow(2, SHADER_KEY_BITS));
     ASSERT(shader.id < pow(2, TEXTURE_KEY_BITS));
@@ -54,26 +55,8 @@ static RenderBatchNode *rb_create_node(LinearArena *arena)
     return node;
 }
 
-void rb_list_push(RenderBatchList *list, RenderBatch *rb, LinearArena *arena)
-{
-    RenderBatchNode *node = rb_create_node(arena);
-    node->render_batch = *rb;
-
-    list_push_back(list, node);
-}
-
-RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size,
-    YDirection y_dir, LinearArena *arena)
-{
-    RenderBatchNode *node = rb_create_node(arena);
-    node->render_batch = rb_create(camera, viewport_size, y_dir);
-
-    list_push_back(list, node);
-
-    return &node->render_batch;
-}
-
-RenderBatch rb_create(Camera camera, Vector2i viewport_size, YDirection y_dir)
+static RenderBatch rb_create(Camera camera, Vector2i viewport_size, YDirection y_dir, FrameBuffer render_target,
+    RGBA32 clear_color, BlendFunction blend_func)
 {
     RenderBatch result = {0};
 
@@ -89,8 +72,42 @@ RenderBatch rb_create(Camera camera, Vector2i viewport_size, YDirection y_dir)
     result.projection = proj_matrix;
     result.y_direction = y_dir;
     result.y_sorting_basis = (s32)top_y;
+    result.render_target = render_target;
+    result.clear_color = clear_color;
+    result.blend_function = blend_func;
 
     return result;
+}
+
+RenderBatch *rb_list_push_new(RenderBatchList *list, Camera camera, Vector2i viewport_size, YDirection y_dir,
+    FrameBuffer render_target, RGBA32 clear_color, BlendFunction blend_func, LinearArena *arena)
+{
+    RenderBatchNode *node = rb_create_node(arena);
+    node->render_batch = rb_create(camera, viewport_size, y_dir, render_target, clear_color, blend_func);
+
+    list_push_back(list, node);
+
+    return &node->render_batch;
+}
+
+RenderBatch *rb_add_stencil_pass(RenderBatch *rb, StencilFunction stencil_func, s32 stencil_func_arg,
+    StencilOperation stencil_op, LinearArena *arena)
+{
+    RenderBatch *stencil_batch = la_allocate_item(arena, RenderBatch);
+    stencil_batch->y_sorting_basis = rb->y_sorting_basis;
+    stencil_batch->projection = rb->projection;
+    stencil_batch->y_direction = rb->y_direction;
+    stencil_batch->render_target = rb->render_target;
+    stencil_batch->clear_color = rb->clear_color;
+    stencil_batch->blend_function = rb->blend_function;
+
+    stencil_batch->stencil_func = stencil_func;
+    stencil_batch->stencil_func_arg = stencil_func_arg;
+    stencil_batch->stencil_op = stencil_op;
+
+    rb->stencil_batch = stencil_batch;
+
+    return stencil_batch;
 }
 
 static void merge_render_entry_arrays(RenderEntry *dst, RenderEntry *left, ssize left_count,
@@ -237,6 +254,20 @@ RenderEntry *rb_push_triangle(RenderBatch *rb, LinearArena *arena, Triangle tria
     return result;
 }
 
+RenderEntry *rb_push_outlined_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle, RGBA32 color,
+    f32 thickness, ShaderHandle shader, RenderLayer layer)
+{
+    OutlinedTriangleCmd *cmd = allocate_render_cmd(arena, OutlinedTriangleCmd);
+    cmd->triangle = triangle;
+    cmd->color = color;
+    cmd->thickness = thickness;
+
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, triangle.a.y);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
 RenderEntry *rb_push_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture, Rectangle rect,
     Rectangle viewport, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
@@ -357,12 +388,60 @@ RenderEntry *rb_push_particles_textured(RenderBatch *rb, LinearArena *arena, str
     return entry;
 }
 
+RenderEntry *rb_push_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolygon polygon,
+    RGBA32 color, ShaderHandle shader, RenderLayer layer)
+{
+    PolygonCmd *cmd = allocate_render_cmd(arena, PolygonCmd);
+    cmd->polygon = polygon;
+    cmd->color = color;
+
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, 0);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
+RenderEntry *rb_push_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan triangle_fan,
+    RGBA32 color, ShaderHandle shader, RenderLayer layer)
+{
+    TriangleFanCmd *cmd = allocate_render_cmd(arena, TriangleFanCmd);
+    cmd->triangle_fan = triangle_fan;
+    cmd->color = color;
+
+    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, 0);
+    RenderEntry *result = push_render_entry(rb, key, cmd);
+
+    return result;
+}
+
+// TODO: reduce code duplication
 void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
 {
+    ASSERT(re);
+
     SetupCmdUniformVec4 *cmd = la_allocate_item(arena, SetupCmdUniformVec4);
     cmd->header.kind = SETUP_CMD_SET_UNIFORM_VEC4;
-    cmd->uniform_name = uniform_name;
-    cmd->vector = vec;
+    cmd->header.uniform_name = uniform_name;
+    cmd->value = vec;
+
+    if (!re->data->first_setup_command) {
+        re->data->first_setup_command = (SetupCmdHeader *)cmd;
+    } else {
+        SetupCmdHeader *curr_cmd;
+        for (curr_cmd = re->data->first_setup_command; curr_cmd->next; curr_cmd = curr_cmd->next);
+
+        curr_cmd->next = (SetupCmdHeader *)cmd;
+    }
+}
+
+void re_set_uniform_float(RenderEntry *re, LinearArena *arena, String uniform_name, f32 value)
+{
+    ASSERT(re);
+
+    SetupCmdUniformFloat *cmd = la_allocate_item(arena, SetupCmdUniformFloat);
+    cmd->header.kind = SETUP_CMD_SET_UNIFORM_FLOAT;
+    cmd->header.uniform_name = uniform_name;
+    cmd->value = value;
 
     if (!re->data->first_setup_command) {
         re->data->first_setup_command = (SetupCmdHeader *)cmd;

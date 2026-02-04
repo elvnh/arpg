@@ -17,6 +17,7 @@ typedef enum {
     INPUT_KEY(KEY_A)                            \
     INPUT_KEY(KEY_S)                            \
     INPUT_KEY(KEY_D)                            \
+    INPUT_KEY(KEY_K)                            \
     INPUT_KEY(KEY_LEFT)                         \
     INPUT_KEY(KEY_UP)                           \
     INPUT_KEY(KEY_RIGHT)                        \

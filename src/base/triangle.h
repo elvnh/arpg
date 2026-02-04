@@ -1,7 +1,7 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
-#include "base/vector.h"
+#include "list.h"
 #include "vertex.h"
 
 typedef struct {
@@ -16,6 +16,18 @@ typedef struct {
     Vertex c;
 } TriangleVertices;
 
+typedef struct {
+    Vector2 a;
+    Vector2 b;
+} TriangleFanElement;
+
+typedef struct {
+    Vector2 center;
+
+    TriangleFanElement *items;
+    ssize count;
+} TriangleFan;
+
 // https://stackoverflow.com/a/2049593
 static inline b32 triangle_contains_point(Triangle triangle, Vector2 point)
 {
@@ -26,7 +38,7 @@ static inline b32 triangle_contains_point(Triangle triangle, Vector2 point)
     b32 has_negative = (s1 < 0) || (s2 < 0) || (s3 < 0);
     b32 has_positive = (s1 > 0) || (s2 > 0) || (s3 > 0);
 
-    b32 result = has_negative != has_positive;
+    b32 result = !(has_negative && has_positive);
 
     return result;
 }

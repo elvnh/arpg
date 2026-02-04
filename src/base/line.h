@@ -1,6 +1,7 @@
 #ifndef LINE_H
 #define LINE_H
 
+#include "vector.h"
 #include "utils.h"
 
 typedef struct {
@@ -46,6 +47,7 @@ static inline LineIntersection line_intersection(Line a, Line b, f32 epsilon)
     return result;
 }
 
+// Returns how far along A the intersection point between A and B lies
 static inline f32 line_intersection_fraction(Line a, Line b, f32 epsilon)
 {
     LineIntersection intersection = line_intersection(a, b, epsilon);
@@ -59,6 +61,54 @@ static inline f32 line_intersection_fraction(Line a, Line b, f32 epsilon)
     }
 
     return INFINITY;
+}
+
+// https://ncase.me/sight-and-light/
+// https://github.com/OneLoneCoder/Javidx9/blob/master/PixelGameEngine/SmallerProjects/OneLoneCoder_PGE_ShadowCasting2D.cpp
+static inline LineIntersection ray_vs_line_intersection(Vector2 ray_origin, Vector2 ray_dir, Line line)
+{
+    LineIntersection result = {0};
+
+    Vector2 line_dir = v2_sub(line.end, line.start);
+
+    // If the directions are parallel, there can be no intersection
+    if (v2_cross(line_dir, ray_dir) != 0.0f) {
+        ray_dir = v2_norm(ray_dir);
+
+        f32 line_sx = line.start.x;
+        f32 line_sy = line.start.y;
+        f32 line_dx = line_dir.x;
+        f32 line_dy = line_dir.y;
+
+        f32 ray_ox = ray_origin.x;
+        f32 ray_oy = ray_origin.y;
+        f32 ray_dx = ray_dir.x;
+        f32 ray_dy = ray_dir.y;
+
+        f32 t2 = (ray_dx * (line_sy - ray_oy) + ray_dy * (ray_ox - line_sx))
+            / (line_dx * ray_dy - line_dy * ray_dx);
+        f32 t1 = (line_sx + line_dx * t2 - ray_ox) / ray_dx;
+
+
+        b32 intersecting = (t1 > 0.0f) && (t2 > 0.0f) && (t2 < 1.0f);
+
+        if (intersecting) {
+            result.are_intersecting = true;
+            result.intersection_point = v2_add(ray_origin, v2_mul_s(ray_dir, t1));
+        }
+    }
+
+    return result;
+}
+
+static inline Vector2 line_center(Line line)
+{
+    Vector2 line_dir = v2_norm(v2_sub(line.end, line.start));
+    f32 length = v2_dist(line.start, line.end);
+
+    Vector2 result = v2_add(line.start, v2_mul_s(line_dir, length / 2.0f));
+
+    return result;
 }
 
 #endif //LINE_H

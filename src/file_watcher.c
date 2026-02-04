@@ -115,6 +115,7 @@ void *file_watcher_thread(void *user_data)
                 String name = { event->name, (ssize)event->len };
                 StringNode *modified_file = allocate_item(ctx->allocator, StringNode);
 
+                // TODO: instead store the canonical path
                 modified_file->data = str_concat(parent_path, name, ctx->allocator);
 
 		mutex_lock(ctx->lock);

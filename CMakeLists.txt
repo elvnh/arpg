@@ -58,6 +58,8 @@ set(
   src/game/entity_state.c
   src/game/magic.c
   src/game/stats.c
+  src/game/light.c
+  src/base/polygon.c
   src/game/line_of_sight.c
   src/game/item_system.c
   src/game/equipment.c

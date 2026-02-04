@@ -32,7 +32,7 @@ typedef struct {
 	FontAsset    *font_asset;
     } as;
 
-    String absolute_asset_path;
+    String canonical_asset_path;
 } AssetSlot;
 
 typedef struct AssetSystem {

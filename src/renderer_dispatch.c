@@ -1,10 +1,13 @@
 #include "renderer_dispatch.h"
 #include "base/rectangle.h"
+#include "base/rgba.h"
+#include "base/triangle.h"
 #include "base/vector.h"
 #include "font.h"
 #include "game/renderer/render_command.h"
 #include "game/renderer/render_key.h"
 #include "game/components/particle.h"
+#include "renderer/render_target.h"
 #include "renderer/renderer_backend.h"
 
 typedef struct {
@@ -107,14 +110,54 @@ static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f3
 void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
     RendererBackend *backend, LinearArena *scratch)
 {
+    // NOTE: The color buffer should always be cleared, even if there is nothing to draw
+    // as some batches may always need the background color to be drawn
+    renderer_backend_change_framebuffer(backend, rb->render_target);
+
+    if (!rgba32_eq(rb->clear_color, RGBA32_TRANSPARENT)) {
+        renderer_backend_clear_color_buffer(rb->clear_color);
+    }
+
     if (rb->entry_count == 0) {
         return;
+    }
+
+    if (rb->stencil_batch) {
+        // This batch has a stencil pass, run it before rendering this batch
+        RenderBatch *stencil = rb->stencil_batch;
+        ASSERT(stencil->render_target == rb->render_target);
+        ASSERT(!stencil->stencil_batch && "A stencil batch can't have a stencil batch of it's own");
+
+        // The stencil pass should only write to stencil buffer, not color buffer
+        renderer_backend_enable_stencil_writes();
+        renderer_backend_disable_color_buffer_writes(backend);
+
+        execute_render_commands(stencil, assets, backend, scratch);
+
+        // We should only write to color buffer, not stencil buffer
+        renderer_backend_disable_stencil_writes();
+        renderer_backend_enable_color_buffer_writes(backend);
+
+        renderer_backend_set_stencil_function(backend, stencil->stencil_func, stencil->stencil_func_arg);
+    } else {
+        // Either we are a stencil batch or a batch without a stencil pass, either way we should
+        // always pass stencil test
+        renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, rb->stencil_func_arg);
+
+        // If we are a stencil batch, stencil buffer writes will be enabled. If not, they're disabled
+        // so this won't affect anything
+        renderer_backend_set_stencil_pass_operation(backend, rb->stencil_op);
     }
 
     RendererState current_state = get_state_needed_for_entry(rb->entries[0].key, assets);
     switch_renderer_state(current_state, assets, INVALID_RENDERER_STATE, backend);
 
     renderer_backend_set_global_projection(backend, rb->projection);
+    renderer_backend_set_blend_function(rb->blend_function);
+
+//    if (rb->clear_color.a > 0.0f) {
+
+//    }
 
     for (ssize i = 0; i < rb->entry_count; ++i) {
         RenderEntry *entry = &rb->entries[i];
@@ -127,15 +170,22 @@ void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
             current_state = switch_renderer_state(needed_state, assets, current_state, backend);
         }
 
+        // TODO: break this out into function(s)
         for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
             switch (setup_cmd->kind) {
                 case SETUP_CMD_SET_UNIFORM_VEC4: {
                     SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
                     ShaderAsset *shader = assets_get_shader(assets, current_state.shader);
 
-                    renderer_backend_set_uniform_vec4(shader, cmd->uniform_name, cmd->vector, scratch);
+                    renderer_backend_set_uniform_vec4(shader, cmd->header.uniform_name, cmd->value, scratch);
                 } break;
 
+                case SETUP_CMD_SET_UNIFORM_FLOAT: {
+                    SetupCmdUniformFloat *cmd = (SetupCmdUniformFloat *)setup_cmd;
+                    ShaderAsset *shader = assets_get_shader(assets, current_state.shader);
+
+                    renderer_backend_set_uniform_float(shader, cmd->header.uniform_name, cmd->value, scratch);
+                } break;
                 INVALID_DEFAULT_CASE;
             }
         }
@@ -211,6 +261,17 @@ void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
                 renderer_backend_draw_triangle(backend, verts.a, verts.b, verts.c);
             } break;
 
+            case RENDER_COMMAND_ENUM_NAME(OutlinedTriangleCmd): {
+                OutlinedTriangleCmd *cmd = (OutlinedTriangleCmd *)entry->data;
+                Triangle triangle = cmd->triangle;
+                RGBA32 color = cmd->color;
+                f32 thickness = cmd->thickness;
+
+                render_line(backend, triangle.a, triangle.b, thickness, color);
+                render_line(backend, triangle.b, triangle.c, thickness, color);
+                render_line(backend, triangle.c, triangle.a, thickness, color);
+            } break;
+
             case RENDER_COMMAND_ENUM_NAME(OutlinedRectangleCmd): {
                 OutlinedRectangleCmd *cmd = (OutlinedRectangleCmd *)entry->data;
                 ASSERT(cmd->rect.size.x > 0.0f && cmd->rect.size.y > 0.0f);
@@ -256,7 +317,6 @@ void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
                     f32 y2 = posy + radius * sinf(step_angle * (segment + 1));
                     f32 tx2 = (x2 / radius + 1.0f) * 0.5f;
                     f32 ty2 = 1.0f - ((y2 / radius + 1.0f) * 0.5f);
-
 
                     Vertex b = { {x1, y1}, {tx1, ty1}, color};
                     Vertex c = { {x2, y2}, {tx2, ty2}, color};
@@ -361,7 +421,39 @@ void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
                 }
             } break;
 
-           INVALID_DEFAULT_CASE;
+            case RENDER_COMMAND_ENUM_NAME(PolygonCmd): {
+                PolygonCmd *cmd = (PolygonCmd *)entry->data;
+                RGBA32 color = cmd->color;
+
+                for (PolygonTriangle *tri = list_head(&cmd->polygon); tri; tri = list_next(tri)) {
+                    TriangleVertices verts = triangle_get_vertices(tri->triangle, color);
+
+                    renderer_backend_draw_triangle(backend, verts.a, verts.b, verts.c);
+                }
+
+            } break;
+
+            case RENDER_COMMAND_ENUM_NAME(TriangleFanCmd): {
+                TriangleFanCmd *cmd = (TriangleFanCmd *)entry->data;
+
+                RGBA32 color = cmd->color;
+                Vector2 center = cmd->triangle_fan.center;
+                ssize count = cmd->triangle_fan.count;
+
+                for (ssize elem = 0; elem < count; ++elem) {
+                    TriangleFanElement curr = cmd->triangle_fan.items[elem];
+                    Triangle triangle = {center, curr.a, curr.b};
+
+                    TriangleVertices verts = triangle_get_vertices(triangle, color);
+                    renderer_backend_draw_triangle(backend, verts.a, verts.b, verts.c);
+                }
+            } break;
+        }
+
+        // If this render entry had setup commands we need to flush afterwards since
+        // those may set uniform variables and we don't want those to leak into next render entry
+        if (header->first_setup_command) {
+            renderer_backend_flush(backend);
         }
     }
 

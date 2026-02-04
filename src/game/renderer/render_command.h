@@ -1,6 +1,7 @@
 #ifndef RENDER_COMMAND_H
 #define RENDER_COMMAND_H
 
+#include "base/polygon.h"
 #include "base/utils.h"
 #include "base/rectangle.h"
 #include "base/string8.h"
@@ -15,9 +16,12 @@
     RENDER_COMMAND(OutlinedRectangleCmd)        \
     RENDER_COMMAND(CircleCmd)                   \
     RENDER_COMMAND(TriangleCmd)                 \
+    RENDER_COMMAND(OutlinedTriangleCmd)         \
     RENDER_COMMAND(LineCmd)                     \
     RENDER_COMMAND(TextCmd)                     \
     RENDER_COMMAND(ParticleGroupCmd)            \
+    RENDER_COMMAND(PolygonCmd)                  \
+    RENDER_COMMAND(TriangleFanCmd)              \
 
 #define RENDER_COMMAND_ENUM_NAME(type) RENDER_CMD_##type
 
@@ -35,6 +39,7 @@ typedef enum {
 typedef struct SetupCmdHeader {
     SetupCmdKind kind;
     struct SetupCmdHeader *next;
+    String uniform_name;
 } SetupCmdHeader;
 
 typedef struct {
@@ -56,6 +61,13 @@ typedef struct {
     Triangle triangle;
     RGBA32 color;
 } TriangleCmd;
+
+typedef struct {
+    RenderCmdHeader header;
+    Triangle triangle;
+    RGBA32 color;
+    f32 thickness;
+} OutlinedTriangleCmd;
 
 typedef struct {
     RenderCmdHeader header;
@@ -104,11 +116,27 @@ typedef struct {
     RGBA32 color;
 } ParticleGroupCmd;
 
+typedef struct {
+    RenderCmdHeader header;
+    TriangulatedPolygon polygon;
+    RGBA32 color;
+} PolygonCmd;
+
+typedef struct {
+    RenderCmdHeader header;
+    TriangleFan triangle_fan;
+    RGBA32 color;
+} TriangleFanCmd;
+
 /* Setup command types */
 typedef struct {
     SetupCmdHeader header;
-    String uniform_name;
-    Vector4 vector;
+    Vector4 value;
 } SetupCmdUniformVec4;
+
+typedef struct {
+    SetupCmdHeader header;
+    f32 value;
+} SetupCmdUniformFloat;
 
 #endif //RENDER_COMMAND_H

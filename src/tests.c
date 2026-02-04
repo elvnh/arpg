@@ -684,6 +684,27 @@ static void tests_list()
 	ASSERT(list_next(node2) == 0);
     }
 
+    // Circular next/prev
+    {
+        List_s32 list = {0};
+        s32_node *node1 = la_allocate_item(&arena, s32_node);
+        list_push_back(&list, node1);
+
+        s32_node *node2 = la_allocate_item(&arena, s32_node);
+        list_push_back(&list, node2);
+
+        s32_node *node3 = la_allocate_item(&arena, s32_node);
+        list_push_back(&list, node3);
+
+        ASSERT(list_circular_next(&list, node1) == node2);
+        ASSERT(list_circular_next(&list, node2) == node3);
+        ASSERT(list_circular_next(&list, node3) == node1);
+
+        ASSERT(list_circular_prev(&list, node1) == node3);
+        ASSERT(list_circular_prev(&list, node2) == node1);
+        ASSERT(list_circular_prev(&list, node3) == node2);
+    }
+
     la_destroy(&arena);
 }
 

@@ -88,6 +88,9 @@
 #define list_is_empty(list) (!((list)->head))
 #define list_clear(list) ((list)->head = (list)->tail = 0)
 
+#define list_circular_next(list, node) ((node)->next ? (node)->next : (list)->head)
+#define list_circular_prev(list, node) ((node)->prev ? (node)->prev : (list)->tail)
+
 #define LIST_LINKS(type) struct type *next; struct type *prev
 #define LIST_HEAD_TAIL(type) struct type *head; struct type *tail
 #define DEFINE_LIST(type, name) typedef struct name { type *head; type *tail; } name

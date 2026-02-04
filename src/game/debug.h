@@ -21,6 +21,7 @@ typedef struct DebugState {
     b32 render_origin;
     b32 render_entity_bounds;
     b32 render_entity_velocity;
+    b32 render_edge_list;
 
     f32 average_fps;
     f32 timestep_modifier;

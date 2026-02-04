@@ -82,6 +82,12 @@ static inline f32 deg_to_rad(f32 degrees)
     return result;
 }
 
+static inline f32 rad_to_deg(f32 radians)
+{
+    f32 result = radians * (180.0f / PI);
+    return result;
+}
+
 static inline f32 fraction(f32 x)
 {
     f32 result = (f32)(x - (s64)x);

@@ -1,6 +1,7 @@
 #include "debug.h"
 #include "base/format.h"
 #include "components/component.h"
+#include "input.h"
 #include "status_effect.h"
 #include "game.h"
 #include "renderer/render_batch.h"
@@ -186,9 +187,16 @@ void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const FrameData 
     );
 
     f32 timestep = game->debug_state.timestep_modifier;
+    String timestep_value_str = {0};
+
+    if (timestep == 0.0f) {
+        timestep_value_str = str_lit("SINGLE STEP");
+    } else {
+        timestep_value_str = f32_to_string(timestep, 2, temp_alloc);
+    }
     String timestep_str = str_concat(
         str_lit("Timestep modifier: "),
-        f32_to_string(timestep, 2, temp_alloc),
+        timestep_value_str,
         temp_alloc
     );
 
@@ -211,6 +219,7 @@ void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const FrameData 
     ui_checkbox(ui, str_lit("Render origin"),            &game->debug_state.render_origin);
     ui_checkbox(ui, str_lit("Render entity bounds"),     &game->debug_state.render_entity_bounds);
     ui_checkbox(ui, str_lit("Render entity velocity"),   &game->debug_state.render_entity_velocity);
+    ui_checkbox(ui, str_lit("Render edge list"),         &game->debug_state.render_edge_list);
 
     ui_spacing(ui, 8);
 
@@ -256,12 +265,30 @@ void debug_update(Game *game, const FrameData *frame_data, LinearArena *frame_ar
     }
 
     f32 speed_modifier = game->debug_state.timestep_modifier;
-    f32 speed_modifier_step = 0.25;
+    f32 speed_modifier_step = 0.25f;
+
+    if (speed_modifier < 0.5f) {
+        speed_modifier_step = 0.05f;
+    }
 
     if (input_is_key_pressed(&frame_data->input, KEY_UP)) {
         speed_modifier += speed_modifier_step;
     } else if (input_is_key_pressed(&frame_data->input, KEY_DOWN)) {
+        if (speed_modifier - 0.05f <= 0.5f) {
+            speed_modifier_step = 0.05f;
+        }
+
         speed_modifier -= speed_modifier_step;
+    }
+
+    if (input_is_key_pressed(&frame_data->input, KEY_G)) {
+        if (game->debug_state.timestep_modifier > 0.0f) {
+            // Enter single stepping mode
+            speed_modifier = 0.0f;
+        } else {
+            //Exit single stepping mode
+            speed_modifier = 1.0f;
+        }
     }
 
     game->debug_state.timestep_modifier = CLAMP(speed_modifier, 0.0f, 5.0f);

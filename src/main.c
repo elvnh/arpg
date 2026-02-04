@@ -10,6 +10,7 @@
 #include "base/linear_arena.h"
 #include "base/random.h"
 #include "base/rectangle.h"
+#include "base/rgba.h"
 #include "base/string8.h"
 #include "base/image.h"
 #include "base/list.h"
@@ -17,6 +18,7 @@
 #include "game/renderer/render_key.h"
 #include "input.h"
 #include "platform.h"
+#include "renderer/render_target.h"
 #include "renderer/renderer_backend.h"
 #include "asset_system.h"
 #include "game/renderer/render_command.h"
@@ -79,7 +81,8 @@ int main()
 
     WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
 	WINDOW_FLAG_NON_RESIZABLE, la_allocator(&game_memory.permanent_memory));
-    RendererBackend *backend = renderer_backend_initialize(la_allocator(&game_memory.permanent_memory));
+    RendererBackend *backend = renderer_backend_initialize(v2i(WINDOW_WIDTH, WINDOW_HEIGHT),
+        la_allocator(&game_memory.permanent_memory));
 
     assets_initialize(&asset_mgr, la_allocator(&game_memory.permanent_memory));
 
@@ -89,6 +92,11 @@ int main()
     game_state->asset_list = (AssetTable){
         .texture_shader = assets_register_shader(&asset_mgr, str_lit("shader.glsl"), &game_memory.temporary_memory),
         .shape_shader = assets_register_shader(&asset_mgr, str_lit("shader2.glsl"), &game_memory.temporary_memory),
+	.light_shader = assets_register_shader(&asset_mgr, str_lit("light.glsl"), &game_memory.temporary_memory),
+	.light_blending_shader = assets_register_shader(&asset_mgr, str_lit("light_blending.glsl"),
+            &game_memory.temporary_memory),
+	.screenspace_texture_shader = assets_register_shader(&asset_mgr, str_lit("screenspace_texture.glsl"),
+            &game_memory.temporary_memory),
         .default_texture = assets_register_texture(&asset_mgr, str_lit("test.png"), &game_memory.temporary_memory),
         .fireball_texture = assets_register_texture(&asset_mgr, str_lit("fireball.png"), &game_memory.temporary_memory),
         .spark_texture = assets_register_texture(&asset_mgr, str_lit("spark.png"), &game_memory.temporary_memory),
@@ -152,8 +160,6 @@ int main()
 
         platform_update_input(&input, window);
 
-        renderer_backend_clear(backend);
-
         Vector2i window_size = platform_get_window_size(window);
         FrameData frame_data = {
             .dt = dt,
@@ -169,9 +175,22 @@ int main()
         game_update_and_render(game_state, platform_code, &render_batches, frame_data, &game_memory);
 #endif
 
+        renderer_backend_begin_frame(backend);
+
         for (RenderBatchNode *node = list_head(&render_batches); node; node = list_next(node)) {
             execute_render_commands(&node->render_batch, &asset_mgr, backend, &game_memory.temporary_memory);
         }
+
+        renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, 0);
+
+        // TODO: don't do this here, do it in game.c?
+        ShaderAsset *light_blending_shader = assets_get_shader(&asset_mgr, game_state->asset_list.light_blending_shader);
+        renderer_backend_blend_framebuffers(backend, FRAME_BUFFER_GAMEPLAY, FRAME_BUFFER_LIGHTING,
+            light_blending_shader);
+
+        ShaderAsset *screenspace_texture_shader = assets_get_shader(&asset_mgr,
+            game_state->asset_list.screenspace_texture_shader);
+        renderer_backend_draw_framebuffer_as_texture(backend, FRAME_BUFFER_OVERLAY, screenspace_texture_shader);
 
         input.scroll_delta = 0.0f;
         platform_poll_events(window);

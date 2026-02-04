@@ -1,11 +1,13 @@
 #include "magic.h"
 #include "base/maths.h"
+#include "base/rgba.h"
 #include "base/utils.h"
 #include "callback.h"
 #include "collision_policy.h"
 #include "components/event_listener.h"
 #include "components/collider.h"
 #include "components/particle.h"
+#include "light.h"
 #include "status_effect.h"
 #include "game/collision.h"
 #include "game/damage.h"
@@ -159,6 +161,11 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	ea->retrigger_behaviour = spell->applies_status_effects.retrigger_behaviour;
     }
 
+    if (spell_has_prop(spell, SPELL_PROP_LIGHT_EMITTER)) {
+        LightEmitter *le = es_get_or_add_component(spell_entity, LightEmitter);
+        le->light = spell->light_emitter;
+    }
+
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
 	spell_entity->position = spell_origin;
     } else {
@@ -228,7 +235,7 @@ static Spell spell_fireball()
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	/*| SPELL_PROP_PARTICLE_SPAWNER*/;
+	| SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_LIGHT_EMITTER;
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
@@ -247,17 +254,23 @@ static Spell spell_fireball()
     spell.damaging.base_damage = damage_range;
     spell.damaging.retrigger_behaviour = retrigger_never();
 
-/*
+    spell.light_emitter.radius = 250.0f;
+    spell.light_emitter.color = RGBA32_RED;
+    spell.light_emitter.kind = LIGHT_RAYCASTED;
+    spell.light_emitter.fade_duration = 1.0f;
+
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {1, 0.4f, 0, 0.08f},
 	.particle_size = 4.0f,
-	.particle_lifetime = 1.0f,
+	.particle_lifetime = 2.0f,
 	.particle_speed = 30.0f,
 	.infinite = true,
-	.particles_per_second = 100
+	.particles_per_second = 100,
+        .emits_light = true,
+        .light_source = (LightSource){LIGHT_REGULAR, 2.5f, RGBA32_RED, false, 0, 0}
     };
-*/
+
     return spell;
 }
 

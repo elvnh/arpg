@@ -1,7 +1,11 @@
 #include "world.h"
 #include "ai.h"
+#include "base/line.h"
 #include "base/linear_arena.h"
+#include "base/list.h"
 #include "base/matrix.h"
+#include "base/ring_buffer.h"
+#include "base/triangle.h"
 #include "collision_event.h"
 #include "components/collider.h"
 #include "components/component.h"
@@ -19,6 +23,8 @@
 #include "base/utils.h"
 #include "base/sl_list.h"
 #include "health.h"
+#include "light.h"
+#include "renderer/render_target.h"
 #include "status_effect.h"
 #include "damage.h"
 #include "debug.h"
@@ -38,6 +44,7 @@
 #include "asset_table.h"
 #include "trigger.h"
 #include "line_of_sight.h"
+#include "base/polygon.h"
 
 #define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
 
@@ -85,6 +92,30 @@ Rectangle world_get_entity_bounding_box(Entity *entity)
     return result;
 }
 
+static Rectangle get_tile_rectangle_in_world_space(Vector2i tile_coords)
+{
+    Rectangle result = {
+	tile_to_world_coords(tile_coords),
+	{(f32)TILE_SIZE, (f32)TILE_SIZE },
+    };
+
+    return result;
+}
+
+static void world_update_entity_quad_tree_location(World *world, ssize alive_entity_index)
+{
+    ASSERT(alive_entity_index < world->alive_entity_count);
+
+    EntityID id = world->alive_entity_ids[alive_entity_index];
+    Entity *entity = es_get_entity(world->entity_system, id);
+    ASSERT(entity);
+
+    QuadTreeLocation *loc = &world->alive_entity_quad_tree_locations[alive_entity_index];
+    Rectangle entity_area = world_get_entity_bounding_box(entity);
+
+    *loc = qt_set_entity_area(&world->quad_tree, id, *loc, entity_area, &world->world_arena);
+}
+
 EntityWithID world_spawn_entity(World *world, EntityFaction faction)
 {
     ASSERT(faction >= 0);
@@ -100,6 +131,9 @@ EntityWithID world_spawn_entity(World *world, EntityFaction faction)
     return result;
 }
 
+// Handles anything that needs to be handled before removing an entity,
+// such as transferring components that need to stay alive a little longer
+// over to a new entity.
 static void world_remove_entity(World *world, ssize alive_entity_index)
 {
     ASSERT(alive_entity_index < world->alive_entity_count);
@@ -126,6 +160,51 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
 	}
     }
 
+    if (es_has_component(entity, LightEmitter)) {
+	// If an entity dies while it has a light, the light is transferred
+	// to a new entity and the light starts fading out
+	LightEmitter *old_light = es_get_component(entity, LightEmitter);
+
+	b32 should_transfer_light = !old_light->light.fading_out
+	    || (old_light->light.time_elapsed < old_light->light.fade_duration);
+
+        if (should_transfer_light) {
+            Entity *new_entity = world_spawn_entity(world, FACTION_NEUTRAL).entity;
+	    new_entity->position = entity->position;
+
+	    Vector2i tile_coords = world_to_tile_coords(new_entity->position);
+	    Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
+
+	    if (!tile || (tile->type == TILE_WALL)) {
+		Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
+		RectanglePoint closest_point = rect_bounds_point_closest_to_point(
+		    tile_rect, new_entity->position);
+
+		// The entity will be placed on the perimeter of the tile it was spawned in,
+		// which means it will be considered to be inside it, so we offset it slightly.
+		new_entity->position = v2_sub(closest_point.point, v2_norm(entity->velocity));
+	    }
+
+            LightEmitter *new_light = es_add_component(new_entity, LightEmitter);
+            *new_light = *old_light;
+
+	    f32 light_fade_duration = new_light->light.fade_duration;
+
+	    if (light_fade_duration == 0.0f) {
+		light_fade_duration = LIGHT_DEFAULT_FADE_OUT_TIME;
+	    }
+
+	    new_light->light.fade_duration = light_fade_duration;
+
+            LifetimeComponent *lt = es_add_component(new_entity, LifetimeComponent);
+            lt->time_to_live = light_fade_duration;
+
+            es_remove_component(entity, LightEmitter);
+
+            new_light->light.fading_out = true;
+        }
+    }
+
     es_remove_entity(world->entity_system, *id);
 
     QuadTreeLocation *qt_location = &world->alive_entity_quad_tree_locations[alive_entity_index];
@@ -145,20 +224,6 @@ void world_kill_entity(World *world, Entity *entity)
     send_event(entity, death_event, world);
 
     es_schedule_entity_for_removal(entity);
-}
-
-static void world_update_entity_quad_tree_location(World *world, ssize alive_entity_index)
-{
-    ASSERT(alive_entity_index < world->alive_entity_count);
-
-    EntityID id = world->alive_entity_ids[alive_entity_index];
-    Entity *entity = es_get_entity(world->entity_system, id);
-    ASSERT(entity);
-
-    QuadTreeLocation *loc = &world->alive_entity_quad_tree_locations[alive_entity_index];
-    Rectangle entity_area = world_get_entity_bounding_box(entity);
-
-    *loc = qt_set_entity_area(&world->quad_tree, id, *loc, entity_area, &world->world_arena);
 }
 
 Vector2i world_to_tile_coords(Vector2 world_coords)
@@ -249,22 +314,29 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 	anim_update_instance(world, entity, &anim_component->current_animation, dt);
     }
 
+    if (es_has_component(entity, LightEmitter)) {
+        LightEmitter *light = es_get_component(entity, LightEmitter);
+
+        if (light->light.fading_out) {
+	    ASSERT(light->light.fade_duration > 0.0f);
+            light->light.time_elapsed += dt;
+        }
+    }
+
     if (entity_should_die(world, entity)) {
         // NOTE: won't be removed until after this frame
 	world_kill_entity(world, entity);
     }
-
-    world_update_entity_quad_tree_location(world, alive_entity_index);
 }
 
-static void entity_render(Entity *entity, struct RenderBatch *rb,
+static void entity_render(Entity *entity, RenderBatches rbs,
     LinearArena *scratch, struct DebugState *debug_state, World *world, const FrameData *frame_data)
 {
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
 	// TODO: move into separate function
         AnimationInstance *anim_instance = &anim_component->current_animation;
-	anim_render_instance(anim_instance, entity, rb, scratch);
+	anim_render_instance(anim_instance, entity, rbs.world_rb, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
 	Sprite *sprite = &sprite_comp->sprite;
@@ -274,7 +346,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
 	SpriteModifiers sprite_mods = sprite_get_modifiers(entity->direction, sprite->rotation_behaviour);
 
         Rectangle sprite_rect = { entity->position, sprite->size };
-        rb_push_colored_sprite(rb, scratch, sprite->texture, sprite_rect, sprite_mods,
+        rb_push_colored_sprite(rbs.world_rb, scratch, sprite->texture, sprite_rect, sprite_mods,
 	    sprite->color, get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
     }
 
@@ -286,7 +358,7 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
             .size = collider->size
         };
 
-        rb_push_rect(rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f},
+        rb_push_rect(rbs.worldspace_ui_rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f},
 	    get_asset_table()->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
@@ -296,8 +368,21 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
         if (ps->config.particle_texture.id == NULL_TEXTURE.id) {
             ASSERT(ps->config.particle_color.a != 0.0f);
 
-            rb_push_particles(rb, scratch, &ps->particle_buffer, ps->config.particle_color,
-		ps->config.particle_size, get_asset_table()->shape_shader, RENDER_LAYER_PARTICLES);
+            if (ps->config.emits_light) {
+                for (ssize i = 0; i < ring_length(&ps->particle_buffer); ++i) {
+                    Particle *p = ring_at(&ps->particle_buffer, i);
+                    // TODO: don't have the particles fade out linearly
+                    f32 intensity = 1.0f - p->timer / p->lifetime;
+
+                    render_light_source(world, rbs.lighting_rb, p->position, ps->config.light_source,
+                        intensity, scratch);
+                }
+            } else {
+                rb_push_particles(rbs.world_rb, scratch, &ps->particle_buffer, ps->config.particle_color,
+                    ps->config.particle_size, get_asset_table()->shape_shader, RENDER_LAYER_PARTICLES);
+            }
+
+
         } else {
             // If color isn't set, assume it to be white
             RGBA32 particle_color = ps->config.particle_color;
@@ -305,22 +390,30 @@ static void entity_render(Entity *entity, struct RenderBatch *rb,
                 particle_color = RGBA32_WHITE;
             }
 
-            rb_push_particles_textured(rb, scratch, &ps->particle_buffer,
+            rb_push_particles_textured(rbs.world_rb, scratch, &ps->particle_buffer,
 		get_asset_table()->default_texture, particle_color, ps->config.particle_size,
 		get_asset_table()->texture_shader, RENDER_LAYER_PARTICLES);
         }
     }
 
+    if (es_has_component(entity, LightEmitter)) {
+        LightEmitter *light = es_get_component(entity, LightEmitter);
+
+        // TODO: this might look better if the origin is center of entity
+        render_light_source(world, rbs.lighting_rb, entity->position, light->light, 1.0f, scratch);
+    }
+
     if (debug_state->render_entity_bounds) {
         Rectangle entity_rect = world_get_entity_bounding_box(entity);
-        rb_push_rect(rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
+
+        rb_push_rect(rbs.worldspace_ui_rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
 	    get_asset_table()->shape_shader, RENDER_LAYER_ENTITIES);
     }
 
     if (debug_state->render_entity_velocity) {
 	Vector2 dir = v2_norm(entity->velocity);
 
-	rb_push_line(rb, scratch, entity->position, v2_add(entity->position, v2_mul_s(dir, 20.0f)),
+	rb_push_line(rbs.worldspace_ui_rb, scratch, entity->position, v2_add(entity->position, v2_mul_s(dir, 20.0f)),
 	    RGBA32_GREEN, 2.0f, get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
     }
 }
@@ -507,10 +600,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
 
             if (!tile || (tile->type == TILE_WALL)) {
                 Rectangle entity_rect = get_entity_collider_rectangle(entity, collider);
-                Rectangle tile_rect = {
-                    tile_to_world_coords(tile_coords),
-                    {(f32)TILE_SIZE, (f32)TILE_SIZE },
-                };
+                Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
 
                 CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
 		    tile_rect, entity->velocity, V2_ZERO, dt);
@@ -707,6 +797,8 @@ void update_player(World *world, const FrameData *frame_data, LinearArena *frame
 void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena,
     DebugState *debug_state, GameUIState *game_ui)
 {
+    tilemap_get_tile(&world->tilemap, v2i(3, 3))->type = TILE_WALL;
+
     if (world->alive_entity_count < 1) {
         return;
     }
@@ -741,10 +833,18 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 	    --i;
 	}
     }
+
+    // Make an extra pass over all entities alive at end of frame and update their
+    // quad tree locations. This ensures that when this frame is rendered, any entities
+    // that were spawned during the frame have the correct quad tree location and are therefore
+    // rendered if they are visible to the player.
+    for (ssize i = 0; i < world->alive_entity_count; ++i) {
+        world_update_entity_quad_tree_location(world, i);
+    }
 }
 
-void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
-    LinearArena *frame_arena, DebugState *debug_state)
+void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
+    LinearArena *frame_arena, struct DebugState *debug_state)
 {
     Rectangle visible_area = camera_get_visible_area(world->camera, frame_data->window_size);
     visible_area.position = v2_sub(visible_area.position, v2(TILE_SIZE, TILE_SIZE));
@@ -792,13 +892,9 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
 
 
                 if (tile->type == TILE_FLOOR) {
-                    rb_push_sprite(rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
+                    rb_push_sprite(rb_list.world_rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
                         get_asset_table()->texture_shader, layer);
                 } else if (tile->type == TILE_WALL) {
-                    // NOTE: Walls are rendered in two segments and are made transparent if entities
-		    // are behind them
-                    RGBA32 tile_sprite_color = RGBA32_WHITE;
-
                     Tile *tile_above = tilemap_get_tile(&world->tilemap,
                         (Vector2i){tile_coords.x, tile_coords.y + 1});
                     b32 can_walk_behind_tile = tile_above && (tile_above->type == TILE_FLOOR);
@@ -816,12 +912,13 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
                     EntityIDList entities_near_tile =
 			qt_get_entities_in_area(&world->quad_tree, top_segment, frame_arena);
 
+                    b32 make_wall_transparent = false;
+
                     for (EntityIDNode *node = list_head(&entities_near_tile); node; node = list_next(node)) {
                         Entity *entity = es_get_entity(world->entity_system, node->id);
 
                         // TODO: only do this if it's the player?
                         // TODO: get sprite rect instead of all component bounds?
-
                         Rectangle entity_bounds = world_get_entity_bounding_box(entity);
                         b32 entity_intersects_wall = rect_intersects(entity_bounds, top_segment);
 
@@ -833,18 +930,32 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
 			    || es_has_component(entity, SpriteComponent);
 
                         if (entity_is_behind_wall && entity_is_visible) {
-                            tile_sprite_color.a = 0.5f;
+                            make_wall_transparent = true;
                             break;
                         }
                     }
 
-                    rb_push_clipped_sprite(rb, frame_arena, texture,
-                        tile_rect, bottom_segment, tile_sprite_color, get_asset_table()->texture_shader,
+                    rb_push_clipped_sprite(rb_list.world_rb, frame_arena, texture,
+                        tile_rect, bottom_segment, RGBA32_WHITE, get_asset_table()->texture_shader,
 			RENDER_LAYER_FLOORS);
 
-                    rb_push_clipped_sprite(rb, frame_arena, texture,
-                        tile_rect, top_segment, tile_sprite_color, get_asset_table()->texture_shader,
+                    RGBA32 top_segment_color = RGBA32_WHITE;
+
+                    // If entity is behind wall, make top segment slightly transparent
+                    if (make_wall_transparent) {
+                        top_segment_color.a = 0.5f;
+                    }
+
+                    rb_push_clipped_sprite(rb_list.world_rb, frame_arena, texture,
+                        tile_rect, top_segment, top_segment_color, get_asset_table()->texture_shader,
 			RENDER_LAYER_WALLS);
+
+                    if (!make_wall_transparent) {
+                        // Render top segment to lighting stencil buffer so that wall top sides are never lit
+                        rb_push_rect(rb_list.lighting_stencil_rb, frame_arena, top_segment, RGBA32_BLACK,
+                            get_asset_table()->shape_shader, RENDER_LAYER_WALLS);
+                    }
+
                 } else {
                     ASSERT(0);
                 }
@@ -858,10 +969,46 @@ void world_render(World *world, RenderBatch *rb, const FrameData *frame_data,
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(world->entity_system, node->id);
 
-        entity_render(entity, rb, frame_arena, debug_state, world, frame_data);
+        entity_render(entity, rb_list, frame_arena, debug_state, world, frame_data);
     }
 
-    hitsplats_render(world, rb, frame_arena);
+    hitsplats_render(world, rb_list.worldspace_ui_rb, frame_arena);
+
+    if (debug_state->render_edge_list) {
+        Allocator frame_alloc = la_allocator(frame_arena);
+        EdgePool edge_pool = tilemap_get_edge_list(&world->tilemap, frame_alloc);
+
+        for (ssize i = 0; i < edge_pool.count; ++i) {
+            EdgeLine edge = edge_pool.items[i];
+            Vector2 vec = cardinal_direction_vector(edge.direction);
+            Vector2 origin = line_center(edge.line);
+            Vector2 end = v2_add(origin, v2_mul_s(vec, 10.0f));
+
+            rb_push_line(rb_list.worldspace_ui_rb, frame_arena, origin, end, RGBA32_GREEN, 4.0f,
+                get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
+
+            rb_push_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start, edge.line.end, RGBA32_BLUE, 4.0f,
+                get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
+        }
+    }
+
+#if 0
+    TriangleFan fan = get_visibility_polygon(
+        world_get_player_entity(world)->position, &world->tilemap, frame_arena);
+
+    rb_push_triangle_fan(rb_list.overlay_rb, frame_arena, fan, rgba32(0.2f, 0.5f, 0.9f, 0.8f),
+        get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
+
+
+    /* for (ssize i = 0; i < fan.count; ++i) { */
+    /*     TriangleFanElement elem = fan.items[i]; */
+    /*     Triangle triangle = {fan.center, elem.a, elem.b}; */
+
+    /*     rb_push_triangle(rb, frame_arena, triangle, rgba32(0, 1, 0, 0.2f), */
+    /*         get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY); */
+
+    /* } */
+#endif
 }
 
 static void drop_ground_item(World *world, Vector2 pos, ItemID id)
@@ -888,30 +1035,35 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
     world->item_system = item_system;
 
     // NOTE: testing code
+    s32 world_width = 16;
+    s32 world_height = 16;
+
     {
-	for (s32 x = 0; x < 8; ++x) {
+	for (s32 x = 0; x < world_width; ++x) {
 	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, 0}, TILE_WALL,
 		&world->world_arena);
 
-	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, 7}, TILE_WALL,
+	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, world_height - 1}, TILE_WALL,
 		&world->world_arena);
 	}
 
-	for (s32 y = 1; y < 7; ++y) {
+	for (s32 y = 1; y < world_height - 1; ++y) {
 	    tilemap_insert_tile(&world->tilemap, (Vector2i){0, y}, TILE_WALL,
 		&world->world_arena);
 
-	    tilemap_insert_tile(&world->tilemap, (Vector2i){7, y}, TILE_WALL,
+	    tilemap_insert_tile(&world->tilemap, (Vector2i){world_width - 1, y}, TILE_WALL,
 		&world->world_arena);
 	}
 
-	for (s32 y = 1; y < 7; ++y) {
-	    for (s32 x = 1; x < 7; ++x) {
+	for (s32 y = 1; y < world_height - 1; ++y) {
+	    for (s32 x = 1; x < world_width - 1; ++x) {
 		tilemap_insert_tile(&world->tilemap, (Vector2i){x, y}, TILE_FLOOR,
 		    &world->world_arena);
 	    }
 	}
     }
+
+    tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})->type = TILE_WALL;
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
 
@@ -922,7 +1074,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
         EntityWithID entity_with_id = world_spawn_entity(world,
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
-        entity->position = v2(256, 256);
+        entity->position = v2(128, 128);
 
         ASSERT(!es_has_component(entity, ColliderComponent));
 
@@ -987,6 +1139,18 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
             item->equipment.slot = EQUIP_SLOT_WEAPON;
 
 #if 1
+        LightEmitter *light = es_add_component(entity, LightEmitter);
+	light->light.radius = 500.0f;
+	light->light.kind = LIGHT_RAYCASTED;
+
+	if (i == 0) {
+	    light->light.color = RGBA32_GREEN;
+	} else {
+	    light->light.color = RGBA32_BLUE;
+	}
+#endif
+
+#if 1
             Modifier dmg_mod = create_modifier(STAT_FIRE_DAMAGE, 100, NUMERIC_MOD_FLAT_ADDITIVE);
             item_add_modifier(item, dmg_mod);
 
@@ -1004,6 +1168,8 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 #endif
         }
 #endif
+
+
     }
 }
 

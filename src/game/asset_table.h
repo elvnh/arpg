@@ -7,6 +7,10 @@
 typedef struct AssetTable {
     ShaderHandle texture_shader;
     ShaderHandle shape_shader;
+    ShaderHandle light_shader;
+    ShaderHandle light_blending_shader;
+    ShaderHandle screenspace_texture_shader;
+
     TextureHandle default_texture;
     TextureHandle fireball_texture;
     TextureHandle spark_texture;

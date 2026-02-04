@@ -14,7 +14,7 @@ typedef enum {
 } WallSide;
 
 // https://lodev.org/cgtutor/raycasting.html
-Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir)
+Vector2 find_first_wall_in_direction(Tilemap *tilemap, Vector2 origin, Vector2 dir)
 {
     // The current ray position
     f64 pos_x = origin.x;
@@ -93,11 +93,29 @@ Vector2 find_first_wall_along_path(Tilemap *tilemap, Vector2 origin, Vector2 dir
     return result;
 }
 
+// TODO: better name
+// TODO: instead provide max distance?
+Vector2 find_first_wall_on_path(Vector2 origin, Vector2 target, Tilemap *tilemap)
+{
+    Vector2 direction = v2_norm(v2_sub(target, origin));
+    Vector2 first_wall = find_first_wall_in_direction(tilemap, origin, direction);
+
+    Vector2 result = {0};
+
+    if (v2_dist_sq(origin, first_wall) < v2_dist_sq(origin, target)) {
+        result = first_wall;
+    } else {
+        result = target;
+    }
+
+    return result;
+}
+
 static b32 has_line_of_sight_to_point(Vector2 origin, Vector2 point, Tilemap *tilemap)
 {
     // TODO: implement this in a better way by finding first wall but aborting if exceeding distance
     Vector2 dir = v2_sub(point, origin);
-    Vector2 intersection = find_first_wall_along_path(tilemap, origin, dir);
+    Vector2 intersection = find_first_wall_in_direction(tilemap, origin, dir);
 
     f32 dist_to_point = v2_dist_sq(origin, point);
     f32 dist_to_intersection = v2_dist_sq(origin, intersection);

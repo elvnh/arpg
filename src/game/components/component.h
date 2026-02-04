@@ -7,6 +7,7 @@
 #include "collision_policy.h"
 #include "damage.h"
 #include "item.h"
+#include "light.h"
 #include "particle.h"
 #include "asset.h"
 #include "collider.h"
@@ -38,6 +39,7 @@
     COMPONENT(AIComponent)			\
     COMPONENT(EffectApplierComponent)		\
     COMPONENT(HealthComponent)			\
+    COMPONENT(LightEmitter)			\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -101,5 +103,9 @@ typedef struct AIComponent {
 typedef struct {
     Health health;
 } HealthComponent;
+
+typedef struct {
+    LightSource light;
+} LightEmitter;
 
 #endif //COMPONENT_H

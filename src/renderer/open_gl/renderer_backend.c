@@ -1,8 +1,13 @@
 #include <GL/glew.h>
 
 #include "base/allocator.h"
+#include "base/rectangle.h"
+#include "base/rgba.h"
 #include "base/string8.h"
 #include "base/utils.h"
+#include "base/vector.h"
+#include "camera.h"
+#include "renderer/render_target.h"
 #include "renderer/renderer_backend.h"
 #include "base/vertex.h"
 
@@ -43,11 +48,22 @@ typedef struct {
     Matrix4 projection;
 } GlobalShaderUniforms;
 
+typedef struct {
+    GLuint framebuffer_object;
+    GLuint renderbuffer_object;
+    GLuint color_buffer;
+} BackendFramebuffer;
+
 struct RendererBackend {
     GLuint vao;
     GLuint vbo;
     GLuint ebo;
     GLuint ubo;
+
+    BackendFramebuffer framebuffers[FRAME_BUFFER_COUNT];
+
+    // TODO: ui fbo
+    // TODO: pack render targets into structs
 
     Vertex  vertices[MAX_RENDERER_VERTICES]; // TODO: heap allocate
     s32     vertex_count;
@@ -78,7 +94,64 @@ static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, 
     }
 }
 
-RendererBackend *renderer_backend_initialize(Allocator allocator)
+static BackendFramebuffer *get_framebuffer(RendererBackend *backend, FrameBuffer render_target)
+{
+    ASSERT(render_target >= 0);
+    ASSERT(render_target < FRAME_BUFFER_COUNT);
+    BackendFramebuffer *result = &backend->framebuffers[render_target];
+
+    return result;
+}
+
+static GLuint get_framebuffer_object(RendererBackend *backend, FrameBuffer render_target)
+{
+    BackendFramebuffer *fb = get_framebuffer(backend, render_target);
+    GLuint result = fb->framebuffer_object;
+
+    return result;
+}
+
+static GLuint get_render_target_texture(RendererBackend *backend, FrameBuffer render_target)
+{
+    BackendFramebuffer *fb = get_framebuffer(backend, render_target);
+    GLuint result = fb->color_buffer;
+
+    return result;
+}
+
+static void create_framebuffer(RendererBackend *backend, FrameBuffer render_target, Vector2i window_dims)
+{
+    BackendFramebuffer *fb = get_framebuffer(backend, render_target);
+
+    glGenFramebuffers(1, &fb->framebuffer_object);
+
+    // TODO: make sure to call glViewport if dimensions change
+    // Color attachment
+    glGenTextures(1, &fb->color_buffer);
+    glBindTexture(GL_TEXTURE_2D, fb->color_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window_dims.x, window_dims.y, 0, GL_RGBA,
+        GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Renderbuffer (stencil) attachment
+    glGenRenderbuffers(1, &fb->renderbuffer_object);
+    glBindRenderbuffer(GL_RENDERBUFFER, fb->renderbuffer_object);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_dims.x, window_dims.y);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fb->framebuffer_object);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->color_buffer, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->renderbuffer_object);
+
+    ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+RendererBackend *renderer_backend_initialize(Vector2i window_dims, Allocator allocator)
 {
     RendererBackend *state = allocate_item(allocator, RendererBackend);
     ASSERT(state->vertex_count == 0);
@@ -91,7 +164,9 @@ RendererBackend *renderer_backend_initialize(Allocator allocator)
     glDebugMessageCallback(gl_error_callback, 0);
 
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_STENCIL_TEST);
+
+    glDisable(GL_DEPTH_TEST);
 
     glGenVertexArrays(1, &state->vao);
     glBindVertexArray(state->vao);
@@ -122,6 +197,11 @@ RendererBackend *renderer_backend_initialize(Allocator allocator)
     glBindBufferRange(GL_UNIFORM_BUFFER, GLOBAL_UNIFORMS_BINDING_POINT, state->ubo, 0, sizeof(GlobalShaderUniforms));
 
     glBindVertexArray(0);
+
+    /* Frame buffers */
+    for (FrameBuffer target = 0; target < FRAME_BUFFER_COUNT; ++target) {
+        create_framebuffer(state, target, window_dims);
+    }
 
     return state;
 }
@@ -325,6 +405,7 @@ static GLint get_uniform_location(ShaderAsset *shader, String uniform_name, Line
     String terminated = str_null_terminate(uniform_name, la_allocator(scratch));
 
     GLint location = glGetUniformLocation(shader->native_handle, terminated.data);
+    // TODO: instead log error on failure
     ASSERT(location != -1);
 
     return location;
@@ -343,6 +424,13 @@ void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name,
     glUniform4fv(location, 1, &vec.x);
 }
 
+void renderer_backend_set_uniform_float(ShaderAsset *shader, String uniform_name, f32 value, LinearArena *scratch)
+{
+    GLint location = get_uniform_location(shader, uniform_name, scratch);
+
+    glUniform1f(location, value);
+}
+
 static void flush_if_needed(RendererBackend *backend, s32 vertices_to_draw, ssize indices_to_draw)
 {
     if (((backend->vertex_count + vertices_to_draw) > MAX_RENDERER_VERTICES)
@@ -351,9 +439,10 @@ static void flush_if_needed(RendererBackend *backend, s32 vertices_to_draw, ssiz
     }
 }
 
-void renderer_backend_clear(RendererBackend *backend)
+
+void renderer_backend_clear_color_buffer(RGBA32 color)
 {
-    (void)backend;
+    glClearColor(color.r, color.g, color.b, color.a);
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -392,7 +481,7 @@ void renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b
 
 void renderer_backend_draw_quad(RendererBackend *backend, Vertex a, Vertex b, Vertex c, Vertex d)
 {
-    flush_if_needed(backend, 4, 4);
+    flush_if_needed(backend, 4, 6);
 
     u32 start_count = (u32)backend->vertex_count;
 
@@ -407,4 +496,188 @@ void renderer_backend_draw_quad(RendererBackend *backend, Vertex a, Vertex b, Ve
     backend->indices[backend->index_count++] = start_count + 0;
     backend->indices[backend->index_count++] = start_count + 1;
     backend->indices[backend->index_count++] = start_count + 2;
+}
+
+void renderer_backend_change_framebuffer(RendererBackend *backend, FrameBuffer render_target)
+{
+    GLuint fbo = get_framebuffer_object(backend, render_target);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+}
+
+void renderer_backend_change_to_main_framebuffer(RendererBackend *backend)
+{
+    (void)backend;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void renderer_backend_blend_framebuffers(RendererBackend *backend, FrameBuffer a,
+    FrameBuffer b, ShaderAsset *shader)
+{
+    // Bind main framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, 0);
+    renderer_backend_set_blend_function(BLEND_FUNCTION_MULTIPLICATIVE);
+
+    // Render a rectangle in screen space covering the entire screen
+    Rectangle rect = {{-1, -1}, {2, 2}};
+    RectangleVertices verts = rect_get_vertices(rect, RGBA32_WHITE, Y_IS_DOWN);
+
+    renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+        verts.bottom_right, verts.bottom_left);
+
+    GLuint texture_a = get_render_target_texture(backend, a);
+    GLuint texture_b = get_render_target_texture(backend, b);
+
+    GLint loc_a = glGetUniformLocation(shader->native_handle, "u_texture_a");
+    GLint loc_b = glGetUniformLocation(shader->native_handle, "u_texture_b");
+    ASSERT(loc_a != -1);
+    ASSERT(loc_b != -1);
+
+    renderer_backend_use_shader(shader);
+
+    // Bind the two texture samplers to separate texture units
+    glBindTexture(GL_TEXTURE_2D, texture_b);
+
+    glUniform1i(loc_a, 0);
+    glUniform1i(loc_b, 1);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_a);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture_b);
+
+    // Reset to the default texture unit so the active texture doesn't leak into next frame
+    glActiveTexture(GL_TEXTURE0);
+
+    renderer_backend_flush(backend);
+}
+
+void renderer_backend_draw_framebuffer_as_texture(RendererBackend *backend, FrameBuffer render_target,
+    ShaderAsset *shader)
+{
+    renderer_backend_change_to_main_framebuffer(backend);
+    renderer_backend_use_shader(shader);
+    renderer_backend_set_blend_function(BLEND_FUNCTION_MULTIPLICATIVE);
+    renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, 0);
+
+    GLuint texture = get_render_target_texture(backend, render_target);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    Rectangle rect = {{-1, -1}, {2, 2}};
+    RectangleVertices verts = rect_get_vertices(rect, RGBA32_WHITE, Y_IS_DOWN);
+
+    renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+        verts.bottom_right, verts.bottom_left);
+
+    renderer_backend_flush(backend);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+static void clear_all_buffers(RGBA32 color)
+{
+    glClearColor(color.r, color.g, color.b, color.a);
+    glClearStencil(0);
+
+    renderer_backend_enable_stencil_writes();
+    glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    renderer_backend_disable_stencil_writes();
+}
+
+void renderer_backend_begin_frame(RendererBackend *backend)
+{
+    renderer_backend_change_to_main_framebuffer(backend);
+    clear_all_buffers(RGBA32_BLACK);
+
+    for (FrameBuffer target = 0; target < FRAME_BUFFER_COUNT; ++target) {
+        renderer_backend_change_framebuffer(backend, target);
+
+        // Offscreen buffers are cleared to transparent so that they can be
+        // sampled as textures
+        clear_all_buffers(RGBA32_TRANSPARENT);
+    }
+}
+
+void renderer_backend_set_blend_function(BlendFunction function)
+{
+    switch (function) {
+        case BLEND_FUNCTION_ADDITIVE: {
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        } break;
+
+        case BLEND_FUNCTION_MULTIPLICATIVE: {
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        } break;
+    }
+}
+
+void renderer_backend_enable_stencil_writes()
+{
+    glStencilMask(0xFF);
+}
+
+void renderer_backend_disable_stencil_writes()
+{
+    glStencilMask(0x00);
+}
+
+void renderer_backend_set_stencil_pass_operation(RendererBackend *backend, StencilOperation op)
+{
+    (void)backend;
+
+    GLenum gl_enum = 0;
+
+    switch (op) {
+        case STENCIL_OP_REPLACE: {
+            gl_enum = GL_REPLACE;
+        } break;
+
+        case STENCIL_OP_KEEP: {
+            gl_enum = GL_KEEP;
+        } break;
+
+        INVALID_DEFAULT_CASE;
+    }
+
+    glStencilOp(gl_enum, gl_enum, gl_enum);
+}
+void renderer_backend_set_stencil_function(RendererBackend *backend, StencilFunction function, s32 arg)
+{
+    (void)backend;
+
+    GLenum gl_enum = 0;
+
+    switch (function) {
+        case STENCIL_FUNCTION_ALWAYS: {
+            gl_enum = GL_ALWAYS;
+        } break;
+
+        case STENCIL_FUNCTION_EQUAL: {
+            gl_enum = GL_EQUAL;
+        } break;
+
+        case STENCIL_FUNCTION_NOT_EQUAL: {
+            gl_enum = GL_NOTEQUAL;
+        } break;
+
+        INVALID_DEFAULT_CASE;
+    }
+
+    glStencilFunc(gl_enum, arg, 0xFF);
+}
+
+void renderer_backend_enable_color_buffer_writes(RendererBackend *backend)
+{
+    (void)backend;
+    glColorMask(true, true, true, true);
+}
+
+void renderer_backend_disable_color_buffer_writes(RendererBackend *backend)
+{
+    (void)backend;
+    glColorMask(false, false, false, false);
 }

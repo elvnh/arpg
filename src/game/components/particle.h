@@ -6,6 +6,7 @@
 #include "base/vector.h"
 #include "base/rgba.h"
 #include "asset.h"
+#include "light.h"
 
 struct Entity;
 
@@ -42,6 +43,9 @@ typedef struct {
     b32 infinite; // TODO: use particle flags instead?
 
     f32 particles_per_second;
+
+    b32 emits_light;
+    LightSource light_source;
 } ParticleSpawnerConfig;
 
 // TODO: different kinds of spawners: infinite particles etc,

@@ -5,7 +5,7 @@
 #include "base/typedefs.h"
 #include "base/vector.h"
 #include "base/rgba.h"
-#include "asset.h"
+#include "platform/asset.h"
 #include "light.h"
 
 struct Entity;

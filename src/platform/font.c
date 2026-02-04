@@ -6,7 +6,7 @@
 #include "base/utils.h"
 #include "font.h"
 #include "asset_system.h"
-#include "platform.h"
+#include "platform/platform.h"
 #include "renderer/renderer_backend.h"
 
 // TODO: dynamically decide size of atlas

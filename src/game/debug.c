@@ -1,7 +1,7 @@
 #include "debug.h"
 #include "base/format.h"
 #include "components/component.h"
-#include "input.h"
+#include "platform/input.h"
 #include "status_effect.h"
 #include "game.h"
 #include "renderer/render_batch.h"

@@ -4,7 +4,7 @@
 #include <limits.h>
 #include <pthread.h>
 
-#include "asset.h"
+#include "platform/asset.h"
 #include "base/free_list_arena.h"
 #include "base/hash.h"
 #include "base/linear_arena.h"
@@ -14,21 +14,21 @@
 #include "base/string8.h"
 #include "base/image.h"
 #include "base/list.h"
-#include "font.h"
+#include "platform/font.h"
 #include "game/renderer/render_key.h"
-#include "input.h"
-#include "platform.h"
+#include "platform/input.h"
+#include "platform/platform.h"
 #include "renderer/render_target.h"
 #include "renderer/renderer_backend.h"
-#include "asset_system.h"
+#include "platform/asset_system.h"
 #include "game/renderer/render_command.h"
 #include "base/vertex.h"
 #include "game/renderer/render_batch.h"
 #include "game/game.h"
 #include "tests.c"
-#include "file_watcher.h"
-#include "hot_reload.h"
-#include "renderer_dispatch.h"
+#include "platform/file_watcher.h"
+#include "platform/hot_reload.h"
+#include "platform/renderer_dispatch.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 768

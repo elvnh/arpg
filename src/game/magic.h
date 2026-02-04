@@ -2,7 +2,7 @@
 #define MAGIC_H
 
 #include "base/vector.h"
-#include "asset.h"
+#include "platform/asset.h"
 #include "components/particle.h"
 #include "damage.h"
 #include "components/collider.h"

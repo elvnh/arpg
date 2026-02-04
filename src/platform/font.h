@@ -44,6 +44,4 @@ f32            font_get_newline_advance(FontAsset *asset, s32 text_size);
 Vector2        font_get_text_dimensions(FontAsset *asset, String text, s32 text_size);
 f32            font_get_baseline_offset(FontAsset *asset, s32 text_size);
 
-
-
 #endif //FONT_H

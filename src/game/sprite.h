@@ -2,7 +2,7 @@
 #define SPRITE_H
 
 #include "base/rectangle.h"
-#include "asset.h"
+#include "platform/asset.h"
 
 typedef enum {
     SPRITE_ROTATE_NONE,

@@ -5,9 +5,9 @@
 #include "base/string8.h"
 #include "base/vector.h"
 #include "base/rectangle.h"
-#include "platform.h"
+#include "platform/platform.h"
+#include "platform/input.h"
 #include "widget.h"
-#include "input.h"
 
 /*
   TODO:

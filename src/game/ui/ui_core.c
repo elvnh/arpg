@@ -13,7 +13,7 @@
 #include "base/utils.h"
 #include "base/sl_list.h"
 #include "game/renderer/render_batch.h"
-#include "input.h"
+#include "platform/input.h"
 
 #define FRAME_WIDGET_TABLE_SIZE 1024
 #define DEFAULT_LAYOUT_AXIS UI_LAYOUT_VERTICAL

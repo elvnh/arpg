@@ -6,7 +6,7 @@
 #include "base/rectangle.h"
 #include "base/string8.h"
 #include "base/triangle.h"
-#include "asset.h"
+#include "platform/asset.h"
 
 // TODO: X macro to avoid defining new commands in multiple places
 

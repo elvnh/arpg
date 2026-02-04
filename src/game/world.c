@@ -32,7 +32,7 @@
 #include "collision.h"
 #include "entity.h"
 #include "entity_system.h"
-#include "input.h"
+#include "platform/input.h"
 #include "item.h"
 #include "magic.h"
 #include "modifier.h"

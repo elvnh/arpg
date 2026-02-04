@@ -1,7 +1,7 @@
 #include <dlfcn.h>
 
 #include "base/string8.h"
-#include "hot_reload.h"
+#include "platform/hot_reload.h"
 
 #define BEGIN_IGNORE_FUNCTION_PTR_WARNINGS              \
     _Pragma("GCC diagnostic push");                     \

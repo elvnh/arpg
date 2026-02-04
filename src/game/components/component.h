@@ -9,7 +9,7 @@
 #include "item.h"
 #include "light.h"
 #include "particle.h"
-#include "asset.h"
+#include "platform/asset.h"
 #include "collider.h"
 #include "stats.h"
 #include "status_effect.h"

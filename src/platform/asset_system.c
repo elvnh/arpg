@@ -6,7 +6,7 @@
 #include "font.h"
 #include "renderer/renderer_backend.h"
 #include "base/image.h"
-#include "platform.h"
+#include "platform/platform.h"
 
 #define ASSET_ARENA_SIZE      MB(8)
 #define FIRST_VALID_ASSET_ID (NULL_ASSET_ID + 1)

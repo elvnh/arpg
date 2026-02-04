@@ -4,7 +4,7 @@
 #include "item_system.h"
 #include "ui/ui_core.h"
 #include "game/magic.h"
-#include "platform.h"
+#include "platform/platform.h"
 #include "world.h"
 #include "debug.h"
 #include "animation.h"

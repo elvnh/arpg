@@ -16,7 +16,7 @@
 #include "base/maths.h"
 #include "base/format.h"
 #include "base/dynamic_array.h"
-#include "platform.h"
+#include "platform/platform.h"
 #include <stdint.h>
 
 static void tests_arena()

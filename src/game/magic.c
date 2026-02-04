@@ -15,7 +15,7 @@
 #include "trigger.h"
 #include "world.h"
 #include "components/component.h"
-#include "asset.h"
+#include "platform/asset.h"
 #include "entity_system.h"
 #include "asset_table.h"
 

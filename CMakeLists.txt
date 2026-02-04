@@ -28,12 +28,12 @@ set(
 set(
   PLATFORM_LAYER_SOURCES
   src/main.c
-  src/file_watcher.c
-  src/font.c
-  src/renderer_dispatch.c
-  src/platform_linux.c
-  src/asset_system.c
-  src/stb.c
+  src/platform/file_watcher.c
+  src/platform/font.c
+  src/platform/renderer_dispatch.c
+  src/platform/platform_linux.c
+  src/platform/asset_system.c
+  src/platform/stb.c
 )
 
 set(
@@ -145,7 +145,7 @@ if(${HOT_RELOAD} EQUAL 1)
 
   set(
     PLATFORM_LAYER_SOURCES
-    ${PLATFORM_LAYER_SOURCES} src/hot_reload.c
+    ${PLATFORM_LAYER_SOURCES} src/platform/hot_reload.c
   )
 
   add_executable(

@@ -11,7 +11,7 @@
 #include "item_system.h"
 #include "modifier.h"
 #include "renderer/render_batch.h"
-#include "input.h"
+#include "platform/input.h"
 #include "renderer/render_key.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"

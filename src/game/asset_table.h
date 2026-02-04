@@ -1,7 +1,7 @@
 #ifndef ASSET_TABLE_H
 #define ASSET_TABLE_H
 
-#include "asset.h"
+#include "platform/asset.h"
 
 //TODO: organize animation frames in arrays of texture handles
 typedef struct AssetTable {

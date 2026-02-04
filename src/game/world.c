@@ -410,7 +410,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 	Vector2 dir = v2_norm(entity->velocity);
 
 	draw_line(rbs.worldspace_ui_rb, scratch, entity->position, v2_add(entity->position, v2_mul_s(dir, 20.0f)),
-	    RGBA32_GREEN, 2.0f, get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
+	    RGBA32_GREEN, 2.0f, get_asset_table()->shape_shader, 0);
     }
 }
 
@@ -861,10 +861,10 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
             Vector2 end = v2_add(origin, v2_mul_s(vec, 10.0f));
 
             draw_line(rb_list.worldspace_ui_rb, frame_arena, origin, end, RGBA32_GREEN, 4.0f,
-                get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
+                get_asset_table()->shape_shader, 0);
 
             draw_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start, edge.line.end, RGBA32_BLUE, 4.0f,
-                get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
+                get_asset_table()->shape_shader, 0);
         }
     }
 

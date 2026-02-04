@@ -8,7 +8,7 @@
 #include "modifier.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
-#include "world.h"
+#include "world/world.h"
 
 #define GAME_UI_COLOR (RGBA32) {0, 1, 0, 0.5f}
 

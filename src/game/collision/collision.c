@@ -1,7 +1,7 @@
 #include "collision.h"
 #include "components/component.h"
 #include "entity/entity_system.h"
-#include "world.h"
+#include "world/world.h"
 #include "base/sl_list.h"
 
 #define INTERSECTION_EPSILON   0.00001f

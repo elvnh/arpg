@@ -38,7 +38,6 @@ set(
 set(
   GAME_SOURCES
   src/game/game.c
-  src/game/world.c
   src/game/health.c
   src/game/collision/trigger.c
   src/game/collision/collision.c
@@ -49,17 +48,14 @@ set(
   src/game/hitsplat.c
   src/game/asset_table.c
   src/game/game_ui.c
-  src/game/quad_tree.c
   src/game/damage.c
   src/game/entity/entity_system.c
   src/game/entity/entity_state.c
-  src/game/tilemap.c
   src/game/ai.c
   src/game/magic.c
   src/game/stats.c
   src/game/light.c
   src/base/polygon.c
-  src/game/line_of_sight.c
   src/game/item_system.c
   src/game/equipment.c
   src/game/ui/ui_core.c
@@ -67,6 +63,10 @@ set(
   src/game/status_effect.c
   src/game/components/particle.c
   src/game/components/event_listener.c
+  src/game/world/world.c
+  src/game/world/tilemap.c
+  src/game/world/quad_tree.c
+  src/game/world/line_of_sight.c
 )
 
 set(

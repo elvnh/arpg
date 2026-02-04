@@ -13,7 +13,7 @@
 #include "game/damage.h"
 #include "stats.h"
 #include "collision/trigger.h"
-#include "world.h"
+#include "world/world.h"
 #include "components/component.h"
 #include "platform/asset.h"
 #include "entity/entity_system.h"

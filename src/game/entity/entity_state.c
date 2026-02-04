@@ -1,7 +1,7 @@
 #include "entity_state.h"
 #include "base/vector.h"
 #include "stats.h"
-#include "world.h"
+#include "world/world.h"
 
 static b32 can_transition_to_state(Entity *entity, EntityState state)
 {

@@ -1,7 +1,7 @@
 #include "collision_event.h"
 #include "base/free_list_arena.h"
 #include "base/sl_list.h"
-#include "world.h"
+#include "world/world.h"
 
 #define INTERSECTION_TABLE_ARENA_SIZE (INTERSECTION_TABLE_SIZE * SIZEOF(CollisionEvent) * 2)
 #define INTERSECTION_TABLE_SIZE 512

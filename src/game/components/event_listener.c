@@ -1,6 +1,6 @@
 #include "event_listener.h"
 #include "entity/entity_system.h"
-#include "world.h"
+#include "world/world.h"
 #include "base/utils.h"
 
 #include <string.h>

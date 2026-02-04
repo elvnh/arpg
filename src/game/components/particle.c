@@ -1,7 +1,7 @@
 #include "particle.h"
 #include "entity/entity_system.h"
 #include "base/random.h"
-#include "world.h"
+#include "world/world.h"
 
 void component_update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 dt)
 {

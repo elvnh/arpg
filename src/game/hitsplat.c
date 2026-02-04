@@ -1,7 +1,7 @@
 #include "hitsplat.h"
 #include "base/format.h"
 #include "damage.h"
-#include "world.h"
+#include "world/world.h"
 #include "renderer/frontend/render_batch.h"
 #include "asset_table.h"
 #include "platform/input.h"

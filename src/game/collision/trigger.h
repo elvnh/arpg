@@ -4,6 +4,8 @@
 #include "entity/entity_id.h"
 #include "components/component_id.h"
 
+// TODO: something like trigger_cooldown would be a better name
+
 // A trigger is any interaction between two entities. If this trigger needs a cooldown
 // before it can be retriggered, a cooldown can be inserted into a table.
 

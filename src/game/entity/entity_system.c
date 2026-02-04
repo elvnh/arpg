@@ -4,7 +4,7 @@
 #include "base/sl_list.h"
 #include "base/utils.h"
 #include "components/component.h"
-#include "quad_tree.h"
+#include "world/quad_tree.h"
 
 #define ENTITY_ARENA_SIZE MB(1)
 

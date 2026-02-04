@@ -1,6 +1,6 @@
 #include "health.h"
 #include "stats.h"
-#include "world.h"
+#include "world/world.h"
 
 Health create_health_instance(World *world, Entity *entity)
 {

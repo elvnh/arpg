@@ -16,7 +16,7 @@
 #include "renderer/frontend/render_key.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
-#include "world.h"
+#include "world/world.h"
 
 typedef enum {
     UI_OVERLAY_GAME,

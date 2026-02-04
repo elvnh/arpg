@@ -1,6 +1,6 @@
 #include "collision_policy.h"
 #include "base/vector.h"
-#include "world.h"
+#include "world/world.h"
 
 static void execute_collision_policy(World *world, Entity *entity, CollisionPolicy policy,
     CollisionInfo collision, EntityPairIndex collision_pair_index, b32 should_block)

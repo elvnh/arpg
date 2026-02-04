@@ -5,7 +5,7 @@
 #include "entity/entity_system.h"
 #include "magic.h"
 #include "stats.h"
-#include "world.h"
+#include "world/world.h"
 
 #define AI_CHASE_DISTANCE 250.0f
 #define AI_ATTACK_DISTANCE 200.0f

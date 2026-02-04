@@ -5,7 +5,7 @@
 #include "entity/entity_system.h"
 #include "renderer/frontend/render_batch.h"
 #include "asset_table.h"
-#include "world.h"
+#include "world/world.h"
 
 typedef struct AnimationTable {
     Animation animations[ANIM_ANIMATION_COUNT];

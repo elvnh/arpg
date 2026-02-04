@@ -40,7 +40,7 @@ static inline void print_v2(Vector2 v)
 }
 
 void debug_update(struct Game *game, const struct FrameData *frame_data, LinearArena *frame_arena);
-void debug_ui(UIState *ui, struct Game *game, struct GameMemory *memory, const struct FrameData *frame_data);
+void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch, const struct FrameData *frame_data);
 void render_quad_tree(struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena,
     ssize depth);
 

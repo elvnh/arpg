@@ -23,11 +23,15 @@ typedef enum {
     UI_OVERLAY_DEBUG,
 } UIOverlayType;
 
-static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_arena)
+static void set_global_pointers(Game *game)
 {
-    (void)frame_arena;
+    rng_set_global_state(&game->rng_state);
+    magic_set_global_spell_array(&game->spells);
+    anim_set_global_animation_table(&game->animations);
+    set_global_asset_table(&game->asset_list);
 
-    world_update(&game->world, frame_data, frame_arena, &game->game_ui);
+    magic_initialize(&game->spells);
+    anim_initialize(&game->animations);
 }
 
 static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
@@ -62,32 +66,18 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     return result;
 }
 
-static void game_render(Game *game, RenderBatches rbs, const FrameData *frame_data, LinearArena *frame_arena)
-{
-    world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
-
-    if (game->debug_state.quad_tree_overlay) {
-        render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
-    }
-
-    if (game->debug_state.render_origin) {
-        rb_push_rect(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
-	    get_asset_table()->shape_shader, 3);
-    }
-}
-
 static void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, FrameData *frame_data,
-    GameMemory *game_memory, RenderBatch *rb, PlatformCode platform_code)
+    LinearArena *scratch, RenderBatch *rb, PlatformCode platform_code)
 {
     ui_core_begin_frame(ui);
 
     switch (overlay) {
         case UI_OVERLAY_GAME: {
-            game_ui(game, game_memory, frame_data);
+            game_ui(game, scratch, frame_data);
         } break;
 
         case UI_OVERLAY_DEBUG: {
-            debug_ui(ui, game, game_memory, frame_data);
+            debug_ui(ui, game, scratch, frame_data);
         } break;
 
         INVALID_DEFAULT_CASE;
@@ -101,52 +91,72 @@ static void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
     }
 }
 
+static void game_render(Game *game, RenderBatchList *rb_list, FrameData *frame_data,
+    LinearArena *frame_arena, PlatformCode platform_code)
+{
+    RenderBatches rbs = create_render_batches(game, rb_list, frame_data, frame_arena);
+
+    world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
+
+    render_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_data, frame_arena,
+        rbs.overlay_rb, platform_code);
+
+    if (game->debug_state.debug_menu_active) {
+        render_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, frame_data, frame_arena,
+            rbs.overlay_rb, platform_code);
+    }
+
+    if (game->debug_state.quad_tree_overlay) {
+        render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
+    }
+
+    if (game->debug_state.render_origin) {
+        rb_push_rect(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
+	    get_asset_table()->shape_shader, 3);
+    }
+
+    for (RenderBatchNode *node = list_head(rb_list); node; node = list_next(node)) {
+        rb_sort_entries(&node->render_batch, frame_arena);
+    }
+}
+
+static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_arena)
+{
+    ASSERT(game->debug_state.timestep_modifier >= 0.0f);
+
+#if HOT_RELOAD
+    // NOTE: these global pointers are set every frame in case we have hot reloaded
+    set_global_pointers(game);
+#endif
+
+    debug_update(game, frame_data, frame_arena);
+    frame_data->dt *= game->debug_state.timestep_modifier;
+
+    b32 game_paused = game->debug_state.timestep_modifier == 0.0f;
+    b32 frame_advance_key_pressed = input_is_key_pressed(&frame_data->input, KEY_K);
+    b32 should_update = !game_paused || frame_advance_key_pressed;
+
+    // TODO: allow moving camera even while paused
+    if (should_update) {
+        if (game_paused) {
+            // When advancing by a single frame, set the dt to a reasonable default value
+            frame_data->dt = 0.016f;
+        }
+
+        world_update(&game->world, frame_data, frame_arena, &game->game_ui);
+    }
+}
+
 // TODO: only send FrameData into this function, send dt etc to others
-// TODO: this function should basically just call update/render
 void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory)
 {
-#if HOT_RELOAD
-    // NOTE: these global pointers are set every frame in case we have hot reloaded.
-    rng_set_global_state(&game->rng_state);
-    magic_set_global_spell_array(&game->spells);
-    anim_set_global_animation_table(&game->animations);
-    set_global_asset_table(&game->asset_list);
-
-    magic_initialize(&game->spells);
-    anim_initialize(&game->animations);
-#endif
-
-    debug_update(game, &frame_data, &game_memory->temporary_memory);
-
-    RenderBatches game_rbs = create_render_batches(game, rbs, &frame_data, &game_memory->temporary_memory);
-    render_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, &frame_data, game_memory,
-        game_rbs.overlay_rb, platform_code);
-
-    if (game->debug_state.debug_menu_active) {
-        render_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, &frame_data, game_memory,
-            game_rbs.overlay_rb, platform_code);
-    }
-
-    frame_data.dt *= game->debug_state.timestep_modifier;
-
     if (input_is_key_pressed(&frame_data.input, KEY_ESCAPE)) {
         DEBUG_BREAK;
     }
 
-    if (game->debug_state.timestep_modifier > 0.0f) {
-	game_update(game, &frame_data, &game_memory->temporary_memory);
-    } else if (input_is_key_pressed(&frame_data.input, KEY_K)) {
-        // Single frame stepping
-        frame_data.dt = 0.016f;
-	game_update(game, &frame_data, &game_memory->temporary_memory);
-    }
-
-    game_render(game, game_rbs, &frame_data, &game_memory->temporary_memory);
-
-    if (input_is_key_pressed(&frame_data.input, KEY_T)) {
-        game->debug_state.debug_menu_active = !game->debug_state.debug_menu_active;
-    }
+    game_update(game, &frame_data, &game_memory->temporary_memory);
+    game_render(game, rbs, &frame_data, &game_memory->temporary_memory, platform_code);
 
     // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
     // have had time to be used during the frame. This means that the stats have 1 frame delay
@@ -154,21 +164,19 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     game->debug_state.scratch_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
     game->debug_state.permanent_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
     game->debug_state.world_arena_memory_usage = fl_get_memory_usage(&game->world.world_arena);
-
-    for (RenderBatchNode *node = list_head(rbs); node; node = list_next(node)) {
-        rb_sort_entries(&node->render_batch, &game_memory->temporary_memory);
-    }
 }
 
 void game_initialize(Game *game, GameMemory *game_memory)
 {
-    set_global_asset_table(&game->asset_list);
+    set_global_pointers(game);
+
     magic_initialize(&game->spells);
-    initialize_status_effect_system();
     anim_initialize(&game->animations);
 
+    initialize_status_effect_system();
     es_initialize(&game->entity_system);
     item_sys_initialize(&game->item_system, la_allocator(&game_memory->permanent_memory));
+
 
     world_initialize(&game->world, &game->entity_system, &game->item_system, &game_memory->free_list_memory);
 

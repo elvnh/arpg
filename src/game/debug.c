@@ -62,7 +62,7 @@ static StatusEffectCallbackResult status_effect_list_callback(StatusEffectCallba
     return STATUS_EFFECT_CALLBACK_PROCEED;
 }
 
-static void inspected_entity_debug_ui(UIState *ui, Game *game, GameMemory *game_memory)
+static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scratch)
 {
     // TODO: allow locking on to entity
     EntityID inspected_entity_id = game->game_ui.hovered_entity;
@@ -72,7 +72,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, GameMemory *game_
     }
 
     Entity *entity = es_get_entity(game->world.entity_system, inspected_entity_id);
-    Allocator alloc = la_allocator(&game_memory->temporary_memory);
+    Allocator alloc = la_allocator(scratch);
 
     // TODO: don't require name for containers
     ui_begin_container(ui, str_lit("inspect"), V2_ZERO, RGBA32_GREEN, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
@@ -150,7 +150,7 @@ static String dbg_arena_usage_string(String name, ssize usage, Allocator allocat
     return result;
 }
 
-void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const FrameData *frame_data)
+void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *frame_data)
 {
     ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
@@ -158,7 +158,7 @@ void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const FrameData 
     ssize perm_arena_memory_usage = game->debug_state.permanent_arena_memory_usage;
     ssize world_arena_memory_usage = game->debug_state.world_arena_memory_usage;
 
-    Allocator temp_alloc = la_allocator(&game_memory->temporary_memory);
+    Allocator temp_alloc = la_allocator(scratch);
 
     String frame_time_str = str_concat(
         str_lit("Frame time: "),
@@ -234,7 +234,7 @@ void debug_ui(UIState *ui, Game *game, GameMemory *game_memory, const FrameData 
     }
 
     ui_spacing(ui, 8);
-    inspected_entity_debug_ui(ui, game, game_memory);
+    inspected_entity_debug_ui(ui, game, scratch);
 
     ui_pop_container(ui);
 }
@@ -288,6 +288,10 @@ void debug_update(Game *game, const FrameData *frame_data, LinearArena *frame_ar
             //Exit single stepping mode
             speed_modifier = 1.0f;
         }
+    }
+
+    if (input_is_key_pressed(&frame_data->input, KEY_T)) {
+        game->debug_state.debug_menu_active = !game->debug_state.debug_menu_active;
     }
 
     game->debug_state.timestep_modifier = CLAMP(speed_modifier, 0.0f, 5.0f);

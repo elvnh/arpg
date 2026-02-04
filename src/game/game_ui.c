@@ -14,9 +14,9 @@
 
 // TODO: clean up this file
 
-static String item_widget_string(ItemID id, Item *item, GameMemory *memory)
+static String item_widget_string(ItemID id, Item *item, LinearArena *scratch)
 {
-    Allocator alloc = la_allocator(&memory->temporary_memory);
+    Allocator alloc = la_allocator(scratch);
 
     String non_visible_substring = str_concat(str_lit("##"), item_id_to_string(id, alloc), alloc);
     String result = str_concat(item->name, non_visible_substring, alloc);
@@ -50,8 +50,10 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
 
 }
 
-static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, Allocator alloc)
+static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, LinearArena *arena)
 {
+    Allocator alloc = la_allocator(arena);
+
     ui_begin_mouse_menu(ui, mouse_position); {
 	ui_text(ui, item->name);
 
@@ -71,9 +73,8 @@ static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, All
 }
 
 static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *equipment,
-    Inventory *inventory, EquipmentSlot slot, GameMemory *game_memory, const Input *input)
+    Inventory *inventory, EquipmentSlot slot, LinearArena *scratch, const Input *input)
 {
-    Allocator alloc = la_allocator(&game_memory->temporary_memory);
     UIState *ui = &ui_state->backend_state;
 
     ui_text(ui, equipment_slot_spelling(slot));
@@ -83,21 +84,21 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
     Item *item = item_sys_get_item(game->world.item_system, item_id);
 
     if (item) {
-	String text = item_widget_string(item_id, item, game_memory);
+	String text = item_widget_string(item_id, item, scratch);
 	WidgetInteraction interaction = ui_button(ui, text);
 
 	if (interaction.clicked) {
 	    bool unequip_success = unequip_item_and_put_in_inventory(equipment, inventory, slot);
 	    ASSERT(unequip_success);
 	} else if (interaction.hovered) {
-	    item_hover_menu(ui, item, input->mouse_position, alloc);
+	    item_hover_menu(ui, item, input->mouse_position, scratch);
 	}
     } else {
 	ui_non_interactible_button(ui, str_lit("(empty)"));
     }
 }
 
-static void equipment_menu(GameUIState *ui_state, Game *game, GameMemory *game_memory,
+static void equipment_menu(GameUIState *ui_state, Game *game, LinearArena *scratch,
     const FrameData *frame_data)
 {
     UIState *ui = &ui_state->backend_state;
@@ -113,15 +114,14 @@ static void equipment_menu(GameUIState *ui_state, Game *game, GameMemory *game_m
 
 	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
 	    equipment_slot_widget(ui_state, game, &eq->equipment, &inv->inventory, slot,
-		game_memory, &frame_data->input);
+		scratch, &frame_data->input);
 	}
     } ui_pop_container(ui);
 }
 
-static void inventory_menu(GameUIState *ui_state, Game *game, GameMemory *game_memory,
+static void inventory_menu(GameUIState *ui_state, Game *game, LinearArena *scratch,
     const FrameData *frame_data)
 {
-    Allocator alloc = la_allocator(&game_memory->temporary_memory);
     UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game->world);
 
@@ -141,7 +141,7 @@ static void inventory_menu(GameUIState *ui_state, Game *game, GameMemory *game_m
 		ASSERT(item->name.data);
 
 		ItemID item_id = inv->inventory.items[i];
-		String label_string = item_widget_string(item_id, item, game_memory);
+		String label_string = item_widget_string(item_id, item, scratch);
 
 		ASSERT(item);
 
@@ -151,14 +151,14 @@ static void inventory_menu(GameUIState *ui_state, Game *game, GameMemory *game_m
 		    equip_item_from_inventory(game->world.item_system, &eq->equipment,
 			&inv->inventory, item_id);
 		} else if (interaction.hovered) {
-		    item_hover_menu(ui, item, frame_data->input.mouse_position, alloc);
+		    item_hover_menu(ui, item, frame_data->input.mouse_position, scratch);
 		}
 	    }
 	} ui_end_list(ui);
     } ui_pop_container(ui);
 }
 
-void game_ui(Game *game, GameMemory *game_memory, const FrameData *frame_data)
+void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
 {
     Entity *player = world_get_player_entity(&game->world);
     UIState *ui = &game->game_ui.backend_state;
@@ -174,11 +174,11 @@ void game_ui(Game *game, GameMemory *game_memory, const FrameData *frame_data)
 
     ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
-    inventory_menu(&game->game_ui, game, game_memory, frame_data);
+    inventory_menu(&game->game_ui, game, scratch, frame_data);
 
     ui_core_same_line(ui);
 
-    equipment_menu(&game->game_ui, game, game_memory, frame_data);
+    equipment_menu(&game->game_ui, game, scratch, frame_data);
 
     ui_core_same_line(ui);
 

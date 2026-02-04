@@ -90,13 +90,9 @@ typedef struct {
     LightSource light_emitter;
 } Spell;
 
-typedef struct SpellArray {
-    Spell spells[SPELL_COUNT];
-} SpellArray;
 
-void    magic_initialize(SpellArray *spells);
+void    magic_initialize(void);
 void    magic_cast_spell(struct World *world, SpellID id, struct Entity *caster, Vector2 target_pos);
-void    magic_set_global_spell_array(SpellArray *spells);
 void    magic_add_to_spellbook(struct SpellCasterComponent *spellcaster, SpellID id);
 String  spell_type_to_string(SpellID id);
 SpellID get_spell_at_spellbook_index(struct SpellCasterComponent *spellcaster, ssize index);

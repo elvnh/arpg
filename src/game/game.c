@@ -23,14 +23,13 @@ typedef enum {
     UI_OVERLAY_DEBUG,
 } UIOverlayType;
 
-static void set_global_pointers(Game *game)
+static void set_global_state(Game *game)
 {
     rng_set_global_state(&game->rng_state);
-    magic_set_global_spell_array(&game->spells);
     anim_set_global_animation_table(&game->animations);
     set_global_asset_table(&game->asset_list);
 
-    magic_initialize(&game->spells);
+    magic_initialize();
     anim_initialize(&game->animations);
 }
 
@@ -236,7 +235,7 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
 
 #if HOT_RELOAD
     // NOTE: these global pointers are set every frame in case we have hot reloaded
-    set_global_pointers(game);
+    set_global_state(game);
 #endif
 
     debug_update(game, frame_data, frame_arena);
@@ -284,15 +283,14 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
 
 void game_initialize(Game *game, GameMemory *game_memory)
 {
-    set_global_pointers(game);
+    set_global_state(game);
 
-    magic_initialize(&game->spells);
+    magic_initialize();
     anim_initialize(&game->animations);
 
     initialize_status_effect_system();
     es_initialize(&game->entity_system);
     item_sys_initialize(&game->item_system, la_allocator(&game_memory->permanent_memory));
-
 
     world_initialize(&game->world, &game->entity_system, &game->item_system, &game_memory->free_list_memory);
 

@@ -19,11 +19,15 @@
 #include "entity_system.h"
 #include "asset_table.h"
 
+typedef struct SpellArray {
+    Spell spells[SPELL_COUNT];
+} SpellArray;
+
 typedef struct {
     EntityID caster_id;
 } SpellCallbackData;
 
-static SpellArray *g_spells;
+static SpellArray g_spells = {0};
 
 // TODO: move to callback file
 static void spawn_particles_on_death(void *user_data, EventData event_data)
@@ -43,7 +47,7 @@ static const Spell *get_spell_by_id(SpellID id)
     ASSERT(id >= 0);
     ASSERT(id < SPELL_COUNT);
 
-    return &g_spells->spells[id];
+    return &g_spells.spells[id];
 }
 
 static b32 spell_has_prop(const Spell *spell, SpellProperties prop)
@@ -431,20 +435,13 @@ static Spell spell_ice_shard_trigger(void)
     return spell;
 }
 
-void magic_initialize(SpellArray *spells)
+void magic_initialize()
 {
-    spells->spells[SPELL_FIREBALL] = spell_fireball();
-    spells->spells[SPELL_SPARK] = spell_spark();
-    spells->spells[SPELL_ICE_SHARD] = spell_ice_shard();
-    spells->spells[SPELL_ICE_SHARD_TRIGGER] = spell_ice_shard_trigger();
-    spells->spells[SPELL_BLIZZARD] = spell_blizzard();
-
-    magic_set_global_spell_array(spells);
-}
-
-void magic_set_global_spell_array(SpellArray *spells)
-{
-    g_spells = spells;
+    g_spells.spells[SPELL_FIREBALL] = spell_fireball();
+    g_spells.spells[SPELL_SPARK] = spell_spark();
+    g_spells.spells[SPELL_ICE_SHARD] = spell_ice_shard();
+    g_spells.spells[SPELL_ICE_SHARD_TRIGGER] = spell_ice_shard_trigger();
+    g_spells.spells[SPELL_BLIZZARD] = spell_blizzard();
 }
 
 void magic_add_to_spellbook(SpellCasterComponent *spellcaster, SpellID id)

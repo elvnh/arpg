@@ -32,7 +32,6 @@ typedef struct Game {
     World world; // currently loaded world
     AssetTable asset_list;
     DebugState debug_state;
-    SpellArray spells;
     RNGState rng_state;
     AnimationTable animations;
     GameUIState game_ui;

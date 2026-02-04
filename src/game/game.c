@@ -23,11 +23,43 @@ typedef enum {
     UI_OVERLAY_DEBUG,
 } UIOverlayType;
 
-static void game_update(Game *game, const FrameData *frame_data, LinearArena *frame_arena)
+static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_arena)
 {
     (void)frame_arena;
 
     world_update(&game->world, frame_data, frame_arena, &game->game_ui);
+}
+
+static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
+    const FrameData *frame_data, LinearArena *scratch)
+{
+    RenderBatches result = {0};
+    Camera ui_camera = create_screenspace_camera(frame_data->window_size);
+
+    // TODO: make ambient light be property of each world
+    f32 x = 0.2f;
+    RGBA32 ambient_light = {x, x, x + 0.1f, 1.0f};
+
+    result.world_rb = rb_list_push_new(rbs, game->world.camera, frame_data->window_size,
+        Y_IS_UP, FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT,
+        BLEND_FUNCTION_MULTIPLICATIVE, scratch);
+
+    result.lighting_rb = rb_list_push_new(rbs, game->world.camera, frame_data->window_size,
+        Y_IS_UP, FRAME_BUFFER_LIGHTING, ambient_light,
+        BLEND_FUNCTION_ADDITIVE, scratch);
+
+    result.lighting_stencil_rb = rb_add_stencil_pass(result.lighting_rb,
+        STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, scratch);
+
+    result.worldspace_ui_rb = rb_list_push_new(rbs, game->world.camera, frame_data->window_size,
+        Y_IS_UP, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
+        BLEND_FUNCTION_MULTIPLICATIVE, scratch);
+
+    result.overlay_rb = rb_list_push_new(rbs, ui_camera, frame_data->window_size,
+        Y_IS_DOWN, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
+        BLEND_FUNCTION_MULTIPLICATIVE, scratch);
+
+    return result;
 }
 
 static void game_render(Game *game, RenderBatches rbs, const FrameData *frame_data, LinearArena *frame_arena)
@@ -44,7 +76,7 @@ static void game_render(Game *game, RenderBatches rbs, const FrameData *frame_da
     }
 }
 
-void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, FrameData *frame_data,
+static void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, FrameData *frame_data,
     GameMemory *game_memory, RenderBatch *rb, PlatformCode platform_code)
 {
     ui_core_begin_frame(ui);
@@ -87,33 +119,7 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
 
     debug_update(game, &frame_data, &game_memory->temporary_memory);
 
-    RenderBatches game_rbs = {0};
-
-    Camera ui_camera = {0};
-    ui_camera.position = v2_div_s(v2i_to_v2(frame_data.window_size), 2.0f);
-
-    f32 x = 0.2f;
-    RGBA32 ambient_light = {x, x, x + 0.1f, 1.0f};
-
-    game_rbs.world_rb = rb_list_push_new(rbs, game->world.camera, frame_data.window_size,
-        Y_IS_UP, FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT,
-        BLEND_FUNCTION_MULTIPLICATIVE, &game_memory->temporary_memory);
-
-    game_rbs.lighting_rb = rb_list_push_new(rbs, game->world.camera, frame_data.window_size,
-        Y_IS_UP, FRAME_BUFFER_LIGHTING, ambient_light,
-        BLEND_FUNCTION_ADDITIVE, &game_memory->temporary_memory);
-
-    game_rbs.lighting_stencil_rb = rb_add_stencil_pass(game_rbs.lighting_rb,
-        STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, &game_memory->temporary_memory);
-
-    game_rbs.worldspace_ui_rb = rb_list_push_new(rbs, game->world.camera, frame_data.window_size,
-        Y_IS_UP, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
-        BLEND_FUNCTION_MULTIPLICATIVE, &game_memory->temporary_memory);
-
-    game_rbs.overlay_rb = rb_list_push_new(rbs, ui_camera, frame_data.window_size,
-        Y_IS_DOWN, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
-        BLEND_FUNCTION_MULTIPLICATIVE, &game_memory->temporary_memory);
-
+    RenderBatches game_rbs = create_render_batches(game, rbs, &frame_data, &game_memory->temporary_memory);
     render_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, &frame_data, game_memory,
         game_rbs.overlay_rb, platform_code);
 

@@ -18,6 +18,14 @@ typedef struct {
     f32 target_zoom;
 } Camera;
 
+static inline Camera create_screenspace_camera(Vector2i window_size)
+{
+    Camera result = {0};
+    result.position = v2_div_s(v2i_to_v2(window_size), 2.0f);
+
+    return result;
+}
+
 static inline Matrix4 camera_get_matrix(Camera cam, Vector2i window_dims, YDirection y_dir)
 {
     Matrix4 result = mat4_orthographic(window_dims, y_dir);

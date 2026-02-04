@@ -4,8 +4,8 @@
 #include "components/component.h"
 
 typedef enum {
-    EFFECT_PROP_STAT_MODIFIER	= (1 << 0),
-    EFFECT_PROP_STACKABLE	= (1 << 1),
+    EFFECT_PROP_STAT_MODIFIER	= FLAG(0),
+    EFFECT_PROP_STACKABLE	= FLAG(1),
 } StatusEffectProperty;
 
 typedef struct {

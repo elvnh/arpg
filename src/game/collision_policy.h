@@ -18,8 +18,8 @@ typedef enum {
 
 // TODO: not needed?
 typedef enum {
-    OBJECT_KIND_ENTITIES = (1 << 0),
-    OBJECT_KIND_TILES = (1 << 1),
+    OBJECT_KIND_ENTITIES = FLAG(0),
+    OBJECT_KIND_TILES    = FLAG(1),
 } ObjectKind;
 
 void execute_entity_vs_tilemap_collision_policy(struct World *world, struct Entity *entity,

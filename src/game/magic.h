@@ -18,7 +18,6 @@ struct World;
 
 /*
   TODO:
-  - Cast speed
   - Scaling of spell aoe etc by caster stats
   - Don't define the SpellProperty bit values in declaration, do bitshift when needed
  */
@@ -33,19 +32,19 @@ typedef enum {
 } SpellID;
 
 typedef enum {
-    SPELL_PROP_PROJECTILE = (1 << 0),
-    SPELL_PROP_DAMAGING = (1 << 1),
-    SPELL_PROP_SPRITE = (1 << 2),
-    SPELL_PROP_BOUNCE_ON_TILES = (1 << 3),
-    SPELL_PROP_DIE_ON_WALL_COLLISION = (1 << 4),
-    SPELL_PROP_DIE_ON_ENTITY_COLLISION = (1 << 5),
-    SPELL_PROP_LIFETIME = (1 << 6),
-    SPELL_PROP_PARTICLE_SPAWNER = (1 << 7),
-    SPELL_PROP_SPAWN_PARTICLES_ON_DEATH = (1 << 8),
-    SPELL_PROP_HOSTILE_COLLISION_CALLBACK = (1 << 9),
-    SPELL_PROP_AREA_OF_EFFECT = (1 << 10),
-    SPELL_PROP_APPLIES_STATUS_EFFECT = (1 << 11),
-    SPELL_PROP_LIGHT_EMITTER = (1 << 12),
+    SPELL_PROP_PROJECTILE                 = FLAG(0),
+    SPELL_PROP_DAMAGING                   = FLAG(1),
+    SPELL_PROP_SPRITE                     = FLAG(2),
+    SPELL_PROP_BOUNCE_ON_TILES            = FLAG(3),
+    SPELL_PROP_DIE_ON_WALL_COLLISION      = FLAG(4),
+    SPELL_PROP_DIE_ON_ENTITY_COLLISION    = FLAG(5),
+    SPELL_PROP_LIFETIME                   = FLAG(6),
+    SPELL_PROP_PARTICLE_SPAWNER           = FLAG(7),
+    SPELL_PROP_SPAWN_PARTICLES_ON_DEATH   = FLAG(8),
+    SPELL_PROP_HOSTILE_COLLISION_CALLBACK = FLAG(9),
+    SPELL_PROP_AREA_OF_EFFECT             = FLAG(10),
+    SPELL_PROP_APPLIES_STATUS_EFFECT      = FLAG(11),
+    SPELL_PROP_LIGHT_EMITTER              = FLAG(12),
 } SpellProperties;
 
 typedef struct {

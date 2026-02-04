@@ -14,9 +14,9 @@ typedef struct {
 } Rectangle;
 
 typedef enum {
-    RECT_FLIP_NONE = 0,
-    RECT_FLIP_HORIZONTALLY = (1 << 0),
-    RECT_FLIP_VERTICALLY   = (1 << 1),
+    RECT_FLIP_NONE         = 0,
+    RECT_FLIP_HORIZONTALLY = FLAG(0),
+    RECT_FLIP_VERTICALLY   = FLAG(1),
 } RectangleFlip;
 
 typedef struct {

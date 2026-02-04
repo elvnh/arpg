@@ -22,7 +22,7 @@ typedef struct {
 } PlatformCode;
 
 enum {
-    WINDOW_FLAG_NON_RESIZABLE = (1 << 0),
+    WINDOW_FLAG_NON_RESIZABLE = FLAG(0),
 };
 
 WindowHandle  *platform_create_window(s32 width, s32 height, const char *title, u32 window_flags, Allocator allocator);

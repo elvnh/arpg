@@ -10,14 +10,14 @@
 typedef u64 WidgetID;
 
 typedef enum {
-    WIDGET_CLICKABLE    = (1u << 0),
-    WIDGET_COLORED      = (1u << 1),
-    WIDGET_TEXT         = (1u << 2),
-    WIDGET_HIDDEN       = (1u << 3),
-    WIDGET_TEXT_INPUT   = (1u << 4),
-    WIDGET_STAY_ACTIVE  = (1u << 5),
-    WIDGET_HOT_COLOR    = (1u << 6),
-    WIDGET_ACTIVE_COLOR = (1u << 7),
+    WIDGET_CLICKABLE    = FLAG(0),
+    WIDGET_COLORED      = FLAG(1),
+    WIDGET_TEXT         = FLAG(2),
+    WIDGET_HIDDEN       = FLAG(3),
+    WIDGET_TEXT_INPUT   = FLAG(4),
+    WIDGET_STAY_ACTIVE  = FLAG(5),
+    WIDGET_HOT_COLOR    = FLAG(6),
+    WIDGET_ACTIVE_COLOR = FLAG(7),
 } WidgetFlag;
 
 typedef enum {

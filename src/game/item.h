@@ -14,8 +14,8 @@ typedef struct {
 } ItemID;
 
 typedef enum {
-    ITEM_PROP_EQUIPPABLE = (1 << 0),
-    ITEM_PROP_HAS_MODIFIERS = (1 << 1),
+    ITEM_PROP_EQUIPPABLE    = FLAG(0),
+    ITEM_PROP_HAS_MODIFIERS = FLAG(1),
 } ItemProperty;
 
 typedef enum {

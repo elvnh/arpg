@@ -28,7 +28,6 @@ struct FrameData;
 struct DebugState;
 struct RenderBatch;
 struct RenderBatchList;
-struct GameUIState;
 
 // TODO: keep a list of items that exist in this world to avoid having to iterate all items when destroying world
 // TODO: move world arena to game, since that memory should be reused for new worlds?
@@ -67,8 +66,7 @@ void world_initialize(World *world, EntitySystem *entity_system, ItemSystem *ite
 void world_destroy(World *world);
 
 // TODO: fix parameters
-void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena,
-    struct GameUIState *game_ui);
+void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena);
 void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, EntityFaction faction);

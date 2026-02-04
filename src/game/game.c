@@ -34,6 +34,116 @@ static void set_global_pointers(Game *game)
     anim_initialize(&game->animations);
 }
 
+void update_player(World *world, const FrameData *frame_data,
+    GameUIState *game_ui)
+{
+    Entity *player = world_get_player_entity(world);
+
+    ASSERT(player);
+
+    Vector2 camera_target = rect_center(world_get_entity_bounding_box(player));
+    camera_set_target(&world->camera, camera_target);
+
+    if (player->state.kind != ENTITY_STATE_ATTACKING) {
+#if 0
+	f32 speed = 350.0f;
+
+	if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
+	    speed *= 3.0f;
+	}
+
+	Vector2 acceleration = {0};
+
+	if (input_is_key_down(&frame_data->input, KEY_W)) {
+	    acceleration.y = 1.0f;
+	} else if (input_is_key_down(&frame_data->input, KEY_S)) {
+	    acceleration.y = -1.0f;
+	}
+
+	if (input_is_key_down(&frame_data->input, KEY_A)) {
+	    acceleration.x = -1.0f;
+	} else if (input_is_key_down(&frame_data->input, KEY_D)) {
+	    acceleration.x = 1.0f;
+	}
+
+	acceleration = v2_norm(acceleration);
+
+	if (!v2_eq(acceleration, V2_ZERO)) {
+	    entity_try_transition_to_state(world, player, state_walking());
+	} else {
+	    entity_try_transition_to_state(world, player, state_idle());
+	}
+
+	f32 dt = frame_data->dt;
+	Vector2 v = player->velocity;
+	Vector2 p = player->position;
+
+	acceleration = v2_mul_s(acceleration, speed);
+	acceleration = v2_add(acceleration, v2_mul_s(v, -3.5f));
+
+	Vector2 new_pos = v2_add(
+	    v2_add(v2_mul_s(v2_mul_s(acceleration, dt * dt), 0.5f), v2_mul_s(v, dt)),
+	    p
+	);
+
+	Vector2 new_velocity = v2_add(v2_mul_s(acceleration, dt), v);
+
+	player->position = new_pos;
+	player->velocity = new_velocity;
+#else
+	Vector2 direction = {0};
+
+	if (input_is_key_down(&frame_data->input, KEY_W)) {
+	    direction.y = 1.0f;
+	} else if (input_is_key_down(&frame_data->input, KEY_S)) {
+	    direction.y = -1.0f;
+	}
+
+	if (input_is_key_down(&frame_data->input, KEY_A)) {
+	    direction.x = -1.0f;
+	} else if (input_is_key_down(&frame_data->input, KEY_D)) {
+	    direction.x = 1.0f;
+	}
+
+	direction = v2_norm(direction);
+	entity_try_transition_to_state(world, player, state_walking(direction));
+#endif
+
+	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {
+            Vector2 mouse_pos = frame_data->input.mouse_position;
+            mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
+
+	    SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
+	    SpellID selected_spell = get_spell_at_spellbook_index(
+		spellcaster, game_ui->selected_spellbook_index);
+
+	    StatValue cast_speed = get_total_stat_value(player, STAT_CAST_SPEED, world->item_system);
+	    StatValue action_speed = get_total_stat_value(player, STAT_ACTION_SPEED, world->item_system);
+
+	    StatValue total_cast_speed = apply_modifier(cast_speed, action_speed,
+		NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
+
+	    entity_transition_to_state(world, player,
+		state_attacking(selected_spell, mouse_pos, total_cast_speed));
+        }
+    }
+
+    if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)
+	&& !entity_id_is_null(game_ui->hovered_entity)) {
+	Entity *hovered_entity = es_get_entity(world->entity_system, game_ui->hovered_entity);
+	GroundItemComponent *ground_item = es_get_component(hovered_entity, GroundItemComponent);
+
+	if (ground_item) {
+	    // TODO: make try_get_component be nullable, make get_component assert on failure to get
+	    InventoryComponent *inv = es_get_component(player, InventoryComponent);
+	    ASSERT(inv);
+
+	    inventory_add_item(&inv->inventory, ground_item->item_id);
+	    es_schedule_entity_for_removal(hovered_entity);
+	}
+    }
+}
+
 static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     const FrameData *frame_data, LinearArena *scratch)
 {
@@ -130,6 +240,11 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
 #endif
 
     debug_update(game, frame_data, frame_arena);
+
+    // NOTE: We update camera independent of timestep modifier
+    camera_zoom(&game->world.camera, (s32)frame_data->input.scroll_delta);
+    camera_update(&game->world.camera, frame_data->dt);
+
     frame_data->dt *= game->debug_state.timestep_modifier;
 
     b32 game_paused = game->debug_state.timestep_modifier == 0.0f;
@@ -143,7 +258,8 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
             frame_data->dt = 0.016f;
         }
 
-        world_update(&game->world, frame_data, frame_arena, &game->game_ui);
+        update_player(&game->world, frame_data, &game->game_ui);
+        world_update(&game->world, frame_data, frame_arena);
     }
 }
 

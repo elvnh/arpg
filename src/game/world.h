@@ -8,10 +8,10 @@
 #include "renderer/frontend/render_target.h"
 #include "tilemap.h"
 #include "camera.h"
-#include "collision.h"
+#include "collision/collision.h"
 #include "item_system.h"
 #include "hitsplat.h"
-#include "collision_event.h"
+#include "collision/collision_event.h"
 
 /*
   TODO:

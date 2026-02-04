@@ -39,11 +39,11 @@ set(
   GAME_SOURCES
   src/game/game.c
   src/game/world.c
-  src/game/trigger.c
   src/game/health.c
-  src/game/collision.c
-  src/game/collision_event.c
-  src/game/collision_policy.c
+  src/game/collision/trigger.c
+  src/game/collision/collision.c
+  src/game/collision/collision_event.c
+  src/game/collision/collision_policy.c
   src/game/animation.c
   src/game/debug.c
   src/game/hitsplat.c

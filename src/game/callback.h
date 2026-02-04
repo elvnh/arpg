@@ -2,8 +2,8 @@
 #define CALLBACK_H
 
 #include "base/typedefs.h"
-#include "collision_policy.h"
-#include "components/collider.h"
+#include "collision/collision_policy.h"
+#include "collision/collider.h"
 
 struct LinearArena;
 struct World;

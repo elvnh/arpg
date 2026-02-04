@@ -5,11 +5,11 @@
 #include "platform/asset.h"
 #include "components/particle.h"
 #include "damage.h"
-#include "components/collider.h"
+#include "collision/collider.h"
 #include "light.h"
 #include "status_effect.h"
 #include "sprite.h"
-#include "trigger.h"
+#include "collision/trigger.h"
 #include "callback.h"
 
 struct SpellCasterComponent;

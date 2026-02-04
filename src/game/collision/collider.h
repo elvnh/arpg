@@ -3,8 +3,8 @@
 
 #include "base/vector.h"
 #include "entity/entity_faction.h"
-#include "collision_policy.h"
-#include "trigger.h"
+#include "collision/collision_policy.h"
+#include "collision/trigger.h"
 
 // Entities that are in the same collision group won't collide with eachother
 typedef enum {

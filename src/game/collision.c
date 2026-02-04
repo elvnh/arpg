@@ -7,9 +7,9 @@
 #define INTERSECTION_EPSILON   0.00001f
 #define COLLISION_MARGIN       0.015f
 
-static void rect_collision_reset_velocities(Vector2 *a, Vector2 *b, RectangleSide side)
+static void rect_collision_reset_velocities(Vector2 *a, Vector2 *b, CardinalDirection side)
 {
-    if ((side == RECT_SIDE_LEFT) || (side == RECT_SIDE_RIGHT)) {
+    if ((side == CARDINAL_DIR_WEST) || (side == CARDINAL_DIR_EAST)) {
         // TODO: this makes diagonal movement into walls slower, instead transfer velocity from other axis
         a->x = 0.0f;
         b->x = 0.0f;
@@ -42,13 +42,13 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
         Vector2 new_pos = v2_sub(result.new_position_a, penetration.point);
 
 	Vector2 collision_normal = {0};
-	if (penetration.side == RECT_SIDE_TOP) {
+	if (penetration.side == CARDINAL_DIR_NORTH) {
 	    collision_normal.y = -1;
-	} else if (penetration.side == RECT_SIDE_BOTTOM) {
+	} else if (penetration.side == CARDINAL_DIR_SOUTH) {
 	    collision_normal.y = 1;
-	} else if (penetration.side == RECT_SIDE_LEFT) {
+	} else if (penetration.side == CARDINAL_DIR_WEST) {
 	    collision_normal.x = 1;
-	} else if (penetration.side == RECT_SIDE_RIGHT) {
+	} else if (penetration.side == CARDINAL_DIR_EAST) {
 	    collision_normal.x = -1;
 	} else {
 	    ASSERT(0);
@@ -92,21 +92,23 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
             result.collision_status = COLLISION_STATUS_WILL_COLLIDE_THIS_FRAME;
 
             switch (intersection.side_of_collision) {
-                case RECT_SIDE_TOP: {
+                case CARDINAL_DIR_NORTH: {
                     result.collision_normal = v2(0, -1);
                 } break;
 
-                case RECT_SIDE_BOTTOM: {
+                case CARDINAL_DIR_SOUTH: {
                     result.collision_normal = v2(0, 1);
                 } break;
 
-                case RECT_SIDE_LEFT: {
+                case CARDINAL_DIR_WEST: {
                     result.collision_normal = v2(1, 0);
                 } break;
 
-                case RECT_SIDE_RIGHT: {
+                case CARDINAL_DIR_EAST: {
                     result.collision_normal = v2(1, 0);
                 } break;
+
+                INVALID_DEFAULT_CASE;
             }
         }
     }

@@ -6,18 +6,12 @@
 #include "base/vector.h"
 #include "base/vertex.h"
 #include "base/line.h"
+#include "direction.h"
 
 typedef struct {
     Vector2 position;
     Vector2 size;
 } Rectangle;
-
-typedef enum {
-    RECT_SIDE_TOP,
-    RECT_SIDE_RIGHT,
-    RECT_SIDE_BOTTOM,
-    RECT_SIDE_LEFT,
-} RectangleSide;
 
 typedef enum {
     RECT_FLIP_NONE = 0,
@@ -28,7 +22,7 @@ typedef enum {
 typedef struct {
     b32 is_intersecting;
     f32 time_of_impact;
-    RectangleSide side_of_collision;
+    CardinalDirection side_of_collision;
 } RectRayIntersection;
 
 typedef struct {
@@ -57,7 +51,7 @@ typedef struct {
 
 typedef struct {
     Vector2 point;
-    RectangleSide side;
+    CardinalDirection side;
 } RectanglePoint;
 
 // TODO: use this struct in more places
@@ -287,7 +281,7 @@ static inline RectanglePoint rect_bounds_point_closest_to_point(Rectangle rect, 
     f32 min_y = rect.position.y;
     f32 max_y = min_y + rect.size.y;
 
-    RectangleSide side;
+    CardinalDirection side;
     Vector2 bounds_point = { min_x, point.y };
 
     f32 min_dist  = INFINITY;
@@ -297,28 +291,28 @@ static inline RectanglePoint rect_bounds_point_closest_to_point(Rectangle rect, 
     if (x < min_dist) {
         min_dist = x;
         bounds_point = (Vector2){min_x, point.y};
-        side = RECT_SIDE_LEFT;
+        side = CARDINAL_DIR_WEST;
     }
 
     x = abs_f32(max_x - point.x);
     if (x < min_dist) {
         min_dist = x;
         bounds_point = (Vector2){ max_x, point.y };
-        side = RECT_SIDE_RIGHT;
+        side = CARDINAL_DIR_EAST;
     }
 
     x = abs_f32(max_y - point.y);
     if (x < min_dist) {
         min_dist = x;
         bounds_point = (Vector2){ point.x, max_y };
-        side = RECT_SIDE_TOP;
+        side = CARDINAL_DIR_NORTH;
     }
 
     x = abs_f32(min_y - point.y);
     if (x < min_dist) {
         min_dist = x;
         bounds_point = (Vector2){point.x, min_y};
-        side = RECT_SIDE_BOTTOM;
+        side = CARDINAL_DIR_SOUTH;
     }
 
     RectanglePoint result = {
@@ -393,7 +387,7 @@ static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect,
 {
     RectangleLines rect_lines = rect_line_segments(rect);
 
-    RectangleSide side_of_collision = 0;
+    CardinalDirection side_of_collision = 0;
     f32 min_fraction = INFINITY;
     f32 x = min_fraction;
 
@@ -401,28 +395,28 @@ static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect,
 
     if (x < min_fraction) {
         min_fraction = x;
-        side_of_collision = RECT_SIDE_LEFT;
+        side_of_collision = CARDINAL_DIR_WEST;
     }
 
     x = MIN(min_fraction, line_intersection_fraction(ray_line, rect_lines.top, epsilon));
 
     if (x < min_fraction) {
         min_fraction = x;
-        side_of_collision = RECT_SIDE_TOP;
+        side_of_collision = CARDINAL_DIR_NORTH;
     }
 
     x = MIN(min_fraction, line_intersection_fraction(ray_line, rect_lines.right, epsilon));
 
     if (x < min_fraction) {
         min_fraction = x;
-        side_of_collision = RECT_SIDE_RIGHT;
+        side_of_collision = CARDINAL_DIR_EAST;
     }
 
     x = MIN(min_fraction, line_intersection_fraction(ray_line, rect_lines.bottom, epsilon));
 
     if (x < min_fraction) {
         min_fraction = x;
-        side_of_collision = RECT_SIDE_BOTTOM;
+        side_of_collision = CARDINAL_DIR_SOUTH;
     }
 
     RectRayIntersection result = {0};

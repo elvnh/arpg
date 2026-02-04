@@ -2,7 +2,7 @@
 #define GAME_UI_H
 
 #include "ui/ui_builder.h"
-#include "entity.h"
+#include "entity/entity.h"
 
 struct Game;
 struct LinearArena;

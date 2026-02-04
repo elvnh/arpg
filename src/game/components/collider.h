@@ -2,7 +2,7 @@
 #define COLLIDER_H
 
 #include "base/vector.h"
-#include "entity_faction.h"
+#include "entity/entity_faction.h"
 #include "collision_policy.h"
 #include "trigger.h"
 

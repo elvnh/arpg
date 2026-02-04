@@ -2,7 +2,7 @@
 #define ANIMATION_H
 
 #include "base/vector.h"
-#include "entity_state.h"
+#include "entity/entity_state.h"
 #include "sprite.h"
 
 #define MAX_ANIMATION_FRAMES 8

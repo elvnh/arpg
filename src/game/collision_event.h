@@ -2,7 +2,7 @@
 #define COLLISION_EVENT_H
 
 #include "base/typedefs.h"
-#include "entity.h"
+#include "entity/entity.h"
 
 struct World;
 struct FreeListArena;

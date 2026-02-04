@@ -2,7 +2,7 @@
 #define COLLISION_POLICY_H
 
 #include "collision.h"
-#include "entity_id.h"
+#include "entity/entity_id.h"
 
 struct World;
 struct Entity;

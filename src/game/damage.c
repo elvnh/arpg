@@ -2,7 +2,7 @@
 #include "base/utils.h"
 #include "components/component.h"
 #include "status_effect.h"
-#include "entity_system.h"
+#include "entity/entity_system.h"
 #include "equipment.h"
 #include "item.h"
 #include "item_system.h"

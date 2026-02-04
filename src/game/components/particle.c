@@ -1,5 +1,5 @@
 #include "particle.h"
-#include "entity_system.h"
+#include "entity/entity_system.h"
 #include "base/random.h"
 #include "world.h"
 

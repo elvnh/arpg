@@ -1,6 +1,6 @@
 #include "collision.h"
 #include "components/component.h"
-#include "game/entity_system.h"
+#include "entity/entity_system.h"
 #include "world.h"
 #include "base/sl_list.h"
 

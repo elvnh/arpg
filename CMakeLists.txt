@@ -51,10 +51,10 @@ set(
   src/game/game_ui.c
   src/game/quad_tree.c
   src/game/damage.c
-  src/game/entity_system.c
+  src/game/entity/entity_system.c
+  src/game/entity/entity_state.c
   src/game/tilemap.c
   src/game/ai.c
-  src/game/entity_state.c
   src/game/magic.c
   src/game/stats.c
   src/game/light.c

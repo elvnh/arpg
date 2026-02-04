@@ -16,7 +16,7 @@
 #include "world.h"
 #include "components/component.h"
 #include "platform/asset.h"
-#include "entity_system.h"
+#include "entity/entity_system.h"
 #include "asset_table.h"
 
 typedef struct SpellArray {

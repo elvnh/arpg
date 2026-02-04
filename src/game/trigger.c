@@ -2,7 +2,7 @@
 #include "base/utils.h"
 #include "base/sl_list.h"
 #include "base/free_list_arena.h"
-#include "entity_id.h"
+#include "entity/entity_id.h"
 #include "world.h"
 
 static inline ssize trigger_cooldown_hashed_index(TriggerCooldownTable *table, EntityID self, EntityID other)

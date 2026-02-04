@@ -1,6 +1,6 @@
 #include "status_effect.h"
 #include "base/utils.h"
-#include "entity_system.h"
+#include "entity/entity_system.h"
 #include "stats.h"
 #include "components/component.h"
 

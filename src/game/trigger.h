@@ -1,7 +1,7 @@
 #ifndef TRIGGER_H
 #define TRIGGER_H
 
-#include "entity_id.h"
+#include "entity/entity_id.h"
 #include "components/component_id.h"
 
 // A trigger is any interaction between two entities. If this trigger needs a cooldown

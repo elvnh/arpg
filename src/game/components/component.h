@@ -16,7 +16,7 @@
 #include "equipment.h"
 #include "inventory.h"
 #include "animation.h"
-#include "entity_state.h"
+#include "entity/entity_state.h"
 #include "magic.h"
 #include "event_listener.h"
 #include "ai.h"

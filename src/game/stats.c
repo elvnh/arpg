@@ -3,8 +3,8 @@
 #include "components/component.h"
 #include "status_effect.h"
 #include "damage.h"
-#include "entity.h"
-#include "entity_system.h"
+#include "entity/entity.h"
+#include "entity/entity_system.h"
 #include "item.h"
 
 static StatValue initialize_stat_value(NumericModifierType mod_type)

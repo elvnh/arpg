@@ -1,6 +1,6 @@
 #include "game_ui.h"
 #include "components/component.h"
-#include "entity_system.h"
+#include "entity/entity_system.h"
 #include "game.h"
 #include "item.h"
 #include "item_system.h"

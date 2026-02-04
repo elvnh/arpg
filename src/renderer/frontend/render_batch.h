@@ -23,21 +23,21 @@ typedef struct RenderEntry {
 } RenderEntry;
 
 typedef struct RenderBatch {
-    RenderEntry   entries[4096];
-    ssize         entry_count;
-    s32           y_sorting_basis;
-    Matrix4       projection;
-    YDirection    y_direction; // TODO: get this from projection matrix instead of storing
+    RenderEntry         entries[4096];
+    ssize               entry_count;
+    s32                 y_sorting_basis;
+    Matrix4             projection;
+    YDirection          y_direction; // TODO: get this from projection matrix instead of storing
 
-    FrameBuffer      render_target;
+    FrameBuffer         render_target;
 
-    RGBA32        clear_color;
-    BlendFunction blend_function;
+    RGBA32              clear_color;
+    BlendFunction       blend_function;
 
     struct RenderBatch *stencil_batch;
-    StencilFunction  stencil_func;
-    s32              stencil_func_arg;
-    StencilOperation stencil_op;
+    StencilFunction     stencil_func;
+    s32                 stencil_func_arg;
+    StencilOperation    stencil_op;
 } RenderBatch;
 
 // TODO: just store links in RenderBatch directly?
@@ -55,7 +55,8 @@ RenderBatch *push_new_render_batch(RenderBatchList *list, Camera camera, Vector2
     FrameBuffer render_target, RGBA32 clear_color, BlendFunction blend_func, LinearArena *arena);
 RenderBatch *add_stencil_pass(RenderBatch *rb, StencilFunction stencil_func, s32 stencil_func_arg,
                                  StencilOperation stencil_op, LinearArena *arena);
-void         rb_sort_entries(RenderBatch *rb, LinearArena *scratch);
+void         sort_render_entries(RenderBatch *rb, LinearArena *scratch);
+
 RenderEntry *draw_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, SpriteModifiers mods, ShaderHandle shader, RenderLayer layer);
 RenderEntry *draw_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,

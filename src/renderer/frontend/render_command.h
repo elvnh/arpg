@@ -23,7 +23,12 @@
     RENDER_COMMAND(PolygonCmd)                  \
     RENDER_COMMAND(TriangleFanCmd)              \
 
+#define RENDER_SETUP_COMMAND_LIST               \
+    RENDER_SETUP_COMMAND(SetupCmdUniformVec4)   \
+    RENDER_SETUP_COMMAND(SetupCmdUniformFloat)  \
+
 #define RENDER_COMMAND_ENUM_NAME(type) RENDER_CMD_##type
+#define RENDER_SETUP_COMMAND_ENUM_NAME(type) RENDER_SETUP_CMD_##type
 
 typedef enum {
 #define RENDER_COMMAND(type) RENDER_COMMAND_ENUM_NAME(type),
@@ -32,8 +37,9 @@ typedef enum {
 } RenderCmdKind;
 
 typedef enum {
-    SETUP_CMD_SET_UNIFORM_FLOAT,
-    SETUP_CMD_SET_UNIFORM_VEC4,
+#define RENDER_SETUP_COMMAND(name) RENDER_SETUP_COMMAND_ENUM_NAME(name),
+    RENDER_SETUP_COMMAND_LIST
+#undef RENDER_SETUP_COMMAND
 } SetupCmdKind;
 
 typedef struct SetupCmdHeader {

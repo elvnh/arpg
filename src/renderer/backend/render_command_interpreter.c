@@ -120,14 +120,14 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
 
     for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
         switch (setup_cmd->kind) {
-            case SETUP_CMD_SET_UNIFORM_VEC4: {
+            case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformVec4): {
                 SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
                 ShaderAsset *shader = assets_get_shader(assets, current_state->shader);
 
                 renderer_backend_set_uniform_vec4(shader, cmd->header.uniform_name, cmd->value, scratch);
             } break;
 
-            case SETUP_CMD_SET_UNIFORM_FLOAT: {
+            case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformFloat): {
                 SetupCmdUniformFloat *cmd = (SetupCmdUniformFloat *)setup_cmd;
                 ShaderAsset *shader = assets_get_shader(assets, current_state->shader);
 

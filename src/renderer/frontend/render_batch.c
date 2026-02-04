@@ -166,7 +166,7 @@ static void merge_sort_render_entries(RenderEntry *entries, ssize count, LinearA
     }
 }
 
-void rb_sort_entries(RenderBatch *rb, LinearArena *scratch)
+void sort_render_entries(RenderBatch *rb, LinearArena *scratch)
 {
     merge_sort_render_entries(rb->entries, rb->entry_count, scratch);
 
@@ -414,41 +414,56 @@ RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan 
     return result;
 }
 
-// TODO: reduce code duplication
-void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
-{
-    ASSERT(re);
 
-    SetupCmdUniformVec4 *cmd = la_allocate_item(arena, SetupCmdUniformVec4);
-    cmd->header.kind = SETUP_CMD_SET_UNIFORM_VEC4;
-    cmd->header.uniform_name = uniform_name;
-    cmd->value = vec;
+
+#define allocate_render_setup_cmd(arena, entry, type, uniform_name)      \
+    (type *)(allocate_render_setup_cmd_impl((arena), entry, RENDER_SETUP_COMMAND_ENUM_NAME(type), uniform_name))
+
+static void *allocate_render_setup_cmd_impl(LinearArena *arena, RenderEntry *re,
+    SetupCmdKind kind, String uniform_name)
+{
+    void *result = 0;
+
+    switch (kind) {
+#define RENDER_SETUP_COMMAND(type)                                      \
+        case RENDER_SETUP_COMMAND_ENUM_NAME(type): { result = la_allocate_item(arena, type); } break;
+
+        RENDER_SETUP_COMMAND_LIST
+#undef RENDER_SETUP_COMMAND
+
+        INVALID_DEFAULT_CASE;
+    }
+
+    ASSERT(result);
+
+    SetupCmdHeader *header = result;
+    header->kind = kind;
+    header->uniform_name = uniform_name;
 
     if (!re->data->first_setup_command) {
-        re->data->first_setup_command = (SetupCmdHeader *)cmd;
+        re->data->first_setup_command = header;
     } else {
         SetupCmdHeader *curr_cmd;
         for (curr_cmd = re->data->first_setup_command; curr_cmd->next; curr_cmd = curr_cmd->next);
 
-        curr_cmd->next = (SetupCmdHeader *)cmd;
+        curr_cmd->next = header;
     }
+
+    return result;
+}
+
+void re_set_uniform_vec4(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
+{
+    ASSERT(re);
+
+    SetupCmdUniformVec4 *cmd = allocate_render_setup_cmd(arena, re, SetupCmdUniformVec4, uniform_name);
+    cmd->value = vec;
 }
 
 void re_set_uniform_float(RenderEntry *re, LinearArena *arena, String uniform_name, f32 value)
 {
     ASSERT(re);
 
-    SetupCmdUniformFloat *cmd = la_allocate_item(arena, SetupCmdUniformFloat);
-    cmd->header.kind = SETUP_CMD_SET_UNIFORM_FLOAT;
-    cmd->header.uniform_name = uniform_name;
+    SetupCmdUniformFloat *cmd = allocate_render_setup_cmd(arena, re, SetupCmdUniformFloat, uniform_name);
     cmd->value = value;
-
-    if (!re->data->first_setup_command) {
-        re->data->first_setup_command = (SetupCmdHeader *)cmd;
-    } else {
-        SetupCmdHeader *curr_cmd;
-        for (curr_cmd = re->data->first_setup_command; curr_cmd->next; curr_cmd = curr_cmd->next);
-
-        curr_cmd->next = (SetupCmdHeader *)cmd;
-    }
 }

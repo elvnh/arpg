@@ -13,9 +13,16 @@
 #include "sprite.h"
 #include "renderer/frontend/render_target.h"
 
-// TODO: make RenderEntry array into ring buffer in case it overflows
-// TODO: reduce amount of parameters, eg. create specialization for push_sprite in case
-// color needs to be provided, otherwise default to white
+/*
+  TODO:
+  - make RenderEntry array into ring buffer in case it overflows?
+  - reduce amount of parameters, eg. create specialization for push_sprite in case
+    color needs to be provided, otherwise default to white
+  - Maybe it would be better to have all types of render commands in union inside renderentry?
+  - Just store list links in renderbatch directly
+  - RenderBatchList doesn't need to be doubly linked?
+  - Get y direction from RenderBatch projection matrix instead of storing
+ */
 
 typedef struct RenderEntry {
     RenderKey         key;
@@ -27,7 +34,7 @@ typedef struct RenderBatch {
     ssize               entry_count;
     s32                 y_sorting_basis;
     Matrix4             projection;
-    YDirection          y_direction; // TODO: get this from projection matrix instead of storing
+    YDirection          y_direction;
 
     FrameBuffer         render_target;
 
@@ -40,13 +47,11 @@ typedef struct RenderBatch {
     StencilOperation    stencil_op;
 } RenderBatch;
 
-// TODO: just store links in RenderBatch directly?
 typedef struct RenderBatchNode {
     RenderBatch  render_batch;
     LIST_LINKS(RenderBatchNode);
 } RenderBatchNode;
 
-// TODO: this doesn't need to be doubly linked
 DEFINE_LIST(RenderBatchNode, RenderBatchList);
 
 struct Particle;

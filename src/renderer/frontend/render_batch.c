@@ -414,8 +414,6 @@ RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan 
     return result;
 }
 
-
-
 #define allocate_render_setup_cmd(arena, entry, type, uniform_name)      \
     (type *)(allocate_render_setup_cmd_impl((arena), entry, RENDER_SETUP_COMMAND_ENUM_NAME(type), uniform_name))
 

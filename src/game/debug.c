@@ -65,12 +65,12 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 {
     // TODO: allow locking on to entity
     EntityID inspected_entity_id = game->game_ui.hovered_entity;
+    Entity *entity = es_try_get_entity(&game->world.entity_system, inspected_entity_id);
 
-    if (entity_id_is_null(inspected_entity_id)) {
+    if (!entity) {
 	return;
     }
 
-    Entity *entity = es_get_entity(&game->world.entity_system, inspected_entity_id);
     Allocator alloc = la_allocator(scratch);
 
     // TODO: don't require name for containers

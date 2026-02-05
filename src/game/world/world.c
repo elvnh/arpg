@@ -121,7 +121,7 @@ EntityWithID world_spawn_entity(World *world, EntityFaction faction)
     ASSERT(faction < FACTION_COUNT);
     ASSERT(world->alive_entity_count < MAX_ENTITIES);
 
-    EntityWithID result = es_create_entity(&world->entity_system, faction, &world->world_arena);
+    EntityWithID result = es_create_entity(&world->entity_system, faction);
 
     ssize alive_index = world->alive_entity_count++;
     world->alive_entity_ids[alive_index] = result.id;
@@ -875,7 +875,7 @@ void world_initialize(World *world, ItemSystem *item_system, FreeListArena *pare
 {
     world->world_arena = fl_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
 
-    es_initialize(&world->entity_system);
+    es_initialize(&world->entity_system, &world->world_arena);
 
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);

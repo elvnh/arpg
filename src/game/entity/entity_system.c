@@ -136,7 +136,7 @@ static EntityID id_queue_pop(EntityIDQueue *queue)
     return result;
 }
 
-void es_initialize(EntitySystem *es)
+void es_initialize(EntitySystem *es, FreeListArena *world_arena)
 {
     id_queue_initialize(&es->free_id_queue);
 
@@ -148,8 +148,16 @@ void es_initialize(EntitySystem *es)
 
         id_queue_push(&es->free_id_queue, new_id);
     }
-}
 
+    // Create all entity arenas up front, when creating an entity we'll just reset the
+    // existing arena so it won't have to be created again
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        EntitySlot *slot = &es->entity_slots[i];
+        Entity *entity = &slot->entity;
+
+        entity->entity_arena = la_create(fl_allocator(world_arena), ENTITY_ARENA_SIZE);
+    }
+}
 
 static EntityID get_new_entity_id(EntitySystem *es)
 {
@@ -159,7 +167,6 @@ static EntityID get_new_entity_id(EntitySystem *es)
     return result;
 }
 
-
 // TODO: why is this and es_create_entity separate functions?
 static inline EntityID create_entity(EntitySystem *es)
 {
@@ -167,22 +174,22 @@ static inline EntityID create_entity(EntitySystem *es)
 
     EntitySlot *slot = es_get_entity_slot_by_id(es, id);
 
-    // TODO: don't zero out everything here, instead do it in add_component
+    // The arena is the only thing we wish to hold on to, zero out the rest
+    LinearArena entity_arena = slot->entity.entity_arena;
     slot->entity = (Entity){0};
+    slot->entity.entity_arena = entity_arena;
 
     ASSERT(slot->generation == id.generation);
 
     return id;
 }
 
-EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction, FreeListArena *parent_arena)
+EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
 {
     EntityID id = create_entity(es);
     Entity *entity = es_get_entity(es, id);
 
-    // TODO: instead of creating a new arena each time entity is created, just reset existing one
-    entity->entity_arena = la_create(fl_allocator(parent_arena), ENTITY_ARENA_SIZE);
-
+    la_reset(&entity->entity_arena);
     entity->faction = faction;
 
     EntityWithID result = {
@@ -198,7 +205,6 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     ASSERT(entity_id_is_valid(es, id));
 
     EntitySlot *removed_slot = es_get_entity_slot_by_id(es, id);
-    la_destroy(&removed_slot->entity.entity_arena);
 
     EntityGeneration new_generation;
     if (add_overflows_s32(id.generation, 1)) {

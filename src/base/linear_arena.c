@@ -138,6 +138,9 @@ void *la_allocate(void *context, ssize count, ssize item_size, ssize alignment)
 
 void la_reset(LinearArena* arena)
 {
+    ASSERT(arena->first_block);
+    ASSERT(arena->top_block);
+
     switch_to_block(arena, arena->first_block);
 }
 

@@ -27,12 +27,10 @@ typedef struct EntitySystem {
     EntityIDQueue  free_id_queue;
 } EntitySystem;
 
-// this allocates all entity arenas
-void          es_initialize(EntitySystem *es);
-
-// TODO: remove parent_arena parameter
-EntityWithID  es_create_entity(EntitySystem *es, EntityFaction faction, FreeListArena *parent_arena);
-
+// TODO: maybe this doesn't need to allocate entity arenas in a free list arena,
+// since the entity arenas are never freed but just reset when creating new entity
+void          es_initialize(EntitySystem *es, FreeListArena *world_arena);
+EntityWithID  es_create_entity(EntitySystem *es, EntityFaction faction);
 void	      es_remove_entity(EntitySystem *es, EntityID id);
 Entity       *es_get_entity(EntitySystem *es, EntityID id);
 Entity       *es_try_get_entity(EntitySystem *es, EntityID id);

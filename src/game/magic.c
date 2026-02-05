@@ -105,7 +105,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
 	Damage damage_roll = roll_damage_in_range(spell->damaging.base_damage);
         Damage damage_after_boosts = calculate_damage_dealt(damage_roll, caster,
-	    world->item_system);
+	    &world->item_system);
 
 	DamageFieldComponent *dmg_field = es_add_component(spell_entity, DamageFieldComponent);
 

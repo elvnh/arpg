@@ -88,7 +88,7 @@ static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *a
 	    ASSERT(caster->spell_count > 0);
 
 	    SpellID spell = get_spell_at_spellbook_index(caster, 0);
-	    StatValue cast_speed = get_total_stat_value(entity, STAT_CAST_SPEED, world->item_system);
+	    StatValue cast_speed = get_total_stat_value(entity, STAT_CAST_SPEED, &world->item_system);
 
 	    entity_try_transition_to_state(world, entity, state_attacking(spell,
 		    target->position, cast_speed));

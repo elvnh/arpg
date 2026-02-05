@@ -115,8 +115,8 @@ void update_player(World *world, const FrameData *frame_data,
 	    SpellID selected_spell = get_spell_at_spellbook_index(
 		spellcaster, game_ui->selected_spellbook_index);
 
-	    StatValue cast_speed = get_total_stat_value(player, STAT_CAST_SPEED, world->item_system);
-	    StatValue action_speed = get_total_stat_value(player, STAT_ACTION_SPEED, world->item_system);
+	    StatValue cast_speed = get_total_stat_value(player, STAT_CAST_SPEED, &world->item_system);
+	    StatValue action_speed = get_total_stat_value(player, STAT_ACTION_SPEED, &world->item_system);
 
 	    StatValue total_cast_speed = apply_modifier(cast_speed, action_speed,
 		NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
@@ -292,11 +292,9 @@ void game_initialize(Game *game, GameMemory *game_memory)
 
     magic_initialize();
     anim_initialize();
-
     initialize_status_effect_system();
-    item_sys_initialize(&game->item_system, la_allocator(&game_memory->permanent_memory));
 
-    world_initialize(&game->world, &game->item_system, &game_memory->free_list_memory);
+    world_initialize(&game->world, &game_memory->free_list_memory);
 
     game->debug_state.average_fps = 60.0f;
     game->debug_state.timestep_modifier = 1.0f;

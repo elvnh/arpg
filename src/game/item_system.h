@@ -22,6 +22,8 @@ typedef struct {
 
 DEFINE_STATIC_RING_BUFFER(ItemID, ItemIDQueue, MAX_ITEMS);
 
+// TODO: use linear arena here instead
+
 typedef struct ItemSystem {
     ItemStorageSlot item_slots[MAX_ITEMS];
     ItemIDQueue id_queue;

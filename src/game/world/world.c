@@ -5,6 +5,7 @@
 #include "base/list.h"
 #include "base/matrix.h"
 #include "base/ring_buffer.h"
+#include "base/string8.h"
 #include "base/triangle.h"
 #include "collision/collision_event.h"
 #include "collision/collider.h"
@@ -23,6 +24,7 @@
 #include "base/utils.h"
 #include "base/sl_list.h"
 #include "health.h"
+#include "item_system.h"
 #include "light.h"
 #include "renderer/frontend/render_target.h"
 #include "status_effect.h"
@@ -283,7 +285,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (es_has_component(entity, HealthComponent)) {
 	HealthComponent *hp = es_get_component(entity, HealthComponent);
-	StatValue max_hp = get_total_stat_value(entity, STAT_HEALTH, world->item_system);
+	StatValue max_hp = get_total_stat_value(entity, STAT_HEALTH, &world->item_system);
 	set_max_health(&hp->health, max_hp);
     }
 
@@ -410,7 +412,7 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
 
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
 {
-    Damage damage_taken = calculate_damage_received(entity, damage, world->item_system);
+    Damage damage_taken = calculate_damage_received(entity, damage, &world->item_system);
     StatValue dmg_sum = calculate_damage_sum(damage_taken);
     ASSERT(dmg_sum >= 0);
 
@@ -871,16 +873,16 @@ static void drop_ground_item(World *world, Vector2 pos, ItemID id)
     sprite->sprite = sprite_create(get_asset_table()->fireball_texture, v2(16, 16), SPRITE_ROTATE_NONE);
 }
 
-void world_initialize(World *world, ItemSystem *item_system, FreeListArena *parent_arena)
+void world_initialize(World *world, FreeListArena *parent_arena)
 {
     world->world_arena = la_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
 
     es_initialize(&world->entity_system, &world->world_arena);
+    item_sys_initialize(&world->item_system, la_allocator(&world->world_arena));
 
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);
 
-    world->item_system = item_system;
 
     // NOTE: testing code
     s32 world_width = 16;
@@ -975,25 +977,32 @@ void world_initialize(World *world, ItemSystem *item_system, FreeListArena *pare
         EquipmentComponent *equipment = es_add_component(entity, EquipmentComponent);
         (void)equipment;
 
-        {
-            ItemWithID item_with_id = item_sys_create_item(world->item_system);
-            Item *item = item_with_id.item;
-
-            item_sys_set_item_name(world->item_system, item, str_lit("Sword"));
-            item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
-            item->equipment.slot = EQUIP_SLOT_WEAPON;
-
 #if 1
         LightEmitter *light = es_add_component(entity, LightEmitter);
-	light->light.radius = 500.0f;
-	light->light.kind = LIGHT_RAYCASTED;
+        light->light.radius = 500.0f;
+        light->light.kind = LIGHT_RAYCASTED;
 
-	if (i == 0) {
-	    light->light.color = RGBA32_GREEN;
-	} else {
-	    light->light.color = RGBA32_BLUE;
-	}
+        if (i == 0) {
+            light->light.color = RGBA32_GREEN;
+        } else {
+            light->light.color = RGBA32_BLUE;
+        }
 #endif
+
+        {
+            ItemWithID item_with_id = item_sys_create_item(&world->item_system);
+            Item *item = item_with_id.item;
+
+            item_sys_set_item_name(&world->item_system, item, str_lit("Sword"));
+            item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
+            ASSERT(item_has_prop(item, ITEM_PROP_EQUIPPABLE));
+            item->equipment.slot = EQUIP_SLOT_WEAPON;
+
+            // TODO: proper test case
+            Item *test_item = item_sys_get_item(&world->item_system, item_with_id.id);
+            ASSERT(item_has_prop(test_item, ITEM_PROP_EQUIPPABLE));
+            ASSERT(str_equal(test_item->name, str_lit("Sword")));
+
 
 #if 1
             Modifier dmg_mod = create_modifier(STAT_FIRE_DAMAGE, 100, NUMERIC_MOD_FLAT_ADDITIVE);
@@ -1008,7 +1017,7 @@ void world_initialize(World *world, ItemSystem *item_system, FreeListArena *pare
 	    drop_ground_item(world, v2(400, 400), item_with_id.id);
 #else
             inventory_add_item(&inventory->inventory, item_with_id.id);
-	    equip_item_from_inventory(item_system, &equipment->equipment,
+	    equip_item_from_inventory(&world->item_system, &equipment->equipment,
 		&inventory->inventory, item_with_id.id);
 #endif
         }

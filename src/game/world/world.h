@@ -41,10 +41,6 @@ typedef struct World {
     Camera camera;
     Tilemap tilemap;
 
-    // Pointer to the entity system and item system are stored here to avoid having to
-    // pass them around along with World.
-    // TODO: should they just be global instead?
-    ItemSystem *item_system;
 
     TriggerCooldownTable trigger_cooldowns;
 
@@ -54,6 +50,8 @@ typedef struct World {
     Hitsplat active_hitsplats[128];
     s32 hitsplat_count;
 
+    ItemSystem       item_system;
+
     EntitySystem     entity_system;
     EntityID         alive_entity_ids[MAX_ENTITIES];
     EntityIndex      alive_entity_count;
@@ -61,7 +59,7 @@ typedef struct World {
     QuadTree         quad_tree;
 } World;
 
-void world_initialize(World *world, ItemSystem *item_system, FreeListArena *parent_arena);
+void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);
 
 // TODO: fix parameters

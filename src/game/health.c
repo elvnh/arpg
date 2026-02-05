@@ -4,7 +4,7 @@
 
 Health create_health_instance(World *world, Entity *entity)
 {
-    StatValue max_hp = get_total_stat_value(entity, STAT_HEALTH, world->item_system);
+    StatValue max_hp = get_total_stat_value(entity, STAT_HEALTH, &world->item_system);
     ASSERT(max_hp > 0);
 
     Health result = {0};

@@ -80,9 +80,9 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 	case ENTITY_STATE_WALKING: {
 	    f32 speed = 300.0f; // Base movement speed
 	    StatValue move_speed = get_total_stat_value(
-		entity, STAT_MOVEMENT_SPEED, world->item_system);
+		entity, STAT_MOVEMENT_SPEED, &world->item_system);
 	    StatValue action_speed = get_total_stat_value(
-		entity, STAT_ACTION_SPEED, world->item_system);
+		entity, STAT_ACTION_SPEED, &world->item_system);
 	    StatValue final_move_speed = apply_modifier(move_speed, action_speed,
 		NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
 

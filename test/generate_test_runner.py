@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 import re
+import os.path
 
 
 SOURCE_TEMPLATE = """/***********************************************************************************/
@@ -82,7 +83,7 @@ static void IMPL_push_assert(IMPL_TestCase *test_case, IMPL_AssertList *list, co
     IMPL_dyn_arr_push(list, a);
 }
 
-static IMPL_TestCase *IMPL_get_current_test_case()
+static IMPL_TestCase *IMPL_get_current_test_case(void)
 {
     assert(IMPL_test_cases.count >= 1);
     IMPL_TestCase *result = &IMPL_test_cases.items[IMPL_test_cases.count - 1];
@@ -147,7 +148,7 @@ typedef struct {
     int32_t failed_test_case_count;
 } TestSummary;
 
-static IMPL_AssertList create_result_list()
+static IMPL_AssertList create_result_list(void)
 {
     IMPL_AssertList result = {0};
     result.capacity = INITIAL_ASSERT_LIST_CAPACITY;
@@ -156,7 +157,7 @@ static IMPL_AssertList create_result_list()
     return result;
 }
 
-static IMPL_TestCaseList create_test_case_list()
+static IMPL_TestCaseList create_test_case_list(void)
 {
     IMPL_TestCaseList result = {0};
     result.capacity = INITIAL_TEST_CASE_LIST_CAPACITY;
@@ -176,7 +177,7 @@ static void push_new_test_case(const char *test_case_name)
     IMPL_dyn_arr_push(&IMPL_test_cases, new_test_case);
 }
 
-static TestSummary get_test_summary()
+static TestSummary get_test_summary(void)
 {
     TestSummary result = {0};
 
@@ -213,7 +214,7 @@ static void repeat_char(char c, const char *color, int32_t width, int32_t newlin
     }
 }
 
-static void print_assert_failures()
+static void print_assert_failures(void)
 {
     for (int32_t i = 0; i < IMPL_test_cases.count; ++i) {
         IMPL_TestCase *curr_case = &IMPL_test_cases.items[i];
@@ -247,7 +248,7 @@ static void print_progress_bar(int32_t a, int32_t b)
     repeat_char('=', COLOR_RED, red_width, 1);
 }
 
-static void print_summary()
+static void print_summary(void)
 {
     TestSummary summary = get_test_summary();
     int32_t assert_count = summary.failed_assert_count + summary.passed_assert_count;
@@ -294,7 +295,7 @@ static void print_summary()
     repeat_char('~', COLOR_NORMAL, BAR_WIDTH, 1);
 }
 
-int main()
+int main(void)
 {
     IMPL_test_cases = create_test_case_list();
 
@@ -314,6 +315,7 @@ COLOR_NORMAL = '\x1b[0m'
 def gather_test_cases_in_file(file_contents):
     matches = re.findall(r'TEST_CASE\((.*)\)', file_contents)
     return matches
+
 
 def gather_test_cases(filenames):
     cases = []
@@ -344,7 +346,7 @@ def create_test_runner_source(files, test_cases, output_dir):
     include_directives = ''
 
     for f in files:
-        relative = pathlib.Path(f).relative_to(output_dir)
+        relative = os.path.relpath(f, start=output_dir)
         include_directives += f'#include "{relative}"\n'
 
     test_case_calls = ''

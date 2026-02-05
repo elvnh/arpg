@@ -243,3 +243,5 @@ target_link_libraries(
   X11
   m
 )
+
+add_subdirectory(test)

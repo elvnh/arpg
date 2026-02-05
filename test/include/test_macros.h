@@ -9,7 +9,8 @@
 #define IMPL_GET_CASE_FUNCTION_NAME(name) IMPL_CONCAT(IMPL_CASE_FUNCTION_NAME_PREFIX, name)
 
 /* User macros */
-#define TEST_CASE(name) static void IMPL_GET_CASE_FUNCTION_NAME(name)()
+#define TEST_CASE(name) static void IMPL_GET_CASE_FUNCTION_NAME(name)(void)
+
 #define REQUIRE(expr)                                                   \
     do {                                                                \
         if (!(expr)) {                                                  \

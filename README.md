@@ -1,12 +1,12 @@
 # arpg
 ![](screenshot.png)
 
-An action RPG focused on magic. It is currently under progress and far from complete.
+An action RPG focused on magic made in a custom game engine. It is currently under progress and far from complete.
 
 ## Building
 For now, the game is only possible to compile on Linux. Windows builds are planned in the future.
 
-If compiling with the preprocessor define `DEBUG_BUILD=1`, hot reloading will be enabled for
+If compiling with the preprocessor definition `DEBUG_BUILD=1`, hot reloading will be enabled for
 both assets and game code.
 This means that if recompiling, the game code will be reloaded and any changes made to source
 files in the `src/game` directory will be visible immediately without restarting the application.
@@ -35,6 +35,7 @@ cmake --build build -j
 Please be aware that the gameplay is still in a prototyping stage and any controls are subject to change.
 
 - Aim with mouse
+- Walk with, `w`, `a`, `s` and `d`
 - Cast the currently selected spell with left click
 - Press `i` to open the menu containing inventory, spellbook and equipment
 - Hover over items in inventory to see their stat modifiers

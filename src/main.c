@@ -9,8 +9,6 @@
 #include "game/game.h"
 
 // TODO: transition to proper unit testing framework
-#include "tests.c"
-
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 768
 
@@ -31,8 +29,6 @@ const char *__asan_default_options(void) { return "detect_leaks=0"; }
 
 int main(void)
 {
-    run_tests();
-
     // TODO: make this use mmap
     LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);
 

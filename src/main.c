@@ -1,35 +1,15 @@
 #include <GLFW/glfw3.h>
-#include <stdio.h>
-#include <string.h>
-#include <limits.h>
 #include <pthread.h>
 
-// TODO: clean up includes
-#include "platform/asset.h"
-#include "base/free_list_arena.h"
-#include "base/hash.h"
-#include "base/linear_arena.h"
-#include "base/random.h"
-#include "base/rectangle.h"
-#include "base/rgba.h"
-#include "base/string8.h"
-#include "base/image.h"
-#include "base/list.h"
-#include "platform/font.h"
-#include "renderer/frontend/render_key.h"
-#include "platform/input.h"
-#include "platform/platform.h"
-#include "renderer/frontend/render_target.h"
-#include "renderer/backend/renderer_backend.h"
 #include "platform/asset_system.h"
-#include "renderer/frontend/render_command.h"
-#include "base/vertex.h"
-#include "renderer/frontend/render_batch.h"
-#include "game/game.h"
-#include "tests.c"
+#include "platform/platform.h"
 #include "platform/file_watcher.h"
 #include "platform/hot_reload.h"
 #include "renderer/backend/render_command_interpreter.h"
+#include "game/game.h"
+
+// TODO: transition to proper unit testing framework
+#include "tests.c"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 768

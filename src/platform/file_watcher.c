@@ -154,23 +154,12 @@ void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, LinearArena *
 
     for (StringNode *file = list_head(&ctx->asset_reload_queue); file;) {
         StringNode *next = file->next;
-        AssetSlot *slot = assets_get_asset_by_path(file->data, scratch);
+        b32 reloaded = assets_reload_asset_with_path(file->data, scratch);
 
-        b32 should_pop = true;
+        if (reloaded) {
+            printf("Reloaded asset '%s'.\n",
+                str_null_terminate(file->data, la_allocator(scratch)).data);
 
-        if (slot) {
-            b32 reloaded = assets_reload_asset(slot, scratch);
-
-            if (reloaded) {
-                printf("Reloaded asset '%s'.\n",
-                    str_null_terminate(file->data, la_allocator(scratch)).data);
-            } else {
-                // Failed to reload, try again later
-                should_pop = false;
-            }
-        }
-
-        if (should_pop) {
             list_pop_head(&ctx->asset_reload_queue);
             deallocate(ctx->allocator, file->data.data);
             deallocate(ctx->allocator, file);

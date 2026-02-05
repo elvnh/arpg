@@ -11,8 +11,25 @@
 #define ASSET_ARENA_SIZE      MB(8)
 #define FIRST_VALID_ASSET_ID (NULL_ASSET_ID + 1)
 
-
 #define MAX_REGISTERED_ASSETS 256
+
+typedef enum {
+    ASSET_KIND_SHADER,
+    ASSET_KIND_TEXTURE,
+    ASSET_KIND_FONT,
+} AssetKind;
+
+typedef struct {
+    AssetKind kind;
+
+    union {
+	ShaderAsset  *shader_asset;
+	TextureAsset *texture_asset;
+	FontAsset    *font_asset;
+    } as;
+
+    String canonical_asset_path;
+} AssetSlot;
 
 typedef struct AssetSystem {
     AssetID       next_asset_id;
@@ -102,7 +119,7 @@ void assets_initialize(Allocator parent_allocator)
     g_asset_system.next_asset_id = FIRST_VALID_ASSET_ID;
 }
 
-AssetSlot *assets_get_asset_by_path(String path, LinearArena *scratch)
+static AssetSlot *get_asset_by_path(String path, LinearArena *scratch)
 {
     // NOTE: if number of assets grow large, linear search could become slow, but should be fine for now
     String abs_path = platform_get_canonical_path(path, la_allocator(scratch), scratch);
@@ -295,14 +312,18 @@ static b32 assets_reload_font(AssetSlot *slot, LinearArena *scratch)
     return false;
 }
 
-b32 assets_reload_asset(AssetSlot *slot, LinearArena *scratch)
+b32 assets_reload_asset_with_path(String path, LinearArena *scratch)
 {
-    switch (slot->kind) {
-        case ASSET_KIND_SHADER: return assets_reload_shader(slot, scratch);
-        case ASSET_KIND_TEXTURE: return assets_reload_texture(slot, scratch);
-        case ASSET_KIND_FONT: return assets_reload_font(slot, scratch);
+    AssetSlot *slot = get_asset_by_path(path, scratch);
 
-        INVALID_DEFAULT_CASE;
+    if (slot) {
+        switch (slot->kind) {
+            case ASSET_KIND_SHADER: return assets_reload_shader(slot, scratch);
+            case ASSET_KIND_TEXTURE: return assets_reload_texture(slot, scratch);
+            case ASSET_KIND_FONT: return assets_reload_font(slot, scratch);
+
+            INVALID_DEFAULT_CASE;
+        }
     }
 
     return false;

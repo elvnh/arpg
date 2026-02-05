@@ -77,28 +77,7 @@ int main(void)
     u64 rng_seed = (u64)time(0); // TODO: better seed
     rng_initialize(&game_state->rng_state, rng_seed);
 
-    game_state->asset_list = (AssetTable){
-        .texture_shader = assets_register_shader(str_lit("shader.glsl"), &game_memory.temporary_memory),
-        .shape_shader = assets_register_shader(str_lit("shader2.glsl"), &game_memory.temporary_memory),
-	.light_shader = assets_register_shader(str_lit("light.glsl"), &game_memory.temporary_memory),
-	.light_blending_shader = assets_register_shader(str_lit("light_blending.glsl"), &game_memory.temporary_memory),
-	.screenspace_texture_shader = assets_register_shader(str_lit("screenspace_texture.glsl"), &game_memory.temporary_memory),
-        .default_texture = assets_register_texture(str_lit("test.png"), &game_memory.temporary_memory),
-        .fireball_texture = assets_register_texture(str_lit("fireball.png"), &game_memory.temporary_memory),
-        .spark_texture = assets_register_texture(str_lit("spark.png"), &game_memory.temporary_memory),
-        .default_font = assets_register_font(str_lit("Ubuntu-M.ttf"), &game_memory.temporary_memory),
-        .player_idle1 = assets_register_texture(str_lit("player_idle1.png"), &game_memory.temporary_memory),
-        .player_idle2 = assets_register_texture(str_lit("player_idle2.png"), &game_memory.temporary_memory),
-        .player_walking1 = assets_register_texture(str_lit("player_walking1.png"), &game_memory.temporary_memory),
-        .player_walking2 = assets_register_texture(str_lit("player_walking2.png"), &game_memory.temporary_memory),
-        .floor_texture = assets_register_texture(str_lit("floor.png"), &game_memory.temporary_memory),
-        .wall_texture = assets_register_texture(str_lit("wall.png"), &game_memory.temporary_memory),
-	.ice_shard_texture = assets_register_texture(str_lit("ice_shard.png"), &game_memory.temporary_memory),
-	.player_attack1 = assets_register_texture(str_lit("player_attack1.png"), &game_memory.temporary_memory),
-	.player_attack2 = assets_register_texture(str_lit("player_attack2.png"), &game_memory.temporary_memory),
-	.player_attack3 = assets_register_texture(str_lit("player_attack3.png"), &game_memory.temporary_memory),
-	.blizzard_texture = assets_register_texture(str_lit("blizzard.png"), &game_memory.temporary_memory),
-    };
+    game_state->asset_table = load_game_assets(&game_memory.temporary_memory);
 
     // Function pointers to platform layer code that need to be called from game layer
     PlatformCode platform_code = {
@@ -158,11 +137,11 @@ int main(void)
         renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, 0);
 
         // TODO: don't do this here, do it in game.c?
-        ShaderAsset *light_blending_shader = assets_get_shader(game_state->asset_list.light_blending_shader);
+        ShaderAsset *light_blending_shader = assets_get_shader(game_state->asset_table.light_blending_shader);
         renderer_backend_blend_framebuffers(backend, FRAME_BUFFER_GAMEPLAY, FRAME_BUFFER_LIGHTING,
             light_blending_shader);
 
-        ShaderAsset *screenspace_texture_shader = assets_get_shader(game_state->asset_list.screenspace_texture_shader);
+        ShaderAsset *screenspace_texture_shader = assets_get_shader(game_state->asset_table.screenspace_texture_shader);
         renderer_backend_draw_framebuffer_as_texture(backend, FRAME_BUFFER_OVERLAY, screenspace_texture_shader);
 
         platform_poll_events(window);

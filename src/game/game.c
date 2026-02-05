@@ -26,7 +26,7 @@ typedef enum {
 static void set_global_state(Game *game)
 {
     rng_set_global_state(&game->rng_state);
-    set_global_asset_table(&game->asset_list);
+    set_global_asset_table(&game->asset_table);
 
     magic_initialize();
     anim_initialize();
@@ -303,7 +303,7 @@ void game_initialize(Game *game, GameMemory *game_memory)
     game->debug_state.timestep_modifier = 1.0f;
 
     UIStyle default_ui_style = {
-        .font = game->asset_list.default_font
+        .font = game->asset_table.default_font
     };
 
     // Debug UI

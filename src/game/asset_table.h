@@ -33,6 +33,7 @@ typedef struct AssetTable {
 
 // TODO: make this return a const pointer
 AssetTable  *get_asset_table(void);
+
 void         set_global_asset_table(AssetTable *assets);
 
 #endif //ASSET_TABLE_H

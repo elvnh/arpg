@@ -343,3 +343,31 @@ f32 assets_get_font_baseline_offset(FontHandle font_handle, s32 text_size)
 
     return result;
 }
+
+AssetTable load_game_assets(LinearArena *scratch)
+{
+    AssetTable result = {0};
+
+    result.texture_shader = assets_register_shader(str_lit("shader.glsl"), scratch);
+    result.shape_shader = assets_register_shader(str_lit("shader2.glsl"), scratch);
+    result.light_shader = assets_register_shader(str_lit("light.glsl"), scratch);
+    result.light_blending_shader = assets_register_shader(str_lit("light_blending.glsl"), scratch);
+    result.screenspace_texture_shader = assets_register_shader(str_lit("screenspace_texture.glsl"), scratch);
+    result.default_texture = assets_register_texture(str_lit("test.png"), scratch);
+    result.fireball_texture = assets_register_texture(str_lit("fireball.png"), scratch);
+    result.spark_texture = assets_register_texture(str_lit("spark.png"), scratch);
+    result.default_font = assets_register_font(str_lit("Ubuntu-M.ttf"), scratch);
+    result.player_idle1 = assets_register_texture(str_lit("player_idle1.png"), scratch);
+    result.player_idle2 = assets_register_texture(str_lit("player_idle2.png"), scratch);
+    result.player_walking1 = assets_register_texture(str_lit("player_walking1.png"), scratch);
+    result.player_walking2 = assets_register_texture(str_lit("player_walking2.png"), scratch);
+    result.floor_texture = assets_register_texture(str_lit("floor.png"), scratch);
+    result.wall_texture = assets_register_texture(str_lit("wall.png"), scratch);
+    result.ice_shard_texture = assets_register_texture(str_lit("ice_shard.png"), scratch);
+    result.player_attack1 = assets_register_texture(str_lit("player_attack1.png"), scratch);
+    result.player_attack2 = assets_register_texture(str_lit("player_attack2.png"), scratch);
+    result.player_attack3 = assets_register_texture(str_lit("player_attack3.png"), scratch);
+    result.blizzard_texture = assets_register_texture(str_lit("blizzard.png"), scratch);
+
+    return result;
+}

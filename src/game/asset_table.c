@@ -1,5 +1,5 @@
 #include "asset_table.h"
-#include "base/utils.h"
+#include "platform/asset_system.h"
 
 static AssetTable *g_asset_table;
 

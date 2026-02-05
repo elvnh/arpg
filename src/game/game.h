@@ -30,7 +30,7 @@ typedef struct Game {
     ItemSystem item_system;
 
     World world; // currently loaded world
-    AssetTable asset_list;
+    AssetTable asset_table;
     DebugState debug_state;
     RNGState rng_state;
     GameUIState game_ui;

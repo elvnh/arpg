@@ -7,6 +7,7 @@
 
 #include "file_watcher.h"
 #include "asset_system.h"
+#include "platform/platform.h"
 
 #define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
 
@@ -117,7 +118,8 @@ void *file_watcher_thread(void *user_data)
                 StringNode *modified_file = allocate_item(ctx->allocator, StringNode);
 
                 // TODO: instead store the canonical path
-                modified_file->data = str_concat(parent_path, name, ctx->allocator);
+                String path = str_concat(parent_path, name, ctx->allocator);
+                modified_file->data = platform_get_canonical_path(path, ctx->allocator, &scratch);
 
 		mutex_lock(ctx->lock);
                 list_push_back(&ctx->asset_reload_queue, modified_file);

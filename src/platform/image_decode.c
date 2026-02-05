@@ -1,7 +1,7 @@
-#include <string.h>
-
-#include "image.h"
+#include "image_decode.h"
 #include "stb_image.h"
+
+#include <string.h>
 
 Image image_decode_png(Span span, Allocator allocator)
 {

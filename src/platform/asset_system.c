@@ -6,6 +6,7 @@
 #include "font.h"
 #include "renderer/backend/renderer_backend.h"
 #include "base/image.h"
+#include "image_decode.h"
 #include "platform/platform.h"
 
 #define ASSET_ARENA_SIZE      MB(8)

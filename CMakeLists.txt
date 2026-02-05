@@ -20,7 +20,6 @@ set(
   src/base/linear_arena.c
   src/base/string8.c
   src/base/allocator.c
-  src/base/image.c
   src/base/random.c
   src/base/free_list_arena.c
 )
@@ -33,6 +32,7 @@ set(
   src/platform/platform_linux.c
   src/platform/asset_system.c
   src/platform/stb.c
+  src/platform/image_decode.c
 )
 
 set(

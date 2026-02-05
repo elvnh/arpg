@@ -38,19 +38,19 @@
     DEBUG_BREAK
 
 #if defined(__GNUC__)
-    #define ALIGNOF(t)    (ssize)__alignof__(t)
-    #define ALIGNAS(n)    __attribute__ ((aligned ((n))))
-    #define ALIGNAS_T(t)  __attribute__ ((aligned ((ALIGNOF(t)))))
-    #define FILE_NAME     __FILE__
-    #define LINE          __LINE__
+#    define ALIGNOF(t)    (ssize)__alignof__(t)
+#    define ALIGNAS(n)    __attribute__ ((aligned ((n))))
+#    define ALIGNAS_T(t)  __attribute__ ((aligned ((ALIGNOF(t)))))
+#    define FILE_NAME     __FILE__
+#    define LINE          __LINE__
 #else
-    #error Unsupported compiler
+#    error Unsupported compiler
 #endif
 
 #if defined(__x86_64__)
-    #define DEBUG_BREAK __asm volatile("int3")
+#    define DEBUG_BREAK __asm volatile("int3")
 #else
-    #error Unsupported architecture
+#    error Unsupported architecture
 #endif
 
 static inline bool is_pow2(s64 n)

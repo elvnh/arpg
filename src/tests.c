@@ -1,5 +1,6 @@
 #include "platform/platform.h"
 
+// TODO: move these tests somewhere else
 static void tests_file(void)
 {
     {

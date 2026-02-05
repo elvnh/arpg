@@ -136,7 +136,7 @@ static EntityID id_queue_pop(EntityIDQueue *queue)
     return result;
 }
 
-void es_initialize(EntitySystem *es, FreeListArena *world_arena)
+void es_initialize(EntitySystem *es, LinearArena *world_arena)
 {
     id_queue_initialize(&es->free_id_queue);
 
@@ -155,7 +155,7 @@ void es_initialize(EntitySystem *es, FreeListArena *world_arena)
         EntitySlot *slot = &es->entity_slots[i];
         Entity *entity = &slot->entity;
 
-        entity->entity_arena = la_create(fl_allocator(world_arena), ENTITY_ARENA_SIZE);
+        entity->entity_arena = la_create(la_allocator(world_arena), ENTITY_ARENA_SIZE);
     }
 }
 
@@ -231,6 +231,7 @@ Entity *es_get_entity(EntitySystem *es, EntityID id)
 Entity *es_try_get_entity(EntitySystem *es, EntityID id)
 {
     Entity *result = 0;
+
     if (entity_id_is_valid(es, id)) {
         EntitySlot *slot = es_get_entity_slot_by_id(es, id);
         result = &slot->entity;

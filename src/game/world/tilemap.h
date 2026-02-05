@@ -58,7 +58,7 @@ typedef struct Tilemap {
     s32 max_y;
 } Tilemap;
 
-void   tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, FreeListArena *arena);
+void   tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena);
 Tile  *tilemap_get_tile(Tilemap *tilemap, Vector2i coords);
 Rectangle tilemap_get_bounding_box(const Tilemap *tilemap);
 EdgePool tilemap_get_edge_list(Tilemap *tilemap, Allocator alloc);

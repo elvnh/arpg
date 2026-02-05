@@ -5,7 +5,7 @@
 #include "entity/entity.h"
 
 struct World;
-struct FreeListArena;
+struct LinearArena;
 
 // CollisionEvents are used to record each unique collision that occurs each frame to avoid
 // executing collision resolution and collision effects more than once.
@@ -25,7 +25,7 @@ typedef struct {
     LinearArena         arena;
 } CollisionEventTable;
 
-CollisionEventTable collision_event_table_create(struct FreeListArena *parent_arena);
+CollisionEventTable collision_event_table_create(struct LinearArena *parent_arena);
 CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID a, EntityID b);
 void collision_event_table_insert(CollisionEventTable *table, EntityID a, EntityID b);
 b32 entities_intersected_this_frame(struct World *world, EntityID a, EntityID b);

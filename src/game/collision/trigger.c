@@ -39,7 +39,7 @@ static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, Entit
 
 // TODO: allow setting multiple components
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentID component, RetriggerBehaviour retrigger_behaviour, FreeListArena *arena)
+    ComponentID component, RetriggerBehaviour retrigger_behaviour, LinearArena *arena)
 {
     ASSERT(!entity_id_equal(self, other));
 
@@ -48,7 +48,7 @@ void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID o
         TriggerCooldown *cooldown = list_head(&table->free_node_list);
 
         if (!cooldown) {
-            cooldown = fl_alloc_item(arena, TriggerCooldown);
+            cooldown = la_allocate_item(arena, TriggerCooldown);
         } else {
             list_pop_head(&table->free_node_list);
         }

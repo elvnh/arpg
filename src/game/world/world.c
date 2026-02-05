@@ -873,7 +873,7 @@ static void drop_ground_item(World *world, Vector2 pos, ItemID id)
 
 void world_initialize(World *world, ItemSystem *item_system, FreeListArena *parent_arena)
 {
-    world->world_arena = fl_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
+    world->world_arena = la_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
 
     es_initialize(&world->entity_system, &world->world_arena);
 
@@ -1020,5 +1020,5 @@ void world_initialize(World *world, ItemSystem *item_system, FreeListArena *pare
 
 void world_destroy(World *world)
 {
-    fl_destroy(&world->world_arena);
+    la_destroy(&world->world_arena);
 }

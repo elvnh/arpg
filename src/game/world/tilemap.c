@@ -20,13 +20,13 @@ static inline ssize tilemap_hashed_index(Vector2i coords)
 }
 
 // TODO: allocating tiles from a freelist arena is kind of inefficient
-void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, FreeListArena *arena)
+void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena)
 {
     ASSERT(is_pow2(TILEMAP_MAX_TILES));
 
     ssize index = tilemap_hashed_index(coords);
 
-    TileNode *new_node = fl_alloc_item(arena, TileNode);
+    TileNode *new_node = la_allocate_item(arena, TileNode);
     new_node->tile.type = type;
     new_node->coordinates = coords;
 

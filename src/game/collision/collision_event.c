@@ -6,12 +6,12 @@
 #define INTERSECTION_TABLE_ARENA_SIZE (INTERSECTION_TABLE_SIZE * SIZEOF(CollisionEvent) * 2)
 #define INTERSECTION_TABLE_SIZE 512
 
-CollisionEventTable collision_event_table_create(FreeListArena *parent_arena)
+CollisionEventTable collision_event_table_create(LinearArena *parent_arena)
 {
     CollisionEventTable result = {0};
-    result.table = fl_alloc_array(parent_arena, CollisionEventList, INTERSECTION_TABLE_SIZE);
+    result.table = la_allocate_array(parent_arena, CollisionEventList, INTERSECTION_TABLE_SIZE);
     result.table_size = INTERSECTION_TABLE_SIZE;
-    result.arena = la_create(fl_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
+    result.arena = la_create(la_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
 
     return result;
 }

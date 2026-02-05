@@ -1,7 +1,6 @@
 #ifndef QUAD_TREE_H
 #define QUAD_TREE_H
 
-#include "base/free_list_arena.h"
 #include "base/linear_arena.h"
 #include "base/rectangle.h"
 #include "base/utils.h"
@@ -43,6 +42,7 @@ typedef struct QuadTreeNode {
 
 typedef struct {
     QuadTreeNode root;
+
     QuadTreeEntityList entity_element_free_list;
 } QuadTree;
 
@@ -65,9 +65,9 @@ typedef struct {
 
 void qt_initialize(QuadTree *qt, Rectangle area);
 QuadTreeLocation qt_move_entity(QuadTree *qt, EntityID id,
-    QuadTreeLocation location, Vector2 new_position, FreeListArena *arena);
+    QuadTreeLocation location, Vector2 new_position, LinearArena *arena);
 QuadTreeLocation qt_set_entity_area(QuadTree *qt, EntityID id,
-    QuadTreeLocation location, Rectangle area, FreeListArena *arena);
+    QuadTreeLocation location, Rectangle area, LinearArena *arena);
 void qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation location);
 EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *arena);
 ssize qt_get_node_count(const QuadTree *qt);

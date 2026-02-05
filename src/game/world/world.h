@@ -36,7 +36,7 @@ typedef struct World {
     // All allocations specific to the world instance should go here, and when destroying
     // a world, it should be destroyed so that the memory can be reused by other world instances
     // TODO: split up arena into a linear arena and free list arena
-    FreeListArena world_arena;
+    LinearArena world_arena;
 
     Camera camera;
     Tilemap tilemap;

@@ -19,6 +19,7 @@ typedef enum {
 typedef struct {
     EventType event_type;
 
+    // TODO: instead store entity ID pointer
     struct Entity *self;
     struct World *world;
 

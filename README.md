@@ -1,4 +1,6 @@
 # arpg
+![](screenshot.png)
+
 An action RPG focused on magic. It is currently under progress and far from complete.
 
 ## Building

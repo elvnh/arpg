@@ -67,6 +67,19 @@ TEST_CASE(linear_arena_alloc_exceed_buffer)
     la_destroy(&arena);
 }
 
+TEST_CASE(linear_arena_alloc_exceed_buffer_slightly)
+{
+    const s32 size = 1024;
+    LinearArena arena = la_create(default_allocator, size);
+
+    la_allocate_array(&arena, byte, size / 2);
+    la_allocate_array(&arena, byte, size / 2 + 1);
+
+    REQUIRE(la_get_memory_usage(&arena) == size + size / 2 + 1);
+
+    la_destroy(&arena);
+}
+
 TEST_CASE(linear_arena_alloc_exceed_buffer_multiple)
 {
     LinearArena arena = la_create(default_allocator, 1024);
@@ -103,12 +116,16 @@ TEST_CASE(linear_arena_reset_multi_buffers)
     LinearArena arena = la_create(default_allocator, 1024);
 
     byte *first = la_allocate_array(&arena, byte, 1);
+    byte *second = la_allocate_array(&arena, byte, 1);
     la_allocate_array(&arena, byte, 3000);
 
     la_reset(&arena);
 
     byte *last = la_allocate_array(&arena, byte, 1);
     REQUIRE(last == first);
+
+    last = la_allocate_array(&arena, byte, 1);
+    REQUIRE(last == second);
 
     la_destroy(&arena);
 }
@@ -146,6 +163,18 @@ TEST_CASE(linear_arena_write_adjacent_second)
     for (ssize i = 0; i < alloc_size; ++i) {
 	REQUIRE(first[i] == 0xDE);
 	REQUIRE(second[i] == 0xFD);
+    }
+
+    la_destroy(&arena);
+}
+
+TEST_CASE(linear_arena_new_allocation_zeroed)
+{
+    LinearArena arena = la_create(default_allocator, 1024);
+    byte *arr = la_allocate_array(&arena, byte, 16);
+
+    for (s32 i = 0; i < 16; ++i) {
+        REQUIRE(arr[i] == 0);
     }
 
     la_destroy(&arena);
@@ -190,4 +219,69 @@ TEST_CASE(linear_arena_copy_allocation)
 
 
      la_destroy(&arena);
+}
+
+TEST_CASE(linear_arena_meet_capacity_exactly)
+{
+    const s32 size = 1024;
+    LinearArena arena = la_create(default_allocator, size);
+
+    byte *arr1 = la_allocate_array(&arena, byte, size / 2);
+    byte *arr2 = la_allocate_array(&arena, byte, size / 2);
+
+    REQUIRE(arr1);
+    REQUIRE(arr2);
+    REQUIRE(la_get_memory_usage(&arena) == size);
+
+    la_destroy(&arena);
+}
+
+TEST_CASE(linear_arena_pop_to_basic)
+{
+    LinearArena arena = la_create(default_allocator, 1024);
+    byte *first = la_allocate_array(&arena, byte, 256);
+
+    la_pop_to(&arena, first);
+
+    byte *next = la_allocate_array(&arena, byte, 256);
+    REQUIRE(next == first);
+
+    la_destroy(&arena);
+}
+
+TEST_CASE(linear_arena_pop_to_across_buffers)
+{
+    LinearArena arena = la_create(default_allocator, 1024);
+    byte *first = la_allocate_array(&arena, byte, 256);
+    byte *second = la_allocate_array(&arena, byte, 1000);
+
+    la_pop_to(&arena, second);
+
+    byte *third = la_allocate_array(&arena, byte, 10);
+    REQUIRE(third == second);
+
+    la_pop_to(&arena, first);
+    byte *fourth = la_allocate_array(&arena, byte, 10);
+    REQUIRE(fourth == first);
+
+    la_destroy(&arena);
+}
+
+TEST_CASE(linear_arena_copy_array)
+{
+    LinearArena arena = la_create(default_allocator, 1024);
+    s32 *first = la_allocate_array(&arena, s32, 4);
+
+    for (s32 i = 0; i < 4; ++i) {
+        first[i] = i;
+    }
+
+    s32 *second = la_copy_array(&arena, first, 4);
+
+    REQUIRE(first != second);
+    REQUIRE(is_aligned((ssize)second, 4));
+
+    REQUIRE(memcmp(first, second, 4 * sizeof(*first)) == 0);
+
+    la_destroy(&arena);
 }

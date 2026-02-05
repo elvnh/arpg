@@ -60,6 +60,12 @@ TEST_CASE(bit_span)
 
     REQUIRE(bit_span(0x33, 0, 1) == 0x1);
     REQUIRE(bit_span(0x33, 3, 3) == 0x6);
+
+    REQUIRE(bit_span(0xF, 0, 2) == 0x3);
+    REQUIRE(bit_span(0xFF0FF, 4, 12) == 0xF0F);
+    REQUIRE(bit_span(0x0, 0, 64) == 0);
+    REQUIRE(bit_span(USIZE_MAX, 0, 64) == USIZE_MAX);
+    REQUIRE(bit_span(USIZE_MAX, 0, 63) == (USIZE_MAX >> 1));
 }
 
 TEST_CASE(multiply_overflows_ssize)
@@ -99,4 +105,39 @@ TEST_CASE(align)
     REQUIRE(align(3, 4) == 4);
     REQUIRE(align(4, 4) == 4);
     REQUIRE(align(5, 4) == 8);
+}
+
+TEST_CASE(byte_offset)
+{
+    s32 *ptr = (s32 *)123;
+    REQUIRE((s64)byte_offset(ptr, 5) == 128);
+    REQUIRE((s64)byte_offset(ptr, -3) == 120);
+}
+
+TEST_CASE(type_limits_signed)
+{
+    REQUIRE(S_SIZE_MAX == LLONG_MAX);
+    REQUIRE(S_SIZE_MIN == LLONG_MIN);
+
+    REQUIRE(S64_MAX == LLONG_MAX);
+    REQUIRE(S64_MIN == LLONG_MIN);
+
+    REQUIRE(S32_MAX == INT_MAX);
+    REQUIRE(S32_MIN == INT_MIN);
+
+    REQUIRE(S16_MAX == SHRT_MAX);
+    REQUIRE(S16_MIN == SHRT_MIN);
+
+    REQUIRE(S8_MAX == SCHAR_MAX);
+    REQUIRE(S8_MIN == SCHAR_MIN);
+
+}
+
+TEST_CASE(type_limits_unsigned)
+{
+    REQUIRE(USIZE_MAX == SIZE_MAX);
+    REQUIRE(U64_MAX == ULLONG_MAX);
+    REQUIRE(U32_MAX == UINT_MAX);
+    REQUIRE(U16_MAX == USHRT_MAX);
+    REQUIRE(U8_MAX == UCHAR_MAX);
 }

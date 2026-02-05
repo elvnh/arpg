@@ -5,6 +5,9 @@
 
 String str_concat(String a, String b, Allocator alloc)
 {
+    ASSERT(a.data);
+    ASSERT(b.data);
+
     const ssize total_size = a.length + b.length;
     const usize a_length = ssize_to_usize(a.length);
     const usize b_length = ssize_to_usize(b.length);
@@ -24,7 +27,7 @@ bool str_equal(String a, String b)
         return false;
     }
 
-    return (memcmp(a.data, b.data, ssize_to_usize(a.length)) == 0);
+    return (!a.data && !b.data) || (memcmp(a.data, b.data, ssize_to_usize(a.length)) == 0);
 }
 
 String str_null_terminate(String str, Allocator alloc)

@@ -3,6 +3,9 @@ import pathlib
 import re
 import os.path
 
+# TODO:
+# - Don't collect test case if it's commented out
+#
 
 SOURCE_TEMPLATE = """/***********************************************************************************/
 /* WARNING:                                                                        */

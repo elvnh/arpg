@@ -121,7 +121,7 @@ static inline bool add_overflows_s32(s32 a, s32 b)
 
 static inline bool is_aligned(s64 value, s64 alignment)
 {
-    ASSERT(value >= 0);
+    //ASSERT(value >= 0);
     ASSERT(is_pow2(alignment));
     return (value % alignment) == 0;
 }

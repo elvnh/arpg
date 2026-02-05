@@ -6,6 +6,7 @@
 #include <linux/limits.h>
 
 #include "file_watcher.h"
+#include "asset_system.h"
 
 #define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
 
@@ -147,19 +148,18 @@ void file_watcher_stop(AssetWatcherContext *ctx)
     mutex_destroy(ctx->lock, ctx->allocator);
 }
 
-void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, AssetSystem *asset_mgr,
-    LinearArena *scratch)
+void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, LinearArena *scratch)
 {
     mutex_lock(ctx->lock);
 
     for (StringNode *file = list_head(&ctx->asset_reload_queue); file;) {
         StringNode *next = file->next;
-        AssetSlot *slot = assets_get_asset_by_path(asset_mgr, file->data, scratch);
+        AssetSlot *slot = assets_get_asset_by_path(file->data, scratch);
 
         b32 should_pop = true;
 
         if (slot) {
-            b32 reloaded = assets_reload_asset(asset_mgr, slot, scratch);
+            b32 reloaded = assets_reload_asset(slot, scratch);
 
             if (reloaded) {
                 printf("Reloaded asset '%s'.\n",

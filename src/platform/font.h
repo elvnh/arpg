@@ -11,9 +11,6 @@
 #include "base/rectangle.h"
 #include "asset.h"
 
-typedef struct FontAsset FontAsset;
-struct AssetSystem;
-
 /*
   TODO:
   - Redo size calculations properly
@@ -26,14 +23,15 @@ struct AssetSystem;
   - Clean up return types for getting vertices
  */
 
-// TODO: rename
+typedef struct FontAsset FontAsset;
+
 typedef struct {
     RectangleVertices vertices;
     f32 advance_x;
     b32 is_visible;
 } RenderedGlyphInfo;
 
-FontAsset         *font_create_atlas(String font_path, struct AssetSystem *assets, Allocator allocator, LinearArena *scratch);
+FontAsset         *font_create_atlas(String font_path, Allocator allocator, LinearArena *scratch);
 void               font_destroy_atlas(FontAsset *asset, Allocator allocator);
 TextureHandle      font_get_texture_handle(FontAsset *asset);
 RenderedGlyphInfo  font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 font_size,

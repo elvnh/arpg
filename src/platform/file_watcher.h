@@ -2,7 +2,6 @@
 #define FILE_WATCHER_H
 
 #include "platform.h"
-#include "asset_system.h"
 
 typedef struct {
     Allocator allocator;
@@ -14,6 +13,6 @@ typedef struct {
 
 void file_watcher_start(AssetWatcherContext *ctx);
 void file_watcher_stop(AssetWatcherContext *ctx);
-void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, AssetSystem *asset_mgr, LinearArena *scratch);
+void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, LinearArena *scratch);
 
 #endif //FILE_WATCHER_H

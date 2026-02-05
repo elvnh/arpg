@@ -48,8 +48,7 @@ static inline s32 char_index(char ch)
 }
 
 // TODO: Most calculations in this file are pretty hacky, fix them
-FontAsset *font_create_atlas(String font_path, struct AssetSystem *assets, Allocator allocator,
-    LinearArena *scratch)
+FontAsset *font_create_atlas(String font_path, Allocator allocator, LinearArena *scratch)
 {
     FontAsset *result = allocate_item(allocator, FontAsset);
     Span font_file_contents = platform_read_entire_file(font_path, allocator, scratch);
@@ -129,7 +128,7 @@ FontAsset *font_create_atlas(String font_path, struct AssetSystem *assets, Alloc
     result->ascent = (f32)ascent;
     result->descent = (f32)descent;
     result->line_gap = (f32)line_gap;
-    result->texture_handle = assets_create_texture_from_memory(assets, font_image);
+    result->texture_handle = assets_create_texture_from_memory(font_image);
 
     return result;
 

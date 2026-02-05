@@ -9,8 +9,6 @@
 #include "renderer/backend/renderer_backend.h"
 #include "font.h"
 
-#define MAX_REGISTERED_ASSETS 256
-
 #define ASSET_DIRECTORY  "assets/"
 #define SHADER_DIRECTORY "shaders/"
 #define SPRITE_DIRECTORY "sprites/"
@@ -34,24 +32,18 @@ typedef struct {
     String canonical_asset_path;
 } AssetSlot;
 
-typedef struct AssetSystem {
-    AssetID       next_asset_id;
-    AssetSlot     registered_assets[MAX_REGISTERED_ASSETS];
-
-    // TODO: use free list arena in GameMemory instead
-    FreeListArena asset_arena;
-} AssetSystem;
-
-void              assets_initialize(AssetSystem *asset_mgr, Allocator parent_allocator);
-AssetSlot        *assets_get_asset_by_path(AssetSystem *assets, String path, LinearArena *scratch);
-ShaderHandle      assets_register_shader(AssetSystem *assets, String name, LinearArena *scratch);
-TextureHandle     assets_register_texture(AssetSystem *assets, String name, LinearArena *scratch);
-FontHandle        assets_register_font(AssetSystem *assets, String name, LinearArena *scratch);
-ShaderAsset      *assets_get_shader(AssetSystem *assets, ShaderHandle handle);
-TextureAsset     *assets_get_texture(AssetSystem *assets, TextureHandle handle);
-FontAsset        *assets_get_font(AssetSystem *assets, FontHandle handle);
-b32               assets_reload_asset(AssetSystem *assets, AssetSlot *slot, LinearArena *scratch);
-TextureHandle     assets_create_texture_from_memory(AssetSystem *assets, Image image);
-
+void              assets_initialize(Allocator parent_allocator);
+AssetSlot        *assets_get_asset_by_path(String path, LinearArena *scratch); // TODO: should this really return AssetSlot?
+ShaderHandle      assets_register_shader(String name, LinearArena *scratch);
+TextureHandle     assets_register_texture(String name, LinearArena *scratch);
+FontHandle        assets_register_font(String name, LinearArena *scratch);
+ShaderAsset      *assets_get_shader(ShaderHandle handle);
+TextureAsset     *assets_get_texture(TextureHandle handle);
+FontAsset        *assets_get_font(FontHandle handle);
+b32               assets_reload_asset(AssetSlot *slot, LinearArena *scratch);
+TextureHandle     assets_create_texture_from_memory(Image image);
+Vector2           assets_get_text_dimensions(FontHandle font_handle, String text, s32 text_size);
+f32               assets_get_text_newline_advance(FontHandle font_handle, s32 text_size);
+f32               assets_get_font_baseline_offset(FontHandle font_handle, s32 text_size);
 
 #endif //ASSET_MANAGER_H

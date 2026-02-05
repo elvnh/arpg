@@ -4,6 +4,7 @@
 #include "base/triangle.h"
 #include "base/vector.h"
 #include "platform/font.h"
+#include "platform/asset_system.h"
 #include "renderer/frontend/render_command.h"
 #include "renderer/frontend/render_key.h"
 #include "renderer/frontend/render_target.h"
@@ -17,7 +18,7 @@ typedef struct {
     TextureHandle texture;
 } RendererState;
 
-static RendererState get_state_needed_for_entry(RenderKey key, AssetSystem *assets)
+static RendererState get_state_needed_for_entry(RenderKey key)
 {
     RendererState result = {0};
 
@@ -27,7 +28,7 @@ static RendererState get_state_needed_for_entry(RenderKey key, AssetSystem *asse
 
     if (font_id != NULL_FONT.id) {
         ASSERT(texture_id == NULL_TEXTURE.id);
-        FontAsset *font_asset = assets_get_font(assets, (FontHandle){(u32)font_id});
+        FontAsset *font_asset = assets_get_font((FontHandle){(u32)font_id});
         TextureHandle font_texture_handle = font_get_texture_handle(font_asset);
 
         result.texture = font_texture_handle;
@@ -45,20 +46,19 @@ static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
     return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
 }
 
-static RendererState switch_renderer_state(RendererState new_state, AssetSystem *assets,
-    RendererState old_state, RendererBackend *backend)
+static RendererState switch_renderer_state(RendererState new_state, RendererState old_state, RendererBackend *backend)
 {
     (void)backend;
 
     if (new_state.texture.id != old_state.texture.id) {
         if (new_state.texture.id != NULL_TEXTURE.id) {
-            TextureAsset *texture = assets_get_texture(assets, new_state.texture);
+            TextureAsset *texture = assets_get_texture(new_state.texture);
             renderer_backend_bind_texture(texture);
         }
     }
 
     if (new_state.shader.id != old_state.shader.id) {
-        ShaderAsset *shader = assets_get_shader(assets, new_state.shader);
+        ShaderAsset *shader = assets_get_shader(new_state.shader);
 
         renderer_backend_use_shader(shader);
     }
@@ -107,29 +107,29 @@ static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f3
 }
 
 static void execute_render_command(RenderEntry *entry, RenderBatch *rb, RendererState *current_state,
-    RendererBackend *backend, AssetSystem *assets, LinearArena *scratch)
+    RendererBackend *backend, LinearArena *scratch)
 {
     RenderCmdHeader *header = entry->data;
 
-    RendererState needed_state = get_state_needed_for_entry(entry->key, assets);
+    RendererState needed_state = get_state_needed_for_entry(entry->key);
 
     if (renderer_state_change_needed(*current_state, needed_state)) {
         renderer_backend_flush(backend);
-        *current_state = switch_renderer_state(needed_state, assets, *current_state, backend);
+        *current_state = switch_renderer_state(needed_state, *current_state, backend);
     }
 
     for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
         switch (setup_cmd->kind) {
             case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformVec4): {
                 SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
-                ShaderAsset *shader = assets_get_shader(assets, current_state->shader);
+                ShaderAsset *shader = assets_get_shader(current_state->shader);
 
                 renderer_backend_set_uniform_vec4(shader, cmd->header.uniform_name, cmd->value, scratch);
             } break;
 
             case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformFloat): {
                 SetupCmdUniformFloat *cmd = (SetupCmdUniformFloat *)setup_cmd;
-                ShaderAsset *shader = assets_get_shader(assets, current_state->shader);
+                ShaderAsset *shader = assets_get_shader(current_state->shader);
 
                 renderer_backend_set_uniform_float(shader, cmd->header.uniform_name, cmd->value, scratch);
             } break;
@@ -281,7 +281,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
             TextCmd *cmd = (TextCmd *)entry->data;
 
             FontHandle font_handle = (FontHandle){(u32)render_key_extract_font(entry->key)};
-            FontAsset *font_asset = assets_get_font(assets, font_handle);
+            FontAsset *font_asset = assets_get_font(font_handle);
 
             RGBA32 color = cmd->color;
             s32 text_size = cmd->size;
@@ -403,8 +403,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
     }
 }
 
-void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
-    RendererBackend *backend, LinearArena *scratch)
+void execute_render_commands(RenderBatch *rb, RendererBackend *backend, LinearArena *scratch)
 {
     // NOTE: The color buffer should always be cleared, even if there is nothing to draw
     // as some batches may always need the background color to be drawn
@@ -428,7 +427,7 @@ void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
         renderer_backend_enable_stencil_writes();
         renderer_backend_disable_color_buffer_writes(backend);
 
-        execute_render_commands(stencil, assets, backend, scratch);
+        execute_render_commands(stencil, backend, scratch);
 
         // We should only write to color buffer, not stencil buffer
         renderer_backend_disable_stencil_writes();
@@ -445,8 +444,8 @@ void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
         renderer_backend_set_stencil_pass_operation(backend, rb->stencil_op);
     }
 
-    RendererState current_state = get_state_needed_for_entry(rb->entries[0].key, assets);
-    switch_renderer_state(current_state, assets, INVALID_RENDERER_STATE, backend);
+    RendererState current_state = get_state_needed_for_entry(rb->entries[0].key);
+    switch_renderer_state(current_state, INVALID_RENDERER_STATE, backend);
 
     renderer_backend_set_global_projection(backend, rb->projection);
     renderer_backend_set_blend_function(rb->blend_function);
@@ -454,7 +453,7 @@ void execute_render_commands(RenderBatch *rb, AssetSystem *assets,
     for (ssize i = 0; i < rb->entry_count; ++i) {
         RenderEntry *entry = &rb->entries[i];
 
-        execute_render_command(entry, rb, &current_state, backend, assets, scratch);
+        execute_render_command(entry, rb, &current_state, backend, scratch);
     }
 
     renderer_backend_flush(backend);

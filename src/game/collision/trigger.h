@@ -13,8 +13,8 @@
     es_has_component(entity, component)				\
     && !trigger_is_on_cooldown(					\
 	&world->trigger_cooldowns,				\
-	es_get_id_of_entity(world->entity_system, entity),	\
-	es_get_id_of_entity(world->entity_system, other),	\
+	es_get_id_of_entity(&world->entity_system, entity),	\
+	es_get_id_of_entity(&world->entity_system, other),	\
 	component_flag(component))
 
 struct FreeListArena;
@@ -60,7 +60,7 @@ typedef struct {
 
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
     ComponentID component, RetriggerBehaviour retrigger_behaviour, struct FreeListArena *arena);
-void update_trigger_cooldowns(struct World *world, struct EntitySystem *es, f32 dt);
+void update_trigger_cooldowns(struct World *world, f32 dt);
 b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentID component);
 
 static inline RetriggerBehaviour retrigger_whenever(void)

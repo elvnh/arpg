@@ -153,7 +153,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	ASSERT(spell->hostile_collision_callback);
 
 	SpellCallbackData data = {0};
-	data.caster_id = es_get_id_of_entity(world->entity_system, caster);
+	data.caster_id = es_get_id_of_entity(&world->entity_system, caster);
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, spell->hostile_collision_callback, &data);
     }
 
@@ -184,7 +184,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     // don't immediately collide with that entity
     if (cooldown_target) {
 	EntityID spell_entity_id = spell_entity_with_id.id;
-	EntityID target_id = es_get_id_of_entity(world->entity_system, cooldown_target);
+	EntityID target_id = es_get_id_of_entity(&world->entity_system, cooldown_target);
 
 	// TODO: allow customizing which components are on cooldown, and setting multiple at once
 	// For now, only add the collider so that nothing else can be
@@ -359,11 +359,11 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
 {
     SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
 
-    Entity *caster = es_get_entity(event_data.world->entity_system, cb_data->caster_id);
+    Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);
     ASSERT(caster && "Entity died before impact collision callback was called. "
         "This should probably never happen?");
 
-    Entity *collide_target = es_get_entity(event_data.world->entity_system,
+    Entity *collide_target = es_get_entity(&event_data.world->entity_system,
 	event_data.as.hostile_collision.collided_with);
 
     // TODO: should this kind of behaviour be encoded in a forking property of spells?

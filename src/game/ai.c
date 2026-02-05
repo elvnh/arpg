@@ -57,7 +57,7 @@ static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai)
 
     for (ssize i = 0; i < world->alive_entity_count; ++i) {
 	EntityID other_id = world->alive_entity_ids[i];
-	Entity *other = es_get_entity(world->entity_system, other_id);
+	Entity *other = es_get_entity(&world->entity_system, other_id);
 
  	if (is_valid_attack_target(entity, other)) {
 	    f32 distance = v2_dist(other->position, entity->position);
@@ -74,7 +74,7 @@ static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *a
 {
     ASSERT(ai->current_state.kind == AI_STATE_CHASING);
 
-    Entity *target = es_try_get_entity(world->entity_system, ai->current_state.as.chasing.target);
+    Entity *target = es_try_get_entity(&world->entity_system, ai->current_state.as.chasing.target);
     ASSERT(target != entity);
 
     if (!target) {

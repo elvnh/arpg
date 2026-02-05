@@ -63,7 +63,7 @@ void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID o
         list_push_back(&table->table[index], cooldown);
     }
 }
-void update_trigger_cooldowns(World *world, EntitySystem *es, f32 dt)
+void update_trigger_cooldowns(World *world, f32 dt)
 {
     for (ssize i = 0; i < ARRAY_COUNT(world->trigger_cooldowns.table); ++i) {
         TriggerCooldownList *cd_list = &world->trigger_cooldowns.table[i];
@@ -71,8 +71,8 @@ void update_trigger_cooldowns(World *world, EntitySystem *es, f32 dt)
         for (TriggerCooldown *curr_cd = list_head(cd_list); curr_cd;) {
             TriggerCooldown *next_cd = curr_cd->next;
 
-            Entity *owning = es_get_entity(es, curr_cd->owning_entity);
-            Entity *other = es_get_entity(es, curr_cd->collided_entity);
+            Entity *owning = es_get_entity(&world->entity_system, curr_cd->owning_entity);
+            Entity *other = es_get_entity(&world->entity_system, curr_cd->collided_entity);
             ASSERT(owning);
             ASSERT(other);
 

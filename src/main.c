@@ -116,7 +116,7 @@ int main(void)
 
         renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, 0);
 
-        // TODO: don't do this here, do it in game.c?
+        // TODO: Do this somewhere else
         ShaderAsset *light_blending_shader = assets_get_shader(game_state->asset_table.light_blending_shader);
         renderer_backend_blend_framebuffers(backend, FRAME_BUFFER_GAMEPLAY, FRAME_BUFFER_LIGHTING,
             light_blending_shader);

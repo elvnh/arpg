@@ -27,9 +27,13 @@ typedef struct EntitySystem {
     EntityIDQueue  free_id_queue;
 } EntitySystem;
 
-EntityWithID  es_create_entity(EntitySystem *es, EntityFaction faction, FreeListArena *parent_arena);
-void	      es_remove_entity(EntitySystem *es, EntityID id);
+// this allocates all entity arenas
 void          es_initialize(EntitySystem *es);
+
+// TODO: remove parent_arena parameter
+EntityWithID  es_create_entity(EntitySystem *es, EntityFaction faction, FreeListArena *parent_arena);
+
+void	      es_remove_entity(EntitySystem *es, EntityID id);
 Entity       *es_get_entity(EntitySystem *es, EntityID id);
 Entity       *es_try_get_entity(EntitySystem *es, EntityID id);
 EntityID      es_get_id_of_entity(EntitySystem *es, Entity *entity);

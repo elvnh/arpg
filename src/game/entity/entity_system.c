@@ -160,11 +160,14 @@ static EntityID get_new_entity_id(EntitySystem *es)
 }
 
 
+// TODO: why is this and es_create_entity separate functions?
 static inline EntityID create_entity(EntitySystem *es)
 {
     EntityID id = get_new_entity_id(es);
 
     EntitySlot *slot = es_get_entity_slot_by_id(es, id);
+
+    // TODO: don't zero out everything here, instead do it in add_component
     slot->entity = (Entity){0};
 
     ASSERT(slot->generation == id.generation);

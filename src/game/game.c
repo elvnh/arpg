@@ -128,7 +128,7 @@ void update_player(World *world, const FrameData *frame_data,
 
     if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)
 	&& !entity_id_is_null(game_ui->hovered_entity)) {
-	Entity *hovered_entity = es_get_entity(world->entity_system, game_ui->hovered_entity);
+	Entity *hovered_entity = es_get_entity(&world->entity_system, game_ui->hovered_entity);
 	GroundItemComponent *ground_item = es_get_component(hovered_entity, GroundItemComponent);
 
 	if (ground_item) {
@@ -294,10 +294,9 @@ void game_initialize(Game *game, GameMemory *game_memory)
     anim_initialize();
 
     initialize_status_effect_system();
-    es_initialize(&game->entity_system);
     item_sys_initialize(&game->item_system, la_allocator(&game_memory->permanent_memory));
 
-    world_initialize(&game->world, &game->entity_system, &game->item_system, &game_memory->free_list_memory);
+    world_initialize(&game->world, &game->item_system, &game_memory->free_list_memory);
 
     game->debug_state.average_fps = 60.0f;
     game->debug_state.timestep_modifier = 1.0f;

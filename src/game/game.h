@@ -25,8 +25,7 @@
 struct RenderBatchList;
 
 typedef struct Game {
-    // TODO: should these exist in world instead?
-    EntitySystem entity_system;
+    // TODO: should this exist in world instead?
     ItemSystem item_system;
 
     World world; // currently loaded world

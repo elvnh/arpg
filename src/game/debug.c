@@ -70,7 +70,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 	return;
     }
 
-    Entity *entity = es_get_entity(game->world.entity_system, inspected_entity_id);
+    Entity *entity = es_get_entity(&game->world.entity_system, inspected_entity_id);
     Allocator alloc = la_allocator(scratch);
 
     // TODO: don't require name for containers

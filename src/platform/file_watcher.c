@@ -11,6 +11,12 @@
 
 #define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
 
+typedef struct ModifiedAsset {
+    String path;
+    struct ModifiedAsset *next;
+    struct ModifiedAsset *prev;
+} ModifiedAsset;
+
 static String get_assets_directory(LinearArena *arena)
 {
     String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
@@ -115,14 +121,14 @@ void *file_watcher_thread(void *user_data)
                 }
 
                 String name = { event->name, (ssize)event->len };
-                StringNode *modified_file = allocate_item(ctx->allocator, StringNode);
+                ModifiedAsset *modified_asset = allocate_item(ctx->allocator, ModifiedAsset);
 
                 // TODO: instead store the canonical path
-                String path = str_concat(parent_path, name, ctx->allocator);
-                modified_file->data = platform_get_canonical_path(path, ctx->allocator, &scratch);
+                String asset_path = str_concat(parent_path, name, ctx->allocator);
+                modified_asset->path = platform_get_canonical_path(asset_path, ctx->allocator, &scratch);
 
 		mutex_lock(ctx->lock);
-                list_push_back(&ctx->asset_reload_queue, modified_file);
+                list_push_back(&ctx->asset_reload_queue, modified_asset);
 		mutex_release(ctx->lock);
             }
 
@@ -154,20 +160,20 @@ void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, LinearArena *
 {
     mutex_lock(ctx->lock);
 
-    for (StringNode *file = list_head(&ctx->asset_reload_queue); file;) {
-        StringNode *next = file->next;
-        b32 reloaded = assets_reload_asset_with_path(file->data, scratch);
+    for (ModifiedAsset *asset = list_head(&ctx->asset_reload_queue); asset;) {
+        ModifiedAsset *next = asset->next;
+        b32 reloaded = assets_reload_asset_with_path(asset->path, scratch);
 
         if (reloaded) {
             printf("Reloaded asset '%s'.\n",
-                str_null_terminate(file->data, la_allocator(scratch)).data);
+                str_null_terminate(asset->path, la_allocator(scratch)).data);
 
             list_pop_head(&ctx->asset_reload_queue);
-            deallocate(ctx->allocator, file->data.data);
-            deallocate(ctx->allocator, file);
+            deallocate(ctx->allocator, asset->path.data);
+            deallocate(ctx->allocator, asset);
         }
 
-        file = next;
+        asset = next;
     }
 
     mutex_release(ctx->lock);

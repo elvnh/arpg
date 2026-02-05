@@ -3,11 +3,23 @@
 
 #include "platform.h"
 
+/*
+  TODO:
+  - Don't print shader compilation errors over and over
+ */
+
+struct ModifiedAsset;
+
+typedef struct {
+    struct ModifiedAsset *head;
+    struct ModifiedAsset *tail;
+} ModifiedAssetQueue;
+
 typedef struct {
     Allocator allocator;
     pthread_t thread;
     Mutex lock;
-    StringList asset_reload_queue;
+    ModifiedAssetQueue asset_reload_queue;
     b32 should_terminate;
 } AssetWatcherContext;
 

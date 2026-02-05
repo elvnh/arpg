@@ -44,3 +44,8 @@ Please be aware that the gameplay is still in a prototyping stage and any contro
 
 ### Debug controls
 - Press `t` to open the debug overlay
+- Press up and down arrow keys to make the game go faster or slower
+- Press `g` to enter single step mode, meaning the gameplay is paused
+- To exit single step mode, either press `g` again or use the up arrow key
+  to increase the game speed
+- When in single step mode, press `k` to advance the game by a single frame

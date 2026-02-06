@@ -4,10 +4,20 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <math.h>
+#include <stdarg.h>
 
 #include "base/linear_arena.h"
 #include "base/string8.h"
 #include "base/vector.h"
+
+#define FORMAT_MAX_STRING_LENGTH 1024
+
+#ifdef __GNUC__
+#    define FORMAT_ATTRIBUTE(fmt_arg_nr, var_arg_nr)            \
+        __attribute__((format (printf, fmt_arg_nr, var_arg_nr)))
+#else
+#    error
+#endif
 
 static inline ssize digit_count_s64(s64 n)
 {
@@ -90,6 +100,26 @@ static inline String v2_to_string(Vector2 v, Allocator allocator)
         str_lit(")"),
         allocator
     );
+
+    return result;
+}
+
+FORMAT_ATTRIBUTE(2, 3)
+static inline String format(LinearArena *arena, const char *fmt, ...)
+{
+    va_list va;
+    va_start(va, fmt);
+
+    String result = str_allocate(FORMAT_MAX_STRING_LENGTH, la_allocator(arena));
+
+    s32 chars_written = vsnprintf(result.data, (usize)result.length, fmt, va);
+    ASSERT(chars_written > 0);
+    ASSERT(chars_written < result.length);
+
+    result.length = chars_written;
+    la_pop_to(arena, result.data + result.length);
+
+    va_end(va);
 
     return result;
 }

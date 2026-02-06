@@ -1,4 +1,5 @@
 #include "base/allocator.h"
+#include "base/linear_arena.h"
 #include "test_macros.h"
 #include "base/format.h"
 
@@ -27,6 +28,26 @@ TEST_CASE(format_f32_to_string)
     REQUIRE(str_equal(f32_to_string(0.001f, 3, allocator), str_lit("0.001")));
     REQUIRE(str_equal(f32_to_string(3.14159f, 5, allocator), str_lit("3.14159")));
     REQUIRE(str_equal(f32_to_string(-3.14159f, 5, allocator), str_lit("-3.14159")));
+
+    la_destroy(&arena);
+}
+
+TEST_CASE(format_format_basic)
+{
+    LinearArena arena = la_create(default_allocator, KB(32));
+
+    REQUIRE(str_equal(format(&arena, "%d", 123), str_lit("123")));
+
+    la_destroy(&arena);
+}
+
+
+TEST_CASE(format_format_alloc_not_larger_than_needed)
+{
+    LinearArena arena = la_create(default_allocator, KB(32));
+
+    format(&arena, "%d", 123);
+    REQUIRE(la_get_memory_usage(&arena) == 3);
 
     la_destroy(&arena);
 }

@@ -268,7 +268,7 @@ TEST_CASE(linear_arena_pop_to_non_allocation)
     LinearArena arena = la_create(default_allocator, 1024);
 
     int *first = la_allocate_item(&arena, int);
-    int *second = la_allocate_item(&arena, int);
+    la_allocate_item(&arena, int);
     la_pop_to(&arena, byte_offset(first, SIZEOF(int) + 2));
 
     REQUIRE(la_get_memory_usage(&arena) == SIZEOF(int) + 2);

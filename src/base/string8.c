@@ -210,3 +210,8 @@ String str_substring_before_pattern(String str, String substr)
 
     return result;
 }
+
+void str_print(String str)
+{
+    printf("%.*s\n", (s32)str.length, str.data);
+}

@@ -249,6 +249,34 @@ TEST_CASE(linear_arena_pop_to_basic)
     la_destroy(&arena);
 }
 
+TEST_CASE(linear_arena_pop_to_past_last)
+{
+    LinearArena arena = la_create(default_allocator, 1024);
+
+    int *first = la_allocate_item(&arena, int);
+    ssize old_usage = la_get_memory_usage(&arena);
+
+    la_pop_to(&arena, first + 1);
+
+    REQUIRE(old_usage == la_get_memory_usage(&arena));
+
+    la_destroy(&arena);
+}
+
+TEST_CASE(linear_arena_pop_to_non_allocation)
+{
+    LinearArena arena = la_create(default_allocator, 1024);
+
+    int *first = la_allocate_item(&arena, int);
+    int *second = la_allocate_item(&arena, int);
+    la_pop_to(&arena, byte_offset(first, SIZEOF(int) + 2));
+
+    REQUIRE(la_get_memory_usage(&arena) == SIZEOF(int) + 2);
+
+    la_destroy(&arena);
+}
+
+
 TEST_CASE(linear_arena_pop_to_across_buffers)
 {
     LinearArena arena = la_create(default_allocator, 1024);

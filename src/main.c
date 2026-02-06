@@ -8,7 +8,6 @@
 #include "renderer/backend/render_command_interpreter.h"
 #include "game/game.h"
 
-// TODO: transition to proper unit testing framework
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 768
 
@@ -29,15 +28,13 @@ const char *__asan_default_options(void) { return "detect_leaks=0"; }
 
 int main(void)
 {
-    // TODO: make this use mmap
     LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);
 
     GameMemory game_memory = {0};
 
     game_memory.permanent_memory = la_create(la_allocator(&main_arena), PERMANENT_ARENA_SIZE);
     game_memory.temporary_memory = la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE);
-    game_memory.free_list_memory
-	= fl_create(la_allocator(&game_memory.permanent_memory), FREE_LIST_ARENA_SIZE);
+    game_memory.free_list_memory = fl_create(la_allocator(&game_memory.permanent_memory), FREE_LIST_ARENA_SIZE);
 
     Game *game_state = la_allocate_item(&game_memory.permanent_memory, Game);
 
@@ -84,10 +81,9 @@ int main(void)
         f32 dt = time_point_new - time_point_last;
         time_point_last = time_point_new;
 
-        // TODO: should this be reset here or in game?
         la_reset(&game_memory.temporary_memory);
 
-        // TODO: guard behind macro too
+        // TODO: Guard asset reloading behind macro too, just like code hot reloading
         file_watcher_reload_modified_assets(&asset_watcher, &game_memory.temporary_memory);
         HOT_RELOAD_IF_RECOMPILED(&game_code, &game_memory.temporary_memory);
 

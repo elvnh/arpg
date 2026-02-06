@@ -87,7 +87,6 @@ Rectangle world_get_entity_bounding_box(Entity *entity)
         size.y = MAX(size.y, current_frame.sprite.size.y);
     }
 
-
     Rectangle result = {entity->position, size};
 
     return result;
@@ -687,7 +686,7 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     // Make an extra pass over all entities alive at end of frame and update their
     // quad tree locations. This ensures that when this frame is rendered, any entities
     // that were spawned during the frame have the correct quad tree location and are therefore
-    // rendered if they are visible to the player.
+    // rendered if they are on screen.
     for (ssize i = 0; i < world->alive_entity_count; ++i) {
         world_update_entity_quad_tree_location(world, i);
     }

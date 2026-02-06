@@ -2,6 +2,7 @@
 #define WORLD_H
 
 #include "base/free_list_arena.h"
+#include "components/component_id.h"
 #include "entity/entity_system.h"
 #include "item.h"
 #include "quad_tree.h"
@@ -15,22 +16,16 @@
 
 /*
   TODO:
-  - Handle player input in game instead
-  - Add a free list arena to World then allocate a subarena from it for each
-    entity. On entity death, destroy the arena and all memory tied to that entity is
-    released
   - Find out a way to cleanly tie a set of entity ids to a world instance
-  - Should entity/item system instead be per world, an when changing world, the
-    player entity and all items are automatically copied over to new world?
+  - Copying over entities and items when switching world
+  - Keep a list of items that exist in this world to avoid having to iterate
+    all items when destroying world
  */
 
 struct FrameData;
 struct DebugState;
 struct RenderBatch;
 struct RenderBatchList;
-
-// TODO: keep a list of items that exist in this world to avoid having to iterate all items when destroying world
-// TODO: move world arena to game, since that memory should be reused for new worlds?
 
 typedef struct World {
     // All allocations specific to the world instance should go here, and when destroying
@@ -61,15 +56,13 @@ typedef struct World {
 
 void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);
-
-// TODO: fix parameters
 void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena);
 void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, EntityFaction faction);
 Rectangle world_get_entity_bounding_box(Entity *entity);
 void world_kill_entity(World *world, Entity *entity);
-void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentBitset component,
+void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentID component,
     RetriggerBehaviour retrigger_behaviour);
 
 Entity *world_get_player_entity(World *world);

@@ -5,13 +5,13 @@
 
 #define NULL_ENTITY_ID ((EntityID){0})
 
-typedef s32 EntitySlotID;
+typedef s32 EntityIndex;
 typedef s32 EntityGeneration;
 
 // TODO: this shouldn't be a separate file
 
 typedef struct {
-    EntitySlotID     slot_id;
+    EntityIndex      index;
     EntityGeneration generation;
 } EntityID;
 
@@ -28,14 +28,14 @@ typedef enum {
 
 static inline b32 entity_id_equal(EntityID lhs, EntityID rhs)
 {
-    b32 result = (lhs.slot_id == rhs.slot_id) && (lhs.generation == rhs.generation);
+    b32 result = (lhs.index == rhs.index) && (lhs.generation == rhs.generation);
 
     return result;
 }
 
 static inline b32 entity_id_less_than(EntityID lhs, EntityID rhs)
 {
-    b32 result = lhs.slot_id < rhs.slot_id;
+    b32 result = lhs.index < rhs.index;
 
     return result;
 }
@@ -48,7 +48,7 @@ static inline b32 entity_id_is_null(EntityID id)
 
 static inline u64 entity_id_hash(EntityID id)
 {
-    u64 result = (u64)id.slot_id ^ (u64)id.generation;
+    u64 result = (u64)id.index ^ (u64)id.generation;
 
     return result;
 }
@@ -79,7 +79,7 @@ static inline EntityPair unordered_entity_pair(EntityID a, EntityID b)
 
 static inline u64 entity_pair_hash(EntityPair pair)
 {
-    u64 result = (u32)pair.entity_a.slot_id ^ (u32)pair.entity_b.slot_id; // TODO: better hash
+    u64 result = (u32)pair.entity_a.index ^ (u32)pair.entity_b.index; // TODO: better hash
 
     return result;
 }

@@ -71,7 +71,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 	// TODO: inventory and equipment
         String faction = entity_faction_to_string(entity->faction);
 
-        String entity_str = format(scratch, "Hovered entity: %d", game->game_ui.hovered_entity.slot_id);
+        String entity_str = format(scratch, "Hovered entity: %d", game->game_ui.hovered_entity.index);
         String entity_pos_str = format(scratch, "Position: "FMT_V2, FMT_V2_ARG(entity->position));
         String entity_faction_str = format(scratch, "Faction: "FMT_STR,
             FMT_STR_ARG(faction));

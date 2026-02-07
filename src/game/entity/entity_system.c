@@ -1,4 +1,5 @@
 #include "entity_system.h"
+#include "entity/entity_id.h"
 #include "entity_arena.h"
 #include "base/linear_arena.h"
 #include "base/ring_buffer.h"
@@ -49,20 +50,6 @@ static EntityIDSlot *get_next_id_slot(EntitySystem *es, EntityIDSlot id_slot)
     return result;
 }
 
-// TODO: return null if failed
-static EntityIDSlot *get_first_free_id_slot(EntitySystem *es)
-{
-    EntitySlotID index = es->first_free_id_index;
-
-    ASSERT(index >= 0);
-    ASSERT(index < MAX_ENTITIES);
-
-    EntityIDSlot *result = &es->id_slots[index];
-
-    return result;
-}
-
-
 static void remove_id_slot(EntitySystem *es, EntityIDSlot *id_slot)
 {
     ASSERT(id_slot->prev_free_id_index == -1 && "Removal in middle of list not yet supported");
@@ -93,8 +80,8 @@ static EntitySlot *es_get_entity_slot(Entity *entity)
 
 static EntitySlot *es_get_entity_slot_by_id(EntitySystem *es, EntityID id)
 {
-    ASSERT(id.slot_id < MAX_ENTITIES);
-    EntitySlot *result = &es->entity_slots[id.slot_id];
+    ASSERT(id.index < MAX_ENTITIES);
+    EntitySlot *result = &es->entity_slots[id.index];
 
     return result;
 }
@@ -103,19 +90,19 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
 {
     b32 result =
 	(id.generation >= FIRST_ENTITY_GENERATION)
-	&& (id.slot_id < MAX_ENTITIES)
-        && (es->id_slots[id.slot_id].generation == id.generation);
+	&& (id.index < MAX_ENTITIES)
+        && (es->id_slots[id.index].generation == id.generation);
 
     return result;
 }
 
 static EntityID get_entity_id_from_slot(EntitySystem *es, EntitySlot *slot)
 {
-    EntitySlotID index = (EntitySlotID)(slot - es->entity_slots);
+    EntityIndex index = (EntityIndex)(slot - es->entity_slots);
     EntityGeneration generation = es->id_slots[index].generation;
 
     EntityID result = {
-	.slot_id = index,
+	.index = index,
 	.generation = generation
     };
 
@@ -178,7 +165,7 @@ void es_impl_remove_component(Entity *entity, ComponentType type)
 
 void es_initialize(EntitySystem *es)
 {
-    for (EntitySlotID i = 0; i < MAX_ENTITIES; ++i) {
+    for (EntityIndex i = 0; i < MAX_ENTITIES; ++i) {
         EntityIDSlot slot = {0};
 
         slot.generation = FIRST_ENTITY_GENERATION;
@@ -194,18 +181,29 @@ void es_initialize(EntitySystem *es)
     }
 }
 
+static EntityIDSlot *get_id_slot_at(EntitySystem *es, EntityIndex index)
+{
+    ASSERT(index >= -1);
+
+    EntityIDSlot *result = 0;
+
+    if (index != -1) {
+        result = &es->id_slots[index];
+    }
+
+    return result;
+}
+
 static EntityID get_new_entity_id(EntitySystem *es)
 {
-    s32 index = es->first_free_id_index;
-
-    ASSERT((index != -1) && "Ran out of IDs");
-
-    EntityIDSlot *id_slot = get_first_free_id_slot(es);
-    remove_id_slot(es, id_slot);
+    EntityIDSlot *id_slot = get_id_slot_at(es, es->first_free_id_index);
+    ASSERT(id_slot && "Ran out of IDs");
 
     EntityID result = {0};
-    result.slot_id = index;
+    result.index = es->first_free_id_index;
     result.generation = id_slot->generation;
+
+    remove_id_slot(es, id_slot);
 
     return result;
 }
@@ -241,7 +239,7 @@ void es_remove_entity(EntitySystem *es, EntityID id)
 {
     ASSERT(entity_id_is_valid(es, id));
 
-    EntityIDSlot *id_slot = &es->id_slots[id.slot_id];
+    EntityIDSlot *id_slot = &es->id_slots[id.index];
     ASSERT(id_slot->next_free_id_index == -1);
     ASSERT(id_slot->prev_free_id_index == -1);
 
@@ -256,7 +254,7 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     id_slot->generation = new_generation;
 
     id_slot->next_free_id_index = es->first_free_id_index;
-    es->first_free_id_index = id.slot_id;
+    es->first_free_id_index = id.index;
 }
 
 Entity *es_get_entity(EntitySystem *es, EntityID id)

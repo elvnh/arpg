@@ -46,7 +46,7 @@ typedef struct World {
 
     EntitySystem     entity_system;
     EntityID         alive_entity_ids[MAX_ENTITIES];
-    EntitySlotID      alive_entity_count;
+    EntityIndex      alive_entity_count;
     QuadTreeLocation alive_entity_quad_tree_locations[MAX_ENTITIES];
     QuadTree         quad_tree;
 } World;

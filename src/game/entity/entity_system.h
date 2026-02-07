@@ -34,7 +34,7 @@ DEFINE_STATIC_RING_BUFFER(EntityID, EntityIDQueue, MAX_ENTITIES);
 typedef struct EntitySystem {
     EntitySlot     entity_slots[MAX_ENTITIES];
     EntityIDSlot   id_slots[MAX_ENTITIES];
-    EntitySlotID   first_free_id_index;
+    EntityIndex    first_free_id_index;
 } EntitySystem;
 
 void          es_initialize(EntitySystem *es);

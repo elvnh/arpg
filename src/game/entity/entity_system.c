@@ -73,24 +73,7 @@ static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slo
 {
     ASSERT(!id_slot->is_active && "Can't remove ID if it's already active");
 
-    es->first_free_id_index = id_slot->next_free_id_index;
-
-    EntityIDSlot *prev = get_id_slot_at_index(es, id_slot->prev_free_id_index);
-    EntityIDSlot *next = get_id_slot_at_index(es, id_slot->next_free_id_index);
-
-    if (prev) {
-        prev->next_free_id_index = id_slot->next_free_id_index;
-    }
-
-    if (next) {
-        next->prev_free_id_index = id_slot->prev_free_id_index;
-    }
-
-    // NOTE: for debugging purposes, the is_active member is what actually should decide
-    // if the ID slot is active or not
-    id_slot->next_free_id_index = -1;
-    id_slot->prev_free_id_index = -1;
-
+    remove_generational_id_from_list(es, entity_ids, id_slot);
     id_slot->is_active = true;
 }
 
@@ -180,18 +163,8 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     ASSERT(id_slot->prev_free_id_index == -1);
     ASSERT(id_slot->is_active);
 
-    EntityGeneration new_generation = 0;
-    if (id.generation == LAST_ENTITY_GENERATION) {
-        // TODO: what to do when generation overflows? inactivate slot?
-        new_generation = FIRST_ENTITY_GENERATION;
-    } else {
-        new_generation = id.generation + 1;
-    }
-
-    id_slot->generation = new_generation;
-
-    id_slot->next_free_id_index = es->first_free_id_index;
-    es->first_free_id_index = id.index;
+    bump_generation_counter(id_slot, LAST_ENTITY_GENERATION);
+    push_generational_id_to_free_list(es, entity_ids, id.index);
 
     id_slot->is_active = false;
 }
@@ -203,7 +176,6 @@ Entity *es_get_entity(EntitySystem *es, EntityID id)
 
     return result;
 }
-
 
 Entity *es_try_get_entity(EntitySystem *es, EntityID id)
 {

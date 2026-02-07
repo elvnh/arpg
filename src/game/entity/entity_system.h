@@ -3,6 +3,7 @@
 
 #include "base/ring_buffer.h"
 #include "entity.h"
+#include "generational_id.h"
 
 #define MAX_ENTITIES 32
 
@@ -24,10 +25,7 @@
 #define es_get_or_add_component(entity, type)  ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 
 typedef struct {
-    EntityGeneration generation;
-
-    EntityIndex prev_free_id_index;
-    EntityIndex next_free_id_index;
+    DEFINE_GENERATIONAL_ID_NODE_FIELDS(EntityGeneration, EntityIndex);
 
     b32 is_active;
 } EntityIDSlot;
@@ -35,7 +33,7 @@ typedef struct {
 typedef struct EntitySystem {
     Entity         entities[MAX_ENTITIES];
     EntityIDSlot   entity_ids[MAX_ENTITIES];
-    EntityIndex    first_free_id_index;
+    DEFINE_GENERATIONAL_ID_LIST_HEAD(EntityIndex);
 } EntitySystem;
 
 void          es_initialize(EntitySystem *es);

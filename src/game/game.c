@@ -234,11 +234,6 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
 {
     ASSERT(game->debug_state.timestep_modifier >= 0.0f);
 
-#if HOT_RELOAD
-    // NOTE: these global pointers are set every frame in case we have hot reloaded
-    set_global_state(game);
-#endif
-
     debug_update(game, frame_data, frame_arena);
 
     // NOTE: We update camera independent of timestep modifier
@@ -267,6 +262,12 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
 void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory)
 {
+#if HOT_RELOAD
+    // NOTE: these global pointers are set every frame in case we have hot reloaded
+    set_global_state(game);
+#endif
+
+
     if (input_is_key_pressed(&frame_data.input, KEY_ESCAPE)) {
         DEBUG_BREAK;
     }

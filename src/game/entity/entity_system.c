@@ -42,6 +42,7 @@ static ssize get_component_size(ComponentType type)
 static EntityIDSlot *get_id_slot_at_index(EntitySystem *es, EntityIndex index)
 {
     ASSERT(index >= -1);
+    ASSERT(index < MAX_ENTITIES);
 
     EntityIDSlot *result = 0;
 
@@ -72,10 +73,16 @@ static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slo
 
 static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
 {
+    EntityIDSlot *id_slot = get_id_slot_at_index(es, id.index);
+
     b32 result =
 	(id.generation >= FIRST_ENTITY_GENERATION)
+	&& (id.index >= 0)
 	&& (id.index < MAX_ENTITIES)
-        && (get_id_slot_at_index(es, id.index)->generation == id.generation);
+        && (id_slot->generation == id.generation);
+
+    ASSERT((!result || ((id_slot->next_free_id_index == -1) && (id_slot->prev_free_id_index == -1)))
+        && "If entity is alive, it's free ID list links should be set to -1");
 
     return result;
 }

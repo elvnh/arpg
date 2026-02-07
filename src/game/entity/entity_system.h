@@ -15,8 +15,7 @@
 #define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
 #define es_get_or_add_component(entity, type)  ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 
-// TODO: better naming wrt slots, ids, id slots etc.
-
+// TODO: This needs a better name
 typedef struct {
     EntityGeneration generation;
 

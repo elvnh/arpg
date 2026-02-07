@@ -52,7 +52,7 @@ static EntityIDSlot *get_id_slot_at_index(EntitySystem *es, EntityIndex index)
     return result;
 }
 
-static void remove_id_slot(EntitySystem *es, EntityIDSlot *id_slot)
+static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slot)
 {
     ASSERT(id_slot->prev_free_id_index == -1 && "Removal in middle of list not yet supported");
     es->first_free_id_index = id_slot->next_free_id_index;
@@ -75,7 +75,7 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
     b32 result =
 	(id.generation >= FIRST_ENTITY_GENERATION)
 	&& (id.index < MAX_ENTITIES)
-        && (es->entity_ids[id.index].generation == id.generation);
+        && (get_id_slot_at_index(es, id.index)->generation == id.generation);
 
     return result;
 }
@@ -92,51 +92,6 @@ EntityID es_get_id_of_entity(EntitySystem *es, Entity *entity)
     result.generation = id_slot->generation;
 
     return result;
-}
-
-void *es_impl_add_component(Entity *entity, ComponentType type)
-{
-    ASSERT(!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
-
-    entity->active_components |= ES_IMPL_COMP_ENUM_BIT_VALUE(type);
-    void *result = es_impl_get_component(entity, type);
-    ASSERT(result);
-
-    ssize size = get_component_size(type);
-    memset(result, 0, (usize)size);
-
-    return result;
-}
-
-void *es_impl_get_component(Entity *entity, ComponentType type)
-{
-    if (!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type))) {
-        return 0;
-    }
-
-    ssize component_offset = get_component_offset(type);
-    void *result = byte_offset(entity, component_offset);
-
-    return result;
-}
-
-void *es_impl_get_or_add_component(Entity *entity, ComponentType type)
-{
-    void *component = es_impl_get_component(entity, type);
-
-    if (!component) {
-	component = es_impl_add_component(entity, type);
-    }
-
-    return component;
-}
-
-void es_impl_remove_component(Entity *entity, ComponentType type)
-{
-    u64 bit_value = ES_IMPL_COMP_ENUM_BIT_VALUE(type);
-    ASSERT(es_has_components(entity, bit_value));
-
-    entity->active_components &= ~(bit_value);
 }
 
 void es_initialize(EntitySystem *es)
@@ -166,25 +121,17 @@ static EntityID get_new_entity_id(EntitySystem *es)
     result.index = es->first_free_id_index;
     result.generation = id_slot->generation;
 
-    remove_id_slot(es, id_slot);
+    remove_id_slot_from_free_list(es, id_slot);
 
     return result;
 }
 
-// TODO: why is this and es_create_entity separate functions?
-static inline EntityID create_entity(EntitySystem *es)
+EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
 {
     EntityID id = get_new_entity_id(es);
     Entity *entity = es_get_entity(es, id);
     *entity = zero_struct(Entity);
 
-    return id;
-}
-
-EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
-{
-    EntityID id = create_entity(es);
-    Entity *entity = es_get_entity(es, id);
     entity->faction = faction;
 
     ASSERT(entity_arena_get_memory_usage(&entity->entity_arena) == 0);
@@ -201,7 +148,7 @@ void es_remove_entity(EntitySystem *es, EntityID id)
 {
     ASSERT(entity_id_is_valid(es, id));
 
-    EntityIDSlot *id_slot = &es->entity_ids[id.index];
+    EntityIDSlot *id_slot = get_id_slot_at_index(es, id.index);
     ASSERT(id_slot->next_free_id_index == -1);
     ASSERT(id_slot->prev_free_id_index == -1);
 
@@ -262,4 +209,49 @@ b32 es_has_no_components(Entity *entity)
     b32 result = entity->active_components == 0;
 
     return result;
+}
+
+void *es_impl_add_component(Entity *entity, ComponentType type)
+{
+    ASSERT(!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
+
+    entity->active_components |= ES_IMPL_COMP_ENUM_BIT_VALUE(type);
+    void *result = es_impl_get_component(entity, type);
+    ASSERT(result);
+
+    ssize size = get_component_size(type);
+    memset(result, 0, (usize)size);
+
+    return result;
+}
+
+void *es_impl_get_component(Entity *entity, ComponentType type)
+{
+    if (!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type))) {
+        return 0;
+    }
+
+    ssize component_offset = get_component_offset(type);
+    void *result = byte_offset(entity, component_offset);
+
+    return result;
+}
+
+void *es_impl_get_or_add_component(Entity *entity, ComponentType type)
+{
+    void *component = es_impl_get_component(entity, type);
+
+    if (!component) {
+	component = es_impl_add_component(entity, type);
+    }
+
+    return component;
+}
+
+void es_impl_remove_component(Entity *entity, ComponentType type)
+{
+    u64 bit_value = ES_IMPL_COMP_ENUM_BIT_VALUE(type);
+    ASSERT(es_has_components(entity, bit_value));
+
+    entity->active_components &= ~(bit_value);
 }

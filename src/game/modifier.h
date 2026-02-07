@@ -2,6 +2,7 @@
 #define MODIFIER_H
 
 #include "base/format.h"
+#include "base/linear_arena.h"
 #include "stats.h"
 
 /*
@@ -26,25 +27,28 @@ static inline Modifier create_modifier(Stat stat, StatValue value, NumericModifi
     return result;
 }
 
-static inline String modifier_to_string(Modifier modifier, Allocator alloc)
+static inline String modifier_to_string(Modifier modifier, LinearArena *arena)
 {
     String result = {0};
-    String mod_value = s64_to_string(modifier.value, alloc);
 
-    if (modifier.modifier_type == NUMERIC_MOD_FLAT_ADDITIVE) {
-	result = str_concat(str_lit("+"), mod_value, alloc);
-    } else if (modifier.modifier_type == NUMERIC_MOD_ADDITIVE_PERCENTAGE) {
-	result = str_concat(mod_value, str_lit("% increased"), alloc);
-    }  else if (modifier.modifier_type == NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE) {
-	f32 percentage = (f32)modifier.value / 100.0f;
+    switch (modifier.modifier_type) {
+        case NUMERIC_MOD_FLAT_ADDITIVE: {
+            result = format(arena, "+%ld", modifier.value);
+        } break;
 
-	result = str_concat(f32_to_string(percentage, 2, alloc), str_lit("x"), alloc);
-    } else {
-	ASSERT(0);
+        case NUMERIC_MOD_ADDITIVE_PERCENTAGE: {
+            result = format(arena, "%ld%% increased", modifier.value);
+        } break;
+
+        case NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE: {
+            result = format(arena, "%.2fx", (f64)modifier.value / 100.0);
+        } break;
+
+        INVALID_DEFAULT_CASE;
     }
 
-    result = str_concat(result, str_lit(" "), alloc);
-    result = str_concat(result, stat_to_string(modifier.target_stat), alloc);
+    result = format(arena, FMT_STR" "FMT_STR,
+        FMT_STR_ARG(result), FMT_STR_ARG(stat_to_string(modifier.target_stat)));
 
     return result;
 }

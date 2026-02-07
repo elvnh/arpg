@@ -140,7 +140,8 @@ static String get_canonical_asset_path(String name, AssetKind kind, FreeListAren
 {
     Allocator scratch = la_allocator(scratch_arena);
 
-    // NOTE: path is copied later which is why we allocate in scratch arena
+    // NOTE: path is copied later which is why we allocate in scratch arena while building string
+    // TODO: replace with format
     String path = str_concat(
 	platform_get_executable_directory(scratch, scratch_arena),
 	str_lit("/../"ASSET_DIRECTORY),

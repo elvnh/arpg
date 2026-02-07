@@ -1,6 +1,8 @@
 #include "debug.h"
 #include "base/format.h"
+#include "base/linear_arena.h"
 #include "components/component.h"
+#include "entity/entity_faction.h"
 #include "platform/input.h"
 #include "status_effect.h"
 #include "game.h"
@@ -33,7 +35,7 @@ void render_quad_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, s
 }
 
 typedef struct {
-    Allocator allocator;
+    LinearArena *arena;
     UIState *ui;
 } EffectListContext;
 
@@ -42,19 +44,12 @@ static StatusEffectCallbackResult status_effect_list_callback(StatusEffectCallba
 {
     EffectListContext context = *(EffectListContext *)user_data;
 
-    String str = {0};
-
-    str = status_effect_to_string(params.status_effect_id);
-
-    String duration_str = f32_to_string(params.instance->time_remaining, 2, context.allocator);
-
-    str = str_concat(str, str_lit(" ("), context.allocator);
-    str = str_concat(str, duration_str, context.allocator);
-    str = str_concat(str, str_lit(")"), context.allocator);
-
-    String hash = str_concat(str_lit("##"),
-	ptr_to_string(params.instance, context.allocator), context.allocator);
-    str = str_concat(str, hash, context.allocator);
+    String status_effect_name = status_effect_to_string(params.status_effect_id);
+    String str = format(context.arena,
+        FMT_STR" (%.2f)##%p",
+        FMT_STR_ARG(status_effect_name),
+        (f64)params.instance->time_remaining,
+        (void *)params.instance);
 
     ui_selectable(context.ui, str);
 
@@ -71,40 +66,15 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 	return;
     }
 
-    Allocator alloc = la_allocator(scratch);
-
     // TODO: don't require name for containers
     ui_begin_container(ui, str_lit("inspect"), V2_ZERO, RGBA32_GREEN, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 	// TODO: inventory and equipment
-	String entity_str = str_concat(
-	    str_lit("Hovered entity: "),
-	    s64_to_string(game->game_ui.hovered_entity.slot_id, alloc),
-	    alloc
-	);
+        String faction = entity_faction_to_string(entity->faction);
 
-	String entity_pos_str = str_concat(
-	    str_lit("Position: "), v2_to_string(entity->position, alloc), alloc
-	);
-
-	String entity_faction_str = {0};
-	switch (entity->faction) {
-	    case FACTION_NEUTRAL: {
-		entity_faction_str = str_lit("Neutral");
-	    } break;
-
-	    case FACTION_PLAYER: {
-		entity_faction_str = str_lit("Player");
-	    } break;
-
-	    case FACTION_ENEMY: {
-		entity_faction_str = str_lit("Enemy");
-	    } break;
-
-		INVALID_DEFAULT_CASE;
-	}
-
-	entity_faction_str = str_concat(str_lit("Faction: "), entity_faction_str, alloc);
-
+        String entity_str = format(scratch, "Hovered entity: %d", game->game_ui.hovered_entity.slot_id);
+        String entity_pos_str = format(scratch, "Position: "FMT_V2, FMT_V2_ARG(entity->position));
+        String entity_faction_str = format(scratch, "Faction: "FMT_STR,
+            FMT_STR_ARG(faction));
 
 	ui_text(ui, entity_str);
 	ui_text(ui, entity_pos_str);
@@ -113,10 +83,8 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 	HealthComponent *hp = es_get_component(entity, HealthComponent);
 
 	if (hp) {
-	    String hp_str = str_concat(str_lit("HP: "),
-		s64_to_string(hp->health.current_hitpoints, alloc), alloc);
-	    hp_str = str_concat(hp_str, str_lit("/"), alloc);
-	    hp_str = str_concat(hp_str, s64_to_string(hp->health.max_hitpoints, alloc), alloc);
+            String hp_str = format(scratch, "HP: %zu/%zu",
+                hp->health.current_hitpoints, hp->health.max_hitpoints);
 
 	    ui_text(ui, hp_str);
 	}
@@ -126,7 +94,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 	if (effects) {
 	    ui_begin_list(ui, str_lit("status_effects")); {
 		EffectListContext context = {0};
-		context.allocator = alloc;
+		context.arena = scratch;
 		context.ui = ui;
 
 		for_each_active_status_effect(effects, status_effect_list_callback, &context);
@@ -135,16 +103,9 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     } ui_pop_container(ui);
 }
 
-static String dbg_arena_usage_string(String name, ssize usage, Allocator allocator)
+static String dbg_arena_usage_string(String name, ssize usage, LinearArena *arena)
 {
-    String result = str_concat(
-        name,
-        str_concat(
-            f32_to_string((f32)usage / 1024.0f, 2, allocator),
-            str_lit(" KBs"),
-            allocator),
-        allocator
-    );
+    String result = format(arena, FMT_STR"%.2f KBs", FMT_STR_ARG(name), (f64)usage / 1024.0);
 
     return result;
 }
@@ -157,32 +118,17 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     ssize perm_arena_memory_usage = game->debug_state.permanent_arena_memory_usage;
     ssize world_arena_memory_usage = game->debug_state.world_arena_memory_usage;
 
-    Allocator temp_alloc = la_allocator(scratch);
+    String frame_time_str = format(scratch, "Frame time: %.5f", (f64)frame_data->dt);
+    String fps_str = format(scratch, "FPS: %.2f", (f64)game->debug_state.average_fps);
 
-    String frame_time_str = str_concat(
-        str_lit("Frame time: "),
-        f32_to_string(frame_data->dt, 5, temp_alloc),
-        temp_alloc
-    );
-
-    String fps_str = str_concat(
-        str_lit("FPS: "),
-        f32_to_string(game->debug_state.average_fps, 2, temp_alloc),
-        temp_alloc
-    );
-
-    String temp_arena_str = dbg_arena_usage_string(str_lit("Frame arena: "), temp_arena_memory_usage, temp_alloc);
-    String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena: "), perm_arena_memory_usage, temp_alloc);
-    String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, temp_alloc);
+    String temp_arena_str = dbg_arena_usage_string(str_lit("Frame arena: "), temp_arena_memory_usage, scratch);
+    String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena: "), perm_arena_memory_usage, scratch);
+    String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, scratch);
 
     ssize qt_nodes = qt_get_node_count(&game->world.quad_tree);
-    String node_string = str_concat(str_lit("Quad tree nodes: "), s64_to_string(qt_nodes, temp_alloc), temp_alloc);
+    String node_string = format(scratch, "Quad tree nodes: %ld", qt_nodes);
 
-    String entity_string = str_concat(
-        str_lit("Alive entity count: "),
-        s64_to_string(game->world.alive_entity_count, temp_alloc),
-        temp_alloc
-    );
+    String entity_string = format(scratch, "Alive entity count: %d", game->world.alive_entity_count);
 
     f32 timestep = game->debug_state.timestep_modifier;
     String timestep_value_str = {0};
@@ -190,13 +136,11 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     if (timestep == 0.0f) {
         timestep_value_str = str_lit("SINGLE STEP");
     } else {
-        timestep_value_str = f32_to_string(timestep, 2, temp_alloc);
+        timestep_value_str = format(scratch, "%.2f", (f64)timestep);
     }
-    String timestep_str = str_concat(
-        str_lit("Timestep modifier: "),
-        timestep_value_str,
-        temp_alloc
-    );
+
+    String timestep_str = format(scratch, "Timestep modifier: "FMT_STR,
+        FMT_STR_ARG(timestep_value_str));
 
     ui_text(ui, frame_time_str);
     ui_text(ui, fps_str);
@@ -222,14 +166,12 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     ui_spacing(ui, 8);
 
     {
-        String camera_pos_str = str_concat(
-            str_lit("Camera position: "),
-            v2_to_string(game->world.camera.position, temp_alloc),
-            temp_alloc
-        );
+        String camera_pos_str = format(scratch, "Camera position: "FMT_V2,
+            FMT_V2_ARG(game->world.camera.position));
+        String zoom_str = format(scratch, "Zoom: %.2f", (f64)game->world.camera.zoom);
 
         ui_text(ui, camera_pos_str);
-        ui_text(ui, str_concat(str_lit("Zoom: "), f32_to_string(game->world.camera.zoom, 2, temp_alloc), temp_alloc));
+        ui_text(ui, zoom_str);
     }
 
     ui_spacing(ui, 8);

@@ -1,4 +1,5 @@
 #include "game_ui.h"
+#include "base/format.h"
 #include "components/component.h"
 #include "entity/entity_system.h"
 #include "game.h"
@@ -16,10 +17,9 @@
 
 static String item_widget_string(ItemID id, Item *item, LinearArena *scratch)
 {
-    Allocator alloc = la_allocator(scratch);
-
-    String non_visible_substring = str_concat(str_lit("##"), item_id_to_string(id, alloc), alloc);
-    String result = str_concat(item->name, non_visible_substring, alloc);
+    String id_string = item_id_to_string(id, scratch);
+    String result = format(scratch, FMT_STR"##"FMT_STR, FMT_STR_ARG(item->name),
+        FMT_STR_ARG(id_string));
 
     return result;
 }
@@ -52,8 +52,6 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
 
 static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, LinearArena *arena)
 {
-    Allocator alloc = la_allocator(arena);
-
     ui_begin_mouse_menu(ui, mouse_position); {
 	ui_text(ui, item->name);
 
@@ -62,7 +60,7 @@ static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, Lin
 	if (item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
 	    for (ssize i = 0; i < item->modifiers.modifier_count; ++i) {
 		Modifier mod = item->modifiers.modifiers[i];
-		String mod_string = modifier_to_string(mod, alloc);
+		String mod_string = modifier_to_string(mod, arena);
 
 		ui_text(ui, mod_string);
 		ui_spacing(ui, 12);

@@ -110,19 +110,9 @@ static inline String equipment_slot_spelling(EquipmentSlot slot)
     return (String){0};
 }
 
-static inline String item_id_to_string(ItemID id, Allocator alloc)
+static inline String item_id_to_string(ItemID id, LinearArena *arena)
 {
-    String a = s64_to_string(id.id, alloc);
-    String b = s64_to_string(id.generation, alloc);
-    String result = str_concat(
-	a,
-	str_concat(
-	    str_lit(","),
-	    b,
-	    alloc
-	),
-	alloc
-    );
+    String result = format(arena, "%u,%u", id.id, id.generation);
 
     return result;
 }

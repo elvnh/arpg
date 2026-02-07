@@ -16,7 +16,6 @@
 
 /*
   TODO:
-  - Find out a way to cleanly tie a set of entity ids to a world instance
   - Copying over entities and items when switching world
   - Keep a list of items that exist in this world to avoid having to iterate
     all items when destroying world
@@ -36,12 +35,12 @@ typedef struct World {
     Camera camera;
     Tilemap tilemap;
 
-
     TriggerCooldownTable trigger_cooldowns;
 
     CollisionEventTable  previous_frame_collisions;
     CollisionEventTable  current_frame_collisions;
 
+    // TODO: make into ring buffer
     Hitsplat active_hitsplats[128];
     s32 hitsplat_count;
 

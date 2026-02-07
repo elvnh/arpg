@@ -19,6 +19,13 @@
 #    error
 #endif
 
+#define FMT_STR "%.*s"
+#define FMT_STR_ARG(str) ssize_to_s32((str).length), (str).data
+
+#define FMT_V2 "(%.2f, %.2f)"
+#define FMT_V2_ARG(v2) (f64)(v2).x, (f64)(v2).y
+
+
 static inline ssize digit_count_s64(s64 n)
 {
     // TODO: other number bases
@@ -34,6 +41,7 @@ static inline ssize digit_count_s64(s64 n)
     return result;
 }
 
+// TODO: get rid of these *_to_string functions since they're no longer needed thanks to format
 static inline String s64_to_string(s64 number, Allocator allocator)
 {
     b32 is_negative = number < 0;
@@ -73,33 +81,6 @@ static inline String f32_to_string(f32 number, s32 precision, Allocator allocato
     ASSERT(chars_written <= num_chars);
 
     result.length = chars_written;
-
-    return result;
-}
-
-
-static inline String v2_to_string(Vector2 v, Allocator allocator)
-{
-    String result = str_concat(
-        str_lit("("),
-        f32_to_string(v.x, 2, allocator),
-        allocator
-    );
-
-    result = str_concat(
-        result,
-        str_concat(
-            str_lit(", "),
-            f32_to_string(v.y, 2, allocator),
-            allocator),
-        allocator
-    );
-
-    result = str_concat(
-        result,
-        str_lit(")"),
-        allocator
-    );
 
     return result;
 }

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <linux/limits.h>
 
+#include "base/format.h"
 #include "file_watcher.h"
 #include "asset_system.h"
 #include "platform/platform.h"
@@ -20,11 +21,7 @@ typedef struct ModifiedAsset {
 static String get_assets_directory(LinearArena *arena)
 {
     String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
-    String result = str_concat(
-	executable_dir,
-	str_lit("/../"ASSET_DIRECTORY),
-	la_allocator(arena)
-    );
+    String result = format(arena, FMT_STR"/../"ASSET_DIRECTORY, FMT_STR_ARG(executable_dir));
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;

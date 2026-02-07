@@ -32,7 +32,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 
 	ASSERT(hitsplat->damage.value > 0);
 
-	String damage_str = s64_to_string(hitsplat->damage.value, la_allocator(frame_arena));
+        String damage_str = format(frame_arena, "%ld", hitsplat->damage.value);
 
 	f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
 	RGBA32 color = get_damage_type_color(hitsplat->damage.type);

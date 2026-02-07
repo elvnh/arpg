@@ -882,6 +882,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);
 
+    ring_initialize_static(&world->active_hitsplats);
 
     // NOTE: testing code
     s32 world_width = 16;
@@ -1021,8 +1022,6 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 #endif
         }
 #endif
-
-
     }
 }
 

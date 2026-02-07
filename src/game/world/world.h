@@ -41,8 +41,7 @@ typedef struct World {
     CollisionEventTable  current_frame_collisions;
 
     // TODO: make into ring buffer
-    Hitsplat active_hitsplats[128];
-    s32 hitsplat_count;
+    HitsplatBuffer active_hitsplats;
 
     ItemSystem       item_system;
 

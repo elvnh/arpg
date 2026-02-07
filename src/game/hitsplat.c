@@ -1,5 +1,6 @@
 #include "hitsplat.h"
 #include "base/format.h"
+#include "base/ring_buffer.h"
 #include "damage.h"
 #include "world/world.h"
 #include "renderer/frontend/render_batch.h"
@@ -8,14 +9,13 @@
 
 void hitsplats_update(World *world, const FrameData *frame_data)
 {
-    for (s32 i = 0; i < world->hitsplat_count; ++i) {
-        Hitsplat *hitsplat = &world->active_hitsplats[i];
+    for (s32 i = 0; i < ring_length(&world->active_hitsplats); ++i) {
+        Hitsplat *hitsplat = ring_at(&world->active_hitsplats, i);
 
         if (hitsplat->timer >= hitsplat->lifetime) {
-            world->active_hitsplats[i] = world->active_hitsplats[world->hitsplat_count - 1];
-            world->hitsplat_count -= 1;
+            ring_swap_remove(&world->active_hitsplats, i);
 
-            if (world->hitsplat_count == 0) {
+            if (ring_length(&world->active_hitsplats) == 0) {
                 break;
             }
         }
@@ -27,8 +27,8 @@ void hitsplats_update(World *world, const FrameData *frame_data)
 
 void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 {
-    for (s32 i = 0; i < world->hitsplat_count; ++i) {
-        Hitsplat *hitsplat = &world->active_hitsplats[i];
+    for (s32 i = 0; i < ring_length(&world->active_hitsplats); ++i) {
+        Hitsplat *hitsplat = ring_at(&world->active_hitsplats, i);
 
 	ASSERT(hitsplat->damage.value > 0);
 
@@ -61,11 +61,7 @@ void hitsplats_create(World *world, Vector2 position, Damage damage)
 {
     // NOTE: a single instance of damage can result in multiple hitsplats
     // if the instance contains multiple damage types
-
     for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
-	// TODO: use ring buffer for hitsplats instead
-	ASSERT(world->hitsplat_count < ARRAY_COUNT(world->active_hitsplats));
-
 	StatValue value = damage.type_values[type];
 
 	if (value > 0) {
@@ -81,8 +77,7 @@ void hitsplats_create(World *world, Vector2 position, Damage damage)
 		.lifetime = 2.0f,
 	    };
 
-	    s32 index = world->hitsplat_count++;
-	    world->active_hitsplats[index] = hitsplat;
+            ring_push_overwrite(&world->active_hitsplats, &hitsplat);
 	}
     }
 }

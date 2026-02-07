@@ -295,3 +295,66 @@ TEST_CASE(es_create_lots_remove_unordered)
 
     free_entity_system(es);
 }
+
+TEST_CASE(es_clone_entity_same_es)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    EntityWithID first = es_create_entity(es, FACTION_NEUTRAL);
+
+    es_add_component(first.entity, LifetimeComponent);
+    es_add_component(first.entity, SpriteComponent);
+    es_add_component(first.entity, LightEmitter);
+
+    EntityWithID clone = es_clone_entity(es, first.entity);
+
+    REQUIRE(clone.entity != first.entity);
+    REQUIRE(!entity_id_equal(clone.id, first.id));
+
+    REQUIRE(v2_eq(clone.entity->position, first.entity->position));
+    REQUIRE(clone.entity->faction == first.entity->faction);
+
+    REQUIRE(es_has_component(first.entity, LifetimeComponent));
+    REQUIRE(es_has_component(first.entity, SpriteComponent));
+    REQUIRE(es_has_component(first.entity, LightEmitter));
+
+    REQUIRE(es_has_component(clone.entity, LifetimeComponent));
+    REQUIRE(es_has_component(clone.entity, SpriteComponent));
+    REQUIRE(es_has_component(clone.entity, LightEmitter));
+
+    free_entity_system(es);
+}
+
+TEST_CASE(es_clone_entity_different_es)
+{
+    EntitySystem *es1 = allocate_entity_system();
+    EntitySystem *es2 = allocate_entity_system();
+
+    EntityWithID first = es_create_entity(es1, FACTION_NEUTRAL);
+
+    es_add_component(first.entity, LifetimeComponent);
+    es_add_component(first.entity, SpriteComponent);
+    es_add_component(first.entity, LightEmitter);
+
+    EntityWithID clone = es_clone_entity(es2, first.entity);
+
+    REQUIRE(clone.entity != first.entity);
+
+    // Entity IDs should now be equal since they were the first entities
+    // in their respective entity systems
+    REQUIRE(entity_id_equal(clone.id, first.id));
+
+    REQUIRE(v2_eq(clone.entity->position, first.entity->position));
+    REQUIRE(clone.entity->faction == first.entity->faction);
+
+    REQUIRE(es_has_component(first.entity, LifetimeComponent));
+    REQUIRE(es_has_component(first.entity, SpriteComponent));
+    REQUIRE(es_has_component(first.entity, LightEmitter));
+
+    REQUIRE(es_has_component(clone.entity, LifetimeComponent));
+    REQUIRE(es_has_component(clone.entity, SpriteComponent));
+    REQUIRE(es_has_component(clone.entity, LightEmitter));
+
+    free_entity_system(es1);
+    free_entity_system(es2);
+}

@@ -6,7 +6,12 @@
 
 #define MAX_ENTITIES 32
 
-// TODO: Create try_get_component that can return null, make get_component crash on null
+/*
+  TODO:
+  - Don't return EntityWithID from es_create_entity since id is easily available now
+  - Create try_get_component that can return null, make get_component crash on null
+  - Rename EntityIDSlot
+ */
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_remove_component(entity, type)      es_impl_remove_component(entity, ES_IMPL_COMP_ENUM_NAME(type))
@@ -15,7 +20,6 @@
 #define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
 #define es_get_or_add_component(entity, type)  ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 
-// TODO: This needs a better name
 typedef struct {
     EntityGeneration generation;
 
@@ -41,6 +45,7 @@ EntityID      es_get_id_of_entity(EntitySystem *es, Entity *entity);
 b32           es_entity_exists(EntitySystem *es, EntityID entity_id);
 void          es_schedule_entity_for_removal(Entity *entity);
 b32	      es_entity_is_inactive(Entity *entity);
+EntityWithID  es_clone_entity(EntitySystem *destination_es, Entity *entity);
 
 void         *es_impl_add_component(Entity *entity, ComponentType type);
 void         *es_impl_get_component(Entity *entity, ComponentType type);

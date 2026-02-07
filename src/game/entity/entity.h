@@ -14,6 +14,7 @@ typedef struct Entity {
        and pointers into it are only indices. As long as only pointers of that
        kind are used, entities should be trivially serializable/copyable/movable.
      */
+    EntityID id;
     EntityArena entity_arena;
 
     ComponentBitset active_components;

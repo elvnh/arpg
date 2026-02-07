@@ -919,7 +919,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 1; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world,
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
@@ -1021,6 +1021,12 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 		&inventory->inventory, item_with_id.id);
 #endif
         }
+
+        EntityWithID copy = es_clone_entity(&world->entity_system, entity);
+        ssize alive_index = world->alive_entity_count++;
+        world->alive_entity_ids[alive_index] = copy.id;
+        world->alive_entity_quad_tree_locations[alive_index] = QT_NULL_LOCATION;
+        copy.entity->faction = FACTION_ENEMY;
 #endif
     }
 }

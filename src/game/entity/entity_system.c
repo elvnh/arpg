@@ -89,14 +89,8 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
 
 EntityID es_get_id_of_entity(EntitySystem *es, Entity *entity)
 {
-    ASSERT(entity);
-
-    EntityIndex index = (EntityIndex)(entity - es->entities);
-    EntityIDSlot *id_slot = get_id_slot_at_index(es, index);
-
-    EntityID result = {0};
-    result.index = index;
-    result.generation = id_slot->generation;
+    EntityID result = entity->id;
+    ASSERT(entity_id_is_valid(es, result));
 
     return result;
 }
@@ -139,6 +133,7 @@ EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
     Entity *entity = es_get_entity(es, id);
     *entity = zero_struct(Entity);
 
+    entity->id = id;
     entity->faction = faction;
 
     ASSERT(entity_arena_get_memory_usage(&entity->entity_arena) == 0);
@@ -261,4 +256,20 @@ void es_impl_remove_component(Entity *entity, ComponentType type)
     ASSERT(es_has_components(entity, bit_value));
 
     entity->active_components &= ~(bit_value);
+}
+
+static void copy_entity(Entity *dst, Entity *src, EntityID dst_id)
+{
+    ASSERT(dst != src);
+
+    *dst = *src;
+    dst->id = dst_id;
+}
+
+EntityWithID es_clone_entity(EntitySystem *destination_es, Entity *entity)
+{
+    EntityWithID result = es_create_entity(destination_es, entity->faction);
+    copy_entity(result.entity, entity, result.id);
+
+    return result;
 }

@@ -593,7 +593,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
 static void handle_collision_and_movement(World *world, f32 dt, LinearArena *frame_arena)
 {
     // TODO: don't access alive entity array directly
-    for (EntityIndex i = 0; i < world->alive_entity_count; ++i) {
+    for (EntitySlotID i = 0; i < world->alive_entity_count; ++i) {
         // TODO: this seems bug prone
 
         EntityID id_a = world->alive_entity_ids[i];
@@ -660,9 +660,9 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     handle_collision_and_movement(world, frame_data->dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
-    EntityIndex entity_count = world->alive_entity_count;
+    EntitySlotID entity_count = world->alive_entity_count;
 
-    for (EntityIndex i = 0; i < entity_count; ++i) {
+    for (EntitySlotID i = 0; i < entity_count; ++i) {
         entity_update(world, i, frame_data->dt);
     }
 

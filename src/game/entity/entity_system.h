@@ -15,16 +15,26 @@
 #define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
 #define es_get_or_add_component(entity, type)  ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 
+// TODO: better naming wrt slots, ids, id slots etc.
+
 typedef struct {
+    EntityGeneration generation;
+
+    s32 prev_free_id_index;
+    s32 next_free_id_index;
+} EntityIDSlot;
+
+typedef struct {
+    // TODO: this struct is no longer needed
     Entity             entity;
-    EntityGeneration   generation;
 } EntitySlot;
 
 DEFINE_STATIC_RING_BUFFER(EntityID, EntityIDQueue, MAX_ENTITIES);
 
 typedef struct EntitySystem {
     EntitySlot     entity_slots[MAX_ENTITIES];
-    EntityIDQueue  free_id_queue;
+    EntityIDSlot   id_slots[MAX_ENTITIES];
+    EntitySlotID   first_free_id_index;
 } EntitySystem;
 
 void          es_initialize(EntitySystem *es);

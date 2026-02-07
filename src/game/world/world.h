@@ -40,14 +40,13 @@ typedef struct World {
     CollisionEventTable  previous_frame_collisions;
     CollisionEventTable  current_frame_collisions;
 
-    // TODO: make into ring buffer
     HitsplatBuffer active_hitsplats;
 
     ItemSystem       item_system;
 
     EntitySystem     entity_system;
     EntityID         alive_entity_ids[MAX_ENTITIES];
-    EntityIndex      alive_entity_count;
+    EntitySlotID      alive_entity_count;
     QuadTreeLocation alive_entity_quad_tree_locations[MAX_ENTITIES];
     QuadTree         quad_tree;
 } World;
@@ -56,7 +55,7 @@ void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);
 void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena);
 void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
-    LinearArena *frame_arena, struct DebugState *debug_state);
+                  LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, EntityFaction faction);
 Rectangle world_get_entity_bounding_box(Entity *entity);
 void world_kill_entity(World *world, Entity *entity);

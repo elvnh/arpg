@@ -5,13 +5,13 @@
 
 #define NULL_ENTITY_ID ((EntityID){0})
 
-typedef s32 EntityIndex;
+typedef s32 EntitySlotID;
 typedef s32 EntityGeneration;
 
 // TODO: this shouldn't be a separate file
 
 typedef struct {
-    EntityIndex      slot_id;
+    EntitySlotID     slot_id;
     EntityGeneration generation;
 } EntityID;
 

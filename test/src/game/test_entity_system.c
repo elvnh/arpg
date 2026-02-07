@@ -423,6 +423,8 @@ TEST_CASE(es_move_entity_into_different_es_many)
 
         REQUIRE(entity1 != entity2);
 
+        REQUIRE(es_entity_exists(es2, ids_in_second_es[i]));
+
         REQUIRE(entity_id_equal(entity2->id, ids_in_second_es[i]));
         REQUIRE(entity_id_equal(entity1->id, entity2->id));
 
@@ -438,22 +440,58 @@ TEST_CASE(es_move_entity_into_different_es_many)
         REQUIRE(es_has_component(entity2, LightEmitter));
     }
 
-    /* EntityWithID clone = es_copy_entity_into_other_entity_system(es2, first.entity); */
+    free_entity_system(es1);
+    free_entity_system(es2);
+}
 
-    /* REQUIRE(clone.entity != first.entity); */
+TEST_CASE(es_move_entities_into_different_es_multiple_generations)
+{
+    EntitySystem *es1 = allocate_entity_system();
+    EntitySystem *es2 = allocate_entity_system();
 
-    /* REQUIRE(entity_id_equal(clone.id, first.id)); */
+    EntityID ids_in_first_es[MAX_ENTITIES] = {0};
 
-    /* REQUIRE(v2_eq(clone.entity->position, first.entity->position)); */
-    /* REQUIRE(clone.entity->faction == first.entity->faction); */
+    // Make several generations pass in first ES
+    for (ssize gen = 0; gen < 5; ++gen) {
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL);
+            ids_in_first_es[i] = e.id;
+        }
 
-    /* REQUIRE(es_has_component(first.entity, LifetimeComponent)); */
-    /* REQUIRE(es_has_component(first.entity, SpriteComponent)); */
-    /* REQUIRE(es_has_component(first.entity, LightEmitter)); */
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            es_remove_entity(es1, ids_in_first_es[i]);
+        }
+    }
 
-    /* REQUIRE(es_has_component(clone.entity, LifetimeComponent)); */
-    /* REQUIRE(es_has_component(clone.entity, SpriteComponent)); */
-    /* REQUIRE(es_has_component(clone.entity, LightEmitter)); */
+    // Create the final set of entities in first ES
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL);
+        ids_in_first_es[i] = e.id;
+    }
+
+    // Make different number of generations pass in second ES
+    EntityID ids_in_second_es[MAX_ENTITIES] = {0};
+
+    for (ssize gen = 0; gen < 3; ++gen) {
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            EntityWithID e = es_create_entity(es2, FACTION_NEUTRAL);
+            ids_in_second_es[i] = e.id;
+        }
+
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            es_remove_entity(es2, ids_in_second_es[i]);
+        }
+    }
+
+    // Make sure that the generations aren't copied over
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        Entity *entity = es_get_entity(es1, ids_in_first_es[i]);
+        EntityWithID clone = es_copy_entity_into_other_entity_system(es2, entity);
+
+        REQUIRE(clone.id.generation != 0);
+        REQUIRE(entity->id.generation != clone.id.generation);
+        REQUIRE(entity->id.index == clone.id.index);
+    }
 
     free_entity_system(es1);
     free_entity_system(es2);

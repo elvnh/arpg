@@ -77,7 +77,6 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
 static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slot)
 {
     ASSERT(!id_slot_belongs_to_alive_entity(id_slot) && "Can't remove ID if it's already active");
-    ASSERT(id_slot->prev_free_id_index == -1 && "Removal in middle of list not yet supported");
 
     es->first_free_id_index = id_slot->next_free_id_index;
 
@@ -143,30 +142,37 @@ static EntityID get_new_entity_id(EntitySystem *es)
     return result;
 }
 
-static EntityWithID create_entity_with_id(EntitySystem *es, EntityID id)
+Entity *get_entity_at_index(EntitySystem *es, EntityIndex index)
 {
-    ASSERT(entity_id_is_valid(es, id));
-
-    Entity *entity = es_get_entity(es, id);
-    *entity = zero_struct(Entity);
-
-    entity->id = id;
-
-    EntityWithID result = {
-        .entity = entity,
-        .id = id
-    };
+    ASSERT(index >= 0);
+    ASSERT(index < MAX_ENTITIES);
+    Entity *result = &es->entities[index];
 
     return result;
+}
+
+static Entity *create_entity_at_index(EntitySystem *es, EntityIndex index)
+{
+    Entity *entity = get_entity_at_index(es, index);
+    *entity = zero_struct(Entity);
+
+    EntityIDSlot *slot = get_id_slot_at_index(es, index);
+    entity->id.index = index;
+    entity->id.generation = slot->generation;
+
+    return entity;
 }
 
 EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
 {
     EntityID id = get_new_entity_id(es);
-    EntityWithID result = create_entity_with_id(es, id);
-    result.entity->faction = faction;
+    Entity *entity = create_entity_at_index(es, id.index);
+    entity->faction = faction;
 
-    ASSERT(entity_arena_get_memory_usage(&result.entity->entity_arena) == 0);
+    ASSERT(entity_id_equal(entity->id, id) && "create_entity_at_index should assign ID");
+
+    EntityWithID result = {entity, id};
+    ASSERT(entity_arena_get_memory_usage(&entity->entity_arena) == 0);
 
     return result;
 }
@@ -288,10 +294,11 @@ void es_impl_remove_component(Entity *entity, ComponentType type)
     entity->active_components &= ~(bit_value);
 }
 
-static void copy_entity(Entity *dst, Entity *src, EntityID dst_id)
+static void copy_entity_and_keep_id(Entity *dst, Entity *src)
 {
     ASSERT(dst != src);
 
+    EntityID dst_id = dst->id;
     *dst = *src;
     dst->id = dst_id;
 }
@@ -299,7 +306,7 @@ static void copy_entity(Entity *dst, Entity *src, EntityID dst_id)
 EntityWithID es_clone_entity(EntitySystem *destination_es, Entity *entity)
 {
     EntityWithID result = es_create_entity(destination_es, entity->faction);
-    copy_entity(result.entity, entity, result.id);
+    copy_entity_and_keep_id(result.entity, entity);
 
     return result;
 }
@@ -313,11 +320,15 @@ EntityWithID es_copy_entity_into_other_entity_system(EntitySystem *destination_e
     EntityIDSlot *slot = get_id_slot_at_index(destination_es, entity->id.index);
     remove_id_slot_from_free_list(destination_es, slot);
 
-    EntityWithID result = create_entity_with_id(destination_es, entity->id);
-    ASSERT(entity_id_equal(result.id, entity->id)
-        && "Should receive same ID when copied to new entity system");
+    Entity *clone = create_entity_at_index(destination_es, entity->id.index);
 
-    copy_entity(result.entity, entity, result.id);
+    ASSERT((clone->id.index == entity->id.index)
+        && "Should receive same index when copied to new entity system");
+    ASSERT((clone->id.generation == slot->generation) && "The generation should be correct");
+
+    copy_entity_and_keep_id(clone, entity);
+
+    EntityWithID result = {clone, clone->id};
 
     return result;
 }

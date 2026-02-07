@@ -1,4 +1,5 @@
 #include "event_listener.h"
+#include "entity/entity_arena.h"
 #include "entity/entity_system.h"
 #include "world/world.h"
 #include "base/utils.h"
@@ -16,17 +17,22 @@ void add_event_callback_impl(struct Entity *entity, EventType event_type, Callba
     EventListenerComponent *comp = es_get_component(entity, EventListenerComponent);
     ASSERT(comp);
 
-    Callback *cb = la_allocate_item(&entity->entity_arena, Callback);
+    PerEventTypeCallbacks *cb_list = &comp->per_event_callbacks[event_type];
+    ASSERT(cb_list->count < ARRAY_COUNT(cb_list->callbacks));
 
-    if (user_data) {
-	cb->user_data = la_allocate(&entity->entity_arena, 1, data_size, data_alignment);
-	memcpy(cb->user_data, user_data, ssize_to_usize(data_size));
-    }
-
+    EventCallback *cb = &cb_list->callbacks[cb_list->count++];
     cb->function = func;
 
-    cb->next = comp->callbacks[event_type];
-    comp->callbacks[event_type] = cb;
+    if (user_data) {
+        EntityArenaAllocation user_data_copy =
+            entity_arena_allocate(&entity->entity_arena, data_size, data_alignment);
+
+	memcpy(user_data_copy.ptr, user_data, ssize_to_usize(data_size));
+
+        cb->user_data_arena_index = user_data_copy.index;
+    } else {
+        cb->user_data_arena_index.offset = -1;
+    }
 }
 
 void send_event(Entity *entity, EventData event_data, World *world)
@@ -35,18 +41,19 @@ void send_event(Entity *entity, EventData event_data, World *world)
     ASSERT(event_data.event_type < EVENT_COUNT);
 
     EventListenerComponent *comp = es_get_component(entity, EventListenerComponent);
-    event_data.self = entity;
-    event_data.world = world;
 
     if (comp) {
-	Callback *current_cb = comp->callbacks[event_data.event_type];
+        event_data.self = entity;
+        event_data.world = world;
 
-	while (current_cb) {
+        PerEventTypeCallbacks *cb_list = &comp->per_event_callbacks[event_data.event_type];
+
+        for (s32 i = 0; i < cb_list->count; ++i) {
+            EventCallback *current_cb = &cb_list->callbacks[i];
 	    ASSERT(current_cb->function);
 
-	    current_cb->function(current_cb->user_data, event_data);
-
-	    current_cb = current_cb->next;
-	}
+            void *user_data = entity_arena_get(&entity->entity_arena, current_cb->user_data_arena_index);
+	    current_cb->function(user_data, event_data);
+        }
     }
 }

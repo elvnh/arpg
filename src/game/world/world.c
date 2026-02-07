@@ -876,7 +876,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 {
     world->world_arena = la_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
 
-    es_initialize(&world->entity_system, &world->world_arena);
+    es_initialize(&world->entity_system);
     item_sys_initialize(&world->item_system, la_allocator(&world->world_arena));
 
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);

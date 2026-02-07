@@ -1,7 +1,11 @@
 #ifndef EVENT_LISTENER_H
 #define EVENT_LISTENER_H
 
-#include "callback.h"
+#include "base/vector.h"
+#include "entity/entity_arena.h"
+#include "entity/entity_id.h"
+
+#define MAX_CALLBACKS_PER_EVENT_TYPE 2
 
 #define add_event_callback(entity, type, func, data) add_event_callback_impl(entity, type, func, data, \
 	SIZEOF(*data), ALIGNOF(*data))
@@ -10,12 +14,77 @@ struct LinearArena;
 struct World;
 struct Entity;
 
+typedef enum {
+    EVENT_HOSTILE_COLLISION,
+    EVENT_TILE_COLLISION,
+    EVENT_ENTITY_DIED,
+    EVENT_COUNT,
+} EventType;
+
 typedef struct {
-    Callback *callbacks[EVENT_COUNT];
+    EventType event_type;
+
+    // TODO: instead store entity ID pointer
+    struct Entity *self;
+    struct World *world;
+
+    union {
+	struct {
+	    EntityID collided_with;
+	} hostile_collision;
+
+	struct {
+	    Vector2i tile_coords;
+	} tile_collision;
+    } as;
+} EventData;
+
+typedef void (*CallbackFunction)(void *, EventData);
+
+typedef struct {
+    CallbackFunction function;
+    EntityArenaIndex user_data_arena_index;
+} EventCallback;
+
+typedef struct {
+    EventCallback callbacks[MAX_CALLBACKS_PER_EVENT_TYPE];
+    s32 count;
+} PerEventTypeCallbacks;
+
+typedef struct {
+    PerEventTypeCallbacks per_event_callbacks[EVENT_COUNT];
 } EventListenerComponent;
 
 void send_event(struct Entity *entity, EventData event_data, struct World *world);
 void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
     const void *user_data, ssize data_size, ssize data_alignment);
+
+static inline EventData event_data_death(void)
+{
+    EventData result = {0};
+    result.event_type = EVENT_ENTITY_DIED;
+
+    return result;
+}
+
+static inline EventData event_data_hostile_collision(EntityID entity_id)
+{
+    EventData result = {0};
+    result.event_type = EVENT_HOSTILE_COLLISION;
+
+    result.as.hostile_collision.collided_with = entity_id;
+
+    return result;
+}
+
+static inline EventData event_data_tilemap_collision(Vector2i tilemap_coords)
+{
+    EventData result = {0};
+    result.event_type = EVENT_TILE_COLLISION;
+
+    result.as.tile_collision.tile_coords = tilemap_coords;
+
+    return result;
+}
 
 #endif //EVENT_LISTENER_H

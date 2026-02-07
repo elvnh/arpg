@@ -27,9 +27,7 @@ typedef struct EntitySystem {
     EntityIDQueue  free_id_queue;
 } EntitySystem;
 
-// TODO: maybe this doesn't need to allocate entity arenas in a free list arena,
-// since the entity arenas are never freed but just reset when creating new entity
-void          es_initialize(EntitySystem *es, LinearArena *world_arena);
+void          es_initialize(EntitySystem *es);
 EntityWithID  es_create_entity(EntitySystem *es, EntityFaction faction);
 void	      es_remove_entity(EntitySystem *es, EntityID id);
 Entity       *es_get_entity(EntitySystem *es, EntityID id);

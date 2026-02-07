@@ -4,13 +4,13 @@
 #include "base/vector.h"
 #include "platform/asset.h"
 #include "components/particle.h"
+#include "components/event_listener.h"
 #include "damage.h"
 #include "collision/collider.h"
 #include "light.h"
 #include "status_effect.h"
 #include "sprite.h"
 #include "collision/trigger.h"
-#include "callback.h"
 
 struct SpellCasterComponent;
 struct Entity;

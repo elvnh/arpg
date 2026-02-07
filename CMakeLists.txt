@@ -51,6 +51,7 @@ set(
   src/game/damage.c
   src/game/entity/entity_system.c
   src/game/entity/entity_state.c
+  src/game/entity/entity_arena.c
   src/game/ai.c
   src/game/magic.c
   src/game/stats.c

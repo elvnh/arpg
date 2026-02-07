@@ -5,10 +5,11 @@
 #include "base/rgba.h"
 #include "base/rectangle.h"
 #include "components/component.h"
+#include "entity/entity_arena.h"
 #include "entity_faction.h"
 
 typedef struct Entity {
-    LinearArena entity_arena;
+    EntityArena entity_arena;
 
     ComponentBitset active_components;
     b32 is_inactive;

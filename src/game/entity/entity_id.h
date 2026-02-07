@@ -8,8 +8,6 @@
 typedef s32 EntityIndex;
 typedef s32 EntityGeneration;
 
-// TODO: this shouldn't be a separate file
-
 typedef struct {
     EntityIndex      index;
     EntityGeneration generation;

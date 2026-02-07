@@ -20,20 +20,15 @@
 typedef struct {
     EntityGeneration generation;
 
-    s32 prev_free_id_index;
-    s32 next_free_id_index;
+    EntityIndex prev_free_id_index;
+    EntityIndex next_free_id_index;
 } EntityIDSlot;
-
-typedef struct {
-    // TODO: this struct is no longer needed
-    Entity             entity;
-} EntitySlot;
 
 DEFINE_STATIC_RING_BUFFER(EntityID, EntityIDQueue, MAX_ENTITIES);
 
 typedef struct EntitySystem {
-    EntitySlot     entity_slots[MAX_ENTITIES];
-    EntityIDSlot   id_slots[MAX_ENTITIES];
+    Entity         entities[MAX_ENTITIES];
+    EntityIDSlot   entity_ids[MAX_ENTITIES];
     EntityIndex    first_free_id_index;
 } EntitySystem;
 

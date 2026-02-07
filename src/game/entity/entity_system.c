@@ -41,20 +41,42 @@ static ssize get_component_size(ComponentType type)
 
 static EntityIDSlot *get_id_slot_at_index(EntitySystem *es, EntityIndex index)
 {
-    ASSERT(index >= -1);
-    ASSERT(index < MAX_ENTITIES);
-
     EntityIDSlot *result = 0;
 
-    if (index != -1) {
+    if ((index >= 0) && (index < MAX_ENTITIES)) {
         result = &es->entity_ids[index];
     }
 
     return result;
 }
 
+// TODO: this function is unneccesary now
+static b32 id_slot_belongs_to_alive_entity(EntityIDSlot *slot)
+{
+    b32 result = slot->is_active;
+    ASSERT(!result || ((slot->prev_free_id_index == -1) && (slot->next_free_id_index == -1)));
+
+    return result;
+}
+
+static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
+{
+    EntityIDSlot *id_slot = get_id_slot_at_index(es, id.index);
+
+    b32 result = id_slot
+        && id_slot_belongs_to_alive_entity(id_slot)
+        && (id.generation >= FIRST_ENTITY_GENERATION)
+        && (id_slot->generation == id.generation);
+
+    ASSERT((!result || ((id_slot->next_free_id_index == -1) && (id_slot->prev_free_id_index == -1)))
+        && "If entity is alive, it's free ID list links should be set to -1");
+
+    return result;
+}
+
 static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slot)
 {
+    ASSERT(!id_slot_belongs_to_alive_entity(id_slot) && "Can't remove ID if it's already active");
     ASSERT(id_slot->prev_free_id_index == -1 && "Removal in middle of list not yet supported");
     es->first_free_id_index = id_slot->next_free_id_index;
 
@@ -66,25 +88,12 @@ static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slo
         next->prev_free_id_index = -1;
     }
 
-    // NOTE: for debugging purposes
+    // NOTE: for debugging purposes, the is_active member is what actually should decide
+    // if the ID slot is active or not
     id_slot->next_free_id_index = -1;
     id_slot->prev_free_id_index = -1;
-}
 
-static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
-{
-    EntityIDSlot *id_slot = get_id_slot_at_index(es, id.index);
-
-    b32 result =
-	(id.generation >= FIRST_ENTITY_GENERATION)
-	&& (id.index >= 0)
-	&& (id.index < MAX_ENTITIES)
-        && (id_slot->generation == id.generation);
-
-    ASSERT((!result || ((id_slot->next_free_id_index == -1) && (id_slot->prev_free_id_index == -1)))
-        && "If entity is alive, it's free ID list links should be set to -1");
-
-    return result;
+    id_slot->is_active = true;
 }
 
 EntityID es_get_id_of_entity(EntitySystem *es, Entity *entity)
@@ -123,6 +132,25 @@ static EntityID get_new_entity_id(EntitySystem *es)
     result.generation = id_slot->generation;
 
     remove_id_slot_from_free_list(es, id_slot);
+    ASSERT(id_slot_belongs_to_alive_entity(id_slot)
+        && "ID slot should now be counted as active");
+
+    return result;
+}
+
+static EntityWithID create_entity_with_id(EntitySystem *es, EntityID id)
+{
+    ASSERT(entity_id_is_valid(es, id));
+
+    Entity *entity = es_get_entity(es, id);
+    *entity = zero_struct(Entity);
+
+    entity->id = id;
+
+    EntityWithID result = {
+        .entity = entity,
+        .id = id
+    };
 
     return result;
 }
@@ -130,18 +158,10 @@ static EntityID get_new_entity_id(EntitySystem *es)
 EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
 {
     EntityID id = get_new_entity_id(es);
-    Entity *entity = es_get_entity(es, id);
-    *entity = zero_struct(Entity);
+    EntityWithID result = create_entity_with_id(es, id);
+    result.entity->faction = faction;
 
-    entity->id = id;
-    entity->faction = faction;
-
-    ASSERT(entity_arena_get_memory_usage(&entity->entity_arena) == 0);
-
-    EntityWithID result = {
-        .entity = entity,
-        .id = id
-    };
+    ASSERT(entity_arena_get_memory_usage(&result.entity->entity_arena) == 0);
 
     return result;
 }
@@ -153,6 +173,7 @@ void es_remove_entity(EntitySystem *es, EntityID id)
     EntityIDSlot *id_slot = get_id_slot_at_index(es, id.index);
     ASSERT(id_slot->next_free_id_index == -1);
     ASSERT(id_slot->prev_free_id_index == -1);
+    ASSERT(id_slot->is_active);
 
     EntityGeneration new_generation = 0;
     if (id.generation == LAST_ENTITY_GENERATION) {
@@ -166,6 +187,8 @@ void es_remove_entity(EntitySystem *es, EntityID id)
 
     id_slot->next_free_id_index = es->first_free_id_index;
     es->first_free_id_index = id.index;
+
+    id_slot->is_active = false;
 }
 
 Entity *es_get_entity(EntitySystem *es, EntityID id)
@@ -176,11 +199,13 @@ Entity *es_get_entity(EntitySystem *es, EntityID id)
     return result;
 }
 
+
 Entity *es_try_get_entity(EntitySystem *es, EntityID id)
 {
     Entity *result = 0;
+    EntityIDSlot *slot = get_id_slot_at_index(es, id.index);
 
-    if (entity_id_is_valid(es, id)) {
+    if (entity_id_is_valid(es, id) && id_slot_belongs_to_alive_entity(slot)) {
         result = &es->entities[id.index];
     }
 

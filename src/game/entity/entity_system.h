@@ -25,6 +25,8 @@ typedef struct {
 
     EntityIndex prev_free_id_index;
     EntityIndex next_free_id_index;
+
+    b32 is_active;
 } EntityIDSlot;
 
 DEFINE_STATIC_RING_BUFFER(EntityID, EntityIDQueue, MAX_ENTITIES);

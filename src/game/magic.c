@@ -18,6 +18,63 @@
 #include "entity/entity_system.h"
 #include "asset_table.h"
 
+
+typedef enum {
+    SPELL_PROP_PROJECTILE                 = FLAG(0),
+    SPELL_PROP_DAMAGING                   = FLAG(1),
+    SPELL_PROP_SPRITE                     = FLAG(2),
+    SPELL_PROP_BOUNCE_ON_TILES            = FLAG(3),
+    SPELL_PROP_DIE_ON_WALL_COLLISION      = FLAG(4),
+    SPELL_PROP_DIE_ON_ENTITY_COLLISION    = FLAG(5),
+    SPELL_PROP_LIFETIME                   = FLAG(6),
+    SPELL_PROP_PARTICLE_SPAWNER           = FLAG(7),
+    SPELL_PROP_SPAWN_PARTICLES_ON_DEATH   = FLAG(8),
+    SPELL_PROP_HOSTILE_COLLISION_CALLBACK = FLAG(9),
+    SPELL_PROP_AREA_OF_EFFECT             = FLAG(10),
+    SPELL_PROP_APPLIES_STATUS_EFFECT      = FLAG(11),
+    SPELL_PROP_LIGHT_EMITTER              = FLAG(12),
+} SpellProperties;
+
+typedef struct {
+    SpellProperties properties;
+    f32 cast_duration;
+
+    /* Flag specific fields */
+    Sprite sprite;
+
+    struct {
+	// TODO: pack base_damage and penetration_values into struct
+	DamageRange base_damage;
+	Damage penetration_values;
+	RetriggerBehaviour retrigger_behaviour;
+    } damaging;
+
+    struct {
+	f32 projectile_speed;
+	Vector2 collider_size;
+	s32 extra_projectile_count;
+	f32 projectile_cone_in_radians;
+    } projectile;
+
+    struct {
+	f32 base_radius;
+    } aoe;
+
+    f32 lifetime;
+
+    ParticleSpawnerConfig particle_spawner;
+    ParticleSpawnerConfig on_death_particle_spawner;
+
+    CallbackFunction hostile_collision_callback;
+
+    struct {
+	StatusEffectID effect;
+	RetriggerBehaviour retrigger_behaviour;
+    } applies_status_effects;
+
+    LightSource light_emitter;
+} Spell;
+
 typedef struct SpellArray {
     Spell spells[SPELL_COUNT];
 } SpellArray;

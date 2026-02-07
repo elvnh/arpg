@@ -1,0 +1,297 @@
+#include "components/component.h"
+#include "entity/entity_faction.h"
+#include "entity/entity_id.h"
+#include "test_macros.h"
+#include "game/entity/entity_system.h"
+
+#include <stdlib.h>
+
+// Entity systems need to be heap allocated since they're fairly large
+static EntitySystem *allocate_entity_system(void)
+{
+    EntitySystem *entity_sys = calloc(1, sizeof(EntitySystem));
+    es_initialize(entity_sys);
+
+    return entity_sys;
+}
+
+static void free_entity_system(EntitySystem *es)
+{
+    free(es);
+}
+
+TEST_CASE(es_basics)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+
+    REQUIRE(es_entity_exists(entity_sys, entity_with_id.id));
+
+    Entity *entity = es_get_entity(entity_sys, entity_with_id.id);
+    REQUIRE(entity == entity_with_id.entity);
+    REQUIRE(es_try_get_entity(entity_sys, entity_with_id.id) == entity);
+
+    REQUIRE(es_has_no_components(entity));
+
+    REQUIRE(!es_entity_is_inactive(entity));
+    REQUIRE(entity_id_equal(es_get_id_of_entity(entity_sys, entity), entity_with_id.id));
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_schedule_for_removal)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+
+    es_schedule_entity_for_removal(entity_with_id.entity);
+
+    REQUIRE(es_entity_is_inactive(entity_with_id.entity));
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_adding_components_single)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+
+    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    Entity *entity = entity_with_id.entity;
+
+    REQUIRE(!es_has_component(entity, LifetimeComponent));
+
+    es_add_component(entity, LifetimeComponent);
+
+    REQUIRE(es_has_component(entity, LifetimeComponent));
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_adding_components_multiple)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+
+    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    Entity *entity = entity_with_id.entity;
+
+    REQUIRE(!es_has_component(entity, LifetimeComponent));
+    REQUIRE(!es_has_component(entity, SpriteComponent));
+    REQUIRE(!es_has_component(entity, LightEmitter));
+
+    es_add_component(entity, LifetimeComponent);
+    es_add_component(entity, SpriteComponent);
+    es_add_component(entity, LightEmitter);
+
+    REQUIRE(es_has_component(entity, LifetimeComponent));
+    REQUIRE(es_has_component(entity, SpriteComponent));
+    REQUIRE(es_has_component(entity, LightEmitter));
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_removing_components_single)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+
+    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    Entity *entity = entity_with_id.entity;
+
+    es_add_component(entity, LifetimeComponent);
+    es_remove_component(entity, LifetimeComponent);
+
+    REQUIRE(!es_has_component(entity, LifetimeComponent));
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_removing_components_multiple)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+
+    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    Entity *entity = entity_with_id.entity;
+
+    es_add_component(entity, LifetimeComponent);
+    es_add_component(entity, SpriteComponent);
+    es_add_component(entity, LightEmitter);
+
+    es_remove_component(entity, LifetimeComponent);
+    es_remove_component(entity, SpriteComponent);
+    es_remove_component(entity, LightEmitter);
+
+    REQUIRE(!es_has_component(entity, LifetimeComponent));
+    REQUIRE(!es_has_component(entity, SpriteComponent));
+    REQUIRE(!es_has_component(entity, LightEmitter));
+
+    free_entity_system(entity_sys);
+}
+
+
+TEST_CASE(es_components_zeroed)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+
+    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    Entity *entity = entity_with_id.entity;
+
+    LifetimeComponent *lt = es_add_component(entity, LifetimeComponent);
+    lt->time_to_live = 123.0f;
+
+    es_remove_component(entity, LifetimeComponent);
+
+    LifetimeComponent *lt2 = es_add_component(entity, LifetimeComponent);
+    REQUIRE(lt2->time_to_live == 0.0f);
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_removing_entities)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+
+    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+
+    es_remove_entity(entity_sys, entity_with_id.id);
+    REQUIRE(!es_entity_exists(entity_sys, entity_with_id.id));
+    REQUIRE(es_try_get_entity(entity_sys, entity_with_id.id) == 0);
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_create_multiple)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+
+    EntityWithID entity_with_id1 = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id2 = es_create_entity(entity_sys, FACTION_NEUTRAL);
+
+    EntityID id1 = entity_with_id1.id;
+    EntityID id2 = entity_with_id2.id;
+
+    REQUIRE(es_entity_exists(entity_sys, id1));
+    REQUIRE(es_entity_exists(entity_sys, id2));
+
+    REQUIRE(!entity_id_equal(id1, id2));
+
+    es_remove_entity(entity_sys, id1);
+
+    REQUIRE(!es_entity_exists(entity_sys, id1));
+    REQUIRE(es_entity_exists(entity_sys, id2));
+
+    es_remove_entity(entity_sys, id2);
+    REQUIRE(!es_entity_exists(entity_sys, id2));
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_create_lots)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    EntityID ids[MAX_ENTITIES] = {0};
+
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        ids[i] = es_create_entity(es, FACTION_NEUTRAL).id;
+    }
+
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        REQUIRE(es_entity_exists(es, ids[i]));
+
+        Entity *entity = es_get_entity(es, ids[i]);
+        REQUIRE(entity != 0);
+        REQUIRE(!es_entity_is_inactive(entity));
+    }
+
+    free_entity_system(es);
+}
+
+TEST_CASE(es_create_lots_remove_in_order)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    for (ssize repeat = 0; repeat < 3; ++repeat) {
+        EntityID ids[MAX_ENTITIES] = {0};
+
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            ids[i] = es_create_entity(es, FACTION_NEUTRAL).id;
+        }
+
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            es_remove_entity(es, ids[i]);
+        }
+
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            REQUIRE(!es_entity_exists(es, ids[i]));
+
+            Entity *entity = es_try_get_entity(es, ids[i]);
+            REQUIRE(!entity);
+        }
+    }
+
+    free_entity_system(es);
+}
+
+TEST_CASE(es_create_lots_remove_reverse_order)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    for (ssize repeat = 0; repeat < 3; ++repeat) {
+        EntityID ids[MAX_ENTITIES] = {0};
+
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            ids[i] = es_create_entity(es, FACTION_NEUTRAL).id;
+        }
+
+        for (ssize i = MAX_ENTITIES - 1; i >= 0; --i) {
+            es_remove_entity(es, ids[i]);
+        }
+
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            REQUIRE(!es_entity_exists(es, ids[i]));
+
+            Entity *entity = es_try_get_entity(es, ids[i]);
+            REQUIRE(!entity);
+        }
+    }
+
+    free_entity_system(es);
+}
+
+TEST_CASE(es_create_lots_remove_unordered)
+{
+    EntitySystem *es = allocate_entity_system();
+    ssize batch_size = MAX_ENTITIES / 4;
+
+    for (ssize repeat = 0; repeat < 4; ++repeat) {
+        EntityID ids[MAX_ENTITIES] = {0};
+
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            ids[i] = es_create_entity(es, FACTION_NEUTRAL).id;
+        }
+
+        for (ssize i = 0; i < batch_size; ++i) {
+            es_remove_entity(es, ids[batch_size * 0 + i]);
+        }
+
+        for (ssize i = batch_size - 1; i >= 0; --i) {
+            es_remove_entity(es, ids[batch_size * 1 + i]);
+        }
+
+        for (ssize i = 0; i < batch_size; ++i) {
+            es_remove_entity(es, ids[batch_size * 2 + i]);
+        }
+
+        for (ssize i = batch_size - 1; i >= 0; --i) {
+            es_remove_entity(es, ids[batch_size * 3 + i]);
+        }
+
+        for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+            REQUIRE(!es_entity_exists(es, ids[i]));
+
+            Entity *entity = es_try_get_entity(es, ids[i]);
+            REQUIRE(!entity);
+        }
+    }
+
+    free_entity_system(es);
+}

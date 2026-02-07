@@ -127,6 +127,7 @@ add_compile_options(
   -Wno-error=unused-parameter
   -Wno-error=unused-function
   -Wno-error=unused-variable
+  -Wno-error=unused-but-set-variable
 )
 
 add_compile_definitions(

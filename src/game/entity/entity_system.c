@@ -7,7 +7,6 @@
 #include "components/component.h"
 #include "world/quad_tree.h"
 
-
 #define FIRST_VALID_ENTITY_INDEX (NULL_ENTITY_ID.slot_id + 1)
 #define LAST_VALID_ENTITY_INDEX  (FIRST_VALID_ENTITY_INDEX + MAX_ENTITIES - 1)
 
@@ -24,6 +23,21 @@ static ssize get_component_offset(ComponentType type)
 
     return result;
 }
+
+static ssize get_component_size(ComponentType type)
+{
+    switch (type) {
+#define COMPONENT(type) case ES_IMPL_COMP_ENUM_NAME(type): return SIZEOF(type);
+        COMPONENT_LIST
+#undef COMPONENT
+
+       INVALID_DEFAULT_CASE;
+    }
+
+    ASSERT(0);
+    return 0;
+}
+
 
 static EntitySlot *es_get_entity_slot(Entity *entity)
 {
@@ -83,7 +97,8 @@ void *es_impl_add_component(Entity *entity, ComponentType type)
     void *result = es_impl_get_component(entity, type);
     ASSERT(result);
 
-    // TODO: zero out
+    ssize size = get_component_size(type);
+    memset(result, 0, (usize)size);
 
     return result;
 }
@@ -152,6 +167,8 @@ void es_initialize(EntitySystem *es)
 
 static EntityID get_new_entity_id(EntitySystem *es)
 {
+    ASSERT(!ring_is_empty(&es->free_id_queue));
+
     EntityID result = id_queue_pop(&es->free_id_queue);
     ASSERT(entity_id_is_valid(es, result));
 
@@ -229,7 +246,7 @@ Entity *es_try_get_entity(EntitySystem *es, EntityID id)
 
 b32 es_entity_exists(EntitySystem *es, EntityID entity_id)
 {
-    b32 result = es_get_entity(es, entity_id) != 0;
+    b32 result = es_try_get_entity(es, entity_id) != 0;
 
     return result;
 }
@@ -242,6 +259,13 @@ void es_schedule_entity_for_removal(Entity *entity)
 b32 es_entity_is_inactive(Entity *entity)
 {
     b32 result = entity->is_inactive;
+
+    return result;
+}
+
+b32 es_has_no_components(Entity *entity)
+{
+    b32 result = entity->active_components == 0;
 
     return result;
 }

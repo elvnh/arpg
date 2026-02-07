@@ -30,6 +30,7 @@ typedef struct EntitySystem {
 void          es_initialize(EntitySystem *es);
 EntityWithID  es_create_entity(EntitySystem *es, EntityFaction faction);
 void	      es_remove_entity(EntitySystem *es, EntityID id);
+b32           es_has_no_components(Entity *entity);
 Entity       *es_get_entity(EntitySystem *es, EntityID id);
 Entity       *es_try_get_entity(EntitySystem *es, EntityID id);
 EntityID      es_get_id_of_entity(EntitySystem *es, Entity *entity);
@@ -37,9 +38,9 @@ b32           es_entity_exists(EntitySystem *es, EntityID entity_id);
 void          es_schedule_entity_for_removal(Entity *entity);
 b32	      es_entity_is_inactive(Entity *entity);
 
-void      *es_impl_add_component(Entity *entity, ComponentType type);
-void      *es_impl_get_component(Entity *entity, ComponentType type);
-void      *es_impl_get_or_add_component(Entity *entity, ComponentType type);
-void       es_impl_remove_component(Entity *entity, ComponentType type);
+void         *es_impl_add_component(Entity *entity, ComponentType type);
+void         *es_impl_get_component(Entity *entity, ComponentType type);
+void         *es_impl_get_or_add_component(Entity *entity, ComponentType type);
+void          es_impl_remove_component(Entity *entity, ComponentType type);
 
 #endif //ENTITY_SYSTEM_H

@@ -27,12 +27,20 @@ static ItemID get_new_item_id(ItemSystem *item_sys)
     return result;
 }
 
+static b32 item_id_is_valid(ItemSystem *item_sys, ItemID id)
+{
+    b32 result = (id.index >= 0) && (id.index < MAX_ITEMS)
+        && (id.generation >= 1)
+        && (item_sys->item_ids[id.index].generation == id.generation);
+
+    return result;
+}
+
 Item *item_sys_get_item(ItemSystem *item_sys, ItemID id)
 {
     Item *result = 0;
-    // TODO: more validity checks
 
-    if (!item_id_is_null(id)) {
+    if (item_id_is_valid(item_sys, id)) {
         result = &item_sys->items[id.index];
     }
 

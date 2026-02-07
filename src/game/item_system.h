@@ -16,8 +16,6 @@
   - If worlds only represent single levels, how should copying items over
     (eg. in player inventory) to new level work?
   - Dynamic capacity of items
-  - Store items and free ids separately
-  - Better validity checks on ids
  */
 
 typedef struct {

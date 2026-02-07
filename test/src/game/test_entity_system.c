@@ -67,6 +67,29 @@ TEST_CASE(es_adding_components_single)
     free_entity_system(entity_sys);
 }
 
+TEST_CASE(es_fake_id)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+    EntityID id = {1234, 1234};
+    Entity *entity = es_try_get_entity(entity_sys, id);
+
+    REQUIRE(!entity);
+
+    free_entity_system(entity_sys);
+}
+
+TEST_CASE(es_zeroed_id)
+{
+    EntitySystem *entity_sys = allocate_entity_system();
+    EntityID id = {0};
+    Entity *entity = es_try_get_entity(entity_sys, id);
+
+    REQUIRE(!entity);
+
+    free_entity_system(entity_sys);
+}
+
+
 TEST_CASE(es_adding_components_multiple)
 {
     EntitySystem *entity_sys = allocate_entity_system();

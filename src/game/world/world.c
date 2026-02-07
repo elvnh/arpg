@@ -644,11 +644,15 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
 
 Entity *world_get_player_entity(World *world)
 {
-    ASSERT(world->alive_entity_count > 0);
-    EntityID player_id = world->alive_entity_ids[0];
-    Entity *result = es_get_entity(&world->entity_system, player_id);
+    Entity *result = es_try_get_entity(&world->entity_system, world->player_entity);
 
     return result;
+}
+
+void world_set_player_entity(World *world, EntityID id)
+{
+    ASSERT(es_entity_exists(&world->entity_system, id));
+    world->player_entity = id;
 }
 
 void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena)
@@ -925,6 +929,10 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
         entity->position = v2(128, 128);
+
+        if (i == 0) {
+            world_set_player_entity(world, entity_with_id.id);
+        }
 
         ASSERT(!es_has_component(entity, ColliderComponent));
 

@@ -42,6 +42,8 @@ typedef struct World {
 
     HitsplatBuffer active_hitsplats;
 
+    EntityID         player_entity;
+
     ItemSystem       item_system;
 
     EntitySystem     entity_system;
@@ -60,8 +62,8 @@ EntityWithID world_spawn_entity(World *world, EntityFaction faction);
 Rectangle world_get_entity_bounding_box(Entity *entity);
 void world_kill_entity(World *world, Entity *entity);
 void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentID component,
-    RetriggerBehaviour retrigger_behaviour);
-
+                                RetriggerBehaviour retrigger_behaviour);
+void    world_set_player_entity(World *world, EntityID id);
 Entity *world_get_player_entity(World *world);
 Vector2i world_to_tile_coords(Vector2 world_coords);
 Vector2 tile_to_world_coords(Vector2i tile_coords);

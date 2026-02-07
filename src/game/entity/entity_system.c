@@ -94,21 +94,6 @@ void es_initialize(EntitySystem *es)
     }
 }
 
-static EntityID get_new_entity_id(EntitySystem *es)
-{
-    EntityIDSlot *id_slot = get_id_slot_at_index(es, es->first_free_id_index);
-    ASSERT(id_slot && "Ran out of IDs");
-
-    EntityID result = {0};
-    result.index = es->first_free_id_index;
-    result.generation = id_slot->generation;
-
-    remove_id_slot_from_free_list(es, id_slot);
-    ASSERT(id_slot->is_active && "ID slot should now be counted as active");
-
-    return result;
-}
-
 Entity *get_entity_at_index(EntitySystem *es, EntityIndex index)
 {
     ASSERT(index >= 0);
@@ -131,15 +116,25 @@ static Entity *create_entity_at_index(EntitySystem *es, EntityIndex index)
     return entity;
 }
 
+EntityIndex pop_from_free_entity_id_list(EntitySystem *es)
+{
+    EntityIndex result = es->first_free_id_index;
+    EntityIDSlot *slot = get_id_slot_at_index(es, result);
+    remove_id_slot_from_free_list(es, slot);
+
+    return result;
+}
+
 EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
 {
-    EntityID id = get_new_entity_id(es);
-    Entity *entity = create_entity_at_index(es, id.index);
+    EntityIndex item_index = pop_from_free_entity_id_list(es);
+
+    Entity *entity = create_entity_at_index(es, item_index);
     entity->faction = faction;
 
-    ASSERT(entity_id_equal(entity->id, id) && "create_entity_at_index should assign ID");
+    ASSERT(!entity_id_is_null(entity->id));
 
-    EntityWithID result = {entity, id};
+    EntityWithID result = {entity, entity->id};
     ASSERT(entity_arena_get_memory_usage(&entity->entity_arena) == 0);
 
     return result;

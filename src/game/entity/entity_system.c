@@ -88,18 +88,9 @@ EntityID es_get_id_of_entity(EntitySystem *es, Entity *entity)
 void es_initialize(EntitySystem *es)
 {
     for (EntityIndex i = 0; i < MAX_ENTITIES; ++i) {
-        EntityIDSlot slot = {0};
+        EntityIDSlot *slot = &es->entity_ids[i];
 
-        slot.generation = FIRST_ENTITY_GENERATION;
-        slot.prev_free_id_index = i - 1;
-
-        if (i == (MAX_ENTITIES - 1)) {
-            slot.next_free_id_index = -1;
-        } else {
-            slot.next_free_id_index = i + 1;
-        }
-
-        es->entity_ids[i] = slot;
+        initialize_generational_id(slot, i, MAX_ENTITIES);
     }
 }
 

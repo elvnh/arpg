@@ -6,8 +6,22 @@
 
 #define DEFINE_GENERATIONAL_ID_LIST_HEAD(index_type) index_type first_free_id_index
 
-#define bump_generation_counter(id, max) \
-    ((id)->generation == (max) ? ((id)->generation = 1) : ++((id)->generation))
+#define initialize_generational_id(id_node, index, arr_size)    \
+    do {                                                        \
+        (id_node)->generation = 1;                              \
+        (id_node)->prev_free_id_index = index - 1;              \
+        if ((index) == ((arr_size) - 1)) {                      \
+            (id_node)->next_free_id_index = -1;                 \
+        } else {                                                \
+            (id_node)->next_free_id_index = (index) + 1;        \
+        }                                                       \
+    } while (0)
+
+#define bump_generation_counter(id, max)                                             \
+    do {                                                                             \
+        ASSERT((id)->generation >= 1);                                               \
+        ((id)->generation == (max) ? ((id)->generation = 1) : ++((id)->generation)); \
+    } while (0)
 
 // NOTE: these functions don't do any bounds checking, the user has to do that themselves
 

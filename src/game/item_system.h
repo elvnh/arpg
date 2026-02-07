@@ -2,6 +2,8 @@
 #define ITEM_MANAGER_H
 
 #include "base/free_list_arena.h"
+#include "base/typedefs.h"
+#include "generational_id.h"
 #include "item.h"
 
 #define MAX_ITEMS 256
@@ -14,23 +16,23 @@
   - If worlds only represent single levels, how should copying items over
     (eg. in player inventory) to new level work?
   - Dynamic capacity of items
+  - Store items and free ids separately
+  - Better validity checks on ids
  */
 
 typedef struct {
-    Item item;
-    u32 generation;
-} ItemStorageSlot;
-
-DEFINE_STATIC_RING_BUFFER(ItemID, ItemIDQueue, MAX_ITEMS);
+    DEFINE_GENERATIONAL_ID_NODE_FIELDS(ItemIndex, ItemGeneration);
+} ItemIDSlot;
 
 typedef struct ItemSystem {
-    ItemStorageSlot item_slots[MAX_ITEMS];
-    ItemIDQueue id_queue;
+    Item        items[MAX_ITEMS];
+    ItemIDSlot  item_ids[MAX_ITEMS];
+    DEFINE_GENERATIONAL_ID_LIST_HEAD(ItemIndex);
 } ItemSystem;
 
 void item_sys_initialize(ItemSystem *item_sys);
 ItemWithID item_sys_create_item(ItemSystem *item_sys);
-void item_sys_set_item_name(ItemSystem *item_sys, Item *item, String name, LinearArena *world_arena);
+void item_sys_set_item_name(Item *item, String name, LinearArena *world_arena);
 void item_sys_destroy_item(ItemSystem *item_sys, ItemID id);
 Item *item_sys_get_item(ItemSystem *item_sys, ItemID id);
 ItemID item_sys_get_id_of_item(ItemSystem *item_sys, Item *item);

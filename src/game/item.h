@@ -8,9 +8,12 @@
 
 #define NULL_ITEM_ID (ItemID){0}
 
+typedef s32 ItemIndex;
+typedef s32 ItemGeneration;
+
 typedef struct {
-    u32 id;
-    u32 generation;
+    ItemIndex index;
+    ItemGeneration generation;
 } ItemID;
 
 typedef enum {
@@ -69,7 +72,7 @@ static inline void item_set_prop(Item *item, ItemProperty property)
 
 static inline b32 item_ids_equal(ItemID lhs, ItemID rhs)
 {
-    b32 result = (lhs.id == rhs.id) && (lhs.generation == rhs.generation);
+    b32 result = (lhs.index == rhs.index) && (lhs.generation == rhs.generation);
 
     return result;
 }
@@ -112,7 +115,7 @@ static inline String equipment_slot_spelling(EquipmentSlot slot)
 
 static inline String item_id_to_string(ItemID id, LinearArena *arena)
 {
-    String result = format(arena, "%u,%u", id.id, id.generation);
+    String result = format(arena, "%u,%u", id.index, id.generation);
 
     return result;
 }

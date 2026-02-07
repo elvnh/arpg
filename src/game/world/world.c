@@ -1001,7 +1001,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
             ItemWithID item_with_id = item_sys_create_item(&world->item_system);
             Item *item = item_with_id.item;
 
-            item_sys_set_item_name(&world->item_system, item, str_lit("Sword"), &world->world_arena);
+            item_sys_set_item_name(item, str_lit("Sword"), &world->world_arena);
             item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
             ASSERT(item_has_prop(item, ITEM_PROP_EQUIPPABLE));
             item->equipment.slot = EQUIP_SLOT_WEAPON;

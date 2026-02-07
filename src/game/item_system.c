@@ -1,37 +1,28 @@
 #include "item_system.h"
 #include "base/free_list_arena.h"
+#include "generational_id.h"
 #include "item.h"
 
-void push_item_id(ItemSystem *item_sys, ItemID id)
-{
-    ring_push(&item_sys->id_queue, &id);
-}
+#define LAST_ITEM_GENERATION S32_MAX
 
 void item_sys_initialize(ItemSystem *item_sys)
 {
-    // TODO: be sure to change to regular init if this becomes heap allocated
-    ring_initialize_static(&item_sys->id_queue);
-
-    u32 first_item_id = NULL_ITEM_ID.id + 1;
-
-    for (u32 i = first_item_id; i < MAX_ITEMS + 1; ++i) {
-        ItemID id = { .id = i, .generation = 0 };
-        push_item_id(item_sys, id);
+    for (ItemIndex i = 0; i < MAX_ITEMS; ++i) {
+        ItemIDSlot *id_slot = &item_sys->item_ids[i];
+        initialize_generational_id(id_slot, i, MAX_ITEMS);
     }
 }
 
 static ItemID get_new_item_id(ItemSystem *item_sys)
 {
-    ASSERT(!ring_is_empty(&item_sys->id_queue));
-    ItemID id = ring_pop_load(&item_sys->id_queue);
+    ASSERT((item_sys->first_free_id_index >= 0) && "Ran out of item ids");
 
-    return id;
-}
+    ItemIDSlot *id_slot = &item_sys->item_ids[item_sys->first_free_id_index];
+    ItemID result = {0};
+    result.index = item_sys->first_free_id_index;
+    result.generation = id_slot->generation;
 
-static ItemStorageSlot *get_item_storage_slot(ItemSystem *item_sys, ItemID id)
-{
-    ItemStorageSlot *result = &item_sys->item_slots[id.id - 1];
-    ASSERT(result->generation == id.generation);
+    remove_generational_id_from_list(item_sys, item_ids, id_slot);
 
     return result;
 }
@@ -39,11 +30,10 @@ static ItemStorageSlot *get_item_storage_slot(ItemSystem *item_sys, ItemID id)
 Item *item_sys_get_item(ItemSystem *item_sys, ItemID id)
 {
     Item *result = 0;
+    // TODO: more validity checks
 
     if (!item_id_is_null(id)) {
-        ItemStorageSlot *slot = get_item_storage_slot(item_sys, id);
-
-        result = &slot->item;
+        result = &item_sys->items[id.index];
     }
 
     return result;
@@ -63,7 +53,7 @@ ItemWithID item_sys_create_item(ItemSystem *item_sys)
     return result;
 }
 
-void item_sys_set_item_name(ItemSystem *item_sys, Item *item, String name, LinearArena *world_arena)
+void item_sys_set_item_name(Item *item, String name, LinearArena *world_arena)
 {
     // NOTE: for now, just leak memory if item already has a name
     // TODO: add string interning so each unique string is only stored once
@@ -72,15 +62,8 @@ void item_sys_set_item_name(ItemSystem *item_sys, Item *item, String name, Linea
 
 void item_sys_destroy_item(ItemSystem *item_sys, ItemID id)
 {
-    ItemStorageSlot *slot = get_item_storage_slot(item_sys, id);
+    ItemIDSlot *slot = &item_sys->item_ids[id.index];
 
-    // TODO: how to handle generation overflow?
-    ItemID new_id = {
-        .id = id.id,
-        .generation = id.generation + 1,
-    };
-
-    slot->generation = new_id.generation;
-
-    push_item_id(item_sys, new_id);
+    bump_generation_counter(slot, LAST_ITEM_GENERATION);
+    push_generational_id_to_free_list(item_sys, item_ids, id.index);
 }

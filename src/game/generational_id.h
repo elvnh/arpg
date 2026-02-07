@@ -1,6 +1,8 @@
 #ifndef GENERATIONAL_ID_H
 #define GENERATIONAL_ID_H
 
+// NOTE: only signed types are allowed
+
 #define DEFINE_GENERATIONAL_ID_NODE_FIELDS(gen_type, index_type)        \
     gen_type generation; index_type prev_free_id_index; index_type next_free_id_index
 

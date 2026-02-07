@@ -221,3 +221,12 @@ TEST_CASE(string_substring_before_pattern)
     REQUIRE(str_equal(str_substring_before_pattern(str_lit("!!abc"), str_lit("!!")), str_lit("")));
     REQUIRE(str_equal(str_substring_before_pattern(str_lit("abc"), str_lit("!!")), str_lit("abc")));
 }
+
+TEST_CASE(string_is_empty)
+{
+    REQUIRE(str_is_empty(str_lit("")));
+    REQUIRE(str_is_empty((String){0}));
+    REQUIRE(str_is_empty(null_string));
+
+    REQUIRE(!str_is_empty(str_lit("a")));
+}

@@ -16,6 +16,7 @@
   - If worlds only represent single levels, how should copying items over
     (eg. in player inventory) to new level work?
   - Dynamic capacity of items
+  - Component system for items?
  */
 
 typedef struct {
@@ -33,6 +34,7 @@ ItemWithID item_sys_create_item(ItemSystem *item_sys);
 void item_sys_set_item_name(Item *item, String name, LinearArena *world_arena);
 void item_sys_destroy_item(ItemSystem *item_sys, ItemID id);
 Item *item_sys_get_item(ItemSystem *item_sys, ItemID id);
-ItemID item_sys_get_id_of_item(ItemSystem *item_sys, Item *item);
+Item *item_sys_try_get_item(ItemSystem *item_sys, ItemID id);
+b32  item_sys_item_exists(ItemSystem *item_sys, ItemID item_id);
 
 #endif //ITEM_MANAGER_H

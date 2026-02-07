@@ -34,11 +34,14 @@ typedef enum {
 
     EQUIP_SLOT_COUNT,
 
-    // NOTE: not an actual slot, only to show that an item is equippable in either left or right finger slot
+    // NOTE: not an actual slot, only to show that an item is equippable in
+    // either left or right finger slot
     EQUIPPABLE_IN_FINGER_SLOT,
 } EquipmentSlot;
 
 typedef struct {
+    ItemID id;
+
     String name;
     ItemProperty properties;
 

@@ -215,3 +215,10 @@ void str_print(String str)
 {
     printf("%.*s\n", (s32)str.length, str.data);
 }
+
+b32 str_is_empty(String str)
+{
+    b32 result = str.length == 0;
+
+    return result;
+}

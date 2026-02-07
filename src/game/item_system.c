@@ -36,7 +36,7 @@ static b32 item_id_is_valid(ItemSystem *item_sys, ItemID id)
     return result;
 }
 
-Item *item_sys_get_item(ItemSystem *item_sys, ItemID id)
+Item *item_sys_try_get_item(ItemSystem *item_sys, ItemID id)
 {
     Item *result = 0;
 
@@ -47,11 +47,21 @@ Item *item_sys_get_item(ItemSystem *item_sys, ItemID id)
     return result;
 }
 
+Item *item_sys_get_item(ItemSystem *item_sys, ItemID id)
+{
+    Item *result = item_sys_try_get_item(item_sys, id);
+    ASSERT(result);
+
+    return result;
+}
+
 ItemWithID item_sys_create_item(ItemSystem *item_sys)
 {
     ItemID id = get_new_item_id(item_sys);
     Item *item = item_sys_get_item(item_sys, id);
     mem_zero(item, SIZEOF(*item));
+
+    item->id = id;
 
     ItemWithID result = {
         .id = id,
@@ -74,4 +84,11 @@ void item_sys_destroy_item(ItemSystem *item_sys, ItemID id)
 
     bump_generation_counter(slot, LAST_ITEM_GENERATION);
     push_generational_id_to_free_list(item_sys, item_ids, id.index);
+}
+
+b32 item_sys_item_exists(ItemSystem *item_sys, ItemID item_id)
+{
+    b32 result = item_sys_try_get_item(item_sys, item_id) != 0;
+
+    return result;
 }

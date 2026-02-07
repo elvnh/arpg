@@ -19,6 +19,7 @@
   - Copying over entities and items when switching world
   - Keep a list of items that exist in this world to avoid having to iterate
     all items when destroying world
+  - Maybe eg. item system and entity system should keep pointers to world arena
  */
 
 struct FrameData;

@@ -2,17 +2,13 @@
 #include "base/free_list_arena.h"
 #include "item.h"
 
-#define ITEM_SYSTEM_MEMORY_SIZE MB(8)
-
 void push_item_id(ItemSystem *item_sys, ItemID id)
 {
     ring_push(&item_sys->id_queue, &id);
 }
 
-void item_sys_initialize(ItemSystem *item_sys, Allocator allocator)
+void item_sys_initialize(ItemSystem *item_sys)
 {
-    item_sys->item_system_memory = fl_create(allocator, ITEM_SYSTEM_MEMORY_SIZE);
-
     // TODO: be sure to change to regular init if this becomes heap allocated
     ring_initialize_static(&item_sys->id_queue);
 
@@ -67,14 +63,11 @@ ItemWithID item_sys_create_item(ItemSystem *item_sys)
     return result;
 }
 
-// TODO: make it possible to set literal as name so it doesn't have to be copied
-void item_sys_set_item_name(ItemSystem *item_sys, Item *item, String name)
+void item_sys_set_item_name(ItemSystem *item_sys, Item *item, String name, LinearArena *world_arena)
 {
-    if (item->name.data) {
-	fl_deallocate(&item_sys->item_system_memory, item->name.data);
-    }
-
-    item->name = str_copy(name, fl_allocator(&item_sys->item_system_memory));
+    // NOTE: for now, just leak memory if item already has a name
+    // TODO: add string interning so each unique string is only stored once
+    item->name = str_copy(name, la_allocator(world_arena));
 }
 
 void item_sys_destroy_item(ItemSystem *item_sys, ItemID id)

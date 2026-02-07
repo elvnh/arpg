@@ -24,8 +24,7 @@ typedef enum {
 typedef struct {
     EventType event_type;
 
-    // TODO: instead store entity ID pointer
-    struct Entity *self;
+    EntityID receiver_id;
     struct World *world;
 
     union {
@@ -55,7 +54,7 @@ typedef struct {
     PerEventTypeCallbacks per_event_callbacks[EVENT_COUNT];
 } EventListenerComponent;
 
-void send_event(struct Entity *entity, EventData event_data, struct World *world);
+void send_event_to_entity(struct Entity *entity, EventData event_data, struct World *world);
 void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
     const void *user_data, ssize data_size, ssize data_alignment);
 

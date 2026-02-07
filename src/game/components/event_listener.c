@@ -35,7 +35,7 @@ void add_event_callback_impl(struct Entity *entity, EventType event_type, Callba
     }
 }
 
-void send_event(Entity *entity, EventData event_data, World *world)
+void send_event_to_entity(Entity *entity, EventData event_data, World *world)
 {
     ASSERT(event_data.event_type >= 0);
     ASSERT(event_data.event_type < EVENT_COUNT);
@@ -43,7 +43,7 @@ void send_event(Entity *entity, EventData event_data, World *world)
     EventListenerComponent *comp = es_get_component(entity, EventListenerComponent);
 
     if (comp) {
-        event_data.self = entity;
+        event_data.receiver_id = es_get_id_of_entity(&world->entity_system, entity);
         event_data.world = world;
 
         PerEventTypeCallbacks *cb_list = &comp->per_event_callbacks[event_data.event_type];

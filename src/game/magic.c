@@ -33,8 +33,9 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
 {
     ParticleSpawnerConfig *particle_config = user_data;
 
+    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
     EntityWithID ps_entity = world_spawn_entity(event_data.world, FACTION_NEUTRAL);
-    ps_entity.entity->position = event_data.self->position;
+    ps_entity.entity->position = self->position;
 
     ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
     particle_spawner_initialize(ps, *particle_config);
@@ -358,6 +359,7 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
 {
     SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
 
+    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
     Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);
     ASSERT(caster && "Entity died before impact collision callback was called. "
         "This should probably never happen?");
@@ -368,7 +370,7 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
     // TODO: should this kind of behaviour be encoded in a forking property of spells?
     // NOTE: these have no target position, only origin and direction
     cast_spell_impl(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster,
-	event_data.self->position, V2_ZERO, event_data.self->direction,
+	self->position, V2_ZERO, self->direction,
 	collide_target, retrigger_never());
 }
 

@@ -221,7 +221,7 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
 void world_kill_entity(World *world, Entity *entity)
 {
     EventData death_event = event_data_death();
-    send_event(entity, death_event, world);
+    send_event_to_entity(entity, death_event, world);
 
     es_schedule_entity_for_removal(entity);
 }
@@ -512,7 +512,7 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
 	if (!entities_intersected_previous_frame(world, id_a, id_b)) {
 	    if (a->faction != b->faction) {
 		EventData event_data = event_data_hostile_collision(id_b);
-		send_event(a, event_data, world);
+		send_event_to_entity(a, event_data, world);
 	    }
 	}
 
@@ -579,7 +579,7 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
 		    execute_entity_vs_tilemap_collision_policy(world, entity, collision);
 
 		    EventData event_data = event_data_tilemap_collision(collision_coords);
-		    send_event(entity, event_data, world);
+		    send_event_to_entity(entity, event_data, world);
                 }
             }
         }

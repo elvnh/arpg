@@ -105,7 +105,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 
 static String dbg_arena_usage_string(String name, ssize usage, LinearArena *arena)
 {
-    String result = format(arena, FMT_STR"%.2f KBs", FMT_STR_ARG(name), (f64)usage / 1024.0);
+    String result = format(arena, FMT_STR": %.2f KBs", FMT_STR_ARG(name), (f64)usage / 1024.0);
 
     return result;
 }
@@ -121,9 +121,9 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     String frame_time_str = format(scratch, "Frame time: %.5f", (f64)frame_data->dt);
     String fps_str = format(scratch, "FPS: %.2f", (f64)game->debug_state.average_fps);
 
-    String temp_arena_str = dbg_arena_usage_string(str_lit("Frame arena: "), temp_arena_memory_usage, scratch);
-    String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena: "), perm_arena_memory_usage, scratch);
-    String world_arena_str = dbg_arena_usage_string(str_lit("World arena: "), world_arena_memory_usage, scratch);
+    String temp_arena_str = dbg_arena_usage_string(str_lit("Frame arena"), temp_arena_memory_usage, scratch);
+    String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena"), perm_arena_memory_usage, scratch);
+    String world_arena_str = dbg_arena_usage_string(str_lit("World arena"), world_arena_memory_usage, scratch);
 
     ssize qt_nodes = qt_get_node_count(&game->world.quad_tree);
     String node_string = format(scratch, "Quad tree nodes: %ld", qt_nodes);

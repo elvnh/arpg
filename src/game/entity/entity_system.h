@@ -48,9 +48,7 @@ b32           es_entity_exists(EntitySystem *es, EntityID entity_id);
 void          es_schedule_entity_for_removal(Entity *entity);
 b32	      es_entity_is_inactive(Entity *entity);
 EntityWithID  es_clone_entity(EntitySystem *destination_es, Entity *entity);
-
-// TODO: better name
-EntityWithID  es_copy_entity_into_other_entity_system(EntitySystem *destination_es, Entity *entity);
+EntityWithID  es_clone_entity_into_other_es_and_keep_id(EntitySystem *destination_es, Entity *entity);
 
 void         *es_impl_add_component(Entity *entity, ComponentType type);
 void         *es_impl_get_component(Entity *entity, ComponentType type);

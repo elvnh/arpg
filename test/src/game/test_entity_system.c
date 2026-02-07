@@ -370,7 +370,7 @@ TEST_CASE(es_move_entity_into_different_es)
     es_add_component(first.entity, SpriteComponent);
     es_add_component(first.entity, LightEmitter);
 
-    EntityWithID clone = es_copy_entity_into_other_entity_system(es2, first.entity);
+    EntityWithID clone = es_clone_entity_into_other_es_and_keep_id(es2, first.entity);
 
     REQUIRE(clone.entity != first.entity);
 
@@ -412,7 +412,7 @@ TEST_CASE(es_move_entity_into_different_es_many)
 
     for (ssize i = 0; i < MAX_ENTITIES; ++i) {
         Entity *entity = es_get_entity(es1, ids_in_first_es[i]);
-        EntityWithID clone = es_copy_entity_into_other_entity_system(es2, entity);
+        EntityWithID clone = es_clone_entity_into_other_es_and_keep_id(es2, entity);
 
         ids_in_second_es[i] = clone.id;
     }
@@ -483,14 +483,12 @@ TEST_CASE(es_move_entities_into_different_es_multiple_generations)
         }
     }
 
-    // Make sure that the generations aren't copied over
+    // Make sure that the generations are copied over
     for (ssize i = 0; i < MAX_ENTITIES; ++i) {
         Entity *entity = es_get_entity(es1, ids_in_first_es[i]);
-        EntityWithID clone = es_copy_entity_into_other_entity_system(es2, entity);
+        EntityWithID clone = es_clone_entity_into_other_es_and_keep_id(es2, entity);
 
-        REQUIRE(clone.id.generation != 0);
-        REQUIRE(entity->id.generation != clone.id.generation);
-        REQUIRE(entity->id.index == clone.id.index);
+        REQUIRE(entity_id_equal(entity->id, clone.id));
     }
 
     free_entity_system(es1);

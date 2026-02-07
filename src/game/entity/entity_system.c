@@ -66,10 +66,14 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
     b32 result = id_slot
         && id_slot_belongs_to_alive_entity(id_slot)
         && (id.generation >= FIRST_ENTITY_GENERATION)
+        // TODO: conditionally activate this if LAST_ENTITY_GENERATION isn't max of it's type
+        //&& (id.generation <= LAST_ENTITY_GENERATION)
         && (id_slot->generation == id.generation);
 
-    ASSERT((!result || ((id_slot->next_free_id_index == -1) && (id_slot->prev_free_id_index == -1)))
-        && "If entity is alive, it's free ID list links should be set to -1");
+    ASSERT((!result || ((id_slot->next_free_id_index == -1)
+                && (id_slot->prev_free_id_index == -1)
+                && (id_slot->is_active)))
+        && "If entity is alive, it's ID slot should be set to the correct state");
 
     return result;
 }
@@ -99,6 +103,7 @@ static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slo
     id_slot->is_active = true;
 }
 
+// TODO: this function is unnecessary now
 EntityID es_get_id_of_entity(EntitySystem *es, Entity *entity)
 {
     EntityID result = entity->id;
@@ -157,6 +162,7 @@ static Entity *create_entity_at_index(EntitySystem *es, EntityIndex index)
     *entity = zero_struct(Entity);
 
     EntityIDSlot *slot = get_id_slot_at_index(es, index);
+
     entity->id.index = index;
     entity->id.generation = slot->generation;
 
@@ -294,7 +300,7 @@ void es_impl_remove_component(Entity *entity, ComponentType type)
     entity->active_components &= ~(bit_value);
 }
 
-static void copy_entity_and_keep_id(Entity *dst, Entity *src)
+static void copy_entity_and_keep_destination_id(Entity *dst, Entity *src)
 {
     ASSERT(dst != src);
 
@@ -306,12 +312,12 @@ static void copy_entity_and_keep_id(Entity *dst, Entity *src)
 EntityWithID es_clone_entity(EntitySystem *destination_es, Entity *entity)
 {
     EntityWithID result = es_create_entity(destination_es, entity->faction);
-    copy_entity_and_keep_id(result.entity, entity);
+    copy_entity_and_keep_destination_id(result.entity, entity);
 
     return result;
 }
 
-EntityWithID es_copy_entity_into_other_entity_system(EntitySystem *destination_es, Entity *entity)
+EntityWithID es_clone_entity_into_other_es_and_keep_id(EntitySystem *destination_es, Entity *entity)
 {
     ASSERT(!es_entity_exists(destination_es, entity->id)
         && "Did you try to move the entity into the same entity system?");
@@ -320,13 +326,11 @@ EntityWithID es_copy_entity_into_other_entity_system(EntitySystem *destination_e
     EntityIDSlot *slot = get_id_slot_at_index(destination_es, entity->id.index);
     remove_id_slot_from_free_list(destination_es, slot);
 
+    // Copy over the entity and keep the same ID, including the generation counter
     Entity *clone = create_entity_at_index(destination_es, entity->id.index);
+    clone->id = entity->id;
 
-    ASSERT((clone->id.index == entity->id.index)
-        && "Should receive same index when copied to new entity system");
-    ASSERT((clone->id.generation == slot->generation) && "The generation should be correct");
-
-    copy_entity_and_keep_id(clone, entity);
+    copy_entity_and_keep_destination_id(clone, entity);
 
     EntityWithID result = {clone, clone->id};
 

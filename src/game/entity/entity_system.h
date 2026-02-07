@@ -11,6 +11,9 @@
   - Don't return EntityWithID from es_create_entity since id is easily available now
   - Create try_get_component that can return null, make get_component crash on null
   - Rename EntityIDSlot
+  - Make number of entities dynamic
+  - es_get_id_of_entity no longer necessary
+  - Should Entity struct be opaque?
  */
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
@@ -28,8 +31,6 @@ typedef struct {
 
     b32 is_active;
 } EntityIDSlot;
-
-DEFINE_STATIC_RING_BUFFER(EntityID, EntityIDQueue, MAX_ENTITIES);
 
 typedef struct EntitySystem {
     Entity         entities[MAX_ENTITIES];

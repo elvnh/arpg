@@ -50,21 +50,12 @@ static EntityIDSlot *get_id_slot_at_index(EntitySystem *es, EntityIndex index)
     return result;
 }
 
-// TODO: this function is unneccesary now
-static b32 id_slot_belongs_to_alive_entity(EntityIDSlot *slot)
-{
-    b32 result = slot->is_active;
-    ASSERT(!result || ((slot->prev_free_id_index == -1) && (slot->next_free_id_index == -1)));
-
-    return result;
-}
-
 static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
 {
     EntityIDSlot *id_slot = get_id_slot_at_index(es, id.index);
 
     b32 result = id_slot
-        && id_slot_belongs_to_alive_entity(id_slot)
+        && id_slot->is_active
         && (id.generation >= FIRST_ENTITY_GENERATION)
         // TODO: conditionally activate this if LAST_ENTITY_GENERATION isn't max of it's type
         //&& (id.generation <= LAST_ENTITY_GENERATION)
@@ -80,7 +71,7 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
 
 static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slot)
 {
-    ASSERT(!id_slot_belongs_to_alive_entity(id_slot) && "Can't remove ID if it's already active");
+    ASSERT(!id_slot->is_active && "Can't remove ID if it's already active");
 
     es->first_free_id_index = id_slot->next_free_id_index;
 
@@ -103,7 +94,6 @@ static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slo
     id_slot->is_active = true;
 }
 
-// TODO: this function is unnecessary now
 EntityID es_get_id_of_entity(EntitySystem *es, Entity *entity)
 {
     EntityID result = entity->id;
@@ -139,10 +129,8 @@ static EntityID get_new_entity_id(EntitySystem *es)
     result.index = es->first_free_id_index;
     result.generation = id_slot->generation;
 
-    ASSERT(!id_slot_belongs_to_alive_entity(id_slot));
     remove_id_slot_from_free_list(es, id_slot);
-    ASSERT(id_slot_belongs_to_alive_entity(id_slot)
-        && "ID slot should now be counted as active");
+    ASSERT(id_slot->is_active && "ID slot should now be counted as active");
 
     return result;
 }
@@ -220,9 +208,9 @@ Entity *es_get_entity(EntitySystem *es, EntityID id)
 Entity *es_try_get_entity(EntitySystem *es, EntityID id)
 {
     Entity *result = 0;
-    EntityIDSlot *slot = get_id_slot_at_index(es, id.index);
+    EntityIDSlot *id_slot = get_id_slot_at_index(es, id.index);
 
-    if (entity_id_is_valid(es, id) && id_slot_belongs_to_alive_entity(slot)) {
+    if (entity_id_is_valid(es, id) && id_slot->is_active) {
         result = &es->entities[id.index];
     }
 

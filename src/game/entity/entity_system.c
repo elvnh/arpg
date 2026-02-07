@@ -78,14 +78,18 @@ static void remove_id_slot_from_free_list(EntitySystem *es, EntityIDSlot *id_slo
 {
     ASSERT(!id_slot_belongs_to_alive_entity(id_slot) && "Can't remove ID if it's already active");
     ASSERT(id_slot->prev_free_id_index == -1 && "Removal in middle of list not yet supported");
+
     es->first_free_id_index = id_slot->next_free_id_index;
 
+    EntityIDSlot *prev = get_id_slot_at_index(es, id_slot->prev_free_id_index);
     EntityIDSlot *next = get_id_slot_at_index(es, id_slot->next_free_id_index);
 
-    // NOTE: for now we only remove from front of list, so we only need to deal with
-    // the prev link of the next id slot
+    if (prev) {
+        prev->next_free_id_index = id_slot->next_free_id_index;
+    }
+
     if (next) {
-        next->prev_free_id_index = -1;
+        next->prev_free_id_index = id_slot->prev_free_id_index;
     }
 
     // NOTE: for debugging purposes, the is_active member is what actually should decide
@@ -131,6 +135,7 @@ static EntityID get_new_entity_id(EntitySystem *es)
     result.index = es->first_free_id_index;
     result.generation = id_slot->generation;
 
+    ASSERT(!id_slot_belongs_to_alive_entity(id_slot));
     remove_id_slot_from_free_list(es, id_slot);
     ASSERT(id_slot_belongs_to_alive_entity(id_slot)
         && "ID slot should now be counted as active");
@@ -294,6 +299,24 @@ static void copy_entity(Entity *dst, Entity *src, EntityID dst_id)
 EntityWithID es_clone_entity(EntitySystem *destination_es, Entity *entity)
 {
     EntityWithID result = es_create_entity(destination_es, entity->faction);
+    copy_entity(result.entity, entity, result.id);
+
+    return result;
+}
+
+EntityWithID es_copy_entity_into_other_entity_system(EntitySystem *destination_es, Entity *entity)
+{
+    ASSERT(!es_entity_exists(destination_es, entity->id)
+        && "Did you try to move the entity into the same entity system?");
+
+    // Allocate the entity ID in the new system
+    EntityIDSlot *slot = get_id_slot_at_index(destination_es, entity->id.index);
+    remove_id_slot_from_free_list(destination_es, slot);
+
+    EntityWithID result = create_entity_with_id(destination_es, entity->id);
+    ASSERT(entity_id_equal(result.id, entity->id)
+        && "Should receive same ID when copied to new entity system");
+
     copy_entity(result.entity, entity, result.id);
 
     return result;

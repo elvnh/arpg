@@ -358,3 +358,103 @@ TEST_CASE(es_clone_entity_different_es)
     free_entity_system(es1);
     free_entity_system(es2);
 }
+
+TEST_CASE(es_move_entity_into_different_es)
+{
+    EntitySystem *es1 = allocate_entity_system();
+    EntitySystem *es2 = allocate_entity_system();
+
+    EntityWithID first = es_create_entity(es1, FACTION_NEUTRAL);
+
+    es_add_component(first.entity, LifetimeComponent);
+    es_add_component(first.entity, SpriteComponent);
+    es_add_component(first.entity, LightEmitter);
+
+    EntityWithID clone = es_copy_entity_into_other_entity_system(es2, first.entity);
+
+    REQUIRE(clone.entity != first.entity);
+
+    REQUIRE(entity_id_equal(clone.id, first.id));
+
+    REQUIRE(v2_eq(clone.entity->position, first.entity->position));
+    REQUIRE(clone.entity->faction == first.entity->faction);
+
+    REQUIRE(es_has_component(first.entity, LifetimeComponent));
+    REQUIRE(es_has_component(first.entity, SpriteComponent));
+    REQUIRE(es_has_component(first.entity, LightEmitter));
+
+    REQUIRE(es_has_component(clone.entity, LifetimeComponent));
+    REQUIRE(es_has_component(clone.entity, SpriteComponent));
+    REQUIRE(es_has_component(clone.entity, LightEmitter));
+
+    free_entity_system(es1);
+    free_entity_system(es2);
+}
+
+TEST_CASE(es_move_entity_into_different_es_many)
+{
+    EntitySystem *es1 = allocate_entity_system();
+    EntitySystem *es2 = allocate_entity_system();
+
+    EntityID ids_in_first_es[MAX_ENTITIES] = {0};
+
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL);
+
+        es_add_component(e.entity, LifetimeComponent);
+        es_add_component(e.entity, SpriteComponent);
+        es_add_component(e.entity, LightEmitter);
+
+        ids_in_first_es[i] = e.id;
+    }
+
+    EntityID ids_in_second_es[MAX_ENTITIES] = {0};
+
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        Entity *entity = es_get_entity(es1, ids_in_first_es[i]);
+        EntityWithID clone = es_copy_entity_into_other_entity_system(es2, entity);
+
+        ids_in_second_es[i] = clone.id;
+    }
+
+    for (ssize i = 0; i < MAX_ENTITIES; ++i) {
+        Entity *entity1 = es_get_entity(es1, ids_in_first_es[i]);
+        Entity *entity2 = es_get_entity(es2, ids_in_second_es[i]);
+
+        REQUIRE(entity1 != entity2);
+
+        REQUIRE(entity_id_equal(entity2->id, ids_in_second_es[i]));
+        REQUIRE(entity_id_equal(entity1->id, entity2->id));
+
+        REQUIRE(v2_eq(entity2->position, entity1->position));
+        REQUIRE(entity2->faction == entity1->faction);
+
+        REQUIRE(es_has_component(entity1, LifetimeComponent));
+        REQUIRE(es_has_component(entity1, SpriteComponent));
+        REQUIRE(es_has_component(entity1, LightEmitter));
+
+        REQUIRE(es_has_component(entity2, LifetimeComponent));
+        REQUIRE(es_has_component(entity2, SpriteComponent));
+        REQUIRE(es_has_component(entity2, LightEmitter));
+    }
+
+    /* EntityWithID clone = es_copy_entity_into_other_entity_system(es2, first.entity); */
+
+    /* REQUIRE(clone.entity != first.entity); */
+
+    /* REQUIRE(entity_id_equal(clone.id, first.id)); */
+
+    /* REQUIRE(v2_eq(clone.entity->position, first.entity->position)); */
+    /* REQUIRE(clone.entity->faction == first.entity->faction); */
+
+    /* REQUIRE(es_has_component(first.entity, LifetimeComponent)); */
+    /* REQUIRE(es_has_component(first.entity, SpriteComponent)); */
+    /* REQUIRE(es_has_component(first.entity, LightEmitter)); */
+
+    /* REQUIRE(es_has_component(clone.entity, LifetimeComponent)); */
+    /* REQUIRE(es_has_component(clone.entity, SpriteComponent)); */
+    /* REQUIRE(es_has_component(clone.entity, LightEmitter)); */
+
+    free_entity_system(es1);
+    free_entity_system(es2);
+}

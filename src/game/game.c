@@ -217,7 +217,7 @@ static void update_and_render_ui(Game *game, RenderBatches rbs, FrameData *frame
 
     if (game->debug_state.render_origin) {
         draw_rectangle(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
-	    shader_handle(ASSET_SHAPE_SHADER), 3);
+	    shader_handle(SHAPE_SHADER), 3);
     }
 }
 

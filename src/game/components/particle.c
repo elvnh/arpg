@@ -92,7 +92,7 @@ void render_particle_spawner(World *world, ParticleSpawner *ps, RenderBatches rb
             }
         } else {
             draw_particles(rbs.world_rb, arena, &ps->particle_buffer, ps->config.particle_color,
-                ps->config.particle_size, shader_handle(ASSET_SHAPE_SHADER), RENDER_LAYER_PARTICLES);
+                ps->config.particle_size, shader_handle(SHAPE_SHADER), RENDER_LAYER_PARTICLES);
         }
 
 
@@ -104,8 +104,8 @@ void render_particle_spawner(World *world, ParticleSpawner *ps, RenderBatches rb
         }
 
         draw_textured_particles(rbs.world_rb, arena, &ps->particle_buffer,
-            texture_handle(ASSET_DEFAULT_TEXTURE), particle_color, ps->config.particle_size,
-            shader_handle(ASSET_TEXTURE_SHADER), RENDER_LAYER_PARTICLES);
+            texture_handle(DEFAULT_TEXTURE), particle_color, ps->config.particle_size,
+            shader_handle(TEXTURE_SHADER), RENDER_LAYER_PARTICLES);
     }
 }
 

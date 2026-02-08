@@ -111,13 +111,13 @@ int main(void)
 
         // TODO: Do this somewhere else
         ShaderAsset *light_blending_shader = assets_get_shader(
-            get_shader_handle_from_table(&game_state->asset_table, ASSET_LIGHT_BLENDING_SHADER));
+            get_shader_handle_from_table(&game_state->asset_table, GAME_ASSET_LIGHT_BLENDING_SHADER));
 
         renderer_backend_blend_framebuffers(backend, FRAME_BUFFER_GAMEPLAY, FRAME_BUFFER_LIGHTING,
             light_blending_shader);
 
         ShaderAsset *screenspace_texture_shader = assets_get_shader(
-            get_shader_handle_from_table(&game_state->asset_table, ASSET_SCREENSPACE_TEXTURE_SHADER));
+            get_shader_handle_from_table(&game_state->asset_table, GAME_ASSET_SCREENSPACE_TEXTURE_SHADER));
 
         renderer_backend_draw_framebuffer_as_texture(backend, FRAME_BUFFER_OVERLAY, screenspace_texture_shader);
 

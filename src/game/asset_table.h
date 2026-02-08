@@ -5,7 +5,7 @@
 #include "platform/asset.h"
 
 // TODO: capitalize names
-// TODO: separate names for different asset types
+// TODO: separate enums for different asset types
 
 #define GAME_ASSET_LIST                                                 \
     DEFINE_ASSET(TEXTURE_SHADER, SHADER, "shader.glsl")                 \
@@ -29,7 +29,11 @@
     DEFINE_ASSET(ICE_SHARD_TEXTURE, TEXTURE, "ice_shard.png")           \
     DEFINE_ASSET(DEFAULT_FONT, FONT, "Ubuntu-M.ttf")                    \
 
-#define ASSET_NAME_TO_ENUM(name) ASSET_##name
+#define ASSET_NAME_TO_ENUM(name) GAME_ASSET_##name
+
+#define texture_handle(name) texture_handle_impl(ASSET_NAME_TO_ENUM(name))
+#define shader_handle(name)  shader_handle_impl(ASSET_NAME_TO_ENUM(name))
+#define font_handle(name)    font_handle_impl(ASSET_NAME_TO_ENUM(name))
 
 typedef enum {
 #define DEFINE_ASSET(name, type, path) ASSET_NAME_TO_ENUM(name),
@@ -47,9 +51,9 @@ typedef struct {
 } AssetTable;
 
 void          set_global_asset_table(AssetTable *assets);
-TextureHandle texture_handle(GameAsset asset);
-ShaderHandle  shader_handle(GameAsset asset);
-FontHandle    font_handle(GameAsset asset);
+TextureHandle texture_handle_impl(GameAsset asset);
+ShaderHandle  shader_handle_impl(GameAsset asset);
+FontHandle    font_handle_impl(GameAsset asset);
 
 static inline AssetKind get_game_asset_kind(GameAsset asset_name)
 {

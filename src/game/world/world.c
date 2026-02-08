@@ -344,7 +344,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 
         Rectangle sprite_rect = { entity->position, sprite->size };
         draw_colored_sprite(rbs.world_rb, scratch, sprite->texture, sprite_rect, sprite_mods,
-	    sprite->color, shader_handle(ASSET_TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
+	    sprite->color, shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
@@ -356,7 +356,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
         };
 
         draw_rectangle(rbs.worldspace_ui_rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f},
-	    shader_handle(ASSET_SHAPE_SHADER), RENDER_LAYER_ENTITIES);
+	    shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ParticleSpawner)) {
@@ -376,14 +376,14 @@ static void entity_render(Entity *entity, RenderBatches rbs,
         Rectangle entity_rect = world_get_entity_bounding_box(entity);
 
         draw_rectangle(rbs.worldspace_ui_rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
-	    shader_handle(ASSET_SHAPE_SHADER), RENDER_LAYER_ENTITIES);
+	    shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
     if (debug_state->render_entity_velocity) {
 	Vector2 dir = v2_norm(entity->velocity);
 
 	draw_line(rbs.worldspace_ui_rb, scratch, entity->position, v2_add(entity->position, v2_mul_s(dir, 20.0f)),
-	    RGBA32_GREEN, 2.0f, shader_handle(ASSET_SHAPE_SHADER), 0);
+	    RGBA32_GREEN, 2.0f, shader_handle(SHAPE_SHADER), 0);
     }
 }
 
@@ -721,11 +721,11 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
 
                 switch (tile->type) {
                     case TILE_FLOOR: {
-                        texture = texture_handle(ASSET_FLOOR_TEXTURE);
+                        texture = texture_handle(FLOOR_TEXTURE);
                     } break;
 
                     case TILE_WALL: {
-                        texture = texture_handle(ASSET_WALL_TEXTURE);
+                        texture = texture_handle(WALL_TEXTURE);
                     } break;
 
                     INVALID_DEFAULT_CASE;
@@ -746,7 +746,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
 
                 if (tile->type == TILE_FLOOR) {
                     draw_sprite(rb_list.world_rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
-                        shader_handle(ASSET_TEXTURE_SHADER), layer);
+                        shader_handle(TEXTURE_SHADER), layer);
                 } else if (tile->type == TILE_WALL) {
                     Tile *tile_above = tilemap_get_tile(&world->tilemap,
                         (Vector2i){tile_coords.x, tile_coords.y + 1});
@@ -789,7 +789,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
                     }
 
                     draw_clipped_sprite(rb_list.world_rb, frame_arena, texture,
-                        tile_rect, bottom_segment, RGBA32_WHITE, shader_handle(ASSET_TEXTURE_SHADER),
+                        tile_rect, bottom_segment, RGBA32_WHITE, shader_handle(TEXTURE_SHADER),
 			RENDER_LAYER_FLOORS);
 
                     RGBA32 top_segment_color = RGBA32_WHITE;
@@ -800,13 +800,13 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
                     }
 
                     draw_clipped_sprite(rb_list.world_rb, frame_arena, texture,
-                        tile_rect, top_segment, top_segment_color, shader_handle(ASSET_TEXTURE_SHADER),
+                        tile_rect, top_segment, top_segment_color, shader_handle(TEXTURE_SHADER),
 			RENDER_LAYER_WALLS);
 
                     if (!make_wall_transparent) {
                         // Render top segment to lighting stencil buffer so that wall top sides are never lit
                         draw_rectangle(rb_list.lighting_stencil_rb, frame_arena, top_segment, RGBA32_BLACK,
-                            shader_handle(ASSET_SHAPE_SHADER), RENDER_LAYER_WALLS);
+                            shader_handle(SHAPE_SHADER), RENDER_LAYER_WALLS);
                     }
 
                 } else {
@@ -838,10 +838,10 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
             Vector2 end = v2_add(origin, v2_mul_s(vec, 10.0f));
 
             draw_line(rb_list.worldspace_ui_rb, frame_arena, origin, end, RGBA32_GREEN, 4.0f,
-                shader_handle(ASSET_SHAPE_SHADER), 0);
+                shader_handle(SHAPE_SHADER), 0);
 
             draw_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start, edge.line.end, RGBA32_BLUE, 4.0f,
-                shader_handle(ASSET_SHAPE_SHADER), 0);
+                shader_handle(SHAPE_SHADER), 0);
         }
     }
 
@@ -873,7 +873,7 @@ static void drop_ground_item(World *world, Vector2 pos, ItemID id)
     ground_item->item_id = id;
 
     SpriteComponent *sprite = es_add_component(entity.entity, SpriteComponent);
-    sprite->sprite = sprite_create(texture_handle(ASSET_FIREBALL_TEXTURE), v2(16, 16), SPRITE_ROTATE_NONE);
+    sprite->sprite = sprite_create(texture_handle(FIREBALL_TEXTURE), v2(16, 16), SPRITE_ROTATE_NONE);
 }
 
 void world_initialize(World *world, FreeListArena *parent_arena)

@@ -53,7 +53,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 
 	draw_text(
 	    rb, frame_arena, damage_str, hitsplat->position, color, 28,
-	    shader_handle(ASSET_TEXTURE_SHADER), font_handle(ASSET_DEFAULT_FONT), 5);
+	    shader_handle(TEXTURE_SHADER), font_handle(DEFAULT_FONT), 5);
     }
 }
 

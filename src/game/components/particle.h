@@ -5,6 +5,7 @@
 #include "base/typedefs.h"
 #include "base/vector.h"
 #include "base/rgba.h"
+#include "entity/entity_arena.h"
 #include "platform/asset.h"
 #include "light.h"
 #include "renderer/frontend/render_target.h"
@@ -57,20 +58,24 @@ typedef struct {
 // TODO: different kinds of spawners: infinite particles etc,
 // allow configuring angle of particles
 typedef struct {
-    ParticleBuffer particle_buffer;
+    EntityArenaIndex particle_buffer_arena_index;
     f32 particle_timer;
     s32 particles_left_to_spawn;
     ParticleSpawnerConfig config;
     ParticleSpawnerWhenDone action_when_done;
 } ParticleSpawner;
 
-void particle_spawner_initialize(ParticleSpawner *ps, ParticleSpawnerConfig config);
-b32 particle_spawner_is_finished(ParticleSpawner *ps);
+void particle_spawner_initialize(struct Entity *entity, ParticleSpawner *ps, ParticleSpawnerConfig config);
+b32 particle_spawner_is_finished(struct Entity *entity, ParticleSpawner *ps);
 
 // TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
 void update_particle_spawner(struct Entity *entity, ParticleSpawner *ps,
                              struct PhysicsComponent *physics, f32 dt);
-void render_particle_spawner(struct World *world, ParticleSpawner *ps,
+void render_particle_spawner(struct World *world, struct Entity *entity, ParticleSpawner *ps,
                              RenderBatches rbs, struct LinearArena *arena);
+
+ParticleBuffer *get_particle_spawner_buffer(struct Entity *entity, ParticleSpawner *ps);
+ParticleSpawner *copy_particle_spawner(struct Entity *dst_entity,
+                                       struct Entity *src_entity, ParticleSpawner *src_ps);
 
 #endif //PARTICLE_H

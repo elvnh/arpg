@@ -100,7 +100,7 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
         event_data.world, self_physics->position, FACTION_NEUTRAL);
 
     ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
-    particle_spawner_initialize(ps, *particle_config);
+    particle_spawner_initialize(ps_entity.entity, ps, *particle_config);
     ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 }
 
@@ -195,7 +195,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 
     if (spell_has_prop(spell, SPELL_PROP_PARTICLE_SPAWNER)) {
 	ParticleSpawner *ps = es_get_or_add_component(spell_entity, ParticleSpawner);
-	particle_spawner_initialize(ps, spell->particle_spawner);
+	particle_spawner_initialize(spell_entity, ps, spell->particle_spawner);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_SPAWN_PARTICLES_ON_DEATH)) {

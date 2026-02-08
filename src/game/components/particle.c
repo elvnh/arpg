@@ -1,10 +1,19 @@
 #include "particle.h"
 #include "components/component.h"
+#include "entity/entity_arena.h"
 #include "entity/entity_system.h"
 #include "base/random.h"
 #include "world/world.h"
 #include "renderer/frontend/render_batch.h"
 #include "asset_table.h"
+
+ParticleBuffer *get_particle_spawner_buffer(Entity *entity, ParticleSpawner *ps)
+{
+    ParticleBuffer *result = entity_arena_get(&entity->entity_arena,
+        ps->particle_buffer_arena_index);
+
+    return result;
+}
 
 void update_particle_spawner(Entity *entity, ParticleSpawner *ps, PhysicsComponent *physics, f32 dt)
 {
@@ -14,6 +23,8 @@ void update_particle_spawner(Entity *entity, ParticleSpawner *ps, PhysicsCompone
 
     ASSERT(physics);
     ASSERT(es_has_component(entity, PhysicsComponent));
+
+    ParticleBuffer *buffer = get_particle_spawner_buffer(entity, ps);
 
     s32 particles_to_spawn_this_frame = 0;
 
@@ -59,14 +70,14 @@ void update_particle_spawner(Entity *entity, ParticleSpawner *ps, PhysicsCompone
             .velocity = v2_mul_s(dir, speed)
         };
 
-        ring_push_overwrite(&ps->particle_buffer, &new_particle);
+        ring_push_overwrite(buffer, &new_particle);
     }
 
-    for (ssize i = 0; i < ring_length(&ps->particle_buffer); ++i) {
-        Particle *p = ring_at(&ps->particle_buffer, i);
+    for (ssize i = 0; i < ring_length(buffer); ++i) {
+        Particle *p = ring_at(buffer, i);
 
         if (p->timer > p->lifetime) {
-            ring_swap_remove(&ps->particle_buffer, i);
+            ring_swap_remove(buffer, i);
         }
 
         p->timer += dt;
@@ -75,19 +86,22 @@ void update_particle_spawner(Entity *entity, ParticleSpawner *ps, PhysicsCompone
         p->velocity = v2_add(p->velocity, v2_mul_s(p->velocity, -0.009f));
     }
 
-    if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_COMPONENT) && particle_spawner_is_finished(ps)) {
+    if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_COMPONENT)
+        && particle_spawner_is_finished(entity, ps)) {
         es_remove_component(entity, ParticleSpawner);
     }
 }
 
-void render_particle_spawner(World *world, ParticleSpawner *ps, RenderBatches rbs, LinearArena *arena)
+void render_particle_spawner(World *world, Entity *entity, ParticleSpawner *ps, RenderBatches rbs, LinearArena *arena)
 {
+    ParticleBuffer *buffer = get_particle_spawner_buffer(entity, ps);
+
     if (ps->config.particle_texture.id == NULL_TEXTURE.id) {
         ASSERT(ps->config.particle_color.a != 0.0f);
 
         if (ps->config.emits_light) {
-            for (ssize i = 0; i < ring_length(&ps->particle_buffer); ++i) {
-                Particle *p = ring_at(&ps->particle_buffer, i);
+            for (ssize i = 0; i < ring_length(buffer); ++i) {
+                Particle *p = ring_at(buffer, i);
                 // TODO: don't have the particles fade out linearly
                 f32 intensity = 1.0f - p->timer / p->lifetime;
 
@@ -95,7 +109,7 @@ void render_particle_spawner(World *world, ParticleSpawner *ps, RenderBatches rb
                     intensity, arena);
             }
         } else {
-            draw_particles(rbs.world_rb, arena, &ps->particle_buffer, ps->config.particle_color,
+            draw_particles(rbs.world_rb, arena, buffer, ps->config.particle_color,
                 ps->config.particle_size, shader_handle(SHAPE_SHADER), RENDER_LAYER_PARTICLES);
         }
 
@@ -107,27 +121,65 @@ void render_particle_spawner(World *world, ParticleSpawner *ps, RenderBatches rb
             particle_color = RGBA32_WHITE;
         }
 
-        draw_textured_particles(rbs.world_rb, arena, &ps->particle_buffer,
+        draw_textured_particles(rbs.world_rb, arena, buffer,
             texture_handle(DEFAULT_TEXTURE), particle_color, ps->config.particle_size,
             shader_handle(TEXTURE_SHADER), RENDER_LAYER_PARTICLES);
     }
 }
 
+void particle_spawner_initialize(Entity *entity, ParticleSpawner *ps, ParticleSpawnerConfig config)
+{
+    // TODO: instead have a function for creating a particle spawner and only pass entity,
+    // not pointer to already existing particle spawner
+    ASSERT((void *)ps >= (void *)entity && (void *)ps < (void *)(entity + 1)
+        && "Particle spawner doesn't belong to entity");
+
+    ASSERT(config.infinite || config.total_particles_to_spawn > 0);
+
+    EntityArenaAllocation particle_buffer_allocation =
+        entity_arena_allocate_item(&entity->entity_arena, ParticleBuffer);
+
+    ParticleBuffer *buffer = particle_buffer_allocation.ptr;
+
+    ring_initialize_static(buffer);
+    ps->particle_buffer_arena_index = particle_buffer_allocation.index;
+    ps->config = config;
+    ps->particles_left_to_spawn = config.total_particles_to_spawn;
+}
+
 // Particle spawners aren't considered done until the have spawned all remaining particles
 // and all particles in flight have died
-b32 particle_spawner_is_finished(ParticleSpawner *ps)
+b32 particle_spawner_is_finished(Entity *entity, ParticleSpawner *ps)
 {
-    b32 result = !ps->config.infinite && (ring_length(&ps->particle_buffer) == 0)
+    ParticleBuffer *buffer = get_particle_spawner_buffer(entity, ps);
+
+    b32 result = !ps->config.infinite && (ring_length(buffer) == 0)
         && (ps->particles_left_to_spawn <= 0);
 
     return result;
 }
 
-void particle_spawner_initialize(ParticleSpawner *ps, ParticleSpawnerConfig config)
+ParticleSpawner *copy_particle_spawner(struct Entity *dst_entity,
+    struct Entity *src_entity, ParticleSpawner *src_ps)
 {
-    ASSERT(config.infinite || config.total_particles_to_spawn > 0);
+    ASSERT(es_has_component(src_entity, ParticleSpawner));
 
-    ring_initialize_static(&ps->particle_buffer);
-    ps->config = config;
-    ps->particles_left_to_spawn = config.total_particles_to_spawn;
+    ParticleSpawner *dst_ps = 0;
+
+    if (es_has_component(dst_entity, ParticleSpawner)) {
+        dst_ps = es_get_component(dst_entity, ParticleSpawner);
+    } else {
+        dst_ps = es_add_component(dst_entity, ParticleSpawner);
+        particle_spawner_initialize(dst_entity, dst_ps, src_ps->config);
+    }
+
+    EntityArenaIndex buffer_index = dst_ps->particle_buffer_arena_index;
+    *dst_ps = *src_ps;
+    dst_ps->particle_buffer_arena_index = buffer_index;
+
+    ParticleBuffer *dst_buffer = get_particle_spawner_buffer(dst_entity, dst_ps);
+    ParticleBuffer *src_buffer = get_particle_spawner_buffer(src_entity, src_ps);
+    *dst_buffer = *src_buffer;
+
+    return dst_ps;
 }

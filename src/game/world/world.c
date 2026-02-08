@@ -163,15 +163,17 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
         if (es_has_component(dying_entity, ParticleSpawner)) {
             // If entity dies while particles are active, create a new particle spawner
             // entity with the remaining particles
-            ParticleSpawner *ps = es_get_component(dying_entity, ParticleSpawner);
+            ParticleSpawner *dying_entity_ps = es_get_component(dying_entity, ParticleSpawner);
+            ParticleBuffer *dying_particle_buffer = get_particle_spawner_buffer(
+                dying_entity, dying_entity_ps);
 
-            if (ring_length(&ps->particle_buffer) > 0) {
+            if (ring_length(dying_particle_buffer) > 0) {
                 EntityWithID new_ps_entity = world_spawn_entity(
                     world, dying_entity_physics->position, FACTION_NEUTRAL);
 
-                ParticleSpawner *new_ps = es_add_component(new_ps_entity.entity, ParticleSpawner);
-                // TODO: if particle spawner get a non-static buffer, a deep copy will be required
-                *new_ps = *ps;
+                ParticleSpawner *new_ps = copy_particle_spawner(
+                    new_ps_entity.entity, dying_entity, dying_entity_ps);
+
                 new_ps->particles_left_to_spawn = 0;
                 new_ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
                 new_ps->config.infinite = false;
@@ -279,7 +281,7 @@ static b32 entity_should_die(Entity *entity)
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
 
         if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_ENTITY)
-            && particle_spawner_is_finished(ps)) {
+            && particle_spawner_is_finished(entity, ps)) {
             return true;
         }
     }
@@ -394,7 +396,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
 
-        render_particle_spawner(world, ps, rbs, scratch);
+        render_particle_spawner(world, entity, ps, rbs, scratch);
     }
 
     if (es_has_component(entity, LightEmitter)) {

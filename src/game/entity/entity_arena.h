@@ -14,6 +14,9 @@
 
 #define ENTITY_ARENA_SIZE MB(1)
 
+#define entity_arena_allocate_item(arena, type)                 \
+    entity_arena_allocate(arena, SIZEOF(type), ALIGNOF(type))
+
 typedef struct {
     // This alignment should be large enough for any actual use case
     ALIGNAS(64) byte data[ENTITY_ARENA_SIZE];

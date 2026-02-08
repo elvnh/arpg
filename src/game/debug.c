@@ -71,7 +71,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     ASSERT(physics && "How did you inspect a non-spatial entity?");
 
     // TODO: don't require name for containers
-    ui_begin_container(ui, str_lit("inspect"), V2_ZERO, RGBA32_GREEN, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+    ui_begin_container(ui, str_lit("inspect"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 	// TODO: inventory and equipment
         String faction = entity_faction_to_string(entity->faction);
 
@@ -104,6 +104,18 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 		for_each_active_status_effect(effects, status_effect_list_callback, &context);
 	    } ui_end_list(ui);
 	}
+    } ui_pop_container(ui);
+
+    ui_core_same_line(ui);
+
+    ui_begin_container(ui, str_lit("components"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+        for (ComponentID c = 0; c < COMPONENT_COUNT; ++c) {
+            ComponentID id = FLAG(c);
+
+            if (es_has_components(entity, id)) {
+                ui_text(ui, component_id_to_string(id));
+            }
+        }
     } ui_pop_container(ui);
 }
 

@@ -80,9 +80,14 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
         String entity_faction_str = format(scratch, "Faction: "FMT_STR,
             FMT_STR_ARG(faction));
 
+        f64 arena_usage = (f64)entity_arena_get_memory_usage(&entity->entity_arena) / (f64)KB(1);
+        String arena_usage_str = format(scratch, "Entity arena: %.2f/%.2f",
+            arena_usage, (f64)ENTITY_ARENA_SIZE / (f64)KB(1));
+
 	ui_text(ui, entity_str);
 	ui_text(ui, entity_pos_str);
 	ui_text(ui, entity_faction_str);
+	ui_text(ui, arena_usage_str);
 
 	HealthComponent *hp = es_get_component(entity, HealthComponent);
 

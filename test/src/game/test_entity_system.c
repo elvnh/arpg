@@ -6,6 +6,12 @@
 
 #include <stdlib.h>
 
+/*
+  TODO:
+  - Test components that use entity arena
+  - Test callbacks
+ */
+
 // Entity systems need to be heap allocated since they're fairly large
 static EntitySystem *allocate_entity_system(void)
 {
@@ -334,7 +340,6 @@ TEST_CASE(es_clone_entity_same_es)
     REQUIRE(clone.entity != first.entity);
     REQUIRE(!entity_id_equal(clone.id, first.id));
 
-    REQUIRE(v2_eq(clone.entity->position, first.entity->position));
     REQUIRE(clone.entity->faction == first.entity->faction);
 
     REQUIRE(es_has_component(first.entity, LifetimeComponent));
@@ -367,7 +372,6 @@ TEST_CASE(es_clone_entity_different_es)
     // in their respective entity systems
     REQUIRE(entity_id_equal(clone.id, first.id));
 
-    REQUIRE(v2_eq(clone.entity->position, first.entity->position));
     REQUIRE(clone.entity->faction == first.entity->faction);
 
     REQUIRE(es_has_component(first.entity, LifetimeComponent));
@@ -399,7 +403,6 @@ TEST_CASE(es_move_entity_into_different_es)
 
     REQUIRE(entity_id_equal(clone.id, first.id));
 
-    REQUIRE(v2_eq(clone.entity->position, first.entity->position));
     REQUIRE(clone.entity->faction == first.entity->faction);
 
     REQUIRE(es_has_component(first.entity, LifetimeComponent));
@@ -451,7 +454,6 @@ TEST_CASE(es_move_entity_into_different_es_many)
         REQUIRE(entity_id_equal(entity2->id, ids_in_second_es[i]));
         REQUIRE(entity_id_equal(entity1->id, entity2->id));
 
-        REQUIRE(v2_eq(entity2->position, entity1->position));
         REQUIRE(entity2->faction == entity1->faction);
 
         REQUIRE(es_has_component(entity1, LifetimeComponent));

@@ -3,6 +3,7 @@
 #include "base/linear_arena.h"
 #include "components/component.h"
 #include "entity/entity_faction.h"
+#include "entity/entity_system.h"
 #include "platform/input.h"
 #include "status_effect.h"
 #include "game.h"
@@ -66,13 +67,16 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 	return;
     }
 
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    ASSERT(physics && "How did you inspect a non-spatial entity?");
+
     // TODO: don't require name for containers
     ui_begin_container(ui, str_lit("inspect"), V2_ZERO, RGBA32_GREEN, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 	// TODO: inventory and equipment
         String faction = entity_faction_to_string(entity->faction);
 
         String entity_str = format(scratch, "Hovered entity: %d", game->game_ui.hovered_entity.index);
-        String entity_pos_str = format(scratch, "Position: "FMT_V2, FMT_V2_ARG(entity->position));
+        String entity_pos_str = format(scratch, "Position: "FMT_V2, FMT_V2_ARG(physics->position));
         String entity_faction_str = format(scratch, "Faction: "FMT_STR,
             FMT_STR_ARG(faction));
 

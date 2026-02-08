@@ -59,8 +59,10 @@
    - Pass in world size to world_initialize
  */
 
-Rectangle world_get_entity_bounding_box(Entity *entity)
+Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physics)
 {
+    ASSERT(physics);
+
     // NOTE: this minimum size is completely arbitrary
     Vector2 size = {4, 4};
 
@@ -87,7 +89,7 @@ Rectangle world_get_entity_bounding_box(Entity *entity)
         size.y = MAX(size.y, current_frame.sprite.size.y);
     }
 
-    Rectangle result = {entity->position, size};
+    Rectangle result = {physics->position, size};
 
     return result;
 }
@@ -110,12 +112,19 @@ static void world_update_entity_quad_tree_location(World *world, ssize alive_ent
     Entity *entity = es_get_entity(&world->entity_system, id);
     ASSERT(entity);
 
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
     QuadTreeLocation *loc = &world->alive_entity_quad_tree_locations[alive_entity_index];
-    Rectangle entity_area = world_get_entity_bounding_box(entity);
 
-    *loc = qt_set_entity_area(&world->quad_tree, id, *loc, entity_area, &world->world_arena);
+    if (physics) {
+        Rectangle entity_area = world_get_entity_bounding_box(entity, physics);
+
+        *loc = qt_set_entity_area(&world->quad_tree, id, *loc, entity_area, &world->world_arena);
+    } else {
+        *loc = QT_NULL_LOCATION;
+    }
 }
 
+// TODO: provide position to this function
 EntityWithID world_spawn_entity(World *world, EntityFaction faction)
 {
     ASSERT(faction >= 0);
@@ -139,72 +148,78 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
     ASSERT(alive_entity_index < world->alive_entity_count);
 
     EntityID *id = &world->alive_entity_ids[alive_entity_index];
-    Entity *entity = es_get_entity(&world->entity_system, *id);
+    Entity *dying_entity = es_get_entity(&world->entity_system, *id);
+    PhysicsComponent *dying_entity_physics = es_get_component(dying_entity, PhysicsComponent);
 
-    if (es_has_component(entity, ParticleSpawner)) {
-	// If entity dies while particles are active, create a new particle spawner
-	// entity with the remaining particles
-	ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
+    // If the entity is non-spatial, there is (currently) nothing for us to do here
+    if (dying_entity_physics) {
+        if (es_has_component(dying_entity, ParticleSpawner)) {
+            // If entity dies while particles are active, create a new particle spawner
+            // entity with the remaining particles
+            ParticleSpawner *ps = es_get_component(dying_entity, ParticleSpawner);
 
-	if (ring_length(&ps->particle_buffer) > 0) {
-	    EntityWithID new_ps_entity = world_spawn_entity(world, FACTION_NEUTRAL);
+            if (ring_length(&ps->particle_buffer) > 0) {
+                EntityWithID new_ps_entity = world_spawn_entity(world, FACTION_NEUTRAL);
+                PhysicsComponent *ps_physics = es_add_component(new_ps_entity.entity, PhysicsComponent);
+                ps_physics->position = dying_entity_physics->position;
 
-	    new_ps_entity.entity->position = entity->position;
-	    ParticleSpawner *new_ps = es_add_component(new_ps_entity.entity, ParticleSpawner);
+                ParticleSpawner *new_ps = es_add_component(new_ps_entity.entity, ParticleSpawner);
+                // TODO: if particle spawner get a non-static buffer, a deep copy will be required
+                *new_ps = *ps;
+                new_ps->particles_left_to_spawn = 0;
+                new_ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+                new_ps->config.infinite = false;
+            }
+        }
 
-	    // TODO: if particle spawner get a non-static buffer, a deep copy will be required
-	    *new_ps = *ps;
-	    new_ps->particles_left_to_spawn = 0;
-	    new_ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
-	    new_ps->config.infinite = false;
-	}
-    }
+        if (es_has_component(dying_entity, LightEmitter)) {
+            // If an entity dies while it has a light, the light is transferred
+            // to a new entity and the light starts fading out
+            LightEmitter *old_light = es_get_component(dying_entity, LightEmitter);
 
-    if (es_has_component(entity, LightEmitter)) {
-	// If an entity dies while it has a light, the light is transferred
-	// to a new entity and the light starts fading out
-	LightEmitter *old_light = es_get_component(entity, LightEmitter);
+            b32 should_transfer_light = !old_light->light.fading_out
+                || (old_light->light.time_elapsed < old_light->light.fade_duration);
 
-	b32 should_transfer_light = !old_light->light.fading_out
-	    || (old_light->light.time_elapsed < old_light->light.fade_duration);
+            if (should_transfer_light) {
+                Entity *new_entity = world_spawn_entity(world, FACTION_NEUTRAL).entity;
+                PhysicsComponent *new_entity_physics = es_add_component(new_entity, PhysicsComponent);
+                new_entity_physics->position = dying_entity_physics->position;
 
-        if (should_transfer_light) {
-            Entity *new_entity = world_spawn_entity(world, FACTION_NEUTRAL).entity;
-	    new_entity->position = entity->position;
+                Vector2i tile_coords = world_to_tile_coords(new_entity_physics->position);
+                Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
-	    Vector2i tile_coords = world_to_tile_coords(new_entity->position);
-	    Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
+                if (!tile || (tile->type == TILE_WALL)) {
+                    Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
+                    RectanglePoint closest_point = rect_bounds_point_closest_to_point(
+                        tile_rect, new_entity_physics->position);
 
-	    if (!tile || (tile->type == TILE_WALL)) {
-		Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
-		RectanglePoint closest_point = rect_bounds_point_closest_to_point(
-		    tile_rect, new_entity->position);
+                    // The entity will be placed on the perimeter of the tile it was spawned in,
+                    // which means it will be considered to be inside it, so we offset it slightly.
+                    new_entity_physics->position = v2_sub(closest_point.point,
+                        v2_norm(new_entity_physics->velocity));
+                }
 
-		// The entity will be placed on the perimeter of the tile it was spawned in,
-		// which means it will be considered to be inside it, so we offset it slightly.
-		new_entity->position = v2_sub(closest_point.point, v2_norm(entity->velocity));
-	    }
+                LightEmitter *new_light = es_add_component(new_entity, LightEmitter);
+                *new_light = *old_light;
 
-            LightEmitter *new_light = es_add_component(new_entity, LightEmitter);
-            *new_light = *old_light;
+                f32 light_fade_duration = new_light->light.fade_duration;
 
-	    f32 light_fade_duration = new_light->light.fade_duration;
+                if (light_fade_duration == 0.0f) {
+                    light_fade_duration = LIGHT_DEFAULT_FADE_OUT_TIME;
+                }
 
-	    if (light_fade_duration == 0.0f) {
-		light_fade_duration = LIGHT_DEFAULT_FADE_OUT_TIME;
-	    }
+                new_light->light.fade_duration = light_fade_duration;
 
-	    new_light->light.fade_duration = light_fade_duration;
+                LifetimeComponent *lt = es_add_component(new_entity, LifetimeComponent);
+                lt->time_to_live = light_fade_duration;
 
-            LifetimeComponent *lt = es_add_component(new_entity, LifetimeComponent);
-            lt->time_to_live = light_fade_duration;
+                // TODO: this is not needed?
+                es_remove_component(dying_entity, LightEmitter);
 
-            es_remove_component(entity, LightEmitter);
-
-            new_light->light.fading_out = true;
+                new_light->light.fading_out = true;
+            }
         }
     }
-
     es_remove_entity(&world->entity_system, *id);
 
     QuadTreeLocation *qt_location = &world->alive_entity_quad_tree_locations[alive_entity_index];
@@ -282,6 +297,11 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
     EntityID id = world->alive_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
 
+    // Physics is used by a lot of components so we start by retrieving it
+    // TODO: what if a component update removes the physics component?
+    // This pointer will be stale
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+
     if (es_has_component(entity, HealthComponent)) {
 	HealthComponent *hp = es_get_component(entity, HealthComponent);
 	StatValue max_hp = get_total_stat_value(entity, STAT_HEALTH, &world->item_system);
@@ -295,7 +315,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
-        update_particle_spawner(entity, particle_spawner, dt);
+        update_particle_spawner(entity, particle_spawner, physics, dt);
     }
 
     if (es_has_component(entity, LifetimeComponent)) {
@@ -311,7 +331,8 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
 	ASSERT(anim_component->current_animation.animation_id != ANIM_NULL);
-	anim_update_instance(world, entity, &anim_component->current_animation, dt);
+
+	anim_update_instance(world, entity, physics, &anim_component->current_animation, dt);
     }
 
     if (es_has_component(entity, LightEmitter)) {
@@ -332,17 +353,25 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 static void entity_render(Entity *entity, RenderBatches rbs,
     LinearArena *scratch, struct DebugState *debug_state, World *world)
 {
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+
+    if (!physics) {
+        // Can't render a non-spatial entity
+        return;
+    }
+
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
         AnimationInstance *anim_instance = &anim_component->current_animation;
-	anim_render_instance(anim_instance, entity, rbs.world_rb, scratch);
+
+	anim_render_instance(anim_instance, physics, rbs.world_rb, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
 	Sprite *sprite = &sprite_comp->sprite;
         // TODO: how to handle if entity has both sprite and animation component?
-	SpriteModifiers sprite_mods = sprite_get_modifiers(entity->direction, sprite->rotation_behaviour);
+	SpriteModifiers sprite_mods = sprite_get_modifiers(physics->direction, sprite->rotation_behaviour);
 
-        Rectangle sprite_rect = { entity->position, sprite->size };
+        Rectangle sprite_rect = { physics->position, sprite->size };
         draw_colored_sprite(rbs.world_rb, scratch, sprite->texture, sprite_rect, sprite_mods,
 	    sprite->color, shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
     }
@@ -351,7 +380,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
         Rectangle collider_rect = {
-            .position = entity->position,
+            .position = physics->position,
             .size = collider->size
         };
 
@@ -369,21 +398,21 @@ static void entity_render(Entity *entity, RenderBatches rbs,
         LightEmitter *light = es_get_component(entity, LightEmitter);
 
         // TODO: this might look better if the origin is center of entity
-        render_light_source(world, rbs.lighting_rb, entity->position, light->light, 1.0f, scratch);
+        render_light_source(world, rbs.lighting_rb, physics->position, light->light, 1.0f, scratch);
     }
 
     if (debug_state->render_entity_bounds) {
-        Rectangle entity_rect = world_get_entity_bounding_box(entity);
+        Rectangle entity_rect = world_get_entity_bounding_box(entity, physics);
 
         draw_rectangle(rbs.worldspace_ui_rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
 	    shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
     if (debug_state->render_entity_velocity) {
-	Vector2 dir = v2_norm(entity->velocity);
+	Vector2 dir = v2_norm(physics->velocity);
 
-	draw_line(rbs.worldspace_ui_rb, scratch, entity->position, v2_add(entity->position, v2_mul_s(dir, 20.0f)),
-	    RGBA32_GREEN, 2.0f, shader_handle(SHAPE_SHADER), 0);
+	draw_line(rbs.worldspace_ui_rb, scratch, physics->position, v2_add(physics->position, v2_mul_s(dir, 20.0f)),
+            RGBA32_GREEN, 2.0f, shader_handle(SHAPE_SHADER), 0);
     }
 }
 
@@ -418,7 +447,12 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
     StatValue new_hp = hp->health.current_hitpoints - dmg_sum;
     set_current_health(&hp->health, new_hp);
 
-    hitsplats_create(world, entity->position, damage_taken);
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    ASSERT(physics && "I guess a non-spatial entity could take damage?");
+
+    if (physics) {
+        hitsplats_create(world, physics->position, damage_taken);
+    }
 }
 
 static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, DamageInstance damage)
@@ -432,10 +466,10 @@ static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *se
     }
 }
 
-static Rectangle get_entity_collider_rectangle(Entity *entity, ColliderComponent *collider)
+static Rectangle get_entity_collider_rectangle(ColliderComponent *collider, PhysicsComponent *physics)
 {
     Rectangle result = {
-        entity->position,
+        physics->position,
         collider->size
     };
 
@@ -471,8 +505,10 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
     }
 }
 
-static f32 entity_vs_entity_collision(World *world, Entity *a,
-    ColliderComponent *collider_a, Entity *b, ColliderComponent *collider_b,
+// TODO: reduce number of parameters
+static f32 entity_vs_entity_collision(World *world,
+    Entity *a, ColliderComponent *collider_a, PhysicsComponent *physics_a,
+    Entity *b, ColliderComponent *collider_b, PhysicsComponent *physics_b,
     f32 movement_fraction_left, f32 dt)
 {
     ASSERT(a);
@@ -481,11 +517,11 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
     EntityID id_a = es_get_id_of_entity(&world->entity_system, a);
     EntityID id_b = es_get_id_of_entity(&world->entity_system, b);
 
-    Rectangle rect_a = get_entity_collider_rectangle(a, collider_a);
-    Rectangle rect_b = get_entity_collider_rectangle(b, collider_b);
+    Rectangle rect_a = get_entity_collider_rectangle(collider_a, physics_a);
+    Rectangle rect_b = get_entity_collider_rectangle(collider_b, physics_b);
 
     CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
-	a->velocity, b->velocity, dt);
+	physics_a->velocity, physics_b->velocity, dt);
 
     b32 same_collision_group = (collider_a->collision_group == collider_b->collision_group)
 	&& (collider_a->collision_group != COLLISION_GROUP_NONE);
@@ -499,8 +535,10 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
 		component_flag(ColliderComponent));
 
 	if (neither_collider_on_cooldown) {
-	    execute_entity_vs_entity_collision_policy(world, a, b, collision, ENTITY_PAIR_INDEX_FIRST);
-	    execute_entity_vs_entity_collision_policy(world, b, a, collision, ENTITY_PAIR_INDEX_SECOND);
+	    execute_entity_vs_entity_collision_policy(world, a, physics_a, collider_a,
+                b, collider_b, collision, ENTITY_PAIR_INDEX_FIRST);
+	    execute_entity_vs_entity_collision_policy(world, b, physics_b, collider_b,
+                a, collider_a, collision, ENTITY_PAIR_INDEX_SECOND);
 
 	    invoke_entity_vs_entity_collision_triggers(world, a, b);
 	    invoke_entity_vs_entity_collision_triggers(world, b, a);
@@ -522,14 +560,14 @@ static f32 entity_vs_entity_collision(World *world, Entity *a,
     return movement_fraction_left;
 }
 
-static Rectangle get_entity_collision_area(const Entity *entity, ColliderComponent *collider, f32 dt)
+static Rectangle get_entity_collision_area(ColliderComponent *collider, PhysicsComponent *physics, f32 dt)
 {
-    Vector2 next_pos = v2_add(entity->position, v2_mul_s(entity->velocity, dt));
+    Vector2 next_pos = v2_add(physics->position, v2_mul_s(physics->velocity, dt));
 
-    f32 min_x = MIN(entity->position.x, next_pos.x);
-    f32 max_x = MAX(entity->position.x, next_pos.x) + collider->size.x;
-    f32 min_y = MIN(entity->position.y, next_pos.y);
-    f32 max_y = MAX(entity->position.y, next_pos.y) + collider->size.y;
+    f32 min_x = MIN(physics->position.x, next_pos.x);
+    f32 max_x = MAX(physics->position.x, next_pos.x) + collider->size.x;
+    f32 min_y = MIN(physics->position.y, next_pos.y);
+    f32 max_y = MAX(physics->position.y, next_pos.y) + collider->size.y;
 
     f32 width = max_x - min_x;
     f32 height = max_y - min_y;
@@ -540,9 +578,9 @@ static Rectangle get_entity_collision_area(const Entity *entity, ColliderCompone
 }
 
 static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collider,
-    World *world, f32 movement_fraction_left, f32 dt)
+    PhysicsComponent *physics, World *world, f32 movement_fraction_left, f32 dt)
 {
-    Rectangle collision_area = get_entity_collision_area(entity, collider, dt);
+    Rectangle collision_area = get_entity_collision_area(collider, physics, dt);
 
     f32 min_x = collision_area.position.x;
     f32 max_x = min_x + collision_area.size.x;
@@ -567,16 +605,16 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
             Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
             if (!tile || (tile->type == TILE_WALL)) {
-                Rectangle entity_rect = get_entity_collider_rectangle(entity, collider);
+                Rectangle entity_rect = get_entity_collider_rectangle(collider, physics);
                 Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
 
                 CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
-		    tile_rect, entity->velocity, V2_ZERO, dt);
+		    tile_rect, physics->velocity, V2_ZERO, dt);
 
                 if (collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) {
 		    movement_fraction_left = collision.movement_fraction_left;
 
-		    execute_entity_vs_tilemap_collision_policy(world, entity, collision);
+		    execute_entity_vs_tilemap_collision_policy(world, entity, physics, collider, collision);
 
 		    EventData event_data = event_data_tilemap_collision(collision_coords);
 		    send_event_to_entity(entity, event_data, world);
@@ -598,17 +636,20 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
 
         EntityID id_a = world->alive_entity_ids[i];
         Entity *a = es_get_entity(&world->entity_system, id_a);
-        ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
         ASSERT(a);
+
+        ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
+        PhysicsComponent *physics_a = es_get_component(a, PhysicsComponent);
+        ASSERT((!collider_a || physics_a) && "If you have a collider, you should have physics");
 
         f32 movement_fraction_left = 1.0f;
 
-        if (collider_a) {
-            movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, world,
+        if (collider_a && physics_a) {
+            movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, physics_a, world,
 		movement_fraction_left, dt);
 	    ASSERT(movement_fraction_left >= 0.0f);
 
-            Rectangle collision_area = get_entity_collision_area(a, collider_a, dt);
+            Rectangle collision_area = get_entity_collision_area(collider_a, physics_a, dt);
             EntityIDList entities_in_area =
 		qt_get_entities_in_area(&world->quad_tree, collision_area, frame_arena);
 
@@ -617,10 +658,12 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
                     Entity *b = es_get_entity(&world->entity_system, node->id);
 
                     ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
+                    PhysicsComponent *physics_b = es_get_component(b, PhysicsComponent);
+                    ASSERT((!collider_b || physics_b) && "If you have a collider, you should have physics");
 
-                    if (collider_b) {
+                    if (collider_b && physics_b) {
                         movement_fraction_left = entity_vs_entity_collision(world, a, collider_a,
-                            b, collider_b, movement_fraction_left, dt);
+                            physics_a, b, collider_b, physics_b, movement_fraction_left, dt);
                     }
                 }
             }
@@ -628,13 +671,13 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
             ASSERT(movement_fraction_left >= 0.0f);
             ASSERT(movement_fraction_left <= 1.0f);
 
-            Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(a->velocity, movement_fraction_left), dt);
-            a->position = v2_add(a->position, to_move_this_frame);
+            Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(physics_a->velocity, movement_fraction_left), dt);
+            physics_a->position = v2_add(physics_a->position, to_move_this_frame);
 
-	    f32 mag = v2_mag(a->velocity);
+	    f32 mag = v2_mag(physics_a->velocity);
 
             if (mag > 0.5f) {
-                a->direction = v2_norm(a->velocity);
+                physics_a->direction = v2_norm(physics_a->velocity);
             } else if (mag < 0.01f) {
 		//a->velocity = V2_ZERO;
 	    }
@@ -769,23 +812,31 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
 
                     for (EntityIDNode *node = list_head(&entities_near_tile); node; node = list_next(node)) {
                         Entity *entity = es_get_entity(&world->entity_system, node->id);
+                        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
+                        // Entity could technically exist (I think) in quad tree despite not having
+                        // a physics component if it was removed mid-frame and we haven't updated all
+                        // quad tree locations yet, so we probably just ignore it
+                        ASSERT(physics);
+                        if (physics) {
+                            Rectangle entity_bounds = world_get_entity_bounding_box(entity, physics);
+                            b32 entity_intersects_wall = rect_intersects(entity_bounds, top_segment);
+
+                            b32 entity_is_behind_wall = can_walk_behind_tile
+                                && entity_intersects_wall
+                                && (physics->position.y > tile_rect.position.y);
+
+                            b32 entity_is_visible = es_has_component(entity, AnimationComponent)
+                                || es_has_component(entity, SpriteComponent);
+
+                            if (entity_is_behind_wall && entity_is_visible) {
+                                make_wall_transparent = true;
+                                break;
+                            }
+                        }
                         // TODO: only do this if it's the player?
                         // TODO: get sprite rect instead of all component bounds?
-                        Rectangle entity_bounds = world_get_entity_bounding_box(entity);
-                        b32 entity_intersects_wall = rect_intersects(entity_bounds, top_segment);
 
-                        b32 entity_is_behind_wall = can_walk_behind_tile
-                            && entity_intersects_wall
-                            && (entity->position.y > tile_rect.position.y);
-
-			b32 entity_is_visible = es_has_component(entity, AnimationComponent)
-			    || es_has_component(entity, SpriteComponent);
-
-                        if (entity_is_behind_wall && entity_is_visible) {
-                            make_wall_transparent = true;
-                            break;
-                        }
                     }
 
                     draw_clipped_sprite(rb_list.world_rb, frame_arena, texture,
@@ -864,17 +915,17 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
 #endif
 }
 
-static void drop_ground_item(World *world, Vector2 pos, ItemID id)
-{
-    EntityWithID entity = world_spawn_entity(world, FACTION_NEUTRAL);
-    entity.entity->position = pos;
+/* static void drop_ground_item(World *world, Vector2 pos, ItemID id) */
+/* { */
+/*     EntityWithID entity = world_spawn_entity(world, FACTION_NEUTRAL); */
+/*     entity.entity->position = pos; */
 
-    GroundItemComponent *ground_item = es_add_component(entity.entity, GroundItemComponent);
-    ground_item->item_id = id;
+/*     GroundItemComponent *ground_item = es_add_component(entity.entity, GroundItemComponent); */
+/*     ground_item->item_id = id; */
 
-    SpriteComponent *sprite = es_add_component(entity.entity, SpriteComponent);
-    sprite->sprite = sprite_create(texture_handle(FIREBALL_TEXTURE), v2(16, 16), SPRITE_ROTATE_NONE);
-}
+/*     SpriteComponent *sprite = es_add_component(entity.entity, SpriteComponent); */
+/*     sprite->sprite = sprite_create(texture_handle(FIREBALL_TEXTURE), v2(16, 16), SPRITE_ROTATE_NONE); */
+/* } */
 
 void world_initialize(World *world, FreeListArena *parent_arena)
 {
@@ -928,7 +979,6 @@ void world_initialize(World *world, FreeListArena *parent_arena)
         EntityWithID entity_with_id = world_spawn_entity(world,
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
-        entity->position = v2(128, 128);
 
         if (i == 0) {
             world_set_player_entity(world, entity_with_id.id);
@@ -964,12 +1014,15 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
 #else
 
+        PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
+        physics->position = v2(128, 128);
+
         AnimationComponent *anim = es_add_component(entity, AnimationComponent);
         anim->state_animations[ENTITY_STATE_IDLE] = ANIM_PLAYER_IDLE;
         anim->state_animations[ENTITY_STATE_WALKING] = ANIM_PLAYER_WALKING;
         anim->state_animations[ENTITY_STATE_ATTACKING] = ANIM_PLAYER_ATTACKING;
 
-	entity_transition_to_state(world, entity, state_idle());
+	entity_transition_to_state(world, entity, physics, state_idle());
 #endif
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);

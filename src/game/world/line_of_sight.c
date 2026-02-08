@@ -5,6 +5,7 @@
 #include "base/utils.h"
 #include "base/vector.h"
 #include "debug.h"
+#include "entity/entity_system.h"
 #include "tilemap.h"
 #include "world.h"
 
@@ -124,30 +125,34 @@ static b32 has_line_of_sight_to_point(Vector2 origin, Vector2 point, Tilemap *ti
     return result;
 }
 
-b32 has_line_of_sight_to_entity(Entity *self, Entity *other, Tilemap *tilemap)
+b32 has_line_of_sight_to_entity(Entity *self, PhysicsComponent *self_physics, Entity *other, Tilemap *tilemap)
 {
     b32 result = false;
 
-    // TODO: maybe origin should be center of entity bounds or something
-    Vector2 origin = self->position;
-    Rectangle other_bounds = world_get_entity_bounding_box(other);
+    PhysicsComponent *other_physics = es_get_component(other, PhysicsComponent);
 
-    Vector2 other_vertices[] = {
-	rect_top_left(other_bounds),
-	rect_top_right(other_bounds),
-	rect_bottom_right(other_bounds),
-	rect_bottom_left(other_bounds),
-	rect_center(other_bounds),
-    };
+    if (other_physics) {
+        // TODO: maybe origin should be center of entity bounds or something
+        Vector2 origin = self_physics->position;
+        Rectangle other_bounds = world_get_entity_bounding_box(other, other_physics);
 
-    // Check if any of the rectangle corners or the center of the other entity are visible.
-    // This isn't exactly correct and may return false even in somme edge cases where the entity is
-    // obviously visible, but this should be a good enough approximation for now.
-    for (s32 i = 0; i < ARRAY_COUNT(other_vertices); ++i) {
-	if (has_line_of_sight_to_point(origin, other_vertices[i], tilemap)) {
-	    result = true;
-	    break;
-	}
+        Vector2 other_vertices[] = {
+            rect_top_left(other_bounds),
+            rect_top_right(other_bounds),
+            rect_bottom_right(other_bounds),
+            rect_bottom_left(other_bounds),
+            rect_center(other_bounds),
+        };
+
+        // Check if any of the rectangle corners or the center of the other entity are visible.
+        // This isn't exactly correct and may return false even in somme edge cases where the entity is
+        // obviously visible, but this should be a good enough approximation for now.
+        for (s32 i = 0; i < ARRAY_COUNT(other_vertices); ++i) {
+            if (has_line_of_sight_to_point(origin, other_vertices[i], tilemap)) {
+                result = true;
+                break;
+            }
+        }
     }
 
 

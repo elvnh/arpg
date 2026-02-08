@@ -12,7 +12,7 @@ typedef enum {
     COLLISION_GROUP_PROJECTILES,
 } CollisionGroup;
 
-typedef struct {
+typedef struct ColliderComponent {
     // TODO: offset from pos
     Vector2 size;
     CollisionPolicy per_faction_collision_policies[FACTION_COUNT];

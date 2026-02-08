@@ -9,12 +9,13 @@
 #include "entity_faction.h"
 
 typedef struct Entity {
+    EntityID id;
+
     /* This arena should be used by any components that require dynamically
        sized allocations. The arena buffer is stored in place inside the entity
        and pointers into it are only indices. As long as only pointers of that
        kind are used, entities should be trivially serializable/copyable/movable.
      */
-    EntityID id;
     EntityArena entity_arena;
 
     ComponentBitset active_components;
@@ -22,10 +23,6 @@ typedef struct Entity {
 
     EntityFaction faction;
     EntityState state;
-
-    Vector2 position;
-    Vector2 velocity;
-    Vector2 direction;
 
     #define COMPONENT(type) type ES_IMPL_COMP_FIELD_NAME(type);
         COMPONENT_LIST

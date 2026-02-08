@@ -37,13 +37,14 @@ static b32 is_valid_attack_target(Entity *self, Entity *other)
     return result;
 }
 
-static void transition_to_ai_state(World *world, Entity *entity, AIComponent *ai, AIState new_state)
+static void transition_to_ai_state(World *world, Entity *entity, AIComponent *ai,
+    PhysicsComponent *physics, AIState new_state)
 {
     ai->current_state = new_state;
 
     switch (new_state.kind) {
 	case AI_STATE_IDLE: {
-	    entity_try_transition_to_state(world, entity, state_idle());
+	    entity_try_transition_to_state(world, entity, physics, state_idle());
 	} break;
 
 	case AI_STATE_CHASING: {
@@ -51,36 +52,38 @@ static void transition_to_ai_state(World *world, Entity *entity, AIComponent *ai
     }
 }
 
-static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai)
+static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai, PhysicsComponent *self_physics)
 {
     // TODO: get entities in area around ourselves instead of checking everyone
 
     for (ssize i = 0; i < world->alive_entity_count; ++i) {
 	EntityID other_id = world->alive_entity_ids[i];
 	Entity *other = es_get_entity(&world->entity_system, other_id);
+        PhysicsComponent *other_physics = es_get_component(other, PhysicsComponent);
 
- 	if (is_valid_attack_target(entity, other)) {
-	    f32 distance = v2_dist(other->position, entity->position);
+ 	if (other_physics && is_valid_attack_target(entity, other)) {
+	    f32 distance = v2_dist(other_physics->position, self_physics->position);
 
 	    if (distance < AI_CHASE_DISTANCE) {
-		transition_to_ai_state(world, entity, ai, ai_state_chasing(other_id));
+		transition_to_ai_state(world, entity, ai, self_physics, ai_state_chasing(other_id));
 		break;
 	    }
 	}
     }
 }
 
-static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *ai)
+static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *ai, PhysicsComponent *self_physics)
 {
     ASSERT(ai->current_state.kind == AI_STATE_CHASING);
 
     Entity *target = es_try_get_entity(&world->entity_system, ai->current_state.as.chasing.target);
+    PhysicsComponent *target_physics = es_get_component(target, PhysicsComponent);
     ASSERT(target != entity);
 
-    if (!target) {
-	transition_to_ai_state(world, entity, ai, ai_state_idle());
+    if (!target || !target_physics) {
+	transition_to_ai_state(world, entity, ai, self_physics, ai_state_idle());
     } else {
-	f32 distance = v2_dist(entity->position, target->position);
+	f32 distance = v2_dist(self_physics->position, target_physics->position);
 
 	if (distance < AI_ATTACK_DISTANCE) {
 	    SpellCasterComponent *caster = es_get_component(entity, SpellCasterComponent);
@@ -90,30 +93,37 @@ static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *a
 	    SpellID spell = get_spell_at_spellbook_index(caster, 0);
 	    StatValue cast_speed = get_total_stat_value(entity, STAT_CAST_SPEED, &world->item_system);
 
-	    entity_try_transition_to_state(world, entity, state_attacking(spell,
-		    target->position, cast_speed));
+	    entity_try_transition_to_state(world, entity, self_physics, state_attacking(spell,
+		    target_physics->position, cast_speed));
 	} else if (distance < AI_CHASE_DISTANCE) {
-	    Vector2 direction = v2_sub(target->position, entity->position);
+	    Vector2 direction = v2_sub(target_physics->position, self_physics->position);
 	    direction = v2_norm(direction);
 
-	    entity_try_transition_to_state(world, entity, state_walking(direction));
+	    entity_try_transition_to_state(world, entity, self_physics, state_walking(direction));
 	} else {
-	    transition_to_ai_state(world, entity, ai, ai_state_idle());
+	    transition_to_ai_state(world, entity, ai, self_physics, ai_state_idle());
 	}
     }
 }
 
 void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
 {
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+
+    if (!physics) {
+        // Can't really do much if non-spatial, at least for now
+        return;
+    }
+
     return;
 
     switch (ai->current_state.kind) {
 	case AI_STATE_IDLE: {
-	    update_ai_state_idle(world, entity, ai);
+	    update_ai_state_idle(world, entity, ai, physics);
 	} break;
 
 	case AI_STATE_CHASING: {
-	    update_ai_state_chasing(world, entity, ai);
+	    update_ai_state_chasing(world, entity, ai, physics);
 	} break;
     }
 }

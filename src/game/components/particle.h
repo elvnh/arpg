@@ -13,6 +13,7 @@ struct Entity;
 struct LinearArena;
 struct RenderBatch;
 struct World;
+struct PhysicsComponent;
 
 typedef struct Particle {
     f32 timer;
@@ -52,6 +53,7 @@ typedef struct {
     LightSource light_source;
 } ParticleSpawnerConfig;
 
+// TODO: store the buffer in entity arena
 // TODO: different kinds of spawners: infinite particles etc,
 // allow configuring angle of particles
 typedef struct {
@@ -66,7 +68,9 @@ void particle_spawner_initialize(ParticleSpawner *ps, ParticleSpawnerConfig conf
 b32 particle_spawner_is_finished(ParticleSpawner *ps);
 
 // TODO: don't update particle spawners when out of sight of player since they don't affect gameplay
-void update_particle_spawner(struct Entity *entity, ParticleSpawner *ps, f32 dt);
-void render_particle_spawner(struct World *world, ParticleSpawner *ps, RenderBatches rbs, struct LinearArena *arena);
+void update_particle_spawner(struct Entity *entity, ParticleSpawner *ps,
+                             struct PhysicsComponent *physics, f32 dt);
+void render_particle_spawner(struct World *world, ParticleSpawner *ps,
+                             RenderBatches rbs, struct LinearArena *arena);
 
 #endif //PARTICLE_H

@@ -4,7 +4,6 @@
 #include "base/utils.h"
 #include "platform/asset.h"
 
-// TODO: capitalize names
 // TODO: separate enums for different asset types
 
 #define GAME_ASSET_LIST                                                 \

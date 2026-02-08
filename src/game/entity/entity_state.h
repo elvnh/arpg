@@ -6,6 +6,7 @@
 
 struct World;
 struct Entity;
+struct PhysicsComponent;
 
 typedef enum {
     ENTITY_STATE_IDLE,
@@ -30,8 +31,10 @@ typedef struct {
     } as;
 } EntityState;
 
-void entity_transition_to_state(struct World *world, struct Entity *entity, EntityState state);
-b32 entity_try_transition_to_state(struct World *world, struct Entity *entity, EntityState state);
+void entity_transition_to_state(struct World *world, struct Entity *entity,
+                                struct PhysicsComponent *physics, EntityState state);
+b32 entity_try_transition_to_state(struct World *world, struct Entity *entity,
+                                   struct PhysicsComponent *physics, EntityState state);
 
 static inline EntityState state_idle(void)
 {

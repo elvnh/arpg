@@ -91,8 +91,14 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
     ParticleSpawnerConfig *particle_config = user_data;
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
+    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
+
+    ASSERT(self_physics && "Physics was removed inbetween death and callback getting called, "
+          "probably shouldn't happen?");
+
     EntityWithID ps_entity = world_spawn_entity(event_data.world, FACTION_NEUTRAL);
-    ps_entity.entity->position = self->position;
+    PhysicsComponent *ps_physics = es_add_component(ps_entity.entity, PhysicsComponent);
+    ps_physics->position = self_physics->position;
 
     ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
     particle_spawner_initialize(ps, *particle_config);
@@ -131,6 +137,8 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     ColliderComponent *spell_collider = es_get_or_add_component(spell_entity, ColliderComponent);
     spell_collider->collision_group = COLLISION_GROUP_PROJECTILES;
 
+    PhysicsComponent *physics = es_get_or_add_component(spell_entity, PhysicsComponent);
+
     if (spell_has_prop(spell, SPELL_PROP_SPRITE)) {
 	SpriteComponent *sprite_comp = es_get_or_add_component(spell_entity, SpriteComponent);
 
@@ -141,7 +149,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	ASSERT(!spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT));
 	spell_collider->size = spell->projectile.collider_size;
 
-	spell_entity->velocity = v2_mul_s(dir, spell->projectile.projectile_speed);
+	physics->velocity = v2_mul_s(dir, spell->projectile.projectile_speed);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
@@ -226,15 +234,15 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     }
 
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
-	spell_entity->position = spell_origin;
+	physics->position = spell_origin;
     } else {
 	ASSERT(spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT));
-	spell_entity->position = target_pos;
+	physics->position = target_pos;
     }
 
     // Offset so that spells center is centered on the target position
-    Rectangle bounds = world_get_entity_bounding_box(spell_entity);
-    spell_entity->position = v2_sub(spell_entity->position, v2_div_s(bounds.size, 2.0f));
+    Rectangle bounds = world_get_entity_bounding_box(spell_entity, physics);
+    physics->position = v2_sub(physics->position, v2_div_s(bounds.size, 2.0f));
 
     // Spells may need to be spawned with a collision cooldown against a specific entity,
     // likely the entity just collided with for forking spells so that the child spells
@@ -280,7 +288,10 @@ static void cast_spell_impl(struct World *world, SpellID id, struct Entity *cast
 
 void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 target_pos)
 {
-    Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster));
+    PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
+    ASSERT(physics && "It probably doesn't make sense for a non-spatial entity to cast a spell");
+
+    Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster, physics));
     Vector2 dir = v2_sub(target_pos, spell_origin);
 
     cast_spell_impl(world, id, caster, spell_origin, target_pos,
@@ -331,7 +342,6 @@ static Spell spell_fireball(void)
 
     return spell;
 }
-
 
 static Spell spell_spark(void)
 {
@@ -424,10 +434,13 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data)
     Entity *collide_target = es_get_entity(&event_data.world->entity_system,
 	event_data.as.hostile_collision.collided_with);
 
+    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
+    ASSERT(self_physics && "Physics component should have been added when casting spell");
+
     // TODO: should this kind of behaviour be encoded in a forking property of spells?
     // NOTE: these have no target position, only origin and direction
     cast_spell_impl(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster,
-	self->position, V2_ZERO, self->direction,
+	self_physics->position, V2_ZERO, self_physics->direction,
 	collide_target, retrigger_never());
 }
 

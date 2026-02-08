@@ -93,7 +93,7 @@ static Animation *anim_get_by_id(AnimationID id)
     return result;
 }
 
-void anim_update_instance(World *world, Entity *entity, AnimationInstance *anim_instance, f32 dt)
+void anim_update_instance(World *world, Entity *entity, PhysicsComponent *physics, AnimationInstance *anim_instance, f32 dt)
 {
     Animation *anim = anim_get_by_id(anim_instance->animation_id);
     ASSERT(anim_instance->current_frame < anim->frame_count);
@@ -119,7 +119,7 @@ void anim_update_instance(World *world, Entity *entity, AnimationInstance *anim_
 		} break;
 
 		case ANIM_ON_END_TRANSITION_TO_STATE: {
-		    entity_transition_to_state(world, entity, anim->state_transition_when_done);
+		    entity_transition_to_state(world, entity, physics, anim->state_transition_when_done);
 		} break;
 
 		default: {
@@ -130,15 +130,15 @@ void anim_update_instance(World *world, Entity *entity, AnimationInstance *anim_
     }
 }
 
-void anim_render_instance(AnimationInstance *anim_instance, Entity *owning_entity, RenderBatch *rb,
-    LinearArena *scratch)
+void anim_render_instance(AnimationInstance *anim_instance, PhysicsComponent *owner_physics,
+    RenderBatch *rb, LinearArena *scratch)
 {
     AnimationFrame current_frame = anim_get_current_frame(anim_instance);
 
-    SpriteModifiers sprite_mods = sprite_get_modifiers(owning_entity->direction,
+    SpriteModifiers sprite_mods = sprite_get_modifiers(owner_physics->direction,
 	current_frame.sprite.rotation_behaviour);
 
-    Rectangle sprite_rect = { owning_entity->position, current_frame.sprite.size };
+    Rectangle sprite_rect = { owner_physics->position, current_frame.sprite.size };
     draw_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods,
 	shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
 }

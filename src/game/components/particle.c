@@ -1,15 +1,19 @@
 #include "particle.h"
+#include "components/component.h"
 #include "entity/entity_system.h"
 #include "base/random.h"
 #include "world/world.h"
 #include "renderer/frontend/render_batch.h"
 #include "asset_table.h"
 
-void update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 dt)
+void update_particle_spawner(Entity *entity, ParticleSpawner *ps, PhysicsComponent *physics, f32 dt)
 {
     ASSERT(ps->config.particle_size > 0.0f);
     ASSERT(ps->config.particle_speed > 0.0f);
     ASSERT(ps->config.particles_per_second > 0);
+
+    ASSERT(physics);
+    ASSERT(es_has_component(entity, PhysicsComponent));
 
     s32 particles_to_spawn_this_frame = 0;
 
@@ -35,7 +39,7 @@ void update_particle_spawner(Entity *entity, ParticleSpawner *ps, f32 dt)
         } break;
     }
 
-    Rectangle entity_bounds = world_get_entity_bounding_box(entity);
+    Rectangle entity_bounds = world_get_entity_bounding_box(entity, physics);
 
     for (s32 i = 0; i < particles_to_spawn_this_frame; ++i) {
         Vector2 dir = rng_direction(PI * 2);

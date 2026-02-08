@@ -5,6 +5,7 @@
 #include "base/random.h"
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "components/component.h"
 #include "renderer/frontend/render_target.h"
 #include "renderer/backend/renderer_backend.h"
 #include "status_effect.h"
@@ -37,10 +38,10 @@ void update_player(World *world, const FrameData *frame_data,
     GameUIState *game_ui)
 {
     Entity *player = world_get_player_entity(world);
-
     ASSERT(player);
+    PhysicsComponent *physics = es_get_component(player, PhysicsComponent);
 
-    Vector2 camera_target = rect_center(world_get_entity_bounding_box(player));
+    Vector2 camera_target = rect_center(world_get_entity_bounding_box(player, physics));
     camera_set_target(&world->camera, camera_target);
 
     if (player->state.kind != ENTITY_STATE_ATTACKING) {
@@ -105,7 +106,7 @@ void update_player(World *world, const FrameData *frame_data,
 	}
 
 	direction = v2_norm(direction);
-	entity_try_transition_to_state(world, player, state_walking(direction));
+	entity_try_transition_to_state(world, player, physics, state_walking(direction));
 #endif
 
 	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {
@@ -122,7 +123,7 @@ void update_player(World *world, const FrameData *frame_data,
 	    StatValue total_cast_speed = apply_modifier(cast_speed, action_speed,
 		NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
 
-	    entity_transition_to_state(world, player,
+	    entity_transition_to_state(world, player, physics,
 		state_attacking(selected_spell, mouse_pos, total_cast_speed));
         }
     }
@@ -301,8 +302,9 @@ void game_initialize(Game *game, GameMemory *game_memory)
     game->debug_state.average_fps = 60.0f;
     game->debug_state.timestep_modifier = 1.0f;
 
-    // NOTE: UI style is currently unused
+    // NOTE: UI style is currently mostly unused
     UIStyle default_ui_style = {0};
+    default_ui_style.font = font_handle(DEFAULT_FONT);
 
     // Debug UI
     ui_core_initialize(&game->debug_state.debug_ui, default_ui_style, &game_memory->permanent_memory);

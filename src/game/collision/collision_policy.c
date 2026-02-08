@@ -1,24 +1,27 @@
 #include "collision_policy.h"
 #include "base/vector.h"
+#include "collision/collider.h"
+#include "components/component.h"
 #include "world/world.h"
 
-static void execute_collision_policy(World *world, Entity *entity, CollisionPolicy policy,
+static void execute_collision_policy(World *world, Entity *entity, PhysicsComponent *physics, CollisionPolicy policy,
     CollisionInfo collision, EntityPairIndex collision_pair_index, b32 should_block)
 {
     // NOTE: This function handles both entity vs tilemap and entity vs entity collisions.
     // If the collision is vs a tile, pass ENTITY_PAIR_INDEX_FIRST as collision_pair_index.
+    ASSERT(entity);
     ASSERT(entity || (collision_pair_index == ENTITY_PAIR_INDEX_FIRST));
 
     switch (policy) {
 	case COLLISION_POLICY_STOP: {
 	    if (should_block) {
 		if (collision_pair_index == ENTITY_PAIR_INDEX_FIRST) {
-		    entity->position = collision.new_position_a;
-		    entity->velocity = collision.new_velocity_a;
+		    physics->position = collision.new_position_a;
+		    physics->velocity = collision.new_velocity_a;
 
 		} else {
-		    entity->position = collision.new_position_b;
-		    entity->velocity = collision.new_velocity_b;
+		    physics->position = collision.new_position_b;
+		    physics->velocity = collision.new_velocity_b;
 		}
 	    }
 	} break;
@@ -26,11 +29,11 @@ static void execute_collision_policy(World *world, Entity *entity, CollisionPoli
 	case COLLISION_POLICY_BOUNCE: {
 	    if (should_block) {
 		if (collision_pair_index == ENTITY_PAIR_INDEX_FIRST) {
-		    entity->position = collision.new_position_a;
-		    entity->velocity = v2_reflect(entity->velocity, collision.collision_normal);
+		    physics->position = collision.new_position_a;
+		    physics->velocity = v2_reflect(physics->velocity, collision.collision_normal);
 		} else {
-		    entity->position = collision.new_position_b;
-		    entity->velocity = v2_reflect(entity->velocity, v2_neg(collision.collision_normal));
+		    physics->position = collision.new_position_b;
+		    physics->velocity = v2_reflect(physics->velocity, v2_neg(collision.collision_normal));
 		}
 	    }
 	} break;
@@ -48,19 +51,19 @@ static void execute_collision_policy(World *world, Entity *entity, CollisionPoli
     }
 }
 
-void execute_entity_vs_tilemap_collision_policy(World *world, Entity *entity, CollisionInfo collision)
+void execute_entity_vs_tilemap_collision_policy(World *world, Entity *entity, PhysicsComponent *physics,
+    ColliderComponent *collider, CollisionInfo collision)
 {
-    ColliderComponent *collider = es_get_component(entity, ColliderComponent);
-    ASSERT(collider);
-
     CollisionPolicy policy = collider->tilemap_collision_policy;
 
     b32 should_block = policy != COLLISION_POLICY_PASS_THROUGH;
 
-    execute_collision_policy(world, entity, policy, collision, ENTITY_PAIR_INDEX_FIRST, should_block);
+    execute_collision_policy(world, entity, physics, policy, collision, ENTITY_PAIR_INDEX_FIRST, should_block);
 }
 
-void execute_entity_vs_entity_collision_policy(World *world, Entity *entity, Entity *other,
+void execute_entity_vs_entity_collision_policy(World *world,
+    Entity *entity, PhysicsComponent *entity_physics, ColliderComponent *entity_collider,
+    Entity *other,  ColliderComponent *other_collider,
     CollisionInfo collision, EntityPairIndex collision_index)
 {
     ASSERT(entity);
@@ -70,11 +73,8 @@ void execute_entity_vs_entity_collision_policy(World *world, Entity *entity, Ent
     ASSERT(other->faction >= 0);
     ASSERT(other->faction < FACTION_COUNT);
 
-    ColliderComponent *collider = es_get_component(entity, ColliderComponent);
-    ColliderComponent *other_collider = es_get_component(other, ColliderComponent);
-
     CollisionPolicy our_policy_for_them =
-	collider->per_faction_collision_policies[other->faction];
+	entity_collider->per_faction_collision_policies[other->faction];
     CollisionPolicy their_policy_for_us =
 	other_collider->per_faction_collision_policies[entity->faction];
 
@@ -85,6 +85,6 @@ void execute_entity_vs_entity_collision_policy(World *world, Entity *entity, Ent
 
     // NOTE: we only execute OUR behaviour for THEM, this function is expected to be called
     // twice for each collision pair
-    execute_collision_policy(world, entity, our_policy_for_them, collision,
+    execute_collision_policy(world, entity, entity_physics, our_policy_for_them, collision,
 	collision_index, should_block);
 }

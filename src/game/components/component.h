@@ -23,6 +23,7 @@
 #include "health.h"
 
 #define COMPONENT_LIST                          \
+    COMPONENT(PhysicsComponent)                 \
     COMPONENT(ColliderComponent)                \
     COMPONENT(ParticleSpawner)                  \
     COMPONENT(SpriteComponent)                  \
@@ -50,6 +51,12 @@ typedef enum {
         COMPONENT_COUNT,
     #undef COMPONENT
 } ComponentType;
+
+typedef struct PhysicsComponent {
+    Vector2 position;
+    Vector2 velocity;
+    Vector2 direction;
+} PhysicsComponent;
 
 typedef struct {
     Sprite sprite;

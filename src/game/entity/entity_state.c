@@ -1,5 +1,6 @@
 #include "entity_state.h"
 #include "base/vector.h"
+#include "components/component.h"
 #include "stats.h"
 #include "world/world.h"
 
@@ -28,8 +29,12 @@ static void transition_out_of_current_state(World *world, Entity *entity)
 
 static void play_state_animation(Entity *entity, EntityState state)
 {
-    if (es_has_component(entity, AnimationComponent)) {
-	AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
+    AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
+
+    if (anim_comp) {
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+        ASSERT(physics && "Shouldn't have animation component and no physics");
+
 	AnimationID next_anim = anim_comp->state_animations[state.kind];
 
 	// Don't restart the animation if we're currently already playing it
@@ -53,9 +58,9 @@ static void play_state_animation(Entity *entity, EntityState state)
 		} break;
 
 		case ENTITY_STATE_ATTACKING: {
-		    entity->velocity = V2_ZERO;
+		    physics->velocity = V2_ZERO;
 
-		    entity->direction = v2_sub(state.as.attacking.target_position, entity->position);
+		    physics->direction = v2_sub(state.as.attacking.target_position, physics->position);
 		} break;
 
 		    INVALID_DEFAULT_CASE;
@@ -64,7 +69,7 @@ static void play_state_animation(Entity *entity, EntityState state)
     }
 }
 
-void entity_transition_to_state(World *world, Entity *entity, EntityState state)
+void entity_transition_to_state(World *world, Entity *entity, PhysicsComponent *physics, EntityState state)
 {
     if (state.kind == ENTITY_STATE_WALKING && v2_is_zero(state.as.walking.direction)) {
 	state = state_idle();
@@ -79,6 +84,7 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
     switch (state.kind) {
 	case ENTITY_STATE_WALKING: {
 	    f32 speed = 300.0f; // Base movement speed
+
 	    StatValue move_speed = get_total_stat_value(
 		entity, STAT_MOVEMENT_SPEED, &world->item_system);
 	    StatValue action_speed = get_total_stat_value(
@@ -89,21 +95,21 @@ void entity_transition_to_state(World *world, Entity *entity, EntityState state)
 	    speed = speed * stat_value_percentage_as_factor(final_move_speed);
 
 	    ASSERT(!v2_is_zero(state.as.walking.direction));
-	    entity->velocity = v2_mul_s(state.as.walking.direction, speed);
+	    physics->velocity = v2_mul_s(state.as.walking.direction, speed);
 	} break;
 
 	default: {
-	    entity->velocity = V2_ZERO;
+	    physics->velocity = V2_ZERO;
 	} break;
     }
 }
 
-b32 entity_try_transition_to_state(World *world, Entity *entity, EntityState state)
+b32 entity_try_transition_to_state(World *world, Entity *entity, PhysicsComponent *physics, EntityState state)
 {
     b32 result = false;
 
     if (can_transition_to_state(entity, state)) {
-	entity_transition_to_state(world, entity, state);
+	entity_transition_to_state(world, entity, physics, state);
 	result = true;
     }
 

@@ -3,6 +3,7 @@
 #include "base/linear_arena.h"
 #include "components/component.h"
 #include "entity/entity_faction.h"
+#include "entity/entity_id.h"
 #include "entity/entity_system.h"
 #include "platform/input.h"
 #include "status_effect.h"
@@ -70,6 +71,10 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
     ASSERT(physics && "How did you inspect a non-spatial entity?");
 
+    if (!physics) {
+        return;
+    }
+
     // TODO: don't require name for containers
     ui_begin_container(ui, str_lit("inspect"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 	// TODO: inventory and equipment
@@ -114,7 +119,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     ui_core_same_line(ui);
 
     ui_begin_container(ui, str_lit("components"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
-        for (ComponentID c = 0; c < COMPONENT_COUNT; ++c) {
+        for (ComponentType c = 0; c < COMPONENT_COUNT; ++c) {
             ComponentID id = FLAG(c);
 
             if (es_has_components(entity, id)) {

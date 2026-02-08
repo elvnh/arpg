@@ -68,8 +68,15 @@ QuadTreeLocation qt_move_entity(QuadTree *qt, EntityID id,
     QuadTreeLocation location, Vector2 new_position, LinearArena *arena);
 QuadTreeLocation qt_set_entity_area(QuadTree *qt, EntityID id,
     QuadTreeLocation location, Rectangle area, LinearArena *arena);
-void qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation location);
+QuadTreeLocation qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation location);
 EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *arena);
 ssize qt_get_node_count(const QuadTree *qt);
+
+static inline b32 qt_location_is_null(QuadTreeLocation loc)
+{
+    b32 result = (loc.element == 0) && (loc.node == 0);
+
+    return result;
+}
 
 #endif //QUAD_TREE_H

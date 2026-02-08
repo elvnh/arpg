@@ -242,7 +242,7 @@ void *es_impl_get_or_add_component(Entity *entity, ComponentType type)
 void es_impl_remove_component(Entity *entity, ComponentType type)
 {
     u64 bit_value = ES_IMPL_COMP_ENUM_BIT_VALUE(type);
-    ASSERT(es_has_components(entity, bit_value));
+    //ASSERT(es_has_components(entity, bit_value));
 
     entity->active_components &= ~(bit_value);
 }

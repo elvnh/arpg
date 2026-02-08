@@ -119,8 +119,9 @@ static void world_update_entity_quad_tree_location(World *world, ssize alive_ent
         Rectangle entity_area = world_get_entity_bounding_box(entity, physics);
 
         *loc = qt_set_entity_area(&world->quad_tree, id, *loc, entity_area, &world->world_arena);
-    } else {
-        *loc = QT_NULL_LOCATION;
+    } else if (!qt_location_is_null(*loc)) {
+        // Entity doesn't have PhysicsComponent but still exists in quad tree, remove it
+        *loc = qt_remove_entity(&world->quad_tree, id, *loc);
     }
 }
 
@@ -643,7 +644,6 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
 
         ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
         PhysicsComponent *physics_a = es_get_component(a, PhysicsComponent);
-        ASSERT((!collider_a || physics_a) && "If you have a collider, you should have physics");
 
         f32 movement_fraction_left = 1.0f;
 
@@ -662,7 +662,6 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
 
                     ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
                     PhysicsComponent *physics_b = es_get_component(b, PhysicsComponent);
-                    ASSERT((!collider_b || physics_b) && "If you have a collider, you should have physics");
 
                     if (collider_b && physics_b) {
                         movement_fraction_left = entity_vs_entity_collision(world, a, collider_a,

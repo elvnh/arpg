@@ -96,9 +96,8 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
     ASSERT(self_physics && "Physics was removed inbetween death and callback getting called, "
           "probably shouldn't happen?");
 
-    EntityWithID ps_entity = world_spawn_entity(event_data.world, FACTION_NEUTRAL);
-    PhysicsComponent *ps_physics = es_add_component(ps_entity.entity, PhysicsComponent);
-    ps_physics->position = self_physics->position;
+    EntityWithID ps_entity = world_spawn_entity(
+        event_data.world, self_physics->position, FACTION_NEUTRAL);
 
     ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
     particle_spawner_initialize(ps, *particle_config);
@@ -131,7 +130,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     Vector2 spell_origin, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
     RetriggerBehaviour cooldown_retrigger)
 {
-    EntityWithID spell_entity_with_id = world_spawn_entity(world, caster->faction);
+    EntityWithID spell_entity_with_id = world_spawn_non_spatial_entity(world, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
 
     ColliderComponent *spell_collider = es_get_or_add_component(spell_entity, ColliderComponent);

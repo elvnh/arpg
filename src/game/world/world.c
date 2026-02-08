@@ -124,8 +124,7 @@ static void world_update_entity_quad_tree_location(World *world, ssize alive_ent
     }
 }
 
-// TODO: provide position to this function
-EntityWithID world_spawn_entity(World *world, EntityFaction faction)
+EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction)
 {
     ASSERT(faction >= 0);
     ASSERT(faction < FACTION_COUNT);
@@ -136,6 +135,14 @@ EntityWithID world_spawn_entity(World *world, EntityFaction faction)
     ssize alive_index = world->alive_entity_count++;
     world->alive_entity_ids[alive_index] = result.id;
     world->alive_entity_quad_tree_locations[alive_index] = QT_NULL_LOCATION;
+
+    return result;
+}
+EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction)
+{
+    EntityWithID result = world_spawn_non_spatial_entity(world, faction);
+    PhysicsComponent *physics = es_add_component(result.entity, PhysicsComponent);
+    physics->position = position;
 
     return result;
 }
@@ -159,9 +166,8 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
             ParticleSpawner *ps = es_get_component(dying_entity, ParticleSpawner);
 
             if (ring_length(&ps->particle_buffer) > 0) {
-                EntityWithID new_ps_entity = world_spawn_entity(world, FACTION_NEUTRAL);
-                PhysicsComponent *ps_physics = es_add_component(new_ps_entity.entity, PhysicsComponent);
-                ps_physics->position = dying_entity_physics->position;
+                EntityWithID new_ps_entity = world_spawn_entity(
+                    world, dying_entity_physics->position, FACTION_NEUTRAL);
 
                 ParticleSpawner *new_ps = es_add_component(new_ps_entity.entity, ParticleSpawner);
                 // TODO: if particle spawner get a non-static buffer, a deep copy will be required
@@ -181,23 +187,23 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
                 || (old_light->light.time_elapsed < old_light->light.fade_duration);
 
             if (should_transfer_light) {
-                Entity *new_entity = world_spawn_entity(world, FACTION_NEUTRAL).entity;
-                PhysicsComponent *new_entity_physics = es_add_component(new_entity, PhysicsComponent);
-                new_entity_physics->position = dying_entity_physics->position;
+                Vector2 new_entity_pos = dying_entity_physics->position;
 
-                Vector2i tile_coords = world_to_tile_coords(new_entity_physics->position);
+                Vector2i tile_coords = world_to_tile_coords(new_entity_pos);
                 Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
                 if (!tile || (tile->type == TILE_WALL)) {
                     Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
                     RectanglePoint closest_point = rect_bounds_point_closest_to_point(
-                        tile_rect, new_entity_physics->position);
+                        tile_rect, new_entity_pos);
 
                     // The entity will be placed on the perimeter of the tile it was spawned in,
                     // which means it will be considered to be inside it, so we offset it slightly.
-                    new_entity_physics->position = v2_sub(closest_point.point,
-                        v2_norm(new_entity_physics->velocity));
+                    new_entity_pos = v2_sub(closest_point.point, v2_norm(dying_entity_physics->velocity));
                 }
+
+                Entity *new_entity = world_spawn_entity(
+                    world, dying_entity_physics->position, FACTION_NEUTRAL).entity;
 
                 LightEmitter *new_light = es_add_component(new_entity, LightEmitter);
                 *new_light = *old_light;
@@ -212,9 +218,6 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
 
                 LifetimeComponent *lt = es_add_component(new_entity, LifetimeComponent);
                 lt->time_to_live = light_fade_duration;
-
-                // TODO: this is not needed?
-                es_remove_component(dying_entity, LightEmitter);
 
                 new_light->light.fading_out = true;
             }
@@ -976,9 +979,11 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     for (s32 i = 0; i < 2; ++i) {
 #if 1
-        EntityWithID entity_with_id = world_spawn_entity(world,
+        EntityWithID entity_with_id = world_spawn_entity(world, v2(128, 128),
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
+
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
         if (i == 0) {
             world_set_player_entity(world, entity_with_id.id);
@@ -1013,9 +1018,6 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 	sprite->rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
 
 #else
-
-        PhysicsComponent *physics = es_add_component(entity, PhysicsComponent);
-        physics->position = v2(128, 128);
 
         AnimationComponent *anim = es_add_component(entity, AnimationComponent);
         anim->state_animations[ENTITY_STATE_IDLE] = ANIM_PLAYER_IDLE;

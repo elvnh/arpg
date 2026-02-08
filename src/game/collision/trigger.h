@@ -15,7 +15,7 @@
 	&world->trigger_cooldowns,				\
 	es_get_id_of_entity(&world->entity_system, entity),	\
 	es_get_id_of_entity(&world->entity_system, other),	\
-	component_flag(component))
+	component_id(component))
 
 struct LinearArena;
 struct EntitySystem;

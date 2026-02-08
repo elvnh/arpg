@@ -254,7 +254,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	// For now, only add the collider so that nothing else can be
 	// triggered until it's off cooldown
 	world_add_trigger_cooldown(world, spell_entity_id, target_id,
-	    component_flag(ColliderComponent), cooldown_retrigger);
+	    component_id(ColliderComponent), cooldown_retrigger);
     }
 }
 

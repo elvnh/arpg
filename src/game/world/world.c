@@ -496,14 +496,14 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 	    try_deal_damage_to_entity(world, other, self, dmg_field->damage);
 
 	    world_add_trigger_cooldown(world, self_id, other_id,
-		component_flag(DamageFieldComponent), dmg_field->retrigger_behaviour);
+		component_id(DamageFieldComponent), dmg_field->retrigger_behaviour);
 	}
 
 	if (should_invoke_trigger(world, self, other, EffectApplierComponent)) {
 	    EffectApplierComponent *ea = es_get_component(self, EffectApplierComponent);
 
 	    world_add_trigger_cooldown(world, self_id, other_id,
-		component_flag(EffectApplierComponent), ea->retrigger_behaviour);
+		component_id(EffectApplierComponent), ea->retrigger_behaviour);
 	}
     }
 }
@@ -533,9 +533,9 @@ static f32 entity_vs_entity_collision(World *world,
 	&& !same_collision_group && !entities_intersected_this_frame(world, id_a, id_b)) {
 	b32 neither_collider_on_cooldown =
 	    !trigger_is_on_cooldown(&world->trigger_cooldowns, id_a, id_b,
-		component_flag(ColliderComponent))
+		component_id(ColliderComponent))
 	    && !trigger_is_on_cooldown(&world->trigger_cooldowns, id_b, id_a,
-		component_flag(ColliderComponent));
+		component_id(ColliderComponent));
 
 	if (neither_collider_on_cooldown) {
 	    execute_entity_vs_entity_collision_policy(world, a, physics_a, collider_a,

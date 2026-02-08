@@ -20,7 +20,7 @@
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_remove_component(entity, type)      es_impl_remove_component(entity, ES_IMPL_COMP_ENUM_NAME(type))
 #define es_get_component(entity, type) ((type *)es_impl_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
-#define es_has_component(entity, type)          es_has_components((entity), component_flag(type))
+#define es_has_component(entity, type)          es_has_components((entity), component_id(type))
 #define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
 #define es_get_or_add_component(entity, type)  ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 

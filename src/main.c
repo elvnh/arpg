@@ -1,6 +1,7 @@
 #include <GLFW/glfw3.h>
 #include <pthread.h>
 
+#include "asset_table.h"
 #include "platform/asset_system.h"
 #include "platform/platform.h"
 #include "platform/file_watcher.h"
@@ -109,11 +110,15 @@ int main(void)
         renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, 0);
 
         // TODO: Do this somewhere else
-        ShaderAsset *light_blending_shader = assets_get_shader(game_state->asset_table.light_blending_shader);
+        ShaderAsset *light_blending_shader = assets_get_shader(
+            get_shader_handle_from_table(&game_state->asset_table, ASSET_LIGHT_BLENDING_SHADER));
+
         renderer_backend_blend_framebuffers(backend, FRAME_BUFFER_GAMEPLAY, FRAME_BUFFER_LIGHTING,
             light_blending_shader);
 
-        ShaderAsset *screenspace_texture_shader = assets_get_shader(game_state->asset_table.screenspace_texture_shader);
+        ShaderAsset *screenspace_texture_shader = assets_get_shader(
+            get_shader_handle_from_table(&game_state->asset_table, ASSET_SCREENSPACE_TEXTURE_SHADER));
+
         renderer_backend_draw_framebuffer_as_texture(backend, FRAME_BUFFER_OVERLAY, screenspace_texture_shader);
 
         platform_poll_events(window);

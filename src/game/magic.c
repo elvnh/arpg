@@ -297,7 +297,7 @@ static Spell spell_fireball(void)
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
-	get_asset_table()->fireball_texture,
+	texture_handle(ASSET_FIREBALL_TEXTURE),
 	v2(32, 32),
 	SPRITE_ROTATE_BASED_ON_DIR
     );
@@ -344,7 +344,7 @@ static Spell spell_spark(void)
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
-	get_asset_table()->spark_texture,
+	texture_handle(ASSET_SPARK_TEXTURE),
 	v2(32, 32),
 	SPRITE_ROTATE_NONE
     );
@@ -384,7 +384,7 @@ static Spell spell_blizzard(void)
     spell.aoe.base_radius = 128.0f;
 
     spell.sprite = sprite_create_colored(
-	get_asset_table()->blizzard_texture,
+	texture_handle(ASSET_BLIZZARD_TEXTURE),
 	V2_ZERO, // Sprite size is set equal to radius later on
 	SPRITE_ROTATE_NONE,
 	rgba32(1, 1, 1, 0.5f)
@@ -442,7 +442,7 @@ static Spell spell_ice_shard(void)
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
-	get_asset_table()->ice_shard_texture,
+	texture_handle(ASSET_ICE_SHARD_TEXTURE),
 	v2(16, 16),
 	SPRITE_ROTATE_BASED_ON_DIR
     );

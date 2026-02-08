@@ -9,6 +9,12 @@
 
 typedef u32 AssetID;
 
+typedef enum {
+    ASSET_KIND_SHADER,
+    ASSET_KIND_TEXTURE,
+    ASSET_KIND_FONT,
+} AssetKind;
+
 typedef struct {
     AssetID id;
 } ShaderHandle;

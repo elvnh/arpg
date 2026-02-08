@@ -170,6 +170,7 @@ Entity *es_try_get_entity(EntitySystem *es, EntityID id)
 
     if (entity_id_is_valid(es, id) && id_slot->is_active) {
         result = &es->entities[id.index];
+        ASSERT(entity_id_equal(result->id, id));
     }
 
     return result;

@@ -30,7 +30,7 @@ void render_quad_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, s
 	ASSERT(depth < ARRAY_COUNT(colors));
 
 	RGBA32 color = colors[depth];
-	draw_outlined_rectangle(rb, arena, tree->area, color, 4.0f, get_asset_table()->shape_shader, 0);
+	draw_outlined_rectangle(rb, arena, tree->area, color, 4.0f, shader_handle(ASSET_SHAPE_SHADER), 0);
     }
 }
 

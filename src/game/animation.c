@@ -20,8 +20,8 @@ static Animation animation_player_idle(void)
     SpriteRotationBehaviour rotate_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
     Vector2 size = v2(32, 64);
 
-    AnimationFrame frame_1 = {sprite_create(get_asset_table()->player_idle1, size, rotate_behaviour), 0.75f};
-    AnimationFrame frame_2 = {sprite_create(get_asset_table()->player_idle2, size, rotate_behaviour), 0.75f};
+    AnimationFrame frame_1 = {sprite_create(texture_handle(ASSET_PLAYER_IDLE1), size, rotate_behaviour), 0.75f};
+    AnimationFrame frame_2 = {sprite_create(texture_handle(ASSET_PLAYER_IDLE2), size, rotate_behaviour), 0.75f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -37,8 +37,8 @@ static Animation animation_player_walking(void)
     SpriteRotationBehaviour rotate_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
     Vector2 size = v2(32, 64);
 
-    AnimationFrame frame_1 = {sprite_create(get_asset_table()->player_walking1, size, rotate_behaviour), 0.5f};
-    AnimationFrame frame_2 = {sprite_create(get_asset_table()->player_walking2, size, rotate_behaviour), 0.5f};
+    AnimationFrame frame_1 = {sprite_create(texture_handle(ASSET_PLAYER_WALKING1), size, rotate_behaviour), 0.5f};
+    AnimationFrame frame_2 = {sprite_create(texture_handle(ASSET_PLAYER_WALKING2), size, rotate_behaviour), 0.5f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -55,15 +55,15 @@ static Animation animation_player_attack(void)
     Vector2 size = v2(32, 64);
 
     AnimationFrame frame_1 = {
-	sprite_create(get_asset_table()->player_attack1, size, rotate_behaviour), 0.125f
+	sprite_create(texture_handle(ASSET_PLAYER_ATTACK1), size, rotate_behaviour), 0.125f
     };
 
     AnimationFrame frame_2 = {
-	sprite_create(get_asset_table()->player_attack2, size, rotate_behaviour), 0.125f
+	sprite_create(texture_handle(ASSET_PLAYER_ATTACK2), size, rotate_behaviour), 0.125f
     };
 
     AnimationFrame frame_3 = {
-	sprite_create(get_asset_table()->player_attack3, size, rotate_behaviour), 0.1f
+	sprite_create(texture_handle(ASSET_PLAYER_ATTACK3), size, rotate_behaviour), 0.1f
     };
 
     result.frames[result.frame_count++] = frame_1;
@@ -140,7 +140,7 @@ void anim_render_instance(AnimationInstance *anim_instance, Entity *owning_entit
 
     Rectangle sprite_rect = { owning_entity->position, current_frame.sprite.size };
     draw_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods,
-	get_asset_table()->texture_shader, RENDER_LAYER_ENTITIES);
+	shader_handle(ASSET_TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
 }
 
 AnimationInstance anim_begin_animation(AnimationID next_anim, f32 speed_factor)

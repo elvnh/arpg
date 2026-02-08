@@ -1,4 +1,5 @@
 #include "game.h"
+#include "asset_table.h"
 #include "base/format.h"
 #include "base/matrix.h"
 #include "base/random.h"
@@ -216,7 +217,7 @@ static void update_and_render_ui(Game *game, RenderBatches rbs, FrameData *frame
 
     if (game->debug_state.render_origin) {
         draw_rectangle(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
-	    get_asset_table()->shape_shader, 3);
+	    shader_handle(ASSET_SHAPE_SHADER), 3);
     }
 }
 
@@ -300,9 +301,8 @@ void game_initialize(Game *game, GameMemory *game_memory)
     game->debug_state.average_fps = 60.0f;
     game->debug_state.timestep_modifier = 1.0f;
 
-    UIStyle default_ui_style = {
-        .font = game->asset_table.default_font
-    };
+    // NOTE: UI style is currently unused
+    UIStyle default_ui_style = {0};
 
     // Debug UI
     ui_core_initialize(&game->debug_state.debug_ui, default_ui_style, &game_memory->permanent_memory);

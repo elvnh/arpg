@@ -156,13 +156,13 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
     switch (light.kind) {
         case LIGHT_REGULAR: {
             entry = draw_circle(rb, arena, origin, color, light.radius,
-                get_asset_table()->light_shader, 0);
+                shader_handle(ASSET_LIGHT_SHADER), 0);
         } break;
 
         case LIGHT_RAYCASTED: {
             TriangleFan fan = get_visibility_polygon(origin, &world->tilemap, arena);
             entry = draw_triangle_fan(rb, arena, fan, color,
-                get_asset_table()->light_shader, 0);
+                shader_handle(ASSET_LIGHT_SHADER), 0);
         } break;
 
         INVALID_DEFAULT_CASE;

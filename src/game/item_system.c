@@ -42,6 +42,7 @@ Item *item_sys_try_get_item(ItemSystem *item_sys, ItemID id)
 
     if (item_id_is_valid(item_sys, id)) {
         result = &item_sys->items[id.index];
+        ASSERT(item_ids_equal(result->id, id));
     }
 
     return result;

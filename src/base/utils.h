@@ -20,6 +20,8 @@
 #define FLAG(e) ((u64)(1u << (u64)(e)))
 #define SQUARE(n) ((n) * (n))
 
+// TODO: define everything for non-debug builds
+
 #define ASSERT(expr)                                    \
     do {                                                \
         if (!(expr)) {                                  \
@@ -33,16 +35,21 @@
         }                                               \
     } while (0)
 
+
 #define UNIMPLEMENTED                                                                     \
     fprintf(stderr, "\n*** UNIMPLEMENTED ***\n%s:\n%s:%d:\n", __func__, FILE_NAME, LINE); \
     DEBUG_BREAK
 
 #if defined(__GNUC__)
-#    define ALIGNOF(t)    (ssize)__alignof__(t)
-#    define ALIGNAS(n)    __attribute__ ((aligned ((n))))
-#    define ALIGNAS_T(t)  __attribute__ ((aligned ((ALIGNOF(t)))))
-#    define FILE_NAME     __FILE__
-#    define LINE          __LINE__
+#    define ALIGNOF(t)              (ssize)__alignof__(t)
+#    define ALIGNAS(n)              __attribute__ ((aligned ((n))))
+#    define ALIGNAS_T(t)            __attribute__ ((aligned ((ALIGNOF(t)))))
+#    define TYPEOF(e)               __typeof__(e)
+#    define TYPES_EQUAL(t, u)       __builtin_types_compatible_p(t, u)
+#    define STATIC_ASSERT(e)        ((e) ? 0 : static_assert_fail())
+#    define STATIC_ASSERT_ATTRIBUTE __attribute__((error("Static assertion failed")))
+#    define FILE_NAME               __FILE__
+#    define LINE                    __LINE__
 #else
 #    error Unsupported compiler
 #endif
@@ -52,6 +59,14 @@
 #else
 #    error Unsupported architecture
 #endif
+
+#define EXPR_TYPES_EQUAL(expr1, expr2) (TYPES_EQUAL(TYPEOF(expr1), TYPEOF(expr2)))
+
+STATIC_ASSERT_ATTRIBUTE
+static inline int static_assert_fail(void)
+{
+    return 0;
+}
 
 static inline bool is_pow2(s64 n)
 {

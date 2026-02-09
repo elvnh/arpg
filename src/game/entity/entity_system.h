@@ -15,6 +15,8 @@
   - Make number of entities dynamic
   - es_get_id_of_entity no longer necessary
   - Should Entity struct be opaque?
+  - es_has_components needs a better name to reflect that it uses component id
+    rather than type name
  */
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
@@ -23,6 +25,9 @@
 #define es_has_component(entity, type)          es_has_components((entity), component_id(type))
 #define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
 #define es_get_or_add_component(entity, type)  ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
+#define es_get_component_owner(comp, type)                              \
+    (STATIC_ASSERT(EXPR_TYPES_EQUAL(*comp, type)),                      \
+        es_impl_get_component_owner(comp, ES_IMPL_COMP_ENUM_NAME(type)))
 
 typedef struct {
     DEFINE_GENERATIONAL_ID_NODE_FIELDS(EntityGeneration, EntityIndex);
@@ -49,6 +54,7 @@ b32	      es_entity_is_inactive(Entity *entity);
 EntityWithID  es_clone_entity(EntitySystem *destination_es, Entity *entity);
 EntityWithID  es_clone_entity_into_other_es_and_keep_id(EntitySystem *destination_es, Entity *entity);
 
+Entity       *es_impl_get_component_owner(void *component, ComponentType type);
 void         *es_impl_add_component(Entity *entity, ComponentType type);
 void         *es_impl_get_component(Entity *entity, ComponentType type);
 void         *es_impl_get_or_add_component(Entity *entity, ComponentType type);

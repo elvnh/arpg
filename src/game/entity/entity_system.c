@@ -1,4 +1,5 @@
 #include "entity_system.h"
+#include "components/component_id.h"
 #include "entity/entity_id.h"
 #include "entity_arena.h"
 #include "base/linear_arena.h"
@@ -245,6 +246,16 @@ void es_impl_remove_component(Entity *entity, ComponentType type)
     //ASSERT(es_has_components(entity, bit_value));
 
     entity->active_components &= ~(bit_value);
+}
+
+Entity *es_impl_get_component_owner(void *component, ComponentType type)
+{
+    ssize offset = get_component_offset(type);
+    Entity *result = byte_offset(component, -offset);
+
+    ASSERT(es_has_components(result, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
+
+    return result;
 }
 
 static void copy_entity_and_keep_destination_id(Entity *dst, Entity *src)

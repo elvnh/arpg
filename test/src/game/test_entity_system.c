@@ -519,3 +519,23 @@ TEST_CASE(es_move_entities_into_different_es_multiple_generations)
     free_entity_system(es1);
     free_entity_system(es2);
 }
+
+TEST_CASE(es_get_component_owner)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e2 = es_create_entity(es, FACTION_NEUTRAL);
+
+    LightEmitter *c1 = es_add_component(e1.entity, LightEmitter);
+    LightEmitter *c2 = es_add_component(e2.entity, LightEmitter);
+
+
+    Entity *owner1 = es_get_component_owner(c1, LightEmitter);
+    Entity *owner2 = es_get_component_owner(c2, LightEmitter);
+
+    REQUIRE(owner1 == e1.entity);
+    REQUIRE(owner2 == e2.entity);
+
+    free_entity_system(es);
+}

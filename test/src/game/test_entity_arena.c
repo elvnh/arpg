@@ -82,10 +82,10 @@ TEST_CASE(entity_arena_alloc_to_cap_multiple)
 {
     EntityArena arena = {0};
 
-    ssize n = 4;
-    ssize alloc_size = ENTITY_ARENA_SIZE / n;
+    s32 n = 4;
+    s32 alloc_size = ENTITY_ARENA_SIZE / n;
 
-    for (ssize i = 0; i < n; ++i) {
+    for (s32 i = 0; i < n; ++i) {
 	entity_arena_allocate(&arena, alloc_size, 1);
     }
 
@@ -98,7 +98,7 @@ TEST_CASE(entity_arena_alignment)
     EntityArena arena = {0};
 
     for (ssize i = 0; i < 7; ++i) {
-	ssize align = 1u << i;
+	s32 align = 1u << i;
 
 	EntityArenaAllocation alloc = entity_arena_allocate(&arena, 1, align);
 	REQUIRE(is_aligned((ssize)alloc.ptr, align));

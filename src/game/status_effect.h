@@ -12,8 +12,6 @@
   - On tick, on apply, on remove
  */
 
-struct StatusEffectComponent;
-
 typedef enum {
     STATUS_EFFECT_CHILLED,
 

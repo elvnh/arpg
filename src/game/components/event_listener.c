@@ -6,10 +6,8 @@
 
 #include <string.h>
 
-// TODO: does this really need to be a separate file?
-
-void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
-    const void *user_data, ssize data_size, ssize data_alignment)
+void add_event_callback_impl(Entity *entity, EventType event_type, CallbackFunction func,
+    const void *user_data, s32 data_size, s32 data_alignment)
 {
     ASSERT(event_type >= 0);
     ASSERT(event_type < EVENT_COUNT);

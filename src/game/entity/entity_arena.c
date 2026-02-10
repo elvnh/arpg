@@ -3,17 +3,17 @@
 
 #include <string.h>
 
-EntityArenaAllocation entity_arena_allocate(EntityArena *arena, ssize byte_count, ssize alignment)
+EntityArenaAllocation entity_arena_allocate(EntityArena *arena, s32 byte_count, s32 alignment)
 {
     ASSERT(byte_count > 0);
     ASSERT(is_pow2(alignment));
     ASSERT(alignment <= ALIGNOF(arena->data));
 
-    ssize aligned_index = align(arena->offset, alignment);
+    s32 aligned_index = (s32)align(arena->offset, alignment);
     ASSERT(aligned_index < ENTITY_ARENA_SIZE);
     ASSERT(!add_overflows_ssize(aligned_index, byte_count));
 
-    ssize new_offset = aligned_index + byte_count;
+    s32 new_offset = aligned_index + byte_count;
     ASSERT(new_offset <= ENTITY_ARENA_SIZE);
 
     arena->offset = new_offset;

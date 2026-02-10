@@ -23,7 +23,7 @@ void append_item_to_inventory(struct EntitySystem *es, Inventory *inv, Inventory
 void insert_item_in_inventory(struct EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add,
 			      InventoryStorable *insert_after);
 void remove_item_from_inventory(struct EntitySystem *es, Inventory *inv, InventoryStorable *item_to_remove);
-void drop_item_on_ground(struct World *world, Inventory *inv, InventoryStorable *item, Vector2 pos);
+void drop_item_on_ground(struct EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2 pos);
 b32  inventory_contains_item(struct EntitySystem *es, Inventory *inventory, InventoryStorable *item);
 
 static inline b32 inventory_is_empty(Inventory *inventory)

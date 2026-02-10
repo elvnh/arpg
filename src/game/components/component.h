@@ -41,7 +41,7 @@
     COMPONENT(InventoryStorable)                \
     COMPONENT(Inventory)			\
     COMPONENT(Equippable)                       \
-    COMPONENT(Equipment)                     \
+    COMPONENT(Equipment)			\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type

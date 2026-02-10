@@ -113,18 +113,17 @@ void remove_item_from_inventory(EntitySystem *es, Inventory *inv, InventoryStora
     *item_to_remove = zero_struct(InventoryStorable);
 }
 
-// TODO: shouldn't take world as parameter, but instead ES
-void drop_item_on_ground(World *world, Inventory *inv, InventoryStorable *item, Vector2 pos)
+void drop_item_on_ground(EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2 pos)
 {
-    ASSERT(inventory_contains_item(&world->entity_system, inv, item));
+    ASSERT(inventory_contains_item(es, inv, item));
 
-    Entity *item_entity = es_get_component_owner(&world->entity_system, item, InventoryStorable);
+    Entity *item_entity = es_get_component_owner(es, item, InventoryStorable);
     ASSERT(!es_has_component(item_entity, PhysicsComponent));
 
     PhysicsComponent *physics = es_add_component(item_entity, PhysicsComponent);
     physics->position = pos;
 
-    remove_item_from_inventory(&world->entity_system, inv, item);
+    remove_item_from_inventory(es, inv, item);
 }
 
 b32 inventory_contains_item(EntitySystem *es, Inventory *inventory, InventoryStorable *item)

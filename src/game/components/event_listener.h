@@ -56,7 +56,7 @@ typedef struct {
 
 void send_event_to_entity(struct Entity *entity, EventData event_data, struct World *world);
 void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
-    const void *user_data, ssize data_size, ssize data_alignment);
+    const void *user_data, s32 data_size, s32 data_alignment);
 
 static inline EventData event_data_death(void)
 {

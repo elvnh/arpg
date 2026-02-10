@@ -34,9 +34,9 @@
 
 // Having to pass in the type of the component here is unfortunate, but at least
 // a type check is done at compile time
-#define es_get_component_owner(comp, type)                                    \
+#define es_get_component_owner(es, comp, type)				      \
     (STATIC_ASSERT(EXPR_TYPES_EQUAL(*comp, type)),                            \
-        es_impl_get_component_owner(comp, ES_IMPL_COMP_ENUM_NAME(type)))
+        es_impl_get_component_owner(es, comp, ES_IMPL_COMP_ENUM_NAME(type)))
 
 typedef struct {
     DEFINE_GENERATIONAL_ID_NODE_FIELDS(EntityGeneration, EntityIndex);
@@ -63,7 +63,7 @@ b32	      es_entity_is_inactive(Entity *entity);
 EntityWithID  es_clone_entity(EntitySystem *destination_es, Entity *entity);
 EntityWithID  es_clone_entity_into_other_es_and_keep_id(EntitySystem *destination_es, Entity *entity);
 
-Entity       *es_impl_get_component_owner(void *component, ComponentType type);
+Entity       *es_impl_get_component_owner(EntitySystem *es, void *component, ComponentType type);
 void         *es_impl_add_component(Entity *entity, ComponentType type);
 void         *es_impl_get_component(Entity *entity, ComponentType type);
 void         *es_impl_get_or_add_component(Entity *entity, ComponentType type);

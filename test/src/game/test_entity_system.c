@@ -518,8 +518,8 @@ TEST_CASE(es_get_component_owner)
     LightEmitter *c2 = es_add_component(e2.entity, LightEmitter);
 
 
-    Entity *owner1 = es_get_component_owner(c1, LightEmitter);
-    Entity *owner2 = es_get_component_owner(c2, LightEmitter);
+    Entity *owner1 = es_get_component_owner(es, c1, LightEmitter);
+    Entity *owner2 = es_get_component_owner(es, c2, LightEmitter);
 
     REQUIRE(owner1 == e1.entity);
     REQUIRE(owner2 == e2.entity);

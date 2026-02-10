@@ -26,8 +26,8 @@ void append_item_to_inventory(EntitySystem *es, Inventory *inv, InventoryStorabl
     ASSERT(entity_id_is_null(item_to_add->next_item_in_inventory));
     ASSERT(entity_id_is_null(item_to_add->prev_item_in_inventory));
 
-    Entity *inventory_owner = es_get_component_owner(inv, Inventory);
-    Entity *item_entity = es_get_component_owner(item_to_add, InventoryStorable);
+    Entity *inventory_owner = es_get_component_owner(es, inv, Inventory);
+    Entity *item_entity = es_get_component_owner(es, item_to_add, InventoryStorable);
 
     ASSERT(inventory_owner != item_entity);
     ASSERT(es_has_component(inventory_owner, Inventory));
@@ -59,8 +59,8 @@ void insert_item_in_inventory(EntitySystem *es, Inventory *inv, InventoryStorabl
     ASSERT(entity_id_is_null(item_to_add->prev_item_in_inventory));
     ASSERT(item_to_add != insert_after);
 
-    Entity *item_to_add_entity = es_get_component_owner(item_to_add, InventoryStorable);
-    Entity *insert_after_entity = es_get_component_owner(insert_after, InventoryStorable);
+    Entity *item_to_add_entity = es_get_component_owner(es, item_to_add, InventoryStorable);
+    Entity *insert_after_entity = es_get_component_owner(es, insert_after, InventoryStorable);
 
     InventoryStorable *next_item = get_inventory_item(es, insert_after->next_item_in_inventory);
 
@@ -100,7 +100,7 @@ void remove_item_from_inventory(EntitySystem *es, Inventory *inv, InventoryStora
         next_item->prev_item_in_inventory = item_to_remove->prev_item_in_inventory;
     }
 
-    Entity *item_entity = es_get_component_owner(item_to_remove, InventoryStorable);
+    Entity *item_entity = es_get_component_owner(es, item_to_remove, InventoryStorable);
 
     if (entity_id_equal(inv->first_item_in_inventory, item_entity->id)) {
         inv->first_item_in_inventory = item_to_remove->next_item_in_inventory;
@@ -118,7 +118,7 @@ void drop_item_on_ground(World *world, Inventory *inv, InventoryStorable *item, 
 {
     ASSERT(inventory_contains_item(&world->entity_system, inv, item));
 
-    Entity *item_entity = es_get_component_owner(item, InventoryStorable);
+    Entity *item_entity = es_get_component_owner(&world->entity_system, item, InventoryStorable);
     ASSERT(!es_has_component(item_entity, PhysicsComponent));
 
     PhysicsComponent *physics = es_add_component(item_entity, PhysicsComponent);
@@ -132,7 +132,7 @@ b32 inventory_contains_item(EntitySystem *es, Inventory *inventory, InventorySto
     // TODO: keep a ID from item to inventory, or in general from entity to it's parent
     b32 result = false;
 
-    Entity *item_entity = es_get_component_owner(item, InventoryStorable);
+    Entity *item_entity = es_get_component_owner(es, item, InventoryStorable);
     EntityID searched_id = item_entity->id;
 
     EntityID curr_id = inventory->first_item_in_inventory;

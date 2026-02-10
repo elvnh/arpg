@@ -27,12 +27,12 @@ Entity *get_equipped_item_in_slot(EntitySystem *es, Equipment *eq, EquipmentSlot
     return result;
 }
 
-static EquipResult try_equip_item(Equipment *equipment, Equippable *equippable)
+static EquipResult try_equip_item(EntitySystem *es, Equipment *equipment, Equippable *equippable)
 {
     EquipResult result = {0};
     EquipmentSlot slot = equippable->equippable_in_slot;
 
-    Entity *item_entity = es_get_component_owner(equippable, Equippable);
+    Entity *item_entity = es_get_component_owner(es, equippable, Equippable);
 
     result.replaced_item = *get_equipped_entity_id_in_slot(equipment, slot);
     *get_equipped_entity_id_in_slot(equipment, slot) = item_entity->id;
@@ -47,11 +47,11 @@ b32 try_equip_item_from_inventory(EntitySystem *es, Equipment *equipment, Invent
 {
     b32 result = false;
 
-    Entity *item_entity = es_get_component_owner(item, InventoryStorable);
+    Entity *item_entity = es_get_component_owner(es, item, InventoryStorable);
     Equippable *equippable = es_get_component(item_entity, Equippable);
 
     if (equippable) {
-        EquipResult equip_result = try_equip_item(equipment, equippable);
+        EquipResult equip_result = try_equip_item(es, equipment, equippable);
 
         if (equip_result.success) {
             if (!entity_id_is_null(equip_result.replaced_item)) {

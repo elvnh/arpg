@@ -248,12 +248,14 @@ void es_impl_remove_component(Entity *entity, ComponentType type)
     entity->active_components &= ~(bit_value);
 }
 
-Entity *es_impl_get_component_owner(void *component, ComponentType type)
+Entity *es_impl_get_component_owner(EntitySystem *es, void *component, ComponentType type)
 {
     ssize offset = get_component_offset(type);
     Entity *result = byte_offset(component, -offset);
 
-    ASSERT((result->id.index >= 0) && (result->id.generation >= 1));
+    ASSERT(((Entity *)component >= es->entities) && ((Entity *)component < (es->entities + MAX_ENTITIES))
+	  && "A pointer that doesn't point to an actual component in an entity was passed");
+    ASSERT(entity_id_is_valid(es, result->id));
     ASSERT(es_has_components(result, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
 
     return result;

@@ -2,6 +2,7 @@
 #include "entity/entity_faction.h"
 #include "entity/entity_id.h"
 #include "test_macros.h"
+#include "testing_utils.h"
 #include "game/entity/entity_system.h"
 
 #include <stdlib.h>
@@ -11,20 +12,6 @@
   - Test components that use entity arena
   - Test callbacks
  */
-
-// Entity systems need to be heap allocated since they're fairly large
-static EntitySystem *allocate_entity_system(void)
-{
-    EntitySystem *entity_sys = calloc(1, sizeof(EntitySystem));
-    es_initialize(entity_sys);
-
-    return entity_sys;
-}
-
-static void free_entity_system(EntitySystem *es)
-{
-    free(es);
-}
 
 TEST_CASE(es_basics)
 {

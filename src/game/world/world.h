@@ -4,13 +4,11 @@
 #include "base/free_list_arena.h"
 #include "components/component_id.h"
 #include "entity/entity_system.h"
-#include "item.h"
 #include "quad_tree.h"
 #include "renderer/frontend/render_target.h"
 #include "tilemap.h"
 #include "camera.h"
 #include "collision/collision.h"
-#include "item_system.h"
 #include "hitsplat.h"
 #include "collision/collision_event.h"
 
@@ -41,17 +39,15 @@ typedef struct World {
     CollisionEventTable  previous_frame_collisions;
     CollisionEventTable  current_frame_collisions;
 
-    HitsplatBuffer active_hitsplats;
+    HitsplatBuffer       active_hitsplats;
 
-    EntityID         player_entity;
+    EntityID             player_entity;
 
-    ItemSystem       item_system;
-
-    EntitySystem     entity_system;
-    EntityID         alive_entity_ids[MAX_ENTITIES];
-    EntityIndex      alive_entity_count;
-    QuadTreeLocation alive_entity_quad_tree_locations[MAX_ENTITIES];
-    QuadTree         quad_tree;
+    EntitySystem         entity_system;
+    EntityID             alive_entity_ids[MAX_ENTITIES];
+    EntityIndex          alive_entity_count;
+    QuadTreeLocation     alive_entity_quad_tree_locations[MAX_ENTITIES];
+    QuadTree             quad_tree;
 } World;
 
 void world_initialize(World *world, FreeListArena *parent_arena);

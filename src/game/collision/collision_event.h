@@ -22,7 +22,7 @@ typedef struct {
 typedef struct {
     CollisionEventList *table;
     ssize               table_size;
-    LinearArena         arena;
+    LinearArena         arena; // TODO: remove this, pass as param instead
 } CollisionEventTable;
 
 CollisionEventTable collision_event_table_create(struct LinearArena *parent_arena);

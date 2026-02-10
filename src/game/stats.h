@@ -6,6 +6,7 @@
 
 struct Entity;
 struct ItemSystem;
+struct EntitySystem;
 
 /*
   TODO:
@@ -44,9 +45,10 @@ typedef struct {
     StatValue values[STAT_COUNT];
 } StatValues;
 
-StatValue  get_total_stat_value(struct Entity *entity, Stat stat, struct ItemSystem *item_sys);
-StatValue  get_total_stat_modifier_of_type(struct Entity *entity, Stat stat, NumericModifierType mod_type,
-	   				  struct ItemSystem *item_sys);
+StatValue  get_total_stat_value(struct EntitySystem *es, struct Entity *entity, Stat stat);
+StatValue  get_total_stat_modifier_of_type(struct EntitySystem *es, struct Entity *entity,
+					       Stat stat, NumericModifierType mod_type);
+
 StatValue  apply_modifier(StatValue lhs, StatValue rhs, NumericModifierType mod_type);
 StatValue  modify_stat_by_percentage(StatValue lhs, StatValue percentage);
 StatValues create_base_stats(void);

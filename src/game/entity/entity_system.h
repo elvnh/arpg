@@ -11,12 +11,17 @@
   TODO:
   - Don't return EntityWithID from es_create_entity since id is easily available now
   - Create try_get_component that can return null, make get_component crash on null
-  - Rename EntityIDSlot
+  - Rename EntityIDSlot, or keep entities and id's in same slot
   - Make number of entities dynamic
   - es_get_id_of_entity no longer necessary
   - Should Entity struct be opaque?
   - es_has_components needs a better name to reflect that it uses component id
     rather than type name
+  - get rid of the generational ID macros, no longer needed since item system doesn't use them
+  - use u32 for entity so it automatically overflows
+  - Better checks to es_get_component_owner ensure someone doesn't pass an invalid pointer,
+    would require passing in es
+  - Reduce the size of Entity struct
  */
 
 #define es_add_component(entity, type) ((type *)es_impl_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
@@ -24,9 +29,13 @@
 #define es_get_component(entity, type) ((type *)es_impl_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_has_component(entity, type)          es_has_components((entity), component_id(type))
 #define es_has_components(entity, flags)        (((entity)->active_components & (flags)) == (flags))
-#define es_get_or_add_component(entity, type)  ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
-#define es_get_component_owner(comp, type)                              \
-    (STATIC_ASSERT(EXPR_TYPES_EQUAL(*comp, type)),                      \
+#define es_get_or_add_component(entity, type)  \
+    ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
+
+// Having to pass in the type of the component here is unfortunate, but at least
+// a type check is done at compile time
+#define es_get_component_owner(comp, type)                                    \
+    (STATIC_ASSERT(EXPR_TYPES_EQUAL(*comp, type)),                            \
         es_impl_get_component_owner(comp, ES_IMPL_COMP_ENUM_NAME(type)))
 
 typedef struct {

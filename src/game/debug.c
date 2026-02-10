@@ -69,6 +69,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     }
 
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+
     ASSERT(physics && "How did you inspect a non-spatial entity?");
 
     if (!physics) {
@@ -213,22 +214,6 @@ void debug_update(Game *game, const FrameData *frame_data, LinearArena *frame_ar
 
     // NOTE: lower alpha value means more smoothing
     game->debug_state.average_fps = exponential_moving_avg(avg_fps, curr_fps, 0.9f);
-
-    Vector2 hovered_coords = screen_to_world_coords(
-        game->world.camera,
-        frame_data->input.mouse_position,
-        frame_data->window_size
-    );
-
-    Rectangle hovered_rect = {hovered_coords, {1, 1}};
-    EntityIDList hovered_entities = qt_get_entities_in_area(&game->world.quad_tree,
-	hovered_rect, frame_arena);
-
-    if (!list_is_empty(&hovered_entities)) {
-        game->game_ui.hovered_entity = list_head(&hovered_entities)->id;
-    } else {
-        game->game_ui.hovered_entity = NULL_ENTITY_ID;
-    }
 
     f32 speed_modifier = game->debug_state.timestep_modifier;
     f32 speed_modifier_step = 0.25f;

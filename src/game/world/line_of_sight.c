@@ -125,7 +125,7 @@ static b32 has_line_of_sight_to_point(Vector2 origin, Vector2 point, Tilemap *ti
     return result;
 }
 
-b32 has_line_of_sight_to_entity(Entity *self, PhysicsComponent *self_physics, Entity *other, Tilemap *tilemap)
+b32 has_line_of_sight_to_entity(PhysicsComponent *self_physics, Entity *other, Tilemap *tilemap)
 {
     b32 result = false;
 

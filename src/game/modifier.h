@@ -16,6 +16,17 @@ typedef struct {
     NumericModifierType modifier_type;
 } Modifier;
 
+typedef struct {
+    Modifier modifiers[6];
+    s32 modifier_count;
+} ItemModifiers;
+
+static inline void add_item_modifier(ItemModifiers *mods, Modifier mod)
+{
+    ASSERT(mods->modifier_count < ARRAY_COUNT(mods->modifiers));
+    mods->modifiers[mods->modifier_count++] = mod;
+}
+
 static inline Modifier create_modifier(Stat stat, StatValue value, NumericModifierType mod_type)
 {
     Modifier result = {0};

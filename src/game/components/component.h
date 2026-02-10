@@ -6,7 +6,6 @@
 #include "component_id.h"
 #include "collision/collision_policy.h"
 #include "damage.h"
-#include "item.h"
 #include "light.h"
 #include "particle.h"
 #include "platform/asset.h"
@@ -30,10 +29,8 @@
     COMPONENT(LifetimeComponent)                \
     COMPONENT(StatsComponent)                   \
     COMPONENT(StatusEffectComponent)            \
-    COMPONENT(InventoryComponent)               \
-    COMPONENT(EquipmentComponent)               \
+    COMPONENT(ItemModifiers)			\
     COMPONENT(AnimationComponent)               \
-    COMPONENT(GroundItemComponent)		\
     COMPONENT(SpellCasterComponent)		\
     COMPONENT(EventListenerComponent)		\
     COMPONENT(DamageFieldComponent)		\
@@ -41,6 +38,10 @@
     COMPONENT(EffectApplierComponent)		\
     COMPONENT(HealthComponent)			\
     COMPONENT(LightEmitter)			\
+    COMPONENT(InventoryStorable)                \
+    COMPONENT(Inventory)			\
+    COMPONENT(Equippable)                       \
+    COMPONENT(Equipment)                     \
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -70,23 +71,11 @@ typedef struct {
     StatValues stats;
 } StatsComponent;
 
-typedef struct {
-    Inventory inventory;
-} InventoryComponent;
-
-typedef struct {
-    Equipment equipment;
-} EquipmentComponent;
-
 typedef struct AnimationComponent {
     // TODO: don't store the animations per component
     AnimationID state_animations[ENTITY_STATE_COUNT];
     AnimationInstance current_animation;
 } AnimationComponent;
-
-typedef struct {
-    ItemID item_id;
-} GroundItemComponent;
 
 typedef struct SpellCasterComponent {
     SpellID spellbook[SPELL_COUNT];

@@ -253,6 +253,7 @@ Entity *es_impl_get_component_owner(void *component, ComponentType type)
     ssize offset = get_component_offset(type);
     Entity *result = byte_offset(component, -offset);
 
+    ASSERT((result->id.index >= 0) && (result->id.generation >= 1));
     ASSERT(es_has_components(result, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
 
     return result;

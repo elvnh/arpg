@@ -6,12 +6,12 @@
 #include "base/rgba.h"
 #include "base/utils.h"
 #include "components/component.h"
+#include "components/inventory.h"
 #include "renderer/frontend/render_target.h"
 #include "renderer/backend/renderer_backend.h"
 #include "status_effect.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
-#include "item_system.h"
 #include "modifier.h"
 #include "renderer/frontend/render_batch.h"
 #include "platform/input.h"
@@ -43,6 +43,17 @@ void update_player(World *world, const FrameData *frame_data,
 
     Vector2 camera_target = rect_center(world_get_entity_bounding_box(player, physics));
     camera_set_target(&world->camera, camera_target);
+
+    Entity *hovered_entity = es_try_get_entity(&world->entity_system, game_ui->hovered_entity);
+
+    if (hovered_entity && input_is_key_pressed(&frame_data->input, MOUSE_RIGHT)) {
+        Inventory *inv = es_get_component(player, Inventory);
+        InventoryStorable *storable = es_get_component(hovered_entity, InventoryStorable);
+        ASSERT(inv);
+        ASSERT(storable);
+
+        append_item_to_inventory(&world->entity_system, inv, storable);
+    }
 
     if (player->state.kind != ENTITY_STATE_ATTACKING) {
 #if 0
@@ -117,8 +128,8 @@ void update_player(World *world, const FrameData *frame_data,
 	    SpellID selected_spell = get_spell_at_spellbook_index(
 		spellcaster, game_ui->selected_spellbook_index);
 
-	    StatValue cast_speed = get_total_stat_value(player, STAT_CAST_SPEED, &world->item_system);
-	    StatValue action_speed = get_total_stat_value(player, STAT_ACTION_SPEED, &world->item_system);
+	    StatValue cast_speed = get_total_stat_value(&world->entity_system, player, STAT_CAST_SPEED);
+	    StatValue action_speed = get_total_stat_value(&world->entity_system, player, STAT_ACTION_SPEED);
 
 	    StatValue total_cast_speed = apply_modifier(cast_speed, action_speed,
 		NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
@@ -128,20 +139,20 @@ void update_player(World *world, const FrameData *frame_data,
         }
     }
 
-    if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)
-	&& !entity_id_is_null(game_ui->hovered_entity)) {
-	Entity *hovered_entity = es_get_entity(&world->entity_system, game_ui->hovered_entity);
-	GroundItemComponent *ground_item = es_get_component(hovered_entity, GroundItemComponent);
+    /* if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT) */
+    /*     && !entity_id_is_null(game_ui->hovered_entity)) { */
+    /*     Entity *hovered_entity = es_get_entity(&world->entity_system, game_ui->hovered_entity); */
+    /*     GroundItemComponent *ground_item = es_get_component(hovered_entity, GroundItemComponent); */
 
-	if (ground_item) {
-	    // TODO: make try_get_component be nullable, make get_component assert on failure to get
-	    InventoryComponent *inv = es_get_component(player, InventoryComponent);
-	    ASSERT(inv);
+    /*     if (ground_item) { */
+    /*         // TODO: make try_get_component be nullable, make get_component assert on failure to get */
+    /*         InventoryComponent *inv = es_get_component(player, InventoryComponent); */
+    /*         ASSERT(inv); */
 
-	    inventory_add_item(&inv->inventory, ground_item->item_id);
-	    es_schedule_entity_for_removal(hovered_entity);
-	}
-    }
+    /*         inventory_add_item(&inv->inventory, ground_item->item_id); */
+    /*         es_schedule_entity_for_removal(hovered_entity); */
+    /*     } */
+    /* } */
 }
 
 static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
@@ -204,6 +215,22 @@ static void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
 static void update_and_render_ui(Game *game, RenderBatches rbs, FrameData *frame_data,
     LinearArena *frame_arena, PlatformCode platform_code)
 {
+    Vector2 hovered_coords = screen_to_world_coords(
+        game->world.camera,
+        frame_data->input.mouse_position,
+        frame_data->window_size
+    );
+
+    Rectangle hovered_rect = {hovered_coords, {1, 1}};
+    EntityIDList hovered_entities = qt_get_entities_in_area(&game->world.quad_tree,
+	hovered_rect, frame_arena);
+
+    if (!list_is_empty(&hovered_entities)) {
+        game->game_ui.hovered_entity = list_head(&hovered_entities)->id;
+    } else {
+        game->game_ui.hovered_entity = NULL_ENTITY_ID;
+    }
+
     render_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_data, frame_arena,
         rbs.overlay_rb, platform_code);
 
@@ -258,6 +285,7 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
         update_player(&game->world, frame_data, &game->game_ui);
         world_update(&game->world, frame_data, frame_arena);
     }
+
 }
 
 // TODO: only send FrameData into this function, send dt etc to others
@@ -269,17 +297,16 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     set_global_state(game);
 #endif
 
-
     if (input_is_key_pressed(&frame_data.input, KEY_ESCAPE)) {
         DEBUG_BREAK;
     }
 
     RenderBatches game_rbs = create_render_batches(game, rbs, &frame_data, &game_memory->temporary_memory);
-
     update_and_render_ui(game, game_rbs, &frame_data, &game_memory->temporary_memory, platform_code);
 
     game_update(game, &frame_data, &game_memory->temporary_memory);
     game_render(game, game_rbs, rbs, &frame_data, &game_memory->temporary_memory);
+
 
     // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
     // have had time to be used during the frame. This means that the stats have 1 frame delay

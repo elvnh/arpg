@@ -40,8 +40,9 @@ typedef struct {
     Damage penetration;
 } DamageInstance;
 
-Damage	    calculate_damage_dealt(Damage base_damage, struct Entity *entity, struct ItemSystem *item_sys);
-Damage      calculate_damage_received(struct Entity *entity, DamageInstance dmg, struct ItemSystem *item_sys);
+Damage	    calculate_damage_dealt(struct EntitySystem *es, struct Entity *entity, Damage base_damage);
+Damage      calculate_damage_received(struct EntitySystem *es, struct Entity *entity, DamageInstance dmg);
+
 StatValue   calculate_damage_sum(Damage damage);
 Damage      roll_damage_in_range(DamageRange damage_range);
 void	    set_damage_value(Damage *damage, DamageType type, StatValue new_value);

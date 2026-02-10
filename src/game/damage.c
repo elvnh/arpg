@@ -3,9 +3,7 @@
 #include "components/component.h"
 #include "status_effect.h"
 #include "entity/entity_system.h"
-#include "equipment.h"
-#include "item.h"
-#include "item_system.h"
+#include "components/equipment.h"
 #include "modifier.h"
 #include "stats.h"
 
@@ -36,46 +34,6 @@ static Stat get_stat_affecting_damage_type(DamageType dmg_type)
     ASSERT(0);
 
     return 0;
-}
-
-Damage calculate_damage_received(Entity *entity, DamageInstance dmg, ItemSystem *item_sys)
-{
-    Damage result = dmg.damage;
-
-    for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
-	Stat resistance_stat = get_resistance_stat_for_damage_type(type);
-
-	StatValue resistance_to_type = get_total_stat_value(entity, resistance_stat, item_sys);
-	resistance_to_type -= get_damage_value(dmg.penetration, type);
-
-	StatValue base_damage = get_damage_value(dmg.damage, type);
-	StatValue final_value = modify_stat_by_percentage(base_damage, 100 - resistance_to_type);
-
-	set_damage_value(&result, type, final_value);
-    }
-
-    return result;
-}
-
-Damage calculate_damage_dealt(Damage base_damage, Entity *entity, ItemSystem *item_sys)
-{
-    Damage result = base_damage;
-
-    for (DamageType dmg_type = 0; dmg_type < DMG_TYPE_COUNT; ++dmg_type) {
-	Stat stat = get_stat_affecting_damage_type(dmg_type);
-
-	for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT; ++mod_type) {
-	    // TODO: if stats etc can modify base damage, make sure to to change this to
-	    // get_total_stat_value_of_type
-	    StatValue total_mods = get_total_stat_modifier_of_type(entity, stat, mod_type, item_sys);
-
-	    StatValue current_value = get_damage_value(result, dmg_type);
-	    StatValue new_value = apply_modifier(current_value, total_mods, mod_type);
-	    set_damage_value(&result, dmg_type, new_value);
-	}
-    }
-
-    return result;
 }
 
 Damage roll_damage_in_range(DamageRange damage_range)
@@ -125,6 +83,46 @@ StatValue get_damage_value(Damage damage, DamageType type)
     ASSERT(type < DMG_TYPE_COUNT);
 
     StatValue result = damage.type_values[type];
+
+    return result;
+}
+
+Damage calculate_damage_dealt(EntitySystem *es, struct Entity *entity, Damage base_damage)
+{
+    Damage result = base_damage;
+
+    for (DamageType dmg_type = 0; dmg_type < DMG_TYPE_COUNT; ++dmg_type) {
+	Stat stat = get_stat_affecting_damage_type(dmg_type);
+
+	for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT; ++mod_type) {
+	    // TODO: if stats etc can modify base damage, make sure to to change this to
+	    // get_total_stat_value_of_type
+	    StatValue total_mods = get_total_stat_modifier_of_type(es, entity, stat, mod_type);
+
+	    StatValue current_value = get_damage_value(result, dmg_type);
+	    StatValue new_value = apply_modifier(current_value, total_mods, mod_type);
+	    set_damage_value(&result, dmg_type, new_value);
+	}
+    }
+
+    return result;
+}
+
+Damage calculate_damage_received(EntitySystem *es, struct Entity *entity, DamageInstance dmg)
+{
+    Damage result = dmg.damage;
+
+    for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
+	Stat resistance_stat = get_resistance_stat_for_damage_type(type);
+
+	StatValue resistance_to_type = get_total_stat_value(es, entity, resistance_stat);
+	resistance_to_type -= get_damage_value(dmg.penetration, type);
+
+	StatValue base_damage = get_damage_value(dmg.damage, type);
+	StatValue final_value = modify_stat_by_percentage(base_damage, 100 - resistance_to_type);
+
+	set_damage_value(&result, type, final_value);
+    }
 
     return result;
 }

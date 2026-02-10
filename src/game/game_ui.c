@@ -1,12 +1,13 @@
 #include "game_ui.h"
 #include "base/format.h"
 #include "components/component.h"
+#include "entity/entity_id.h"
 #include "entity/entity_system.h"
 #include "game.h"
-#include "item.h"
-#include "item_system.h"
+#include "components/equipment.h"
 #include "magic.h"
 #include "modifier.h"
+#include "platform/input.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
 #include "world/world.h"
@@ -14,15 +15,6 @@
 #define GAME_UI_COLOR (RGBA32) {0, 1, 0, 0.5f}
 
 // TODO: clean up this file
-
-static String item_widget_string(ItemID id, Item *item, LinearArena *scratch)
-{
-    String id_string = item_id_to_string(id, scratch);
-    String result = format(scratch, FMT_STR"##"FMT_STR, FMT_STR_ARG(item->name),
-        FMT_STR_ARG(id_string));
-
-    return result;
-}
 
 static void spellbook_menu(GameUIState *ui_state, Game *game)
 {
@@ -40,6 +32,7 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
 		String spell_name = spell_type_to_string(spellcaster->spellbook[i]);
 		WidgetInteraction interaction = ui_selectable(ui, spell_name);
 
+		// TODO: print info about spell
 		if (interaction.clicked) {
 		    ui_state->selected_spellbook_index = i;
 		}
@@ -50,16 +43,20 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
 
 }
 
-static void item_hover_menu(UIState *ui, Item *item, Vector2 mouse_position, LinearArena *arena)
+static void item_hover_menu(UIState *ui, Entity *item, Vector2 mouse_position, LinearArena *arena)
 {
+    ASSERT(es_has_component(item, InventoryStorable));
+
     ui_begin_mouse_menu(ui, mouse_position); {
-	ui_text(ui, item->name);
+	ui_text(ui, format(arena, "%d, %d", item->id.index, item->id.generation));
 
 	ui_spacing(ui, 12);
 
-	if (item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
-	    for (ssize i = 0; i < item->modifiers.modifier_count; ++i) {
-		Modifier mod = item->modifiers.modifiers[i];
+	ItemModifiers *mods = es_get_component(item, ItemModifiers);
+
+	if (mods) {
+	    for (ssize i = 0; i < mods->modifier_count; ++i) {
+		Modifier mod = mods->modifiers[i];
 		String mod_string = modifier_to_string(mod, arena);
 
 		ui_text(ui, mod_string);
@@ -75,19 +72,17 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
 {
     UIState *ui = &ui_state->backend_state;
 
-    ui_text(ui, equipment_slot_spelling(slot));
+    ui_text(ui, equipment_slot_to_string(slot));
     ui_core_same_line(ui);
 
-    ItemID item_id = get_equipped_item_in_slot(equipment, slot);
-    Item *item = item_sys_try_get_item(&game->world.item_system, item_id);
+    Entity *item = get_equipped_item_in_slot(&game->world.entity_system, equipment, slot);
 
     if (item) {
-	String text = item_widget_string(item_id, item, scratch);
+	String text = format(scratch, "%d, %d", item->id.index, item->id.generation);
 	WidgetInteraction interaction = ui_button(ui, text);
 
 	if (interaction.clicked) {
-	    bool unequip_success = unequip_item_and_put_in_inventory(equipment, inventory, slot);
-	    ASSERT(unequip_success);
+            unequip_item_and_put_in_inventory(&game->world.entity_system, equipment, inventory, slot);
 	} else if (interaction.hovered) {
 	    item_hover_menu(ui, item, input->mouse_position, scratch);
 	}
@@ -105,15 +100,16 @@ static void equipment_menu(GameUIState *ui_state, Game *game, LinearArena *scrat
     ui_begin_container(ui, str_lit("equipment"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 	ui_text(ui, str_lit("Equipment"));
 
-	EquipmentComponent *eq = es_get_component(player, EquipmentComponent);
-	InventoryComponent *inv = es_get_component(player, InventoryComponent);
+	Equipment *eq = es_get_component(player, Equipment);
+	Inventory *inv = es_get_component(player, Inventory);
 	ASSERT(eq);
 	ASSERT(inv);
 
-	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-	    equipment_slot_widget(ui_state, game, &eq->equipment, &inv->inventory, slot,
+        for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+	    equipment_slot_widget(ui_state, game, eq, inv, slot,
 		scratch, &frame_data->input);
-	}
+
+        }
     } ui_pop_container(ui);
 }
 
@@ -122,35 +118,45 @@ static void inventory_menu(GameUIState *ui_state, Game *game, LinearArena *scrat
 {
     UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game->world);
+    PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
+    ASSERT(player_physics);
+
+    Vector2 mouse_pos = input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
     ui_begin_container(ui, str_lit("inventory"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
 	ui_text(ui, str_lit("Inventory"));
 
 	// TODO: allow setting min/max size of list
 	ui_begin_list(ui, str_lit("player_inventory")); {
-	    InventoryComponent *inv = es_get_component(player, InventoryComponent);
-	    EquipmentComponent *eq = es_get_component(player, EquipmentComponent);
+            Inventory *inv = es_get_component(player, Inventory);
+	    Equipment *eq = es_get_component(player, Equipment);
+            ASSERT(inv);
+            ASSERT(eq);
 
-	    ASSERT(inv);
-	    ASSERT(eq);
+            EntityID curr_id = inv->first_item_in_inventory;
 
-	    for (ssize i = 0; i < inv->inventory.item_count; ++i) {
-		Item *item = item_sys_get_item(&game->world.item_system, inv->inventory.items[i]);
-		ASSERT(item);
-		ASSERT(item->name.data);
+            while (!entity_id_is_null(curr_id)) {
+                Entity *curr_entity = es_get_entity(&game->world.entity_system, curr_id);
+                ASSERT(curr_entity);
+                InventoryStorable *inv_storable = es_get_component(curr_entity, InventoryStorable);
+                ASSERT(inv_storable);
 
-		ItemID item_id = inv->inventory.items[i];
-		String label_string = item_widget_string(item_id, item, scratch);
+                Equippable *equippable = es_get_component(curr_entity, Equippable);
+                ASSERT(equippable);
 
-		WidgetInteraction interaction = ui_selectable(ui, label_string);
+                String label_string = format(scratch, "%d, %d", curr_entity->id.index,
+		    curr_entity->id.generation);
+
+                WidgetInteraction interaction = ui_selectable(ui, label_string);
 
 		if (interaction.clicked) {
-		    equip_item_from_inventory(&game->world.item_system, &eq->equipment,
-			&inv->inventory, item_id);
+                    try_equip_item_from_inventory(&game->world.entity_system, eq, inv, inv_storable);
 		} else if (interaction.hovered) {
-		    item_hover_menu(ui, item, frame_data->input.mouse_position, scratch);
+		    item_hover_menu(ui, curr_entity, mouse_pos, scratch);
 		}
-	    }
+
+                curr_id = inv_storable->next_item_in_inventory;
+            }
 	} ui_end_list(ui);
     } ui_pop_container(ui);
 }

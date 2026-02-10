@@ -14,7 +14,7 @@
 #include "entity/entity_faction.h"
 #include "entity/entity_id.h"
 #include "entity/entity_state.h"
-#include "equipment.h"
+#include "components/equipment.h"
 #include "game.h"
 #include "animation.h"
 #include "base/format.h"
@@ -24,7 +24,6 @@
 #include "base/utils.h"
 #include "base/sl_list.h"
 #include "health.h"
-#include "item_system.h"
 #include "light.h"
 #include "renderer/frontend/render_target.h"
 #include "status_effect.h"
@@ -34,7 +33,6 @@
 #include "collision/collision.h"
 #include "entity/entity.h"
 #include "entity/entity_system.h"
-#include "item.h"
 #include "magic.h"
 #include "modifier.h"
 #include "quad_tree.h"
@@ -308,7 +306,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (es_has_component(entity, HealthComponent)) {
 	HealthComponent *hp = es_get_component(entity, HealthComponent);
-	StatValue max_hp = get_total_stat_value(entity, STAT_HEALTH, &world->item_system);
+	StatValue max_hp = get_total_stat_value(&world->entity_system, entity, STAT_HEALTH);
 	set_max_health(&hp->health, max_hp);
     }
 
@@ -444,7 +442,7 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
 
 static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
 {
-    Damage damage_taken = calculate_damage_received(entity, damage, &world->item_system);
+    Damage damage_taken = calculate_damage_received(&world->entity_system, entity, damage);
     StatValue dmg_sum = calculate_damage_sum(damage_taken);
     ASSERT(dmg_sum >= 0);
 
@@ -934,7 +932,6 @@ void world_initialize(World *world, FreeListArena *parent_arena)
     world->world_arena = la_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
 
     es_initialize(&world->entity_system);
-    item_sys_initialize(&world->item_system);
 
     world->previous_frame_collisions = collision_event_table_create(&world->world_arena);
     world->current_frame_collisions = collision_event_table_create(&world->world_arena);
@@ -976,7 +973,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 3; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world, v2(128, 128),
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
@@ -1033,12 +1030,6 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 	HealthComponent *hp = es_add_component(entity, HealthComponent);
 	hp->health = create_health_instance(world, entity);
 
-        // TODO: ensure components are zeroed out
-        InventoryComponent *inventory = es_add_component(entity, InventoryComponent);
-
-        EquipmentComponent *equipment = es_add_component(entity, EquipmentComponent);
-        (void)equipment;
-
 #if 1
         LightEmitter *light = es_add_component(entity, LightEmitter);
         light->light.radius = 500.0f;
@@ -1052,36 +1043,17 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 #endif
 
         {
-            ItemWithID item_with_id = item_sys_create_item(&world->item_system);
-            Item *item = item_with_id.item;
+            /*Inventory *inv = */es_add_component(entity, Inventory);
+            if (i != 0) {
+                /*Inventory *inv_storable = */es_add_component(entity, InventoryStorable);
+                Equippable *equippable = es_add_component(entity, Equippable);
+                equippable->equippable_in_slot = EQUIP_SLOT_WEAPON;
 
-            item_sys_set_item_name(item, str_lit("Sword"), &world->world_arena);
-            item_set_prop(item, ITEM_PROP_EQUIPPABLE | ITEM_PROP_HAS_MODIFIERS);
-            ASSERT(item_has_prop(item, ITEM_PROP_EQUIPPABLE));
-            item->equipment.slot = EQUIP_SLOT_WEAPON;
+		ItemModifiers *mods = es_add_component(entity, ItemModifiers);
+		add_item_modifier(mods, create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE));
+            }
 
-            // TODO: proper test case
-            Item *test_item = item_sys_get_item(&world->item_system, item_with_id.id);
-            ASSERT(item_has_prop(test_item, ITEM_PROP_EQUIPPABLE));
-            ASSERT(str_equal(test_item->name, str_lit("Sword")));
-
-
-#if 1
-            Modifier dmg_mod = create_modifier(STAT_FIRE_DAMAGE, 100, NUMERIC_MOD_FLAT_ADDITIVE);
-            item_add_modifier(item, dmg_mod);
-
-	    Modifier dmg_mod2 = create_modifier(STAT_FIRE_DAMAGE, 150, NUMERIC_MOD_ADDITIVE_PERCENTAGE);
-            item_add_modifier(item, dmg_mod2);
-            //item_add_modifier(item, res_mod);
-#endif
-
-#if 0
-	    drop_ground_item(world, v2(400, 400), item_with_id.id);
-#else
-            inventory_add_item(&inventory->inventory, item_with_id.id);
-	    equip_item_from_inventory(&world->item_system, &equipment->equipment,
-		&inventory->inventory, item_with_id.id);
-#endif
+            /*Equipment *eq =*/ es_add_component(entity, Equipment);
         }
 #endif
     }

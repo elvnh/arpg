@@ -1,11 +1,11 @@
 #include "stats.h"
 #include "base/utils.h"
 #include "components/component.h"
+#include "components/equipment.h"
 #include "status_effect.h"
 #include "damage.h"
 #include "entity/entity.h"
 #include "entity/entity_system.h"
-#include "item.h"
 
 static StatValue initialize_stat_value(NumericModifierType mod_type)
 {
@@ -113,20 +113,17 @@ static StatValue sum_status_effect_modifiers_of_type(Entity *entity, Stat stat,
 }
 
 static StatValue sum_modifiers_in_slot(Equipment *eq, Stat stat, EquipmentSlot slot,
-    NumericModifierType mod_type, ItemSystem *item_sys)
+    NumericModifierType mod_type, EntitySystem *es)
 {
     StatValue result = initialize_stat_value(mod_type);
+    Entity *item = get_equipped_item_in_slot(es, eq, slot);
 
-    ItemID item_id = get_equipped_item_in_slot(eq, slot);
+    if (item) {
+	ItemModifiers *mods = es_get_component(item, ItemModifiers);
 
-    if (!item_id_is_null(item_id)) {
-	Item *item = item_sys_get_item(item_sys, item_id);
-
-	ASSERT(item_has_prop(item, ITEM_PROP_EQUIPPABLE));
-
-	if (item_has_prop(item, ITEM_PROP_HAS_MODIFIERS)) {
-	    for (s32 i = 0; i < item->modifiers.modifier_count; ++i) {
-		Modifier mod = item->modifiers.modifiers[i];
+	if (mods) {
+	    for (s32 i = 0; i < mods->modifier_count; ++i) {
+		Modifier mod = mods->modifiers[i];
 
 		if (modifier_is_relevant(mod, stat, mod_type)) {
 		    result = accumulate_modifier_value(result, mod.value, mod_type);
@@ -139,39 +136,19 @@ static StatValue sum_modifiers_in_slot(Equipment *eq, Stat stat, EquipmentSlot s
 }
 
 static StatValue sum_equipment_modifiers_of_type(Entity *entity, Stat stat,
-    NumericModifierType mod_type, ItemSystem *item_sys)
+    NumericModifierType mod_type, EntitySystem *es)
 {
     StatValue result = initialize_stat_value(mod_type);
 
-    EquipmentComponent *equipment = es_get_component(entity, EquipmentComponent);
+    Equipment *equipment = es_get_component(entity, Equipment);
 
     if (equipment) {
 	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-	    StatValue slot_mods = sum_modifiers_in_slot(&equipment->equipment, stat, slot,
-		mod_type, item_sys);
+	    StatValue slot_mods = sum_modifiers_in_slot(equipment, stat, slot,
+		mod_type, es);
 
 	    result = accumulate_modifier_value(result, slot_mods, mod_type);
 	}
-    }
-
-    return result;
-}
-
-StatValue get_total_stat_modifier_of_type(Entity *entity, Stat stat, NumericModifierType mod_type,
-    ItemSystem *item_sys)
-{
-    StatValue equipment_mods = sum_equipment_modifiers_of_type(entity, stat, mod_type, item_sys);
-    StatValue status_mods = sum_status_effect_modifiers_of_type(entity, stat, mod_type);
-
-    StatValue result = initialize_stat_value(mod_type);
-
-    result = accumulate_modifier_value(result, equipment_mods, mod_type);
-    result = accumulate_modifier_value(result, status_mods, mod_type);
-
-    if (mod_type == NUMERIC_MOD_ADDITIVE_PERCENTAGE) {
-	// Additive percentages need to get 100% added implicitly at the end so that
-	// increasing by 50% actually means a multiplier of 1.5
-	result += 100;
     }
 
     return result;
@@ -204,7 +181,7 @@ StatValues create_base_stats()
     return result;
 }
 
-StatValue get_total_stat_value(Entity *entity, Stat stat, ItemSystem *item_sys)
+StatValue get_total_stat_value(struct EntitySystem *es, struct Entity *entity, Stat stat)
 {
     StatValue result = 0;
     StatsComponent *stats = es_get_component(entity, StatsComponent);
@@ -216,9 +193,29 @@ StatValue get_total_stat_value(Entity *entity, Stat stat, ItemSystem *item_sys)
     }
 
     for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT; ++mod_type) {
-	StatValue total_mods = get_total_stat_modifier_of_type(entity, stat, mod_type, item_sys);
+	StatValue total_mods = get_total_stat_modifier_of_type(es, entity, stat, mod_type);
 
 	result = apply_modifier(result, total_mods, mod_type);
+    }
+
+    return result;
+}
+
+StatValue get_total_stat_modifier_of_type(EntitySystem *es, Entity *entity,
+    Stat stat, NumericModifierType mod_type)
+{
+    StatValue equipment_mods = sum_equipment_modifiers_of_type(entity, stat, mod_type, es);
+    StatValue status_mods = sum_status_effect_modifiers_of_type(entity, stat, mod_type);
+
+    StatValue result = initialize_stat_value(mod_type);
+
+    result = accumulate_modifier_value(result, equipment_mods, mod_type);
+    result = accumulate_modifier_value(result, status_mods, mod_type);
+
+    if (mod_type == NUMERIC_MOD_ADDITIVE_PERCENTAGE) {
+	// Additive percentages need to get 100% added implicitly at the end so that
+	// increasing by 50% actually means a multiplier of 1.5
+	result += 100;
     }
 
     return result;

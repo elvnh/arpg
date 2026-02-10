@@ -1,7 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "item_system.h"
 #include "ui/ui_core.h"
 #include "game/magic.h"
 #include "platform/platform.h"

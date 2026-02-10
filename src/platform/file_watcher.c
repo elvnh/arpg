@@ -64,7 +64,7 @@ void *file_watcher_thread(void *user_data)
     s32 fd = inotify_init();
     ASSERT(fd >= 0);
 
-    ALIGNAS_T(struct inotify_event) char event_buffer[INOTIFY_MAX_BUFFER_LENGTH];
+    char event_buffer[INOTIFY_MAX_BUFFER_LENGTH];
 
     String root_path = get_assets_directory(&scratch);
     String shader_path = get_shader_directory(&scratch);
@@ -100,24 +100,25 @@ void *file_watcher_thread(void *user_data)
         ssize buffer_offset = 0;
 
         while (buffer_offset < length) {
-            struct inotify_event *event = (struct inotify_event *)&event_buffer[buffer_offset];
+	    struct inotify_event event;
+	    memcpy(&event, event_buffer + buffer_offset, sizeof(event));
 
-            ASSERT(event->mask & IN_MODIFY);
+            ASSERT(event.mask & IN_MODIFY);
 
-            if (event->mask & IN_MODIFY) {
+            if (event.mask & IN_MODIFY) {
                 String parent_path = {0};
 
-                if (event->wd == shader_wd) {
+                if (event.wd == shader_wd) {
                     parent_path = shader_path;
-                } else if (event->wd == sprite_wd) {
+                } else if (event.wd == sprite_wd) {
                     parent_path = sprite_path;
-                } else if (event->wd == font_wd) {
+                } else if (event.wd == font_wd) {
                     parent_path = font_path;
 		} else {
                     ASSERT(0);
                 }
 
-                String name = { event->name, (ssize)event->len };
+                String name = { event.name, (ssize)event.len };
                 ModifiedAsset *modified_asset = allocate_item(ctx->allocator, ModifiedAsset);
 
                 // TODO: instead store the canonical path
@@ -129,7 +130,7 @@ void *file_watcher_thread(void *user_data)
 		mutex_release(ctx->lock);
             }
 
-            buffer_offset += (SIZEOF(struct inotify_event) + event->len);
+            buffer_offset += (SIZEOF(struct inotify_event) + event.len);
         }
     }
 

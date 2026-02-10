@@ -4,6 +4,7 @@
 #include "collision/collision_event.h"
 #include "collision/collider.h"
 #include "components/component.h"
+#include "entity/entity_system.h"
 #include "game.h"
 #include "renderer/frontend/render_batch.h"
 #include "asset_table.h"
@@ -114,6 +115,7 @@ EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction fa
 // over to a new entity.
 static void world_remove_entity(World *world, ssize alive_entity_index)
 {
+    es_remove_component(world_get_player_entity(world), LightEmitter);
     ASSERT(alive_entity_index < world->alive_entity_count);
 
     EntityID *id = &world->alive_entity_ids[alive_entity_index];
@@ -122,6 +124,8 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
 
     // If the entity is non-spatial, there is (currently) nothing for us to do here
     if (dying_entity_physics) {
+        Rectangle dying_entity_bounds = world_get_entity_bounding_box(dying_entity, dying_entity_physics);
+
         if (es_has_component(dying_entity, ParticleSpawner)) {
             // If entity dies while particles are active, create a new particle spawner
             // entity with the remaining particles
@@ -149,23 +153,22 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
                 || (old_light->light.time_elapsed < old_light->light.fade_duration);
 
             if (should_transfer_light) {
-                Vector2 new_entity_pos = dying_entity_physics->position;
-
+                Vector2 new_entity_pos = get_light_origin_position(dying_entity_bounds);
                 Vector2i tile_coords = world_to_tile_coords(new_entity_pos);
                 Tile *tile = tilemap_get_tile(&world->tilemap, tile_coords);
 
                 if (!tile || (tile->type == TILE_WALL)) {
+                    // If the light origin lands inside a wall, displace it to closest floor tile
                     Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
                     RectanglePoint closest_point = rect_bounds_point_closest_to_point(
                         tile_rect, new_entity_pos);
 
                     // The entity will be placed on the perimeter of the tile it was spawned in,
-                    // which means it will be considered to be inside it, so we offset it slightly.
+                    // which means it will be considered to be inside it, so we offset it slightly
                     new_entity_pos = v2_sub(closest_point.point, v2_norm(dying_entity_physics->velocity));
                 }
 
                 Entity *new_entity = world_spawn_entity(world, new_entity_pos, FACTION_NEUTRAL).entity;
-
                 LightEmitter *new_light = es_add_component(new_entity, LightEmitter);
                 *new_light = *old_light;
 
@@ -361,9 +364,12 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 
     if (es_has_component(entity, LightEmitter)) {
         LightEmitter *light = es_get_component(entity, LightEmitter);
+        Rectangle entity_bounds = world_get_entity_bounding_box(entity, physics);
+
+        Vector2 light_origin = get_light_origin_position(entity_bounds);
 
         // TODO: this might look better if the origin is center of entity
-        render_light_source(world, rbs.lighting_rb, physics->position, light->light, 1.0f, scratch);
+        render_light_source(world, rbs.lighting_rb, light_origin, light->light, 1.0f, scratch);
     }
 
     if (debug_state->render_entity_bounds) {

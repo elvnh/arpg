@@ -38,4 +38,11 @@ TriangleFan   get_visibility_polygon(Vector2 origin, struct Tilemap *tilemap, st
 void          render_light_source(struct World *world, struct RenderBatch *rb, Vector2 origin,
 				  LightSource light, f32 intensity, struct LinearArena *arena);
 
+static inline Vector2 get_light_origin_position(Rectangle entity_bounds)
+{
+    Vector2 result = rect_center(entity_bounds);
+
+    return result;
+}
+
 #endif //LIGHT_H

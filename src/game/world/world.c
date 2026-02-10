@@ -275,10 +275,11 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 	entity_update_ai(world, entity, ai);
     }
 
-    if (es_has_component(entity, ParticleSpawner)) {
+    if (es_has_components(entity, component_id(ParticleSpawner) | component_id(PhysicsComponent))) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
-        update_particle_spawner(entity, particle_spawner,
-	    es_get_component(entity, PhysicsComponent), dt);
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+
+        update_particle_spawner(entity, particle_spawner, physics, dt);
     }
 
     if (es_has_component(entity, LifetimeComponent)) {
@@ -291,12 +292,12 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
         update_status_effects(status_effects, dt);
     }
 
-    if (es_has_component(entity, AnimationComponent)) {
+    if (es_has_components(entity, component_id(AnimationComponent) | component_id(PhysicsComponent))) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 	ASSERT(anim_component->current_animation.animation_id != ANIM_NULL);
 
-	anim_update_instance(world, entity, es_get_component(entity, PhysicsComponent),
-	    &anim_component->current_animation, dt);
+	anim_update_instance(world, entity, physics, &anim_component->current_animation, dt);
     }
 
     if (es_has_component(entity, LightEmitter)) {

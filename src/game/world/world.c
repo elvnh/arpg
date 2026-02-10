@@ -112,13 +112,9 @@ EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction fa
 // Handles anything that needs to be handled before removing an entity,
 // such as transferring components that need to stay alive a little longer
 // over to a new entity.
-static void world_remove_entity(World *world, ssize alive_entity_index)
+static void handle_entity_removal_side_effects(World *world, EntityID id)
 {
-    es_remove_component(world_get_player_entity(world), LightEmitter);
-    ASSERT(alive_entity_index < world->alive_entity_count);
-
-    EntityID *id = &world->alive_entity_ids[alive_entity_index];
-    Entity *dying_entity = es_get_entity(&world->entity_system, *id);
+    Entity *dying_entity = es_get_entity(&world->entity_system, id);
     PhysicsComponent *dying_entity_physics = es_get_component(dying_entity, PhysicsComponent);
 
     // If the entity is non-spatial, there is (currently) nothing for us to do here
@@ -186,6 +182,16 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
             }
         }
     }
+
+}
+
+static void world_remove_entity(World *world, ssize alive_entity_index)
+{
+    ASSERT(alive_entity_index < world->alive_entity_count);
+
+    EntityID *id = &world->alive_entity_ids[alive_entity_index];
+
+    handle_entity_removal_side_effects(world, *id);
 
     es_remove_entity(&world->entity_system, *id);
 

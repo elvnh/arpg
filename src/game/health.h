@@ -6,6 +6,7 @@
 struct Entity;
 struct World;
 
+// TODO: unnecessary, this can just be a struct directly
 typedef struct {
     StatValue max_hitpoints;
     StatValue current_hitpoints;

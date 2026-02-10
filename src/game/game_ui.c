@@ -6,7 +6,7 @@
 #include "game.h"
 #include "components/equipment.h"
 #include "magic.h"
-#include "modifier.h"
+#include "components/modifier.h"
 #include "platform/input.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"

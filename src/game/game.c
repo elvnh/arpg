@@ -12,7 +12,7 @@
 #include "status_effect.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
-#include "modifier.h"
+#include "components/modifier.h"
 #include "renderer/frontend/render_batch.h"
 #include "platform/input.h"
 #include "renderer/frontend/render_key.h"

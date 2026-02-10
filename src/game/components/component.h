@@ -104,6 +104,13 @@ typedef struct {
     LightSource light;
 } LightEmitter;
 
+typedef struct StatusEffectComponent {
+    u64 active_effects_bitset;
+
+    StatusEffectStack stackable_effects[STATUS_EFFECT_COUNT];
+    StatusEffectInstance non_stackable_effects[STATUS_EFFECT_COUNT];
+} StatusEffectComponent;
+
 static inline String component_id_to_string(ComponentID id)
 {
     switch (id) {

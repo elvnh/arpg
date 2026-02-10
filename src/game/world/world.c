@@ -1,49 +1,12 @@
 #include "world.h"
-#include "ai.h"
-#include "base/line.h"
-#include "base/linear_arena.h"
-#include "base/list.h"
-#include "base/matrix.h"
-#include "base/ring_buffer.h"
-#include "base/string8.h"
-#include "base/triangle.h"
+#include "base/utils.h"
+#include "collision/collision.h"
 #include "collision/collision_event.h"
 #include "collision/collider.h"
 #include "components/component.h"
-#include "components/particle.h"
-#include "entity/entity_faction.h"
-#include "entity/entity_id.h"
-#include "entity/entity_state.h"
-#include "components/equipment.h"
 #include "game.h"
-#include "animation.h"
-#include "base/format.h"
-#include "base/rectangle.h"
-#include "base/rgba.h"
-#include "base/random.h"
-#include "base/utils.h"
-#include "base/sl_list.h"
-#include "health.h"
-#include "light.h"
-#include "renderer/frontend/render_target.h"
-#include "status_effect.h"
-#include "damage.h"
-#include "debug.h"
-#include "camera.h"
-#include "collision/collision.h"
-#include "entity/entity.h"
-#include "entity/entity_system.h"
-#include "magic.h"
-#include "modifier.h"
-#include "quad_tree.h"
 #include "renderer/frontend/render_batch.h"
-#include "renderer/frontend/render_key.h"
-#include "stats.h"
-#include "tilemap.h"
 #include "asset_table.h"
-#include "collision/trigger.h"
-#include "line_of_sight.h"
-#include "base/polygon.h"
 
 #define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
 
@@ -299,10 +262,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
     EntityID id = world->alive_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
 
-    // Physics is used by a lot of components so we start by retrieving it
-    // TODO: what if a component update removes the physics component?
-    // This pointer will be stale
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    // TODO: in each if, instead check if it has both x and y
 
     if (es_has_component(entity, HealthComponent)) {
 	HealthComponent *hp = es_get_component(entity, HealthComponent);
@@ -317,7 +277,8 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
-        update_particle_spawner(entity, particle_spawner, physics, dt);
+        update_particle_spawner(entity, particle_spawner,
+	    es_get_component(entity, PhysicsComponent), dt);
     }
 
     if (es_has_component(entity, LifetimeComponent)) {
@@ -334,7 +295,8 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
 	ASSERT(anim_component->current_animation.animation_id != ANIM_NULL);
 
-	anim_update_instance(world, entity, physics, &anim_component->current_animation, dt);
+	anim_update_instance(world, entity, es_get_component(entity, PhysicsComponent),
+	    &anim_component->current_animation, dt);
     }
 
     if (es_has_component(entity, LightEmitter)) {
@@ -413,7 +375,8 @@ static void entity_render(Entity *entity, RenderBatches rbs,
     if (debug_state->render_entity_velocity) {
 	Vector2 dir = v2_norm(physics->velocity);
 
-	draw_line(rbs.worldspace_ui_rb, scratch, physics->position, v2_add(physics->position, v2_mul_s(dir, 20.0f)),
+	draw_line(rbs.worldspace_ui_rb, scratch, physics->position,
+	    v2_add(physics->position, v2_mul_s(dir, 20.0f)),
             RGBA32_GREEN, 2.0f, shader_handle(SHAPE_SHADER), 0);
     }
 }
@@ -891,41 +854,12 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
             draw_line(rb_list.worldspace_ui_rb, frame_arena, origin, end, RGBA32_GREEN, 4.0f,
                 shader_handle(SHAPE_SHADER), 0);
 
-            draw_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start, edge.line.end, RGBA32_BLUE, 4.0f,
+            draw_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start, edge.line.end,
+		RGBA32_BLUE, 4.0f,
                 shader_handle(SHAPE_SHADER), 0);
         }
     }
-
-#if 0
-    TriangleFan fan = get_visibility_polygon(
-        world_get_player_entity(world)->position, &world->tilemap, frame_arena);
-
-    rb_push_triangle_fan(rb_list.overlay_rb, frame_arena, fan, rgba32(0.2f, 0.5f, 0.9f, 0.8f),
-        get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY);
-
-
-    /* for (ssize i = 0; i < fan.count; ++i) { */
-    /*     TriangleFanElement elem = fan.items[i]; */
-    /*     Triangle triangle = {fan.center, elem.a, elem.b}; */
-
-    /*     rb_push_triangle(rb, frame_arena, triangle, rgba32(0, 1, 0, 0.2f), */
-    /*         get_asset_table()->shape_shader, RENDER_LAYER_OVERLAY); */
-
-    /* } */
-#endif
 }
-
-/* static void drop_ground_item(World *world, Vector2 pos, ItemID id) */
-/* { */
-/*     EntityWithID entity = world_spawn_entity(world, FACTION_NEUTRAL); */
-/*     entity.entity->position = pos; */
-
-/*     GroundItemComponent *ground_item = es_add_component(entity.entity, GroundItemComponent); */
-/*     ground_item->item_id = id; */
-
-/*     SpriteComponent *sprite = es_add_component(entity.entity, SpriteComponent); */
-/*     sprite->sprite = sprite_create(texture_handle(FIREBALL_TEXTURE), v2(16, 16), SPRITE_ROTATE_NONE); */
-/* } */
 
 void world_initialize(World *world, FreeListArena *parent_arena)
 {

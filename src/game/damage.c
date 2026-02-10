@@ -4,7 +4,7 @@
 #include "status_effect.h"
 #include "entity/entity_system.h"
 #include "components/equipment.h"
-#include "modifier.h"
+#include "components/modifier.h"
 #include "stats.h"
 
 static Stat get_resistance_stat_for_damage_type(DamageType dmg_type)

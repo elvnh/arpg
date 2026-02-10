@@ -71,5 +71,4 @@ sprite_get_modifiers(Vector2 direction, SpriteRotationBehaviour rotation_behavio
     return result;
 }
 
-
 #endif //SPRITE_H

@@ -29,6 +29,29 @@ const char *__asan_default_options(void) { return "detect_leaks=0"; }
 
 int main(void)
 {
+    printf("PhysicsComponent: %zu\n", sizeof(PhysicsComponent))                 ;
+    printf("ColliderComponent: %zu\n", sizeof(ColliderComponent))                ;
+    printf("ParticleSpawner: %zu\n", sizeof(ParticleSpawner))                  ;
+    printf("SpriteComponent: %zu\n", sizeof(SpriteComponent))                  ;
+    printf("LifetimeComponent: %zu\n", sizeof(LifetimeComponent))                ;
+    printf("StatsComponent: %zu\n", sizeof(StatsComponent))                   ;
+    printf("StatusEffectComponent: %zu\n", sizeof(StatusEffectComponent))            ;
+    printf("ItemModifiers: %zu\n", sizeof(ItemModifiers))			;
+    printf("AnimationComponent: %zu\n", sizeof(AnimationComponent))               ;
+    printf("SpellCasterComponent: %zu\n", sizeof(SpellCasterComponent))		;
+    printf("EventListenerComponent: %zu\n", sizeof(EventListenerComponent))		;
+    printf("DamageFieldComponent: %zu\n", sizeof(DamageFieldComponent))		;
+    printf("AIComponent: %zu\n", sizeof(AIComponent))			;
+    printf("EffectApplierComponent: %zu\n", sizeof(EffectApplierComponent))		;
+    printf("HealthComponent: %zu\n", sizeof(HealthComponent))			;
+    printf("LightEmitter: %zu\n", sizeof(LightEmitter))			;
+    printf("InventoryStorable: %zu\n", sizeof(InventoryStorable))                ;
+    printf("Inventory: %zu\n", sizeof(Inventory))			;
+    printf("Equippable: %zu\n", sizeof(Equippable))                       ;
+    printf("Equipment: %zu\n", sizeof(Equipment))			;
+
+    return 0;
+
     LinearArena main_arena = la_create(default_allocator, GAME_MEMORY_SIZE);
 
     GameMemory game_memory = {0};

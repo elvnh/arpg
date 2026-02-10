@@ -170,7 +170,7 @@ static StatValue get_default_stat_value(Stat stat)
     }
 }
 
-StatValues create_base_stats()
+StatValues create_base_stats(void)
 {
     StatValues result = {0};
 

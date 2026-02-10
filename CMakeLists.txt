@@ -89,46 +89,62 @@ set(COMPILATION_LOCK_FILE ${CMAKE_CURRENT_BINARY_DIR}/lock)
 
 set(HOT_RELOAD 1)
 
-add_compile_options(
-  -Werror
-  -fsanitize=address,undefined
-  -std=c99
-  -Wall
-  -Wextra
-  -pedantic
-  -ggdb
-  -Wall
-  -Wextra
-  -pedantic
-  -Wshadow
-  -Wcast-align
-  -Wunused
-  -Wpedantic
-  -Wconversion
-  -Wstrict-prototypes
-  -Wsign-conversion
-  -Wsign-compare
-  -Wnull-dereference
-  -Wdouble-promotion
-  -Wformat=2
-  -Wduplicated-cond
-  -Wduplicated-branches
-  -Wlogical-op
-  -Wcast-align
-  -Werror=return-type
-  -Werror=incompatible-pointer-types
-  -Werror=int-conversion
-  -Werror=implicit-function-declaration
-  -Werror=overflow
-  -Werror=implicit-int
-  -Werror=discarded-qualifiers
-  -Wsign-conversion
-  -Werror=missing-braces
-  -Wno-error=unused-parameter
-  -Wno-error=unused-function
-  -Wno-error=unused-variable
-  -Wno-error=unused-but-set-variable
-)
+# gcc/clang options
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
+  add_compile_options(
+    -Werror
+    -fsanitize=address,undefined
+    -std=c99
+    -Wall
+    -Wextra
+    -pedantic
+    -ggdb
+    -Wall
+    -Wextra
+    -pedantic
+    -Wshadow
+    -Wcast-align
+    -Wunused
+    -Wpedantic
+    -Wconversion
+    -Wstrict-prototypes
+    -Wsign-conversion
+    -Wsign-compare
+    -Wnull-dereference
+    -Wdouble-promotion
+    -Wformat=2
+    -Wcast-align
+    -Werror=return-type
+    -Werror=incompatible-pointer-types
+    -Werror=int-conversion
+    -Werror=implicit-function-declaration
+    -Werror=overflow
+    -Werror=implicit-int
+    -Wsign-conversion
+    -Werror=missing-braces
+    -Wno-error=unused-parameter
+    -Wno-error=unused-function
+    -Wno-error=unused-variable
+    -Wno-error=unused-but-set-variable
+  )
+endif ()
+
+# gcc specific options
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(
+    -Wduplicated-cond
+    -Wduplicated-branches
+    -Wlogical-op
+    -Werror=discarded-qualifiers
+  )
+endif ()
+
+# clang specific options
+if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+  add_compile_options(
+    -Werror=ignored-qualifiers
+  )
+endif ()
 
 add_compile_definitions(
   HOT_RELOAD=${HOT_RELOAD}

@@ -404,7 +404,7 @@ void platform_for_each_file_in_dir(String directory, void (*callback)(String), L
 }
 
 /* Time */
-Timestamp platform_get_time()
+Timestamp platform_get_time(void)
 {
     struct timespec ts;
     s32 gettime_result = clock_gettime(CLOCK_REALTIME, &ts);
@@ -418,7 +418,7 @@ Timestamp platform_get_time()
     return result;
 }
 
-f32 platform_get_seconds_since_launch()
+f32 platform_get_seconds_since_launch(void)
 {
     f32 result = (f32)glfwGetTime();
 
@@ -454,7 +454,7 @@ void mutex_release(Mutex mutex)
 }
 
 /* Misc */
-void platform_trap_on_fp_exceptions()
+void platform_trap_on_fp_exceptions(void)
 {
     feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 }

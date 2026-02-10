@@ -18,8 +18,8 @@ typedef enum {
 Vector2 find_first_wall_in_direction(Tilemap *tilemap, Vector2 origin, Vector2 dir)
 {
     // The current ray position
-    f64 pos_x = origin.x;
-    f64 pos_y = origin.y;
+    f64 pos_x = (f64)origin.x;
+    f64 pos_y = (f64)origin.y;
 
     // The current integral map position
     s32 map_x = (s32)pos_x;

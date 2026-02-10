@@ -352,7 +352,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
             }
 
             draw_rectangle(rb, &ui->current_frame_widgets.arena, widget_rect, color,
-		shader_handle(SHAPE_SHADER), depth);
+		shader_handle(SHAPE_SHADER), (RenderLayer)depth);
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
@@ -368,7 +368,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
 
             draw_clipped_text(rb, arena, visible_substring, text_position,
 		parent_bounds, widget->color, widget->text.size,
-                shader_handle(TEXTURE_SHADER), widget->text.font, depth);
+                shader_handle(TEXTURE_SHADER), widget->text.font, (RenderLayer)depth);
         }
     }
 

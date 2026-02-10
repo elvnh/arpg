@@ -98,7 +98,7 @@ TEST_CASE(entity_arena_alignment)
     EntityArena arena = {0};
 
     for (ssize i = 0; i < 7; ++i) {
-	s32 align = 1u << i;
+	s32 align = (s32)(1u << i);
 
 	EntityArenaAllocation alloc = entity_arena_allocate(&arena, 1, align);
 	REQUIRE(is_aligned((ssize)alloc.ptr, align));

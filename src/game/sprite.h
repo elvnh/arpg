@@ -49,7 +49,7 @@ static inline SpriteModifiers
 sprite_get_modifiers(Vector2 direction, SpriteRotationBehaviour rotation_behaviour)
 {
     f32 rotation = 0.0f;
-    f32 dir_angle = (f32)atan2(direction.y, direction.x);
+    f32 dir_angle = (f32)atan2f(direction.y, direction.x);
 
     RectangleFlip flip = RECT_FLIP_NONE;
 

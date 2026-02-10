@@ -21,6 +21,7 @@ static inline f32 sqrt_f32(f32 n)
     return result;
 }
 
+// TODO: these are not needed, use sinf etc.
 static inline f32 sin_f32(f32 n)
 {
     f32 result = (f32)sin((f64)n);
@@ -89,7 +90,7 @@ static inline f32 rad_to_deg(f32 radians)
 
 static inline f32 fraction(f32 x)
 {
-    f32 result = (f32)(x - (s64)x);
+    f32 result = (f32)(x - (f32)((s64)x));
     return fabsf(result);
 }
 

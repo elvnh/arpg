@@ -587,12 +587,12 @@ void renderer_backend_set_blend_function(BlendFunction function)
     }
 }
 
-void renderer_backend_enable_stencil_writes()
+void renderer_backend_enable_stencil_writes(void)
 {
     glStencilMask(0xFF);
 }
 
-void renderer_backend_disable_stencil_writes()
+void renderer_backend_disable_stencil_writes(void)
 {
     glStencilMask(0x00);
 }

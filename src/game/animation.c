@@ -76,7 +76,7 @@ static Animation animation_player_attack(void)
     return result;
 }
 
-void anim_initialize()
+void anim_initialize(void)
 {
     g_animation_table.animations[ANIM_PLAYER_IDLE] = animation_player_idle();
     g_animation_table.animations[ANIM_PLAYER_WALKING] = animation_player_walking();

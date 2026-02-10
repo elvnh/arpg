@@ -504,7 +504,7 @@ static Spell spell_ice_shard_trigger(void)
     return spell;
 }
 
-void magic_initialize()
+void magic_initialize(void)
 {
     g_spells.spells[SPELL_FIREBALL] = spell_fireball();
     g_spells.spells[SPELL_SPARK] = spell_spark();

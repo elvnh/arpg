@@ -47,7 +47,7 @@ static StatusEffect status_effect_chilled(void)
     return result;
 }
 
-void initialize_status_effect_system()
+void initialize_status_effect_system(void)
 {
     g_status_effects[STATUS_EFFECT_CHILLED] = status_effect_chilled();
 }

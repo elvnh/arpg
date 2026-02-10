@@ -14,7 +14,7 @@
 
 #define allocate_render_cmd(arena, type) (type *)(allocate_render_cmd_impl((arena), RENDER_COMMAND_ENUM_NAME(type)))
 
-static inline s32 get_key_y_sort_order(struct RenderBatch *rb, f32 y_pos)
+static inline s32 get_key_y_sort_order(struct RenderBatch *rb, s32 y_pos)
 {
     s32 result = 0;
 
@@ -27,8 +27,8 @@ static inline s32 get_key_y_sort_order(struct RenderBatch *rb, f32 y_pos)
     return result;
 }
 
-static inline RenderKey render_key_create(struct RenderBatch *rb, s32 layer, ShaderHandle shader, TextureHandle texture,
-    FontHandle font, f32 y_pos)
+static inline RenderKey render_key_create(struct RenderBatch *rb, s32 layer, ShaderHandle shader,
+    TextureHandle texture, FontHandle font, s32 y_pos)
 {
     ASSERT(rb);
     ASSERT(layer < pow(2, LAYER_KEY_BITS));
@@ -216,7 +216,7 @@ RenderEntry *draw_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHan
     cmd->flip = mods.flip;
 
     // TODO: make push_render_entry call render_key_create
-    RenderKey key = render_key_create(rb, layer, shader, texture, NULL_FONT, rectangle.position.y);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, texture, NULL_FONT, (s32)rectangle.position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -242,7 +242,7 @@ RenderEntry *draw_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangl
     cmd->triangle = triangle;
     cmd->color = color;
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, triangle.a.y);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, (s32)triangle.a.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -256,7 +256,7 @@ RenderEntry *draw_outlined_triangle(RenderBatch *rb, LinearArena *arena, Triangl
     cmd->color = color;
     cmd->thickness = thickness;
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, triangle.a.y);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, (s32)triangle.a.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -270,7 +270,7 @@ RenderEntry *draw_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHan
     cmd->viewport_rect = viewport;
     cmd->color = color;
 
-    RenderKey key = render_key_create(rb, layer, shader, texture, NULL_FONT, rect.position.y);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, texture, NULL_FONT, (s32)rect.position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -284,7 +284,7 @@ RenderEntry *draw_outlined_rectangle(RenderBatch *rb, LinearArena *arena, Rectan
     cmd->color = color;
     cmd->thickness = thickness;
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, 0);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -298,7 +298,7 @@ RenderEntry *draw_textured_circle(RenderBatch *rb, LinearArena *arena, TextureHa
     cmd->color = color;
     cmd->radius = radius;
 
-    RenderKey key = render_key_create(rb, layer, shader, texture, NULL_FONT, (s32)position.y);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, texture, NULL_FONT, (s32)position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -319,7 +319,7 @@ RenderEntry *draw_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vecto
     cmd->color = color;
     cmd->thickness = thickness;
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, (s32)start.y);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, (s32)start.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -334,7 +334,7 @@ RenderEntry *draw_text(RenderBatch *rb, LinearArena *arena, String text, Vector2
     cmd->color = color;
     cmd->size = size;
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, font, 0);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, font, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -351,7 +351,7 @@ RenderEntry *draw_clipped_text(RenderBatch *rb, LinearArena *arena, String text,
     cmd->is_clipped = true;
     cmd->clip_rect = clip_rect;
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, font, 0);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, font, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -367,7 +367,7 @@ RenderEntry *draw_particles(RenderBatch *rb, LinearArena *arena, ParticleBuffer 
 
     ASSERT(particle_size > 0.0f);
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, 0);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -377,7 +377,7 @@ RenderEntry *draw_textured_particles(RenderBatch *rb, LinearArena *arena, struct
     TextureHandle texture, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
 {
     RenderEntry *entry = draw_particles(rb, arena, particles, color, particle_size, shader, layer);
-    entry->key = render_key_create(rb, layer, shader, texture, NULL_FONT, 0);
+    entry->key = render_key_create(rb, (s32)layer, shader, texture, NULL_FONT, 0);
 
     return entry;
 }
@@ -389,7 +389,7 @@ RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolyg
     cmd->polygon = polygon;
     cmd->color = color;
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, 0);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -402,7 +402,7 @@ RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan 
     cmd->triangle_fan = triangle_fan;
     cmd->color = color;
 
-    RenderKey key = render_key_create(rb, layer, shader, NULL_TEXTURE, NULL_FONT, 0);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;

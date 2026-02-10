@@ -73,8 +73,8 @@ static int sort_polygon_cmp(const void *a, const void *b, void *data)
     Vector2 pa = *(Vector2 *)a;
     Vector2 pb = *(Vector2 *)b;
 
-    f32 angle_a = (f32)fmod(rad_to_deg((f32)atan2(pa.x - center.x, pa.y - center.y)) + 360, 360);
-    f32 angle_b = (f32)fmod(rad_to_deg((f32)atan2(pb.x - center.x, pb.y - center.y)) + 360, 360);
+    f32 angle_a = (f32)fmodf(rad_to_deg(atan2f(pa.x - center.x, pa.y - center.y)) + 360, 360);
+    f32 angle_b = (f32)fmodf(rad_to_deg(atan2f(pb.x - center.x, pb.y - center.y)) + 360, 360);
 
     int result = (int)(angle_a - angle_b);
     return result;

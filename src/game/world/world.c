@@ -25,8 +25,7 @@ Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physic
 {
     ASSERT(physics);
 
-    // NOTE: this minimum size is completely arbitrary
-    Vector2 size = {4, 4};
+    Vector2 size = {1, 1};
 
     if (es_has_component(entity, ColliderComponent)) {
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
@@ -374,6 +373,10 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 
     if (debug_state->render_entity_bounds) {
         Rectangle entity_rect = world_get_entity_bounding_box(entity, physics);
+        f32 minimum_bounds_rect_size = 4.0f;
+
+        entity_rect.size.x = MAX(entity_rect.size.x, minimum_bounds_rect_size);
+        entity_rect.size.y = MAX(entity_rect.size.y, minimum_bounds_rect_size);
 
         draw_rectangle(rbs.worldspace_ui_rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
 	    shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);

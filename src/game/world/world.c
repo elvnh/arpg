@@ -164,8 +164,7 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
                     new_entity_pos = v2_sub(closest_point.point, v2_norm(dying_entity_physics->velocity));
                 }
 
-                Entity *new_entity = world_spawn_entity(
-                    world, dying_entity_physics->position, FACTION_NEUTRAL).entity;
+                Entity *new_entity = world_spawn_entity(world, new_entity_pos, FACTION_NEUTRAL).entity;
 
                 LightEmitter *new_light = es_add_component(new_entity, LightEmitter);
                 *new_light = *old_light;
@@ -185,6 +184,7 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
             }
         }
     }
+
     es_remove_entity(&world->entity_system, *id);
 
     QuadTreeLocation *qt_location = &world->alive_entity_quad_tree_locations[alive_entity_index];

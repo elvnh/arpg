@@ -16,8 +16,7 @@ typedef struct Chunks {
     // TODO: reuse ChunkArray
     Chunk *chunks;
     ssize chunk_count;
-    ssize chunk_map_width;
-    ssize chunk_map_height;
+    Vector2i chunk_grid_dims;
 
     // TODO: rename
     s32 x_basis;

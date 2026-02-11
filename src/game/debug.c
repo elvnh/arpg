@@ -313,8 +313,8 @@ void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct Linea
     s32 start_tile_x = chunks->x_basis;
     s32 start_tile_y = chunks->y_basis;
 
-    s32 end_tile_x = start_tile_x + (s32)chunks->chunk_map_width * chunk_size;
-    s32 end_tile_y = start_tile_y + (s32)chunks->chunk_map_height * chunk_size;
+    s32 end_tile_x = start_tile_x + (s32)chunks->chunk_grid_dims.x * chunk_size;
+    s32 end_tile_y = start_tile_y + (s32)chunks->chunk_grid_dims.y * chunk_size;
 
     for (s32 y = start_tile_y; y < end_tile_y; y += chunk_size) {
         for (s32 x = start_tile_x; x < end_tile_x; x += chunk_size) {

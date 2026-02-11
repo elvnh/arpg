@@ -65,6 +65,7 @@ set(
   src/game/components/inventory.c
   src/game/components/equipment.c
   src/game/world/world.c
+  src/game/world/chunk.c
   src/game/world/tilemap.c
   src/game/world/quad_tree.c
   src/game/world/line_of_sight.c

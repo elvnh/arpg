@@ -11,6 +11,7 @@
 #include "collision/collision.h"
 #include "hitsplat.h"
 #include "collision/collision_event.h"
+#include "world/chunk.h"
 
 /*
   TODO:
@@ -42,6 +43,8 @@ typedef struct World {
     HitsplatBuffer       active_hitsplats;
 
     EntityID             player_entity;
+
+    Chunks               map_chunks;
 
     EntitySystem         entity_system;
     EntityID             alive_entity_ids[MAX_ENTITIES];

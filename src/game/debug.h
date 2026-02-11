@@ -12,6 +12,7 @@ struct FrameData;
 struct QuadTreeNode;
 struct RenderBatch;
 struct LinearArena;
+struct Chunk;
 
 typedef struct DebugState {
     UIState debug_ui;
@@ -36,6 +37,8 @@ typedef struct DebugState {
     b32 debug_camera_active;
 
     b32 render_camera_bounds;
+
+    struct Chunk *hovered_chunk;
 } DebugState;
 
 static inline void print_v2(Vector2 v)
@@ -45,7 +48,9 @@ static inline void print_v2(Vector2 v)
 
 void debug_update(struct Game *game, const struct FrameData *frame_data, LinearArena *frame_arena);
 void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch, const struct FrameData *frame_data);
-void render_quad_tree(struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena,
+void debug_render_quad_tree(struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena,
     ssize depth);
+void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct LinearArena *arena);
+
 
 #endif //DEBUG_H

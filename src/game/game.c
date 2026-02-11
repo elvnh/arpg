@@ -34,8 +34,8 @@ static void set_global_state(Game *game)
     anim_initialize();
 }
 
-void update_player(World *world, const FrameData *frame_data,
-    GameUIState *game_ui)
+static void update_player(World *world, const FrameData *frame_data,
+    GameUIState *game_ui, Camera active_camera)
 {
     Entity *player = world_get_player_entity(world);
     ASSERT(player);
@@ -165,18 +165,24 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     f32 x = 0.2f;
     RGBA32 ambient_light = {x, x, x + 0.1f, 1.0f};
 
-    result.world_rb = push_new_render_batch(rbs, game->world.camera, frame_data->window_size,
+    Camera active_camera = game->world.camera;
+
+    if (game->debug_state.debug_camera_active) {
+        active_camera = game->debug_state.debug_camera;
+    }
+
+    result.world_rb = push_new_render_batch(rbs, active_camera, frame_data->window_size,
         Y_IS_UP, FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT,
         BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
-    result.lighting_rb = push_new_render_batch(rbs, game->world.camera, frame_data->window_size,
+    result.lighting_rb = push_new_render_batch(rbs, active_camera, frame_data->window_size,
         Y_IS_UP, FRAME_BUFFER_LIGHTING, ambient_light,
         BLEND_FUNCTION_ADDITIVE, scratch);
 
     result.lighting_stencil_rb = add_stencil_pass(result.lighting_rb,
         STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, scratch);
 
-    result.worldspace_ui_rb = push_new_render_batch(rbs, game->world.camera, frame_data->window_size,
+    result.worldspace_ui_rb = push_new_render_batch(rbs, active_camera, frame_data->window_size,
         Y_IS_UP, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
         BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
@@ -265,8 +271,17 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
 
     debug_update(game, frame_data, frame_arena);
 
+    Camera *active_camera = &game->world.camera;
+
+    if (game->debug_state.debug_camera_active) {
+        active_camera = &game->debug_state.debug_camera;
+        camera_update(active_camera, frame_data->dt);
+    }
+
     // NOTE: We update camera independent of timestep modifier
-    camera_zoom(&game->world.camera, (s32)frame_data->input.scroll_delta);
+    camera_zoom(active_camera, (s32)frame_data->input.scroll_delta);
+
+    // NOTE: normal camera i s always update too even if debug camera is active
     camera_update(&game->world.camera, frame_data->dt);
 
     frame_data->dt *= game->debug_state.timestep_modifier;
@@ -275,14 +290,13 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
     b32 frame_advance_key_pressed = input_is_key_pressed(&frame_data->input, KEY_K);
     b32 should_update = !game_paused || frame_advance_key_pressed;
 
-    // TODO: allow moving camera even while paused
     if (should_update) {
         if (game_paused) {
             // When advancing by a single frame, set the dt to a reasonable default value
             frame_data->dt = 0.016f;
         }
 
-        update_player(&game->world, frame_data, &game->game_ui);
+        update_player(&game->world, frame_data, &game->game_ui, *active_camera);
         world_update(&game->world, frame_data, frame_arena);
     }
 

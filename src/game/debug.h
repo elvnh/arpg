@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include "camera.h"
 #include "ui/ui_core.h"
 
 struct Game;
@@ -31,7 +32,8 @@ typedef struct DebugState {
     ssize permanent_arena_memory_usage;
     ssize world_arena_memory_usage;
 
-
+    Camera debug_camera;
+    b32 debug_camera_active;
 } DebugState;
 
 static inline void print_v2(Vector2 v)

@@ -193,10 +193,15 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     ui_spacing(ui, 8);
 
     {
+        String camera_str = game->debug_state.debug_camera_active
+            ? str_lit("DEBUG CAMERA ACTIVE")
+            : str_lit("NORMAL CAMERA ACTIVE");
+
         String camera_pos_str = format(scratch, "Camera position: "FMT_V2,
             FMT_V2_ARG(game->world.camera.position));
         String zoom_str = format(scratch, "Zoom: %.2f", (f64)game->world.camera.zoom);
 
+        ui_text(ui, camera_str);
         ui_text(ui, camera_pos_str);
         ui_text(ui, zoom_str);
     }
@@ -222,9 +227,43 @@ void debug_update(Game *game, const FrameData *frame_data, LinearArena *frame_ar
         speed_modifier_step = 0.05f;
     }
 
-    if (input_is_key_pressed(&frame_data->input, KEY_UP)) {
+    if (input_is_key_pressed(&frame_data->input, KEY_Y)) {
+        if (input_is_key_down(&frame_data->input, KEY_LEFT_SHIFT)) {
+            // If shift is held, reset debug camera position to normal camera position
+            game->debug_state.debug_camera = game->world.camera;
+        } else {
+            // Otherwise, just toggle between debug camera and normal camera
+            game->debug_state.debug_camera_active = !game->debug_state.debug_camera_active;
+        }
+    }
+
+    if (!game->debug_state.debug_camera_active) {
+        game->debug_state.debug_camera = game->world.camera;
+    } else {
+        Vector2 debug_camera_delta = {0};
+
+        if (input_is_key_down(&frame_data->input, KEY_LEFT)) {
+            debug_camera_delta.x = -1;
+        } else if (input_is_key_down(&frame_data->input, KEY_RIGHT)) {
+            debug_camera_delta.x = 1;
+        }
+
+        if (input_is_key_down(&frame_data->input, KEY_UP)) {
+            debug_camera_delta.y = 1;
+        } else if (input_is_key_down(&frame_data->input, KEY_DOWN)) {
+            debug_camera_delta.y = -1;
+        }
+
+        f32 camera_speed = 10.0f;
+
+        game->debug_state.debug_camera.target_position = v2_add(
+            game->debug_state.debug_camera.target_position, v2_mul_s(debug_camera_delta, camera_speed));
+
+    }
+
+    if (input_is_key_pressed(&frame_data->input, KEY_O)) {
         speed_modifier += speed_modifier_step;
-    } else if (input_is_key_pressed(&frame_data->input, KEY_DOWN)) {
+    } else if (input_is_key_pressed(&frame_data->input, KEY_L)) {
         if (speed_modifier - 0.05f <= 0.5f) {
             speed_modifier_step = 0.05f;
         }

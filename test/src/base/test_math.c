@@ -45,7 +45,7 @@ TEST_CASE(round_up_to_nearest_multiple_of)
     REQUIRE(round_up_to_nearest_multiple_of(-201, 200) == -200);
 }
 
-TEST_CASE(round_own_to_nearest_multiple_of)
+TEST_CASE(round_down_to_nearest_multiple_of)
 {
     REQUIRE(round_down_to_nearest_multiple_of(0, 10) == 0);
     REQUIRE(round_down_to_nearest_multiple_of(8, 10) == 0);

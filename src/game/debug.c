@@ -309,24 +309,25 @@ void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct Linea
     Chunks *chunks = &game->world.map_chunks;
 
     s32 chunk_size = CHUNK_SIZE_IN_TILES;
+    Vector2 chunk_world_dims = tile_to_world_coords(v2i(chunk_size, chunk_size));
 
-    s32 start_tile_x = chunks->x_basis;
-    s32 start_tile_y = chunks->y_basis;
+    s32 start_tile_x = chunks->chunk_grid_base_tile_coords.x;
+    s32 start_tile_y = chunks->chunk_grid_base_tile_coords.y;
 
-    s32 end_tile_x = start_tile_x + (s32)chunks->chunk_grid_dims.x * chunk_size;
-    s32 end_tile_y = start_tile_y + (s32)chunks->chunk_grid_dims.y * chunk_size;
+    s32 end_tile_x = start_tile_x + chunks->chunk_grid_dims.x * chunk_size;
+    s32 end_tile_y = start_tile_y + chunks->chunk_grid_dims.y * chunk_size;
 
     for (s32 y = start_tile_y; y < end_tile_y; y += chunk_size) {
         for (s32 x = start_tile_x; x < end_tile_x; x += chunk_size) {
             Vector2 world_coords = tile_to_world_coords(v2i(x, y));
 
-            Vector2 chunk_world_dims = tile_to_world_coords(v2i(chunk_size, chunk_size));
             Rectangle rect = {world_coords, chunk_world_dims};
 
             RGBA32 color = RGBA32_BLUE;
             Chunk *chunk = get_chunk_at_position(chunks, world_coords);
-            s32 layer = 0;
             ASSERT(chunk);
+
+            s32 layer = 0;
 
             if (chunk && (chunk == game->debug_state.hovered_chunk)) {
                 color = RGBA32_GREEN;

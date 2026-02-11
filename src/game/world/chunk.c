@@ -2,11 +2,12 @@
 #include "base/linear_arena.h"
 #include "base/utils.h"
 #include "world/tilemap.h"
+#include "world/world.h"
 
 Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
 {
-    ssize tilemap_width  = tilemap->max_x - tilemap->min_x + 1;
-    ssize tilemap_height = tilemap->max_y - tilemap->min_y + 1;
+    s32 tilemap_width  = tilemap->max_x - tilemap->min_x + 1;
+    s32 tilemap_height = tilemap->max_y - tilemap->min_y + 1;
 
     s32 chunk_map_width  = (s32)ceilf((f32)tilemap_width  / (f32)CHUNK_SIZE_IN_TILES);
     s32 chunk_map_height = (s32)ceilf((f32)tilemap_height / (f32)CHUNK_SIZE_IN_TILES);
@@ -16,8 +17,7 @@ Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
     result.chunks = la_allocate_array(arena, Chunk, chunk_count);
     result.chunk_count = chunk_count;
     result.chunk_grid_dims = v2i(chunk_map_width, chunk_map_height);
-    result.x_basis = tilemap->min_x;
-    result.y_basis = tilemap->min_y;
+    result.chunk_grid_base_tile_coords = v2i(tilemap->min_x, tilemap->min_y);
 
     return result;
 }
@@ -25,8 +25,11 @@ Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
 Chunk *get_chunk_at_position(Chunks *chunks, Vector2 position)
 {
     f32 chunk_pixel_size = (f32)(CHUNK_SIZE_IN_TILES * TILE_SIZE);
-    ssize chunk_x = (ssize)floorf((position.x - (f32)chunks->x_basis * (f32)TILE_SIZE) / chunk_pixel_size);
-    ssize chunk_y = (ssize)floorf((position.y - (f32)chunks->y_basis * (f32)TILE_SIZE) / chunk_pixel_size);
+
+    Vector2 chunks_base_world_coords = tile_to_world_coords(chunks->chunk_grid_base_tile_coords);
+
+    s32 chunk_x = (s32)floorf((position.x - chunks_base_world_coords.x) / chunk_pixel_size);
+    s32 chunk_y = (s32)floorf((position.y - chunks_base_world_coords.y) / chunk_pixel_size);
 
     Chunk *result = 0;
 

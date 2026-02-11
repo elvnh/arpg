@@ -17,10 +17,7 @@ typedef struct Chunks {
     Chunk *chunks;
     ssize chunk_count;
     Vector2i chunk_grid_dims;
-
-    // TODO: rename
-    s32 x_basis;
-    s32 y_basis;
+    Vector2i chunk_grid_base_tile_coords;
 } Chunks;
 
 typedef struct ChunkArray {

@@ -315,10 +315,11 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
         DEBUG_BREAK;
     }
 
+    game_update(game, &frame_data, &game_memory->temporary_memory);
+
     RenderBatches game_rbs = create_render_batches(game, rbs, &frame_data, &game_memory->temporary_memory);
     update_and_render_ui(game, game_rbs, &frame_data, &game_memory->temporary_memory, platform_code);
 
-    game_update(game, &frame_data, &game_memory->temporary_memory);
     game_render(game, game_rbs, rbs, &frame_data, &game_memory->temporary_memory);
 
 

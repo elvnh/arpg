@@ -10,6 +10,7 @@
 #include "game.h"
 #include "renderer/frontend/render_batch.h"
 #include "asset_table.h"
+#include "world/chunk.h"
 
 #define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
 
@@ -900,6 +901,8 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     ring_initialize_static(&world->active_hitsplats);
 
+    tilemap_initialize(&world->tilemap);
+
     // NOTE: testing code
     s32 world_width = 16;
     s32 world_height = 16;
@@ -1022,6 +1025,9 @@ void world_initialize(World *world, FreeListArena *parent_arena)
         }
 #endif
     }
+
+    // NOTE: be sure to only create these AFTER tilemap is finished
+    world->map_chunks = create_chunks_for_tilemap(&world->tilemap, &world->world_arena);
 }
 
 void world_destroy(World *world)

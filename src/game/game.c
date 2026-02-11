@@ -246,7 +246,7 @@ static void update_and_render_ui(Game *game, RenderBatches rbs, FrameData *frame
     }
 
     if (game->debug_state.quad_tree_overlay) {
-        render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
+        debug_render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
     }
 
     if (game->debug_state.render_origin) {
@@ -259,6 +259,11 @@ static void game_render(Game *game, RenderBatches rbs, RenderBatchList *rb_list,
     LinearArena *frame_arena)
 {
     world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
+
+    // TODO: move more debug rendering to debug file
+    if (game->debug_state.render_chunks) {
+        debug_render_chunks(game, rbs.worldspace_ui_rb, frame_arena);
+    }
 
     for (RenderBatch *batch = list_head(rb_list); batch; batch = list_next(batch)) {
         sort_render_entries(batch, frame_arena);

@@ -94,4 +94,24 @@ static inline f32 fraction(f32 x)
     return fabsf(result);
 }
 
+static inline s64 round_up_to_nearest_multiple_of(s64 n, s64 multiple)
+{
+    ASSERT(multiple > 0);
+
+    b32 is_positive = n >= 0;
+    s64 result = ((n + (is_positive * (multiple - 1))) / multiple) * multiple;
+
+    return result;
+}
+
+static inline s64 round_down_to_nearest_multiple_of(s64 n, s64 multiple)
+{
+    ASSERT(multiple > 0);
+
+    b32 is_negative = n < 0;
+    s64 result = ((n - (is_negative * (multiple - 1))) / multiple) * multiple;
+
+    return result;
+}
+
 #endif //MATHS_H

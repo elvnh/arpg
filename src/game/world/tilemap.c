@@ -19,6 +19,16 @@ static inline ssize tilemap_hashed_index(Vector2i coords)
     return index;
 }
 
+void tilemap_initialize(Tilemap *tilemap)
+{
+    // Initialize min and max coords to low/high numbers so that they will
+    // be properly updated when inserting tiles
+    tilemap->min_x = S32_MAX;
+    tilemap->min_y = S32_MAX;
+    tilemap->max_x = S32_MIN;
+    tilemap->max_y = S32_MIN;
+}
+
 // TODO: allocating tiles from a freelist arena is kind of inefficient
 void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena)
 {

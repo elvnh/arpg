@@ -1,4 +1,5 @@
 #include "world.h"
+#include "base/rgba.h"
 #include "base/utils.h"
 #include "collision/collision.h"
 #include "collision/collision_event.h"
@@ -722,12 +723,22 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state)
 {
+    // TODO: Create function for computing this
     Rectangle visible_area = camera_get_visible_area(world->camera, frame_data->window_size);
-    visible_area.position = v2_sub(visible_area.position, v2(TILE_SIZE, TILE_SIZE));
-    visible_area.size = v2_add(visible_area.size, v2(TILE_SIZE * 2, TILE_SIZE * 2));
 
-    Vector2i min_tile = world_to_tile_coords(rect_bottom_left(visible_area));
-    Vector2i max_tile = world_to_tile_coords(rect_top_right(visible_area));
+    // TODO: move this and similar things to game.c
+    if (debug_state->render_camera_bounds) {
+        // TODO: this rectangle is slightly out of sync when moving
+        draw_outlined_rectangle(rb_list.worldspace_ui_rb, frame_arena, visible_area,
+            RGBA32_GREEN, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER), 0);
+    }
+
+    Rectangle area_to_render = visible_area;
+    area_to_render.position = v2_sub(area_to_render.position, v2(TILE_SIZE, TILE_SIZE));
+    area_to_render.size = v2_add(area_to_render.size, v2(TILE_SIZE * 2, TILE_SIZE * 2));
+
+    Vector2i min_tile = world_to_tile_coords(rect_bottom_left(area_to_render));
+    Vector2i max_tile = world_to_tile_coords(rect_top_right(area_to_render));
 
     s32 min_x = min_tile.x;
     s32 max_x = max_tile.x;
@@ -848,7 +859,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
     }
 
     // TODO: debug camera that is detached from regular camera
-    EntityIDList entities_in_area = qt_get_entities_in_area(&world->quad_tree, visible_area, frame_arena);
+    EntityIDList entities_in_area = qt_get_entities_in_area(&world->quad_tree, area_to_render, frame_arena);
 
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(&world->entity_system, node->id);

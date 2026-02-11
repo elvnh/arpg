@@ -34,6 +34,8 @@ typedef struct DebugState {
 
     Camera debug_camera;
     b32 debug_camera_active;
+
+    b32 render_camera_bounds;
 } DebugState;
 
 static inline void print_v2(Vector2 v)
@@ -45,6 +47,5 @@ void debug_update(struct Game *game, const struct FrameData *frame_data, LinearA
 void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch, const struct FrameData *frame_data);
 void render_quad_tree(struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena,
     ssize depth);
-
 
 #endif //DEBUG_H

@@ -189,6 +189,7 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     ui_checkbox(ui, str_lit("Render entity bounds"),     &game->debug_state.render_entity_bounds);
     ui_checkbox(ui, str_lit("Render entity velocity"),   &game->debug_state.render_entity_velocity);
     ui_checkbox(ui, str_lit("Render edge list"),         &game->debug_state.render_edge_list);
+    ui_checkbox(ui, str_lit("Render camera bounds"),     &game->debug_state.render_camera_bounds);
 
     ui_spacing(ui, 8);
 

@@ -1,5 +1,6 @@
 #include "game_ui.h"
 #include "base/format.h"
+#include "base/string8.h"
 #include "components/component.h"
 #include "components/name.h"
 #include "entity/entity_id.h"
@@ -44,12 +45,29 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
 
 }
 
+static String get_item_widget_text(Entity *item_entity, LinearArena *arena)
+{
+    String result = {0};
+
+    NameComponent *name = es_get_component(item_entity, NameComponent);
+
+    if (name) {
+        // Append the item ID to ensure that there are no widget ID collisions
+        result = format(arena, "%.*s##%d,%d", name->length, name->data,
+            item_entity->id.index, item_entity->id.generation);
+    } else {
+        result = str_lit("(unnamed item)");
+    }
+
+    return result;
+}
+
 static void item_hover_menu(UIState *ui, Entity *item, Vector2 mouse_position, LinearArena *arena)
 {
     ASSERT(es_has_component(item, InventoryStorable));
 
     ui_begin_mouse_menu(ui, mouse_position); {
-	ui_text(ui, format(arena, "%d, %d", item->id.index, item->id.generation));
+	ui_text(ui, get_item_widget_text(item, arena));
 
 	ui_spacing(ui, 12);
 
@@ -79,7 +97,7 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
     Entity *item = get_equipped_item_in_slot(&game->world.entity_system, equipment, slot);
 
     if (item) {
-	String text = format(scratch, "%d, %d", item->id.index, item->id.generation);
+	String text = get_item_widget_text(item, scratch);
 	WidgetInteraction interaction = ui_button(ui, text);
 
 	if (interaction.clicked) {
@@ -145,15 +163,7 @@ static void inventory_menu(GameUIState *ui_state, Game *game, LinearArena *scrat
                 Equippable *equippable = es_get_component(curr_entity, Equippable);
                 ASSERT(equippable);
 
-                String label_string = {0};
-
-		NameComponent *name = es_get_component(curr_entity, NameComponent);
-
-		if (name) {
-		    label_string = str_from_str_like(*name);
-		} else {
-		    label_string = str_lit("(unnamed item)");
-		}
+                String label_string = get_item_widget_text(curr_entity, scratch);
 
                 WidgetInteraction interaction = ui_selectable(ui, label_string);
 

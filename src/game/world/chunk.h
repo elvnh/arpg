@@ -17,6 +17,7 @@ typedef struct Chunks {
     Chunk *chunks;
     ssize chunk_count;
     ssize chunk_map_width;
+    ssize chunk_map_height;
 } Chunks;
 
 typedef struct ChunkArray {

@@ -10,27 +10,37 @@ Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
 
     // TODO: function
     ssize chunk_map_width = (ssize)ceilf((f32)tilemap_width / (f32)CHUNK_SIZE_IN_TILES);
-    ssize chunk_count = chunk_map_width * (ssize)ceilf((f32)tilemap_height / (f32)CHUNK_SIZE_IN_TILES);
+    ssize chunk_map_height = (ssize)ceilf((f32)tilemap_height / (f32)CHUNK_SIZE_IN_TILES);
+    ssize chunk_count = chunk_map_width * chunk_map_height;
 
     Chunks result = {0};
     result.chunks = la_allocate_array(arena, Chunk, chunk_count);
     result.chunk_count = chunk_count;
     result.chunk_map_width = chunk_map_width;
+    result.chunk_map_height = chunk_map_height;
 
     return result;
 }
 
 Chunk *get_chunk_at_position(Chunks *chunks, Vector2 position)
 {
-    ssize chunk_x = (ssize)(position.x / (f32)(CHUNK_SIZE_IN_TILES * TILE_SIZE));
-    ssize chunk_y = (ssize)(position.y / (f32)(CHUNK_SIZE_IN_TILES * TILE_SIZE));
-
-    ssize index = chunk_x + chunk_y * chunks->chunk_map_width;
+    f32 chunk_pixel_size = (f32)(CHUNK_SIZE_IN_TILES * TILE_SIZE);
+    ssize chunk_x = (ssize)floorf(position.x / chunk_pixel_size);
+    ssize chunk_y = (ssize)floorf(position.y / chunk_pixel_size);
 
     Chunk *result = 0;
 
-    if (index < chunks->chunk_count) {
-        result = &chunks->chunks[index];
+    b32 in_bounds = (chunk_x >= 0) && (chunk_y >= 0)
+        && (chunk_x < chunks->chunk_map_width)
+        && (chunk_y < chunks->chunk_map_height);
+
+    if (in_bounds) {
+        ssize index = chunk_x + chunk_y * chunks->chunk_map_width;
+
+
+        if (index < chunks->chunk_count) {
+            result = &chunks->chunks[index];
+        }
     }
 
     return result;

@@ -9,6 +9,7 @@ struct LinearArena;
 struct Tilemap;
 
 typedef struct Chunk {
+    // NOTE: the chunks empty for now
     int _;
 } Chunk;
 
@@ -20,12 +21,12 @@ typedef struct Chunks {
 } Chunks;
 
 typedef struct ChunkPtrArray {
-    Chunk **chunks;
-    ssize   count;
+    Chunk   **chunks;
+    ssize     count;
 } ChunkPtrArray;
 
-Chunks      create_chunks_for_tilemap(struct Tilemap *tilemap, struct LinearArena *arena);
-Chunk      *get_chunk_at_position(Chunks *chunks, Vector2 position);
-ChunkPtrArray  get_chunks_in_area(Chunks *chunks, Rectangle area, struct LinearArena *arena);
+Chunks           create_chunks_for_tilemap(struct Tilemap *tilemap, struct LinearArena *arena);
+Chunk           *get_chunk_at_position(Chunks *chunks, Vector2 position);
+ChunkPtrArray    get_chunks_in_area(Chunks *chunks, Rectangle area, struct LinearArena *arena);
 
 #endif //CHUNK_H

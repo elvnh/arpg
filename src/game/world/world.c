@@ -4,6 +4,7 @@
 #include "collision/collision_event.h"
 #include "collision/collider.h"
 #include "components/component.h"
+#include "components/name.h"
 #include "entity/entity_system.h"
 #include "game.h"
 #include "renderer/frontend/render_batch.h"
@@ -1001,6 +1002,9 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
 		ItemModifiers *mods = es_add_component(entity, ItemModifiers);
 		add_item_modifier(mods, create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE));
+
+		NameComponent *name = es_add_component(entity, NameComponent);
+		*name = name_component(str_lit("Item name"));
             }
 
             /*Equipment *eq =*/ es_add_component(entity, Equipment);

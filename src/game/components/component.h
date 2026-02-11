@@ -20,6 +20,7 @@
 #include "event_listener.h"
 #include "ai.h"
 #include "health.h"
+#include "name.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(PhysicsComponent)                 \
@@ -42,6 +43,7 @@
     COMPONENT(Inventory)			\
     COMPONENT(Equippable)                       \
     COMPONENT(Equipment)			\
+    COMPONENT(NameComponent)			\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type

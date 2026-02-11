@@ -7,6 +7,7 @@
 #define str_lit(str)   (String){ .data = (str), .length = ARRAY_COUNT((str)) - 1 }
 #define null_string    (String){ .data = 0, .length = 0 }
 #define empty_string   str_lit("")
+#define str_from_str_like(s) ((String) { .data = (s).data, .length = (s).length})
 
 typedef struct String {
     char  *data;

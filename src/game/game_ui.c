@@ -1,6 +1,7 @@
 #include "game_ui.h"
 #include "base/format.h"
 #include "components/component.h"
+#include "components/name.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
 #include "game.h"
@@ -144,8 +145,15 @@ static void inventory_menu(GameUIState *ui_state, Game *game, LinearArena *scrat
                 Equippable *equippable = es_get_component(curr_entity, Equippable);
                 ASSERT(equippable);
 
-                String label_string = format(scratch, "%d, %d", curr_entity->id.index,
-		    curr_entity->id.generation);
+                String label_string = {0};
+
+		NameComponent *name = es_get_component(curr_entity, NameComponent);
+
+		if (name) {
+		    label_string = str_from_str_like(*name);
+		} else {
+		    label_string = str_lit("(unnamed item)");
+		}
 
                 WidgetInteraction interaction = ui_selectable(ui, label_string);
 

@@ -260,8 +260,10 @@ static void game_render(Game *game, RenderBatches rbs, RenderBatchList *rb_list,
 {
     world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
 
-    // TODO: move move debug rendering to debug file
-    debug_render_chunks(game, rbs.worldspace_ui_rb, frame_arena);
+    // TODO: move more debug rendering to debug file
+    if (game->debug_state.render_chunks) {
+        debug_render_chunks(game, rbs.worldspace_ui_rb, frame_arena);
+    }
 
     for (RenderBatch *batch = list_head(rb_list); batch; batch = list_next(batch)) {
         sort_render_entries(batch, frame_arena);

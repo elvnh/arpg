@@ -38,7 +38,8 @@ typedef struct DebugState {
 
     b32 render_camera_bounds;
 
-    struct Chunk *hovered_chunk;
+    struct Chunk *hovered_chunk; // TODO: remove
+    b32 render_chunks;
 } DebugState;
 
 static inline void print_v2(Vector2 v)

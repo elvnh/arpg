@@ -907,7 +907,6 @@ void world_initialize(World *world, FreeListArena *parent_arena)
     s32 world_width = 16;
     s32 world_height = 16;
 
-#if 0
     {
 	for (s32 x = 0; x < world_width; ++x) {
 	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, 0}, TILE_WALL,

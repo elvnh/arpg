@@ -194,6 +194,7 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     ui_checkbox(ui, str_lit("Render entity velocity"),   &game->debug_state.render_entity_velocity);
     ui_checkbox(ui, str_lit("Render edge list"),         &game->debug_state.render_edge_list);
     ui_checkbox(ui, str_lit("Render camera bounds"),     &game->debug_state.render_camera_bounds);
+    ui_checkbox(ui, str_lit("Render chunks"),            &game->debug_state.render_chunks);
 
     ui_spacing(ui, 8);
 
@@ -306,7 +307,52 @@ void debug_update(Game *game, const FrameData *frame_data, LinearArena *frame_ar
 
 void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct LinearArena *arena)
 {
+#if 1
     Chunks *chunks = &game->world.map_chunks;
+
+    s32 chunk_size = CHUNK_SIZE_IN_TILES;
+    Vector2 chunk_world_dims = tile_to_world_coords(v2i(chunk_size, chunk_size));
+
+    s32 start_tile_x = chunks->chunk_grid_base_tile_coords.x;
+    s32 start_tile_y = chunks->chunk_grid_base_tile_coords.y;
+
+    s32 end_tile_x = start_tile_x + chunks->chunk_grid_dims.x * chunk_size;
+    s32 end_tile_y = start_tile_y + chunks->chunk_grid_dims.y * chunk_size;
+
+    for (s32 y = start_tile_y; y < end_tile_y; y += chunk_size) {
+        for (s32 x = start_tile_x; x < end_tile_x; x += chunk_size) {
+            Vector2 world_coords = tile_to_world_coords(v2i(x, y));
+
+            Rectangle rect = {world_coords, chunk_world_dims};
+
+            RGBA32 color = {0, 0.2f, 0.9f, 0.8f};
+            /* Chunk *chunk = get_chunk_at_position(chunks, world_coords); */
+            /* ASSERT(chunk); */
+
+            s32 layer = 0;
+
+            /* if (chunk && (chunk == game->debug_state.hovered_chunk)) { */
+            /*     color = RGBA32_GREEN; */
+            /*     layer = 1; */
+            /* } */
+
+            draw_outlined_rectangle(rb, arena, rect, color, 4.0f,
+                shader_handle(SHAPE_SHADER), layer);
+        }
+    }
+#else
+    // NOTE: debugging code, can be removed
+    Vector2 mouse_pos = input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+    mouse_pos = screen_to_world_coords(game->world.camera, mouse_pos, frame_data->window_size);
+
+    Vector2 dims = {256, 256};
+    Rectangle area = {v2_sub(mouse_pos, dims), v2_mul_s(dims, 2.0f)};
+
+    draw_rectangle(rb, arena, area, rgba32(0, 0.5f, 1.0f, 0.4f),
+        shader_handle(SHAPE_SHADER), 0);
+
+    Chunks *chunks = &game->world.map_chunks;
+    ChunkPtrArray chunks_in_area = get_chunks_in_area(chunks, area, arena);
 
     s32 chunk_size = CHUNK_SIZE_IN_TILES;
     Vector2 chunk_world_dims = tile_to_world_coords(v2i(chunk_size, chunk_size));
@@ -329,13 +375,21 @@ void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct Linea
 
             s32 layer = 0;
 
-            if (chunk && (chunk == game->debug_state.hovered_chunk)) {
-                color = RGBA32_GREEN;
-                layer = 1;
-            }
+            b32 found = false;
 
-            draw_outlined_rectangle(rb, arena, rect, color, 4.0f,
-                shader_handle(SHAPE_SHADER), layer);
+            for (ssize i = 0; i < chunks_in_area.count; ++i) {
+                if (chunks_in_area.chunks[i] == chunk) {
+                    found = true;
+                    break;
+                }
+
+            }
+            if (found) {
+                draw_outlined_rectangle(rb, arena, rect, RGBA32_BLUE, 4.0f,
+                    shader_handle(SHAPE_SHADER), layer);
+            }
         }
     }
+
+#endif
 }

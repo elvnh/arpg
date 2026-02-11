@@ -1,6 +1,6 @@
 #include "test_macros.h"
 #include "base/dynamic_array.h"
-
+#include "base/linear_arena.h"
 
 typedef struct {
     int *items;

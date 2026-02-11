@@ -5,11 +5,10 @@
 
 Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
 {
-    ssize tilemap_width = tilemap->max_x - tilemap->min_x + 1;
+    ssize tilemap_width  = tilemap->max_x - tilemap->min_x + 1;
     ssize tilemap_height = tilemap->max_y - tilemap->min_y + 1;
 
-    // TODO: function
-    ssize chunk_map_width = (ssize)ceilf((f32)tilemap_width / (f32)CHUNK_SIZE_IN_TILES);
+    ssize chunk_map_width  = (ssize)ceilf((f32)tilemap_width  / (f32)CHUNK_SIZE_IN_TILES);
     ssize chunk_map_height = (ssize)ceilf((f32)tilemap_height / (f32)CHUNK_SIZE_IN_TILES);
     ssize chunk_count = chunk_map_width * chunk_map_height;
 
@@ -18,6 +17,8 @@ Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
     result.chunk_count = chunk_count;
     result.chunk_map_width = chunk_map_width;
     result.chunk_map_height = chunk_map_height;
+    result.x_basis = tilemap->min_x;
+    result.y_basis = tilemap->min_y;
 
     return result;
 }
@@ -25,8 +26,8 @@ Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
 Chunk *get_chunk_at_position(Chunks *chunks, Vector2 position)
 {
     f32 chunk_pixel_size = (f32)(CHUNK_SIZE_IN_TILES * TILE_SIZE);
-    ssize chunk_x = (ssize)floorf(position.x / chunk_pixel_size);
-    ssize chunk_y = (ssize)floorf(position.y / chunk_pixel_size);
+    ssize chunk_x = (ssize)floorf((position.x - (f32)chunks->x_basis * (f32)TILE_SIZE) / chunk_pixel_size);
+    ssize chunk_y = (ssize)floorf((position.y - (f32)chunks->y_basis * (f32)TILE_SIZE) / chunk_pixel_size);
 
     Chunk *result = 0;
 
@@ -36,7 +37,6 @@ Chunk *get_chunk_at_position(Chunks *chunks, Vector2 position)
 
     if (in_bounds) {
         ssize index = chunk_x + chunk_y * chunks->chunk_map_width;
-
 
         if (index < chunks->chunk_count) {
             result = &chunks->chunks[index];

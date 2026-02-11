@@ -18,6 +18,10 @@ typedef struct Chunks {
     ssize chunk_count;
     ssize chunk_map_width;
     ssize chunk_map_height;
+
+    // TODO: rename
+    s32 x_basis;
+    s32 y_basis;
 } Chunks;
 
 typedef struct ChunkArray {

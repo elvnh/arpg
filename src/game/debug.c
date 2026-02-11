@@ -306,14 +306,15 @@ void debug_update(Game *game, const FrameData *frame_data, LinearArena *frame_ar
 
 void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct LinearArena *arena)
 {
-    // TODO: don't begin at 0
     Chunks *chunks = &game->world.map_chunks;
 
     s32 chunk_size = CHUNK_SIZE_IN_TILES;
-    s32 start_tile_x = (s32)round_down_to_nearest_multiple_of(game->world.tilemap.min_x, chunk_size);
-    s32 start_tile_y = (s32)round_down_to_nearest_multiple_of(game->world.tilemap.min_y, chunk_size);
-    s32 end_tile_x   = (s32)round_up_to_nearest_multiple_of(game->world.tilemap.max_x, chunk_size);
-    s32 end_tile_y   = (s32)round_up_to_nearest_multiple_of(game->world.tilemap.max_y, chunk_size);
+
+    s32 start_tile_x = chunks->x_basis;
+    s32 start_tile_y = chunks->y_basis;
+
+    s32 end_tile_x = start_tile_x + (s32)chunks->chunk_map_width * chunk_size;
+    s32 end_tile_y = start_tile_y + (s32)chunks->chunk_map_height * chunk_size;
 
     for (s32 y = start_tile_y; y < end_tile_y; y += chunk_size) {
         for (s32 x = start_tile_x; x < end_tile_x; x += chunk_size) {
@@ -327,7 +328,7 @@ void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct Linea
             s32 layer = 0;
             ASSERT(chunk);
 
-            if (chunk == game->debug_state.hovered_chunk) {
+            if (chunk && (chunk == game->debug_state.hovered_chunk)) {
                 color = RGBA32_GREEN;
                 layer = 1;
             }

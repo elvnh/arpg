@@ -680,12 +680,31 @@ void world_set_player_entity(World *world, EntityID id)
     world->player_entity = id;
 }
 
+static Rectangle get_area_visible_to_player(World *world, const FrameData *frame_data)
+{
+    Rectangle result = camera_get_visible_area(world->camera, frame_data->window_size);
+
+    return result;
+}
+
+static Rectangle get_area_to_update_and_render(World *world, const FrameData *frame_data)
+{
+    f32 margin = (f32)TILE_SIZE * 8.0f;
+
+    Rectangle result = get_area_visible_to_player(world, frame_data);
+    result.position = v2_sub(result.position, v2(margin, margin));
+    result.size = v2_add(result.size, v2(margin * 2, margin * 2));
+
+    return result;
+}
+
 void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena)
 {
     if (world->alive_entity_count < 1) {
         return;
     }
 
+    // TODO: only update in certain area around player
     handle_collision_and_movement(world, frame_data->dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
@@ -721,25 +740,15 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     }
 }
 
-void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
-    LinearArena *frame_arena, struct DebugState *debug_state)
+static void render_tilemap(World *world, RenderBatches rb_list, const FrameData *frame_data,
+    LinearArena *frame_arena)
 {
-    // TODO: Create function for computing this
-    Rectangle visible_area = camera_get_visible_area(world->camera, frame_data->window_size);
+    Rectangle tilemap_render_area = get_area_visible_to_player(world, frame_data);
+    tilemap_render_area.position = v2_sub(tilemap_render_area.position, v2(TILE_SIZE, TILE_SIZE));
+    tilemap_render_area.size = v2_add(tilemap_render_area.size, v2(TILE_SIZE * 2, TILE_SIZE * 2));
 
-    // TODO: move this and similar things to game.c
-    if (debug_state->render_camera_bounds) {
-        // TODO: this rectangle is slightly out of sync when moving
-        draw_outlined_rectangle(rb_list.worldspace_ui_rb, frame_arena, visible_area,
-            RGBA32_GREEN, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER), 0);
-    }
-
-    Rectangle area_to_render = visible_area;
-    area_to_render.position = v2_sub(area_to_render.position, v2(TILE_SIZE, TILE_SIZE));
-    area_to_render.size = v2_add(area_to_render.size, v2(TILE_SIZE * 2, TILE_SIZE * 2));
-
-    Vector2i min_tile = world_to_tile_coords(rect_bottom_left(area_to_render));
-    Vector2i max_tile = world_to_tile_coords(rect_top_right(area_to_render));
+    Vector2i min_tile = world_to_tile_coords(rect_bottom_left(tilemap_render_area));
+    Vector2i max_tile = world_to_tile_coords(rect_top_right(tilemap_render_area));
 
     s32 min_x = min_tile.x;
     s32 max_x = max_tile.x;
@@ -763,7 +772,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
                         texture = texture_handle(WALL_TEXTURE);
                     } break;
 
-                    INVALID_DEFAULT_CASE;
+                        INVALID_DEFAULT_CASE;
                 }
 
                 Rectangle tile_rect = {
@@ -828,7 +837,6 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
                         }
                         // TODO: only do this if it's the player?
                         // TODO: get sprite rect instead of all component bounds?
-
                     }
 
                     draw_clipped_sprite(rb_list.world_rb, frame_arena, texture,
@@ -859,8 +867,27 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
         }
     }
 
-    // TODO: debug camera that is detached from regular camera
-    EntityIDList entities_in_area = qt_get_entities_in_area(&world->quad_tree, area_to_render, frame_arena);
+}
+
+void world_render(World *world, RenderBatches rb_list, const FrameData *frame_data,
+    LinearArena *frame_arena, struct DebugState *debug_state)
+{
+    Rectangle render_area = get_area_to_update_and_render(world, frame_data);
+
+    // TODO: move this and similar things to game.c
+    if (debug_state->render_camera_bounds) {
+        Rectangle visible_area = get_area_visible_to_player(world, frame_data);
+
+        draw_outlined_rectangle(rb_list.worldspace_ui_rb, frame_arena, visible_area,
+            RGBA32_GREEN, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER), 0);
+
+        draw_outlined_rectangle(rb_list.worldspace_ui_rb, frame_arena, render_area,
+            RGBA32_RED, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER), 0);
+    }
+
+    render_tilemap(world, rb_list, frame_data, frame_arena);
+
+    EntityIDList entities_in_area = qt_get_entities_in_area(&world->quad_tree, render_area, frame_arena);
 
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
         Entity *entity = es_get_entity(&world->entity_system, node->id);

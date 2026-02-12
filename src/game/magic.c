@@ -12,6 +12,7 @@
 #include "game/damage.h"
 #include "stats.h"
 #include "collision/trigger.h"
+#include "world/chunk.h"
 #include "world/world.h"
 #include "components/component.h"
 #include "platform/asset.h"
@@ -91,19 +92,15 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
-
     ASSERT(self_physics && "Physics was removed inbetween death and callback getting called, "
           "probably shouldn't happen?");
 
-    // TODO: no need to create entity, just spawn directly in chunk
-    EntityWithID ps_entity = world_spawn_entity(
-        event_data.world, self_physics->position, FACTION_NEUTRAL);
+    Rectangle self_bounds = world_get_entity_bounding_box(self, self_physics);
 
-    ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
-    initialize_particle_spawner(ps, setup->config, setup->total_particle_count);
+    Chunk *chunk = get_chunk_at_position(&event_data.world->map_chunks, self_physics->position);
+    ASSERT(chunk);
 
-    unset_flag(ps->config.flags, (u32)PS_FLAG_INFINITE);
-    ps->config.flags |= PS_FLAG_WHEN_DONE_REMOVE_ENTITY;
+    spawn_particles_in_chunk(chunk, self_bounds, setup->config, setup->total_particle_count);
 }
 
 static const Spell *get_spell_by_id(SpellID id)
@@ -201,8 +198,6 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     }
 
     if (spell_has_prop(spell, SPELL_PROP_SPAWN_PARTICLES_ON_DEATH)) {
-	ASSERT(!has_flag(spell->on_death_particle_spawner.config.flags, PS_FLAG_INFINITE));
-	ASSERT(spell->on_death_particle_spawner.total_particle_count > 0);
 	ASSERT(spell->on_death_particle_spawner.config.particle_size > 0.0f);
 	ASSERT(spell->on_death_particle_spawner.config.particle_speed > 0.0f);
 	ASSERT(spell->on_death_particle_spawner.config.particles_per_second > 0);
@@ -477,11 +472,8 @@ static Spell spell_ice_shard(void)
 	.particles_per_second = 40
     };
 
-    spell.on_death_particle_spawner = spell.particle_spawner;
-    spell.on_death_particle_spawner.config.flags |= PS_FLAG_SPAWN_ALL_AT_ONCE;
+    spell.on_death_particle_spawner.config = spell.particle_spawner.config;
     spell.on_death_particle_spawner.total_particle_count = 10;
-
-    unset_flag(spell.on_death_particle_spawner.config.flags, (u32)PS_FLAG_INFINITE);
 
     return spell;
 }

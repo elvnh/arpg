@@ -41,39 +41,31 @@ static s32 calculate_particles_to_spawn_this_frame(ParticleSpawner *ps, f32 dt)
     return result;
 }
 
-void update_particle_spawner(World *world, Entity *entity, ParticleSpawner *ps, PhysicsComponent *physics, f32 dt)
+void spawn_particles_in_chunk(Chunk *chunk, Rectangle spawn_area, ParticleSpawnerConfig config, s32 particle_count)
 {
-    ASSERT(ps->config.particle_size > 0.0f);
-    ASSERT(ps->config.particle_speed > 0.0f);
-    ASSERT(ps->config.particles_per_second > 0);
-    ASSERT(ps->config.particle_color.a > 0);
+    ASSERT(config.particle_size > 0.0f);
+    ASSERT(config.particle_speed > 0.0f);
+    ASSERT(config.particles_per_second > 0);
+    ASSERT(config.particle_color.a > 0);
 
-    ASSERT(physics);
+    ParticleBuffer *particle_buffer = has_flag(config.flags, PS_FLAG_EMITS_LIGHT)
+        ? &chunk->particle_buffers.light_emitting_particles
+        : &chunk->particle_buffers.normal_particles;
 
-    s32 particles_to_spawn = calculate_particles_to_spawn_this_frame(ps, dt);
-
-    Chunk *entity_chunk = get_chunk_at_position(&world->map_chunks, physics->position);
-    ParticleBuffer *particle_buffer = has_flag(ps->config.flags, PS_FLAG_EMITS_LIGHT)
-        ? &entity_chunk->particle_buffers.light_emitting_particles
-        : &entity_chunk->particle_buffers.normal_particles;
-
-    Rectangle entity_bounds = world_get_entity_bounding_box(entity, physics);
-    ASSERT(entity_chunk);
-
-    for (s32 i = 0; i < particles_to_spawn; ++i) {
+    for (s32 i = 0; i < particle_count; ++i) {
         Vector2 dir = rng_direction(PI * 2);
 
-        f32 min_speed = ps->config.particle_speed * 0.25f;
-        f32 max_speed = ps->config.particle_speed * 2.0f;
+        f32 min_speed = config.particle_speed * 0.25f;
+        f32 max_speed = config.particle_speed * 2.0f;
         f32 speed = rng_f32(min_speed, max_speed);
 
         f32 lifetime_variance = 0.6f;
-        f32 min_lifetime = ps->config.particle_lifetime * (1.0f - lifetime_variance);
-        f32 max_lifetime = ps->config.particle_lifetime * (1.0f + lifetime_variance);
+        f32 min_lifetime = config.particle_lifetime * (1.0f - lifetime_variance);
+        f32 max_lifetime = config.particle_lifetime * (1.0f + lifetime_variance);
         f32 lifetime = rng_f32(min_lifetime, max_lifetime);
 
 	// TODO: this doesn't look very good
-	Vector2 particle_position = rng_position_in_rect(entity_bounds);
+	Vector2 particle_position = rng_position_in_rect(spawn_area);
 
         // TODO: color variance
         Particle new_particle = {
@@ -81,12 +73,24 @@ void update_particle_spawner(World *world, Entity *entity, ParticleSpawner *ps, 
             .lifetime = lifetime,
             .position = particle_position,
             .velocity = v2_mul_s(dir, speed),
-            .color = ps->config.particle_color,
-            .size = ps->config.particle_size,
+            .color = config.particle_color,
+            .size = config.particle_size,
         };
 
         ring_push_overwrite(particle_buffer, &new_particle);
     }
+}
+
+void update_particle_spawner(World *world, Entity *entity, ParticleSpawner *ps, PhysicsComponent *physics, f32 dt)
+{
+    ASSERT(physics);
+
+    s32 particles_to_spawn = calculate_particles_to_spawn_this_frame(ps, dt);
+    Rectangle entity_bounds = world_get_entity_bounding_box(entity, physics);
+    Chunk *entity_chunk = get_chunk_at_position(&world->map_chunks, physics->position);
+    ASSERT(entity_chunk);
+
+    spawn_particles_in_chunk(entity_chunk, entity_bounds, ps->config, particles_to_spawn);
 
     if (particle_spawner_is_finished(ps)
         && !has_flag(ps->config.flags, PS_FLAG_WHEN_DONE_REMOVE_ENTITY)) {

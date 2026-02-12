@@ -122,7 +122,7 @@ static void update_player(World *world, const FrameData *frame_data,
 
 	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {
             Vector2 mouse_pos = frame_data->input.mouse_position;
-            mouse_pos = screen_to_world_coords(world->camera, mouse_pos, frame_data->window_size);
+            mouse_pos = screen_to_world_coords(active_camera, mouse_pos, frame_data->window_size);
 
 	    SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
 	    SpellID selected_spell = get_spell_at_spellbook_index(

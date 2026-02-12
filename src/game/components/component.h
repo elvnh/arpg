@@ -7,7 +7,7 @@
 #include "collision/collision_policy.h"
 #include "damage.h"
 #include "light.h"
-#include "particle.h"
+#include "particle_spawner.h"
 #include "platform/asset.h"
 #include "collision/collider.h"
 #include "stats.h"

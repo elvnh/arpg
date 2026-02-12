@@ -3,7 +3,7 @@
 
 #include "base/vector.h"
 #include "platform/asset.h"
-#include "components/particle.h"
+#include "particle.h"
 #include "components/event_listener.h"
 #include "damage.h"
 #include "collision/collider.h"

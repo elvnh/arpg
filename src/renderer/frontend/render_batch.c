@@ -8,7 +8,7 @@
 #include "game/camera.h"
 #include "renderer/frontend/render_key.h"
 #include "render_command.h"
-#include "game/components/particle.h"
+#include "game/particle.h"
 
 // TODO: lots of code duplication in this file
 
@@ -358,28 +358,15 @@ RenderEntry *draw_clipped_text(RenderBatch *rb, LinearArena *arena, String text,
 }
 
 RenderEntry *draw_particles(RenderBatch *rb, LinearArena *arena, ParticleBuffer *particles,
-    RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
+    ShaderHandle shader, RenderLayer layer)
 {
     ParticleGroupCmd *cmd = allocate_render_cmd(arena, ParticleGroupCmd);
     cmd->particles = particles;
-    cmd->color = color;
-    cmd->particle_size = particle_size;
-
-    ASSERT(particle_size > 0.0f);
 
     RenderKey key = render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, 0);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
-}
-
-RenderEntry *draw_textured_particles(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
-    TextureHandle texture, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer)
-{
-    RenderEntry *entry = draw_particles(rb, arena, particles, color, particle_size, shader, layer);
-    entry->key = render_key_create(rb, (s32)layer, shader, texture, NULL_FONT, 0);
-
-    return entry;
 }
 
 RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolygon polygon,

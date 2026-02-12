@@ -230,6 +230,10 @@ void debug_update(Game *game, const FrameData *frame_data, LinearArena *frame_ar
         active_camera = game->debug_state.debug_camera;
     }
 
+    /* if (game->debug_state.hovered_chunk) { */
+    /*     printf("%ld\n", ring_length(&game->debug_state.hovered_chunk->particles)); */
+    /* } */
+
     Vector2 mouse_world_pos = screen_to_world_coords(active_camera, mouse_pos, frame_data->window_size);
 
     game->debug_state.hovered_chunk = get_chunk_at_position(&game->world.map_chunks, mouse_world_pos);

@@ -10,6 +10,8 @@
 
 // TODO: X macro to avoid defining new commands in multiple places
 
+struct ParticleBufferNew;
+
 #define RENDER_COMMAND_LIST                     \
     RENDER_COMMAND(RectangleCmd)                \
     RENDER_COMMAND(ClippedRectangleCmd)         \
@@ -118,8 +120,6 @@ typedef struct {
 typedef struct {
     RenderCmdHeader header;
     struct ParticleBuffer *particles;
-    f32 particle_size;
-    RGBA32 color;
 } ParticleGroupCmd;
 
 typedef struct {

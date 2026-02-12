@@ -1,8 +1,15 @@
 #include "chunk.h"
 #include "base/linear_arena.h"
+#include "base/ring_buffer.h"
 #include "base/utils.h"
 #include "world/tilemap.h"
 #include "world/world.h"
+
+static void initialize_chunk(Chunk *chunk)
+{
+    ring_initialize_static(&chunk->particle_buffers.normal_particles);
+    ring_initialize_static(&chunk->particle_buffers.light_emitting_particles);
+}
 
 Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
 {
@@ -18,6 +25,10 @@ Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
     result.chunk_count = chunk_count;
     result.chunk_grid_dims = v2i(chunk_map_width, chunk_map_height);
     result.chunk_grid_base_tile_coords = v2i(tilemap->min_x, tilemap->min_y);
+
+    for (ssize i = 0; i < chunk_count; ++i) {
+        initialize_chunk(&result.chunks[i]);
+    }
 
     return result;
 }
@@ -74,7 +85,9 @@ ChunkPtrArray get_chunks_in_area(Chunks *chunks, Rectangle area, LinearArena *ar
             ASSERT(result.count < total_chunk_count);
 
             Chunk *chunk = get_chunk_at_position(chunks, coords);
-            result.chunks[result.count++] = chunk;
+            if (chunk) {
+                result.chunks[result.count++] = chunk;
+            }
         }
     }
 

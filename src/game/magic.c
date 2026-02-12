@@ -5,7 +5,7 @@
 #include "collision/collision_policy.h"
 #include "components/event_listener.h"
 #include "collision/collider.h"
-#include "components/particle.h"
+#include "components/particle_spawner.h"
 #include "light.h"
 #include "status_effect.h"
 #include "collision/collision.h"
@@ -100,7 +100,7 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
         event_data.world, self_physics->position, FACTION_NEUTRAL);
 
     ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
-    particle_spawner_initialize(ps, *particle_config);
+    initialize_particle_spawner(ps, *particle_config);
     ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 }
 
@@ -194,11 +194,11 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 
     if (spell_has_prop(spell, SPELL_PROP_PARTICLE_SPAWNER)) {
 	ParticleSpawner *ps = es_get_or_add_component(spell_entity, ParticleSpawner);
-	particle_spawner_initialize(ps, spell->particle_spawner);
+        initialize_particle_spawner(ps, spell->particle_spawner);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_SPAWN_PARTICLES_ON_DEATH)) {
-	ASSERT(!spell->on_death_particle_spawner.infinite);
+	ASSERT(!has_flag(spell->on_death_particle_spawner.flags, PS_FLAG_INFINITE));
 	ASSERT(spell->on_death_particle_spawner.total_particles_to_spawn > 0);
 	ASSERT(spell->on_death_particle_spawner.particle_size > 0.0f);
 	ASSERT(spell->on_death_particle_spawner.particle_speed > 0.0f);
@@ -328,14 +328,12 @@ static Spell spell_fireball(void)
 
     spell.particle_spawner = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
-	.particle_color = {1, 0.4f, 0, 0.08f},
-	.particle_size = 4.0f,
-	.particle_lifetime = 2.0f,
+	.particle_color = rgba32(1, 0.1f, 0.0f, 1.5f),
+	.particle_size = 2.0f,
+	.particle_lifetime = 1.0f,
 	.particle_speed = 30.0f,
-	.infinite = true,
-	.particles_per_second = 100,
-        .emits_light = true,
-        .light_source = (LightSource){LIGHT_REGULAR, 2.5f, RGBA32_RED, false, 0, 0}
+        .flags = PS_FLAG_INFINITE | PS_FLAG_EMITS_LIGHT,
+	.particles_per_second = 80,
     };
 
     return spell;
@@ -374,7 +372,7 @@ static Spell spell_spark(void)
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.25f,
 	.particle_speed = 150.0f,
-	.infinite = true,
+        .flags = PS_FLAG_INFINITE,
 	.particles_per_second = 40
     };
 
@@ -410,7 +408,7 @@ static Spell spell_blizzard(void)
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.25f,
 	.particle_speed = 150.0f,
-	.infinite = true,
+        .flags = PS_FLAG_INFINITE,
 	.particles_per_second = 300
     };
 
@@ -476,14 +474,15 @@ static Spell spell_ice_shard(void)
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.5f,
 	.particle_speed = 50.0f,
-	.infinite = true,
+        .flags = PS_FLAG_INFINITE,
 	.particles_per_second = 40
     };
 
     spell.on_death_particle_spawner = spell.particle_spawner;
     spell.on_death_particle_spawner.kind = PS_SPAWN_ALL_AT_ONCE;
-    spell.on_death_particle_spawner.infinite = false;
     spell.on_death_particle_spawner.total_particles_to_spawn = 10;
+
+    unset_flag(spell.on_death_particle_spawner.flags, (u32)PS_FLAG_INFINITE);
 
     return spell;
 }

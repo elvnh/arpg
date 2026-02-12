@@ -56,11 +56,12 @@ set(
   src/game/magic.c
   src/game/stats.c
   src/game/light.c
+  src/game/particle.c
   src/base/polygon.c
   src/game/ui/ui_core.c
   src/game/ui/ui_builder.c
   src/game/status_effect.c
-  src/game/components/particle.c
+  src/game/components/particle_spawner.c
   src/game/components/event_listener.c
   src/game/components/inventory.c
   src/game/components/equipment.c

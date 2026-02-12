@@ -85,9 +85,7 @@ RenderEntry *draw_text(RenderBatch *rb, LinearArena *arena, String text, Vector2
 RenderEntry *draw_clipped_text(RenderBatch *rb, LinearArena *arena, String text, Vector2 position,
     Rectangle clip_rect, RGBA32 color, s32 size, ShaderHandle shader, FontHandle font, RenderLayer layer);
 RenderEntry *draw_particles(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
-    RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer);
-RenderEntry *draw_textured_particles(RenderBatch *rb, LinearArena *arena, struct ParticleBuffer *particles,
-    TextureHandle texture, RGBA32 color, f32 particle_size, ShaderHandle shader, RenderLayer layer);
+    ShaderHandle shader, RenderLayer layer);
 RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolygon polygon,
     RGBA32 color, ShaderHandle shader, RenderLayer layer);
 RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan triangle_fan,

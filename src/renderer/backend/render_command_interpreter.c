@@ -9,7 +9,7 @@
 #include "renderer/frontend/render_key.h"
 #include "renderer/frontend/render_target.h"
 #include "renderer/backend/renderer_backend.h"
-#include "game/components/particle.h"
+#include "game/particle.h"
 
 #define INVALID_RENDERER_STATE (RendererState){{(AssetID)-1}, {(AssetID)-1}}
 
@@ -341,19 +341,18 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
 
         case RENDER_COMMAND_ENUM_NAME(ParticleGroupCmd): {
             ParticleGroupCmd *cmd = (ParticleGroupCmd *)entry->data;
-
             ParticleBuffer *particles = cmd->particles;
-            Vector2 particle_dims = v2(cmd->particle_size, cmd->particle_size);
-            RGBA32 base_color = cmd->color;
 
             for (ssize p = 0; p < ring_length(particles); ++p) {
                 Particle *particle = ring_at(particles, p);
 
-                Rectangle rect = {particle->position, particle_dims};
-                f32 a = base_color.a - (particle->timer / particle->lifetime) * base_color.a;
-                a = CLAMP(a, 0.0f, 1.0f);
+                Rectangle rect = {particle->position, v2(particle->size, particle->size)};
+                RGBA32 color = particle->color;
 
-                RGBA32 color = {base_color.r, base_color.g, base_color.b, a};
+                f32 alpha = color.a - (particle->timer / particle->lifetime) * color.a;
+                alpha = CLAMP(alpha, 0.0f, 1.0f);
+
+                color.a = alpha;
 
                 RectangleVertices verts = rect_get_vertices(rect, color, Y_IS_UP);
 

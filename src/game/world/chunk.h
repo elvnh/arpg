@@ -2,6 +2,8 @@
 #define CHUNK_H
 
 #include "base/rectangle.h"
+#include "base/ring_buffer.h"
+#include "particle.h"
 
 #define CHUNK_SIZE_IN_TILES 8
 
@@ -9,8 +11,7 @@ struct LinearArena;
 struct Tilemap;
 
 typedef struct Chunk {
-    // NOTE: the chunks empty for now
-    int _;
+    ParticleBuffers particle_buffers;
 } Chunk;
 
 typedef struct Chunks {

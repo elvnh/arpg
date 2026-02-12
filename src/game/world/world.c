@@ -5,7 +5,6 @@
 #include "collision/collision_event.h"
 #include "collision/collider.h"
 #include "components/component.h"
-#include "components/name.h"
 #include "entity/entity_system.h"
 #include "game.h"
 #include "renderer/frontend/render_batch.h"
@@ -123,24 +122,6 @@ static void handle_entity_removal_side_effects(World *world, EntityID id)
     // If the entity is non-spatial, there is (currently) nothing for us to do here
     if (dying_entity_physics) {
         Rectangle dying_entity_bounds = world_get_entity_bounding_box(dying_entity, dying_entity_physics);
-
-        if (es_has_component(dying_entity, ParticleSpawner)) {
-            // If entity dies while particles are active, create a new particle spawner
-            // entity with the remaining particles
-            ParticleSpawner *ps = es_get_component(dying_entity, ParticleSpawner);
-
-            if (ring_length(&ps->particle_buffer) > 0) {
-                EntityWithID new_ps_entity = world_spawn_entity(
-                    world, dying_entity_physics->position, FACTION_NEUTRAL);
-
-                ParticleSpawner *new_ps = es_add_component(new_ps_entity.entity, ParticleSpawner);
-                // TODO: if particle spawner get a non-static buffer, a deep copy will be required
-                *new_ps = *ps;
-                new_ps->particles_left_to_spawn = 0;
-                new_ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
-                new_ps->config.infinite = false;
-            }
-        }
 
         if (es_has_component(dying_entity, LightEmitter)) {
             // If an entity dies while it has a light, the light is transferred
@@ -276,8 +257,6 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
     EntityID id = world->alive_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
 
-    // TODO: in each if, instead check if it has both x and y
-
     if (es_has_component(entity, HealthComponent)) {
 	HealthComponent *hp = es_get_component(entity, HealthComponent);
 	StatValue max_hp = get_total_stat_value(&world->entity_system, entity, STAT_HEALTH);
@@ -290,10 +269,10 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
     }
 
     if (es_has_components(entity, component_id(ParticleSpawner) | component_id(PhysicsComponent))) {
-        ParticleSpawner *particle_spawner = es_get_component(entity, ParticleSpawner);
+        ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
-        update_particle_spawner(entity, particle_spawner, physics, dt);
+        update_particle_spawner(world, entity, ps, physics, dt);
     }
 
     if (es_has_component(entity, LifetimeComponent)) {
@@ -365,12 +344,6 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 
         draw_rectangle(rbs.worldspace_ui_rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f},
 	    shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
-    }
-
-    if (es_has_component(entity, ParticleSpawner)) {
-        ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
-
-        render_particle_spawner(world, ps, rbs, scratch);
     }
 
     if (es_has_component(entity, LightEmitter)) {
@@ -719,9 +692,19 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 
     hitsplats_update(world, frame_data);
 
+    ChunkPtrArray visible_chunks = get_chunks_in_area(&world->map_chunks,
+        get_area_to_update_and_render(world, frame_data), frame_arena);
+
+    for (ssize i = 0; i < visible_chunks.count; ++i) {
+        Chunk *chunk = visible_chunks.chunks[i];
+
+        update_particle_buffers(&chunk->particle_buffers, frame_data->dt);
+    }
+
     update_trigger_cooldowns(world, frame_data->dt);
 
     swap_and_reset_collision_tables(world);
+
 
     // Remove inactive entities on end of frame
     for (ssize i = 0; i < world->alive_entity_count; ++i) {
@@ -734,10 +717,11 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 	}
     }
 
-    // Make an extra pass over all entities alive at end of frame and update their
-    // quad tree locations. This ensures that when this frame is rendered, any entities
-    // that were spawned during the frame have the correct quad tree location and are therefore
-    // rendered if they are on screen.
+    /* Make an extra pass over all entities alive at end of frame and update their
+       quad tree locations. This ensures that when this frame is rendered, any entities
+       that were spawned during the frame have the correct quad tree location and are therefore
+       rendered if they are on screen.
+    */
     for (ssize i = 0; i < world->alive_entity_count; ++i) {
         world_update_entity_quad_tree_location(world, i);
     }
@@ -890,6 +874,13 @@ void world_render(World *world, RenderBatches rb_list, const FrameData *frame_da
 
     render_tilemap(world, rb_list, frame_data, frame_arena);
 
+    ChunkPtrArray visible_chunks = get_chunks_in_area(&world->map_chunks, render_area, frame_arena);
+    for (ssize i = 0; i < visible_chunks.count; ++i) {
+        Chunk *chunk = visible_chunks.chunks[i];
+
+        render_particle_buffers(&chunk->particle_buffers, rb_list, frame_arena);
+    }
+
     EntityIDList entities_in_area = qt_get_entities_in_area(&world->quad_tree, render_area, frame_arena);
 
     for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
@@ -968,7 +959,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 3; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world, v2(128, 128),
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
@@ -1030,10 +1021,42 @@ void world_initialize(World *world, FreeListArena *parent_arena)
         light->light.radius = 500.0f;
         light->light.kind = LIGHT_RAYCASTED;
 
-        if (i == 0) {
+        if (true || i == 0) {
             light->light.color = RGBA32_GREEN;
         } else {
             light->light.color = RGBA32_BLUE;
+        }
+#endif
+
+#if 0
+        if (i == 0) {
+            ParticleSpawnerNew *ps = es_get_or_add_component(entity, ParticleSpawnerNew);
+            ps->config = (ParticleSpawnerConfig) {
+                .kind = PS_SPAWN_DISTRIBUTED,
+                .particle_color = rgba32(1, 0, 0.1f, 0.05f),
+                .particle_size = 4.0f,
+                .particle_lifetime = 2.0f,
+                .particle_speed = 30.0f,
+                .infinite = true,
+                .particles_per_second = 100,
+                .emits_light = true,
+                .light_source = (LightSource){LIGHT_REGULAR, 2.5f, RGBA32_RED, false, 0, 0}
+            };
+        } else {
+            ParticleSpawner *ps = es_get_or_add_component(entity, ParticleSpawner);
+            ParticleSpawnerConfig config = {
+                .kind = PS_SPAWN_DISTRIBUTED,
+                .particle_color = rgba32(1, 0, 0.1f, 0.05f),
+                .particle_size = 4.0f,
+                .particle_lifetime = 2.0f,
+                .particle_speed = 30.0f,
+                .infinite = true,
+                .particles_per_second = 100,
+                .emits_light = true,
+                .light_source = (LightSource){LIGHT_REGULAR, 2.5f, RGBA32_RED, false, 0, 0}
+            };
+
+            particle_spawner_initialize(ps, config);
         }
 #endif
 

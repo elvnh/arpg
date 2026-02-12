@@ -19,7 +19,8 @@
 #define zero_struct(t) ((t){0})
 #define FLAG(e) ((u64)(1u << (u64)(e)))
 #define SQUARE(n) ((n) * (n))
-
+#define has_flag(flags, flag) (((flags) & (flag)) != 0)
+#define unset_flag(flags, flag) ((flags) &= ~(flag))
 // TODO: define everything for non-debug builds
 
 #define ASSERT(expr)                                    \

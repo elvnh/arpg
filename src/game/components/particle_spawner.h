@@ -4,7 +4,7 @@
 #include "particle.h"
 
 // TODO: can be generalized?
-// TODO: move these and ParticleSpawnerKind into flags
+// TODO: move these into flags
 typedef enum {
     PS_WHEN_DONE_DO_NOTHING = 0,
     PS_WHEN_DONE_REMOVE_COMPONENT, // TODO: should this be default?
@@ -12,19 +12,14 @@ typedef enum {
 } ParticleSpawnerWhenDone;
 
 typedef enum {
-    PS_SPAWN_DISTRIBUTED,
-    PS_SPAWN_ALL_AT_ONCE,
-} ParticleSpawnerKind;
-
-typedef enum {
-    PS_FLAG_INFINITE    = FLAG(0),
-    PS_FLAG_EMITS_LIGHT = FLAG(1),
+    PS_FLAG_INFINITE          = FLAG(0),
+    PS_FLAG_EMITS_LIGHT       = FLAG(1),
+    PS_FLAG_SPAWN_ALL_AT_ONCE = FLAG(2),
 } ParticleSpawnerFlag;
 
 // TODO: particle velocity
 // TODO: reduce size of this
 typedef struct {
-    ParticleSpawnerKind kind;
     ParticleSpawnerFlag flags;
 
     RGBA32 particle_color;

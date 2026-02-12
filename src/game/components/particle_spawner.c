@@ -20,26 +20,22 @@ static s32 calculate_particles_to_spawn_this_frame(ParticleSpawner *ps, f32 dt)
 {
     s32 result = 0;
 
-    switch (ps->config.kind) {
-        case PS_SPAWN_DISTRIBUTED: {
-            ps->particle_timer += ps->config.particles_per_second * dt;
+    if (has_flag(ps->config.flags, PS_FLAG_SPAWN_ALL_AT_ONCE)) {
+        ASSERT(!has_flag(ps->config.flags, PS_FLAG_INFINITE));
 
-	    if (has_flag(ps->config.flags, PS_FLAG_INFINITE)) {
-		result = (s32)ps->particle_timer;
-	    } else {
-		result = MIN((s32)ps->particle_timer, ps->particles_left_to_spawn);
-		ps->particles_left_to_spawn -= result;
-	    }
+        result = ps->particles_left_to_spawn;
+        ps->particles_left_to_spawn = 0;
+    } else {
+        ps->particle_timer += ps->config.particles_per_second * dt;
 
-            ps->particle_timer -= (f32)result;
-        } break;
+        if (has_flag(ps->config.flags, PS_FLAG_INFINITE)) {
+            result = (s32)ps->particle_timer;
+        } else {
+            result = MIN((s32)ps->particle_timer, ps->particles_left_to_spawn);
+            ps->particles_left_to_spawn -= result;
+        }
 
-        case PS_SPAWN_ALL_AT_ONCE: {
-	    ASSERT(!has_flag(ps->config.flags, PS_FLAG_INFINITE));
-
-            result = ps->particles_left_to_spawn;
-            ps->particles_left_to_spawn = 0;
-        } break;
+        ps->particle_timer -= (f32)result;
     }
 
     return result;

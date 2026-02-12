@@ -329,7 +329,6 @@ static Spell spell_fireball(void)
     spell.light_emitter.fade_duration = 1.0f;
 
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = rgba32(1, 0.1f, 0.0f, 1.5f),
 	.particle_size = 2.0f,
 	.particle_lifetime = 1.0f,
@@ -369,7 +368,6 @@ static Spell spell_spark(void)
     spell.damaging.retrigger_behaviour = retrigger_after_non_contact();
 
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {1.0f, 1.0f, 0, 0.15f},
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.25f,
@@ -405,7 +403,6 @@ static Spell spell_blizzard(void)
     spell.damaging.retrigger_behaviour = retrigger_after_duration(1.0f);
 
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {0.15f, 0.5f, 1.0f, 0.25f},
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.25f,
@@ -471,7 +468,6 @@ static Spell spell_ice_shard(void)
     spell.hostile_collision_callback = ice_shard_collision_callback;
 
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {0.0f, 0.5f, 1.0f, 0.5f},
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.5f,
@@ -481,7 +477,7 @@ static Spell spell_ice_shard(void)
     };
 
     spell.on_death_particle_spawner = spell.particle_spawner;
-    spell.on_death_particle_spawner.config.kind = PS_SPAWN_ALL_AT_ONCE;
+    spell.on_death_particle_spawner.config.flags |= PS_FLAG_SPAWN_ALL_AT_ONCE;
     spell.on_death_particle_spawner.total_particle_count = 10;
 
     unset_flag(spell.on_death_particle_spawner.config.flags, (u32)PS_FLAG_INFINITE);

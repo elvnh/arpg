@@ -138,21 +138,6 @@ static void update_player(World *world, const FrameData *frame_data,
 		state_attacking(selected_spell, mouse_pos, total_cast_speed));
         }
     }
-
-    /* if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT) */
-    /*     && !entity_id_is_null(game_ui->hovered_entity)) { */
-    /*     Entity *hovered_entity = es_get_entity(&world->entity_system, game_ui->hovered_entity); */
-    /*     GroundItemComponent *ground_item = es_get_component(hovered_entity, GroundItemComponent); */
-
-    /*     if (ground_item) { */
-    /*         // TODO: make try_get_component be nullable, make get_component assert on failure to get */
-    /*         InventoryComponent *inv = es_get_component(player, InventoryComponent); */
-    /*         ASSERT(inv); */
-
-    /*         inventory_add_item(&inv->inventory, ground_item->item_id); */
-    /*         es_schedule_entity_for_removal(hovered_entity); */
-    /*     } */
-    /* } */
 }
 
 static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
@@ -193,8 +178,32 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     return result;
 }
 
-static void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, FrameData *frame_data,
-    LinearArena *scratch, RenderBatch *rb, PlatformCode platform_code)
+static void render_ui(Game *game, RenderBatches rbs, FrameData *frame_data,
+    LinearArena *frame_arena)
+{
+    ui_core_render(&game->game_ui.backend_state, frame_data, rbs.overlay_rb);
+
+    if (game->debug_state.debug_menu_active) {
+        ui_core_render(&game->debug_state.debug_ui, frame_data, rbs.overlay_rb);
+    }
+
+    if (game->debug_state.quad_tree_overlay) {
+        debug_render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
+    }
+
+    if (game->debug_state.render_origin) {
+        draw_rectangle(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
+	    shader_handle(SHAPE_SHADER), 3);
+    }
+
+    // TODO: move more debug rendering to debug file
+    if (game->debug_state.render_chunks) {
+        debug_render_chunks(game, rbs.worldspace_ui_rb, frame_arena);
+    }
+}
+
+static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, FrameData *frame_data,
+    LinearArena *scratch, PlatformCode platform_code)
 {
     ui_core_begin_frame(ui);
 
@@ -210,7 +219,7 @@ static void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
         INVALID_DEFAULT_CASE;
     }
 
-    UIInteraction interaction = ui_core_end_frame(ui, frame_data, rb, platform_code);
+    UIInteraction interaction = ui_core_end_layout(ui, frame_data, Y_IS_DOWN, platform_code);
 
     // TODO: shouldn't click_began_inside_ui be counted as receiving mouse input?
     if (interaction.received_mouse_input || interaction.click_began_inside_ui) {
@@ -218,7 +227,7 @@ static void render_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
     }
 }
 
-static void update_and_render_ui(Game *game, RenderBatches rbs, FrameData *frame_data,
+static void update_ui(Game *game, FrameData *frame_data,
     LinearArena *frame_arena, PlatformCode platform_code)
 {
     Vector2 hovered_coords = screen_to_world_coords(
@@ -237,44 +246,35 @@ static void update_and_render_ui(Game *game, RenderBatches rbs, FrameData *frame
         game->game_ui.hovered_entity = NULL_ENTITY_ID;
     }
 
-    render_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_data, frame_arena,
-        rbs.overlay_rb, platform_code);
+    update_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_data, frame_arena,
+        platform_code);
 
     if (game->debug_state.debug_menu_active) {
-        render_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, frame_data, frame_arena,
-            rbs.overlay_rb, platform_code);
-    }
-
-    if (game->debug_state.quad_tree_overlay) {
-        debug_render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
-    }
-
-    if (game->debug_state.render_origin) {
-        draw_rectangle(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
-	    shader_handle(SHAPE_SHADER), 3);
+        update_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, frame_data, frame_arena,
+            platform_code);
     }
 }
 
-static void game_render(Game *game, RenderBatches rbs, RenderBatchList *rb_list, FrameData *frame_data,
+static void game_render(Game *game, RenderBatchList *rb_list, FrameData *frame_data,
     LinearArena *frame_arena)
 {
+    RenderBatches rbs = create_render_batches(game, rb_list, frame_data, frame_arena);
+
     world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
 
-    // TODO: move more debug rendering to debug file
-    if (game->debug_state.render_chunks) {
-        debug_render_chunks(game, rbs.worldspace_ui_rb, frame_arena);
-    }
+    render_ui(game, rbs, frame_data, frame_arena);
 
     for (RenderBatch *batch = list_head(rb_list); batch; batch = list_next(batch)) {
         sort_render_entries(batch, frame_arena);
     }
 }
 
-static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_arena)
+static void game_update(Game *game, FrameData *frame_data, PlatformCode platform_code, LinearArena *frame_arena)
 {
     ASSERT(game->debug_state.timestep_modifier >= 0.0f);
 
     debug_update(game, frame_data, frame_arena);
+    update_ui(game, frame_data, frame_arena, platform_code);
 
     Camera *active_camera = &game->world.camera;
 
@@ -283,10 +283,9 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
         camera_update(active_camera, frame_data->dt);
     }
 
-    // NOTE: We update camera independent of timestep modifier
     camera_zoom(active_camera, (s32)frame_data->input.scroll_delta);
 
-    // NOTE: normal camera i s always update too even if debug camera is active
+    // NOTE: normal camera is always updated too even if debug camera is active
     camera_update(&game->world.camera, frame_data->dt);
 
     frame_data->dt *= game->debug_state.timestep_modifier;
@@ -304,10 +303,8 @@ static void game_update(Game *game, FrameData *frame_data, LinearArena *frame_ar
         update_player(&game->world, frame_data, &game->game_ui, *active_camera);
         world_update(&game->world, frame_data, frame_arena);
     }
-
 }
 
-// TODO: only send FrameData into this function, send dt etc to others
 void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchList *rbs,
     FrameData frame_data, GameMemory *game_memory)
 {
@@ -320,13 +317,8 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
         DEBUG_BREAK;
     }
 
-    game_update(game, &frame_data, &game_memory->temporary_memory);
-
-    RenderBatches game_rbs = create_render_batches(game, rbs, &frame_data, &game_memory->temporary_memory);
-    update_and_render_ui(game, game_rbs, &frame_data, &game_memory->temporary_memory, platform_code);
-
-    game_render(game, game_rbs, rbs, &frame_data, &game_memory->temporary_memory);
-
+    game_update(game, &frame_data, platform_code, &game_memory->temporary_memory);
+    game_render(game, rbs, &frame_data, &game_memory->temporary_memory);
 
     // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
     // have had time to be used during the frame. This means that the stats have 1 frame delay

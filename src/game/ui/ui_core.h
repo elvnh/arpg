@@ -70,8 +70,9 @@ typedef struct {
 
 void ui_core_initialize(UIState *ui, UIStyle style, LinearArena *arena);
 void ui_core_begin_frame(UIState *ui);
-UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, struct RenderBatch *rb,
+UIInteraction ui_core_end_layout(UIState *ui, const FrameData *frame_data, YDirection y_dir,
     PlatformCode platform_code);
+void ui_core_render(UIState *ui, const FrameData *frame_data, struct RenderBatch *rb);
 void ui_core_set_style(UIState *ui, UIStyle style);
 void ui_core_push_container(UIState *ui, Widget *widget);
 void ui_core_pop_container(UIState *ui);

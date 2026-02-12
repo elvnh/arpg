@@ -377,7 +377,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
     }
 }
 
-UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, RenderBatch *rb,
+UIInteraction ui_core_end_layout(UIState *ui, const FrameData *frame_data, YDirection y_dir,
     PlatformCode platform_code)
 {
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
@@ -389,24 +389,38 @@ UIInteraction ui_core_end_frame(UIState *ui, const FrameData *frame_data, Render
 
     if (ui->root_widget) {
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
-        calculate_widget_interactions(ui, ui->root_widget, frame_data, window_rect, rb->y_direction, &result);
+        calculate_widget_interactions(ui, ui->root_widget, frame_data, window_rect, y_dir, &result);
 
 	// TODO: should root widget also not be clipped just like for floating widgets?
-        render_widget(ui, ui->root_widget, rb, 0, window_rect, CLIP_TO_PARENT);
+        //render_widget(ui, ui->root_widget, rb, 0, window_rect, CLIP_TO_PARENT);
     }
 
     for (Widget *child = list_head(&ui->floating_widgets); child; child = child->next_sibling) {
 	calculate_widget_layout(child, child->final_position, platform_code, 0);
-        calculate_widget_interactions(ui, child, frame_data, window_rect, rb->y_direction, &result);
+        calculate_widget_interactions(ui, child, frame_data, window_rect, y_dir, &result);
 
 	// NOTE: for floating widgets each root widget isn't clipped to viewspace,
 	// but any children of that widget are clipped to it's bounds
 	// TODO: Don't hardcode the layer depth like this
-        render_widget(ui, child, rb, 100, window_rect, CLIP_NONE);
+        //render_widget(ui, child, rb, 100, window_rect, CLIP_NONE);
     }
 
     return result;
 }
+
+void ui_core_render(UIState *ui, const FrameData *frame_data, RenderBatch *rb)
+{
+    Rectangle window_rect = {{0, 0}, v2i_to_v2(frame_data->window_size)};
+
+    if (ui->root_widget) {
+        render_widget(ui, ui->root_widget, rb, 0, window_rect, CLIP_TO_PARENT);
+    }
+
+    for (Widget *child = list_head(&ui->floating_widgets); child; child = child->next_sibling) {
+        render_widget(ui, child, rb, 100, window_rect, CLIP_NONE);
+    }
+}
+
 
 Widget *ui_core_get_top_container(UIState *ui)
 {

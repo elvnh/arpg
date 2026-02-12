@@ -45,8 +45,11 @@ Please be aware that the gameplay is still in a prototyping stage and any contro
 
 ### Debug controls
 - Press `t` to open the debug overlay
-- Press up and down arrow keys to make the game go faster or slower
+- Press `o` to increase and `l` to decrease game spped
 - Press `g` to enter single step mode, meaning the gameplay is paused
+- Press `y` to detach the camera
+- While in detached camera mode, press `y` to return to normal camera mode
+- While in detached camera mode, press `shift`+`y` to reset the camera position and zoom level
 - To exit single step mode, either press `g` again or use the up arrow key
   to increase the game speed
 - When in single step mode, press `k` to advance the game by a single frame

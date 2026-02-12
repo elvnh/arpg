@@ -199,7 +199,10 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
     es_remove_entity(&world->entity_system, *id);
 
     QuadTreeLocation *qt_location = &world->alive_entity_quad_tree_locations[alive_entity_index];
-    qt_remove_entity(&world->quad_tree, *id, *qt_location);
+
+    if (!qt_location_is_null(*qt_location)) {
+        qt_remove_entity(&world->quad_tree, *id, *qt_location);
+    }
 
     ssize last_index = world->alive_entity_count - 1;
     *qt_location = world->alive_entity_quad_tree_locations[last_index];

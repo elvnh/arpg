@@ -5,6 +5,7 @@
 #include "collision/collision_event.h"
 #include "collision/collider.h"
 #include "components/component.h"
+#include "components/particle_spawner.h"
 #include "entity/entity_system.h"
 #include "game.h"
 #include "renderer/frontend/render_batch.h"
@@ -235,7 +236,7 @@ static b32 entity_should_die(Entity *entity)
     if (es_has_component(entity, ParticleSpawner)) {
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
 
-        if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_ENTITY)
+        if (has_flag(ps->config.flags, PS_FLAG_WHEN_DONE_REMOVE_ENTITY)
             && particle_spawner_is_finished(ps)) {
             return true;
         }

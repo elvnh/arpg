@@ -95,6 +95,7 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
     ASSERT(self_physics && "Physics was removed inbetween death and callback getting called, "
           "probably shouldn't happen?");
 
+    // TODO: no need to create entity, just spawn directly in chunk
     EntityWithID ps_entity = world_spawn_entity(
         event_data.world, self_physics->position, FACTION_NEUTRAL);
 
@@ -102,7 +103,7 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
     initialize_particle_spawner(ps, setup->config, setup->total_particle_count);
 
     unset_flag(ps->config.flags, (u32)PS_FLAG_INFINITE);
-    ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
+    ps->config.flags |= PS_FLAG_WHEN_DONE_REMOVE_ENTITY;
 }
 
 static const Spell *get_spell_by_id(SpellID id)

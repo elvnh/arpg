@@ -88,7 +88,10 @@ void update_particle_spawner(World *world, Entity *entity, ParticleSpawner *ps, 
         ring_push_overwrite(particle_buffer, &new_particle);
     }
 
-    if ((ps->action_when_done == PS_WHEN_DONE_REMOVE_COMPONENT) && particle_spawner_is_finished(ps)) {
+    if (particle_spawner_is_finished(ps)
+        && !has_flag(ps->config.flags, PS_FLAG_WHEN_DONE_REMOVE_ENTITY)) {
+        // If we have the flag set to remove entire entity when done, let the game update
+        // handle that, since if we remove the component now, the entity removal won't be triggered
         es_remove_component(entity, ParticleSpawner);
     }
 }

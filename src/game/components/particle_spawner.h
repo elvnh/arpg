@@ -3,18 +3,13 @@
 
 #include "particle.h"
 
-// TODO: can be generalized?
-// TODO: move these into flags
 typedef enum {
-    PS_WHEN_DONE_DO_NOTHING = 0,
-    PS_WHEN_DONE_REMOVE_COMPONENT, // TODO: should this be default?
-    PS_WHEN_DONE_REMOVE_ENTITY,
-} ParticleSpawnerWhenDone;
+    PS_FLAG_INFINITE                = FLAG(0),
+    PS_FLAG_EMITS_LIGHT             = FLAG(1),
+    PS_FLAG_SPAWN_ALL_AT_ONCE       = FLAG(2),
 
-typedef enum {
-    PS_FLAG_INFINITE          = FLAG(0),
-    PS_FLAG_EMITS_LIGHT       = FLAG(1),
-    PS_FLAG_SPAWN_ALL_AT_ONCE = FLAG(2),
+    /* If not set, only the component will be removed */
+    PS_FLAG_WHEN_DONE_REMOVE_ENTITY = FLAG(3),
 } ParticleSpawnerFlag;
 
 // TODO: particle velocity
@@ -36,7 +31,6 @@ typedef struct {
 
 typedef struct {
     ParticleSpawnerConfig config;
-    ParticleSpawnerWhenDone action_when_done;
     s32 particles_left_to_spawn;
     f32 particle_timer;
 } ParticleSpawner;

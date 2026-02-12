@@ -10,10 +10,10 @@ b32 particle_spawner_is_finished(ParticleSpawner *ps)
     return result;
 }
 
-void initialize_particle_spawner(ParticleSpawner *ps, ParticleSpawnerConfig config)
+void initialize_particle_spawner(ParticleSpawner *ps, ParticleSpawnerConfig config, s32 particle_count)
 {
     ps->config = config;
-    ps->particles_left_to_spawn = config.total_particles_to_spawn;
+    ps->particles_left_to_spawn = particle_count;
 }
 
 static s32 calculate_particles_to_spawn_this_frame(ParticleSpawner *ps, f32 dt)

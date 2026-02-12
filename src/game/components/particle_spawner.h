@@ -4,6 +4,7 @@
 #include "particle.h"
 
 // TODO: can be generalized?
+// TODO: move these and ParticleSpawnerKind into flags
 typedef enum {
     PS_WHEN_DONE_DO_NOTHING = 0,
     PS_WHEN_DONE_REMOVE_COMPONENT, // TODO: should this be default?
@@ -30,13 +31,13 @@ typedef struct {
     f32 particle_size;
     f32 particle_lifetime;
     f32 particle_speed;
-
-    /* TODO: don't need to store both total_particles_to_spawn
-       and particles_left_to_spawn
-     */
-    s32 total_particles_to_spawn;
     f32 particles_per_second;
 } ParticleSpawnerConfig;
+
+typedef struct {
+    ParticleSpawnerConfig config;
+    s32 total_particle_count;
+} ParticleSpawnerSetup;
 
 typedef struct {
     ParticleSpawnerConfig config;
@@ -47,7 +48,7 @@ typedef struct {
 
 void update_particle_spawner(struct World *world, struct Entity *entity, ParticleSpawner *ps,
     struct PhysicsComponent *physics, f32 dt);
-void initialize_particle_spawner(ParticleSpawner *ps, ParticleSpawnerConfig config);
 b32  particle_spawner_is_finished(ParticleSpawner *ps);
+void initialize_particle_spawner(ParticleSpawner *ps, ParticleSpawnerConfig config, s32 particle_count);
 
 #endif //PARTICLE_SPAWNER_H

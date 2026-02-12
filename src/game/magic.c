@@ -18,7 +18,6 @@
 #include "entity/entity_system.h"
 #include "asset_table.h"
 
-
 typedef enum {
     SPELL_PROP_PROJECTILE                 = FLAG(0),
     SPELL_PROP_DAMAGING                   = FLAG(1),
@@ -62,8 +61,8 @@ typedef struct {
 
     f32 lifetime;
 
-    ParticleSpawnerConfig particle_spawner;
-    ParticleSpawnerConfig on_death_particle_spawner;
+    ParticleSpawnerSetup    particle_spawner;
+    ParticleSpawnerSetup    on_death_particle_spawner;
 
     CallbackFunction hostile_collision_callback;
 
@@ -88,7 +87,7 @@ static SpellArray g_spells = {0};
 // TODO: move to callback file
 static void spawn_particles_on_death(void *user_data, EventData event_data)
 {
-    ParticleSpawnerConfig *particle_config = user_data;
+    ParticleSpawnerSetup *setup = user_data;
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
@@ -100,7 +99,9 @@ static void spawn_particles_on_death(void *user_data, EventData event_data)
         event_data.world, self_physics->position, FACTION_NEUTRAL);
 
     ParticleSpawner *ps = es_add_component(ps_entity.entity, ParticleSpawner);
-    initialize_particle_spawner(ps, *particle_config);
+    initialize_particle_spawner(ps, setup->config, setup->total_particle_count);
+
+    unset_flag(ps->config.flags, (u32)PS_FLAG_INFINITE);
     ps->action_when_done = PS_WHEN_DONE_REMOVE_ENTITY;
 }
 
@@ -194,15 +195,16 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 
     if (spell_has_prop(spell, SPELL_PROP_PARTICLE_SPAWNER)) {
 	ParticleSpawner *ps = es_get_or_add_component(spell_entity, ParticleSpawner);
-        initialize_particle_spawner(ps, spell->particle_spawner);
+        initialize_particle_spawner(ps, spell->particle_spawner.config,
+            spell->particle_spawner.total_particle_count);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_SPAWN_PARTICLES_ON_DEATH)) {
-	ASSERT(!has_flag(spell->on_death_particle_spawner.flags, PS_FLAG_INFINITE));
-	ASSERT(spell->on_death_particle_spawner.total_particles_to_spawn > 0);
-	ASSERT(spell->on_death_particle_spawner.particle_size > 0.0f);
-	ASSERT(spell->on_death_particle_spawner.particle_speed > 0.0f);
-	ASSERT(spell->on_death_particle_spawner.particles_per_second > 0);
+	ASSERT(!has_flag(spell->on_death_particle_spawner.config.flags, PS_FLAG_INFINITE));
+	ASSERT(spell->on_death_particle_spawner.total_particle_count > 0);
+	ASSERT(spell->on_death_particle_spawner.config.particle_size > 0.0f);
+	ASSERT(spell->on_death_particle_spawner.config.particle_speed > 0.0f);
+	ASSERT(spell->on_death_particle_spawner.config.particles_per_second > 0);
 
 	es_get_or_add_component(spell_entity, EventListenerComponent);
 
@@ -326,7 +328,7 @@ static Spell spell_fireball(void)
     spell.light_emitter.kind = LIGHT_RAYCASTED;
     spell.light_emitter.fade_duration = 1.0f;
 
-    spell.particle_spawner = (ParticleSpawnerConfig) {
+    spell.particle_spawner.config = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = rgba32(1, 0.1f, 0.0f, 1.5f),
 	.particle_size = 2.0f,
@@ -366,7 +368,7 @@ static Spell spell_spark(void)
     set_damage_value(&spell.damaging.penetration_values, DMG_TYPE_Lightning, 20);
     spell.damaging.retrigger_behaviour = retrigger_after_non_contact();
 
-    spell.particle_spawner = (ParticleSpawnerConfig) {
+    spell.particle_spawner.config = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {1.0f, 1.0f, 0, 0.15f},
 	.particle_size = 3.0f,
@@ -402,7 +404,7 @@ static Spell spell_blizzard(void)
     set_damage_value(&spell.damaging.penetration_values, DMG_TYPE_Lightning, 20);
     spell.damaging.retrigger_behaviour = retrigger_after_duration(1.0f);
 
-    spell.particle_spawner = (ParticleSpawnerConfig) {
+    spell.particle_spawner.config = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {0.15f, 0.5f, 1.0f, 0.25f},
 	.particle_size = 3.0f,
@@ -468,7 +470,7 @@ static Spell spell_ice_shard(void)
 
     spell.hostile_collision_callback = ice_shard_collision_callback;
 
-    spell.particle_spawner = (ParticleSpawnerConfig) {
+    spell.particle_spawner.config = (ParticleSpawnerConfig) {
 	.kind = PS_SPAWN_DISTRIBUTED,
 	.particle_color = {0.0f, 0.5f, 1.0f, 0.5f},
 	.particle_size = 3.0f,
@@ -479,10 +481,10 @@ static Spell spell_ice_shard(void)
     };
 
     spell.on_death_particle_spawner = spell.particle_spawner;
-    spell.on_death_particle_spawner.kind = PS_SPAWN_ALL_AT_ONCE;
-    spell.on_death_particle_spawner.total_particles_to_spawn = 10;
+    spell.on_death_particle_spawner.config.kind = PS_SPAWN_ALL_AT_ONCE;
+    spell.on_death_particle_spawner.total_particle_count = 10;
 
-    unset_flag(spell.on_death_particle_spawner.flags, (u32)PS_FLAG_INFINITE);
+    unset_flag(spell.on_death_particle_spawner.config.flags, (u32)PS_FLAG_INFINITE);
 
     return spell;
 }

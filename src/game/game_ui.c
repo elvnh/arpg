@@ -152,28 +152,31 @@ static void inventory_menu(GameUIState *ui_state, Game *game, LinearArena *scrat
             ASSERT(inv);
             ASSERT(eq);
 
-            EntityID curr_id = inv->first_item_in_inventory;
+            EntityID curr_item_id = inv->first_item_in_inventory;
 
-            while (!entity_id_is_null(curr_id)) {
-                Entity *curr_entity = es_get_entity(&game->world.entity_system, curr_id);
-                ASSERT(curr_entity);
-                InventoryStorable *inv_storable = es_get_component(curr_entity, InventoryStorable);
+            while (!entity_id_is_null(curr_item_id)) {
+                Entity *curr_item = es_get_entity(&game->world.entity_system, curr_item_id);
+                ASSERT(curr_item);
+
+                InventoryStorable *inv_storable = es_get_component(curr_item, InventoryStorable);
                 ASSERT(inv_storable);
 
-                Equippable *equippable = es_get_component(curr_entity, Equippable);
+                EntityID next_item_id = inv_storable->next_item_in_inventory;
+
+                Equippable *equippable = es_get_component(curr_item, Equippable);
                 ASSERT(equippable);
 
-                String label_string = get_item_widget_text(curr_entity, scratch);
+                String label_string = get_item_widget_text(curr_item, scratch);
 
                 WidgetInteraction interaction = ui_selectable(ui, label_string);
 
 		if (interaction.clicked) {
                     try_equip_item_from_inventory(&game->world.entity_system, eq, inv, inv_storable);
 		} else if (interaction.hovered) {
-		    item_hover_menu(ui, curr_entity, mouse_pos, scratch);
+		    item_hover_menu(ui, curr_item, mouse_pos, scratch);
 		}
 
-                curr_id = inv_storable->next_item_in_inventory;
+                curr_item_id = next_item_id;
             }
 	} ui_end_list(ui);
     } ui_pop_container(ui);

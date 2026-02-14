@@ -300,7 +300,7 @@ static Spell spell_fireball(void)
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	| SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_LIGHT_EMITTER;
+	| SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_SPAWN_PARTICLES_ON_DEATH | SPELL_PROP_LIGHT_EMITTER;
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
@@ -326,12 +326,15 @@ static Spell spell_fireball(void)
 
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
 	.particle_color = rgba32(1, 0.1f, 0.0f, 1.5f),
-	.particle_size = 2.0f,
+	.particle_size = 2.5f,
 	.particle_lifetime = 1.0f,
 	.particle_speed = 30.0f,
         .flags = PS_FLAG_INFINITE | PS_FLAG_EMITS_LIGHT,
-	.particles_per_second = 80,
+	.particles_per_second = 40,
     };
+
+    spell.on_death_particle_spawner.config = spell.particle_spawner.config;
+    spell.on_death_particle_spawner.total_particle_count = 15;
 
     return spell;
 }
@@ -443,6 +446,7 @@ static Spell spell_ice_shard(void)
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
 	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK | SPELL_PROP_PARTICLE_SPAWNER
 	| SPELL_PROP_SPAWN_PARTICLES_ON_DEATH;
+
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
@@ -464,16 +468,16 @@ static Spell spell_ice_shard(void)
     spell.hostile_collision_callback = ice_shard_collision_callback;
 
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.particle_color = {0.0f, 0.5f, 1.0f, 0.5f},
+	.particle_color = {0.0f, 0.3f, 1.0f, 0.5f},
 	.particle_size = 3.0f,
 	.particle_lifetime = 0.5f,
 	.particle_speed = 50.0f,
-        .flags = PS_FLAG_INFINITE,
+        .flags = PS_FLAG_INFINITE | PS_FLAG_EMITS_LIGHT,
 	.particles_per_second = 40
     };
 
     spell.on_death_particle_spawner.config = spell.particle_spawner.config;
-    spell.on_death_particle_spawner.total_particle_count = 10;
+    spell.on_death_particle_spawner.total_particle_count = 20;
 
     return spell;
 }

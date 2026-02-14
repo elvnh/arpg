@@ -1,7 +1,7 @@
 # arpg
 ![](screenshot.png)
 
-An action RPG focused on magic made in a custom game engine. It is currently under progress and far from complete.
+An action RPG focused on magic made in a custom game engine written in C99. It is currently under progress and far from complete.
 
 ## Building
 For now, the game is only possible to compile on Linux. Windows builds are planned in the future.

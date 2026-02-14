@@ -775,7 +775,6 @@ static void render_tilemap(World *world, RenderBatches rb_list, const FrameData 
                     layer = RENDER_LAYER_WALLS;
                 }
 
-
                 if (tile->type == TILE_FLOOR) {
                     draw_sprite(rb_list.world_rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
                         shader_handle(TEXTURE_SHADER), layer);
@@ -843,7 +842,8 @@ static void render_tilemap(World *world, RenderBatches rb_list, const FrameData 
 			RENDER_LAYER_WALLS);
 
                     if (!make_wall_transparent) {
-                        // Render top segment to lighting stencil buffer so that wall top sides are never lit
+                        // Render top segment to lighting stencil buffer so that wall top sides are never lit,
+                        // unless the wall is transparent
                         draw_rectangle(rb_list.lighting_stencil_rb, frame_arena, top_segment, RGBA32_BLACK,
                             shader_handle(SHAPE_SHADER), RENDER_LAYER_WALLS);
                     }

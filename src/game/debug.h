@@ -47,7 +47,7 @@ static inline void print_v2(Vector2 v)
     printf("(%.2f, %.2f)\n", (f64)v.x, (f64)v.y);
 }
 
-void debug_update(struct Game *game, const struct FrameData *frame_data, LinearArena *frame_arena);
+void debug_update(struct Game *game, const struct FrameData *frame_data);
 void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch, const struct FrameData *frame_data);
 void debug_render_quad_tree(struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena,
     ssize depth);

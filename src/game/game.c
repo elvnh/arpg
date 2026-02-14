@@ -273,7 +273,7 @@ static void game_update(Game *game, FrameData *frame_data, PlatformCode platform
 {
     ASSERT(game->debug_state.timestep_modifier >= 0.0f);
 
-    debug_update(game, frame_data, frame_arena);
+    debug_update(game, frame_data);
     update_ui(game, frame_data, frame_arena, platform_code);
 
     Camera *active_camera = &game->world.camera;

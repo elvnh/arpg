@@ -218,7 +218,7 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     ui_pop_container(ui);
 }
 
-void debug_update(Game *game, const FrameData *frame_data, LinearArena *frame_arena)
+void debug_update(Game *game, const FrameData *frame_data)
 {
     f32 curr_fps = 1.0f / frame_data->dt;
     f32 avg_fps = game->debug_state.average_fps;

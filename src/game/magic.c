@@ -40,7 +40,8 @@ typedef enum {
     SPELL_PROP_CHAINING                   = FLAG(13),
     SPELL_PROP_STOP_ON_ENTITY_COLLISION   = FLAG(14),
     SPELL_PROP_FREEZE_ON_ENTITY_COLLISION = FLAG(15),
-    SPELL_PROP_ARCING                     = FLAG(16),
+    SPELL_PROP_FREEZE_ON_WALL_COLLISION   = FLAG(16),
+    SPELL_PROP_ARCING                     = FLAG(17),
 } SpellProperties;
 
 typedef struct {
@@ -211,6 +212,10 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster, 
 
     if (spell_has_prop(spell, SPELL_PROP_FREEZE_ON_ENTITY_COLLISION)) {
 	set_collision_policy_vs_hostile_faction(spell_collider, COLLISION_POLICY_FREEZE, caster->faction);
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_FREEZE_ON_WALL_COLLISION)) {
+	set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_FREEZE);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_WALL_COLLISION)) {
@@ -601,7 +606,7 @@ static void arc_collision_callback(void *user_data, EventData event_data, Linear
         return;
     }
 
-    f32 search_area_size = 5000.0f;
+    f32 search_area_size = 500.0f;
     Rectangle search_area = {
         v2_sub(self_physics->position, v2(search_area_size / 2.0f, search_area_size / 2.0f)),
         v2(search_area_size, search_area_size),
@@ -621,6 +626,7 @@ static void arc_collision_callback(void *user_data, EventData event_data, Linear
         PhysicsComponent *curr_entity_physics = es_get_component(curr_entity, PhysicsComponent);
         ASSERT(curr_entity_physics);
 
+        // TODO: clean this up
         if ((curr_entity != caster) && (curr_entity != self) && (curr_entity != collide_target)) {
             if (curr_entity->faction == hostile_faction) {
                 if (!has_chained_off_entity(es, chain_root, curr_entity->id)) {
@@ -653,7 +659,7 @@ static Spell spell_arc(void)
 
     spell.properties = SPELL_PROP_CHAINING | SPELL_PROP_DAMAGE_FIELD
         | SPELL_PROP_PROJECTILE
-        | SPELL_PROP_DIE_ON_WALL_COLLISION
+        | SPELL_PROP_FREEZE_ON_WALL_COLLISION
         | SPELL_PROP_FREEZE_ON_ENTITY_COLLISION
         | SPELL_PROP_HOSTILE_COLLISION_CALLBACK;
 

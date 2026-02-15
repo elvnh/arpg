@@ -5,6 +5,7 @@
 #include "base/utils.h"
 #include "component_id.h"
 #include "collision/collision_policy.h"
+#include "components/chain.h"
 #include "damage.h"
 #include "light.h"
 #include "particle_spawner.h"
@@ -45,6 +46,7 @@
     COMPONENT(Equipment)			\
     COMPONENT(NameComponent)			\
     COMPONENT(ArcingComponent)			\
+    COMPONENT(ChainComponent)			\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -115,8 +117,10 @@ typedef struct StatusEffectComponent {
 } StatusEffectComponent;
 
 typedef struct {
-    Vector2 target_position;
+    EntityID target_entity;
+    Vector2 last_known_target_position;
     f32 travel_speed;
+    DamageInstance damage_on_target_reached;
 } ArcingComponent;
 
 static inline String component_id_to_string(ComponentID id)

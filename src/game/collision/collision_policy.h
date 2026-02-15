@@ -16,6 +16,7 @@ typedef enum {
     COLLISION_POLICY_PASS_THROUGH, // NOTE: since this is the first enum value, it's the default behaviour
     COLLISION_POLICY_STOP,
     COLLISION_POLICY_BOUNCE,
+    COLLISION_POLICY_FREEZE,
     COLLISION_POLICY_DIE,
 } CollisionPolicy;
 

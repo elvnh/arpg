@@ -221,6 +221,34 @@ Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
+static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
+{
+    Damage damage_taken = calculate_damage_received(&world->entity_system, entity, damage);
+    StatValue dmg_sum = calculate_damage_sum(damage_taken);
+    ASSERT(dmg_sum >= 0);
+
+    StatValue new_hp = hp->health.current_hitpoints - dmg_sum;
+    set_current_health(&hp->health, new_hp);
+
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    ASSERT(physics && "I guess a non-spatial entity could take damage?");
+
+    if (physics) {
+        hitsplats_create(world, physics->position, damage_taken);
+    }
+}
+
+static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, DamageInstance damage)
+{
+    (void)sender;
+
+    HealthComponent *hp = es_get_component(receiver, HealthComponent);
+
+    if (hp) {
+        deal_damage_to_entity(world, receiver, hp, damage);
+    }
+}
+
 static b32 entity_should_die(Entity *entity)
 {
     if (es_has_component(entity, HealthComponent)) {
@@ -262,14 +290,39 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt, Linear
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
         Vector2 entity_center = rect_center(world_get_entity_bounding_box(entity, physics));
 
-        Vector2 dir = v2_norm(v2_sub(arcing->target_position, entity_center));
+        Entity *target = es_try_get_entity(&world->entity_system, arcing->target_entity);
+        Vector2 target_pos = {0};
+
+        b32 found = false;
+
+        if (target) {
+            PhysicsComponent *target_physics = es_get_component(target, PhysicsComponent);
+
+            // TODO: make it possible to call get_component on null entity
+            if (target_physics) {
+                target_pos = rect_center(world_get_entity_bounding_box(target, target_physics));
+                arcing->last_known_target_position = target_pos;
+
+                found = true;
+            }
+        }
+
+        if (!found) {
+            target_pos = arcing->last_known_target_position;
+        }
+
+        Vector2 dir = v2_norm(v2_sub(target_pos, entity_center));
         Vector2 next_velocity = v2_mul_s(dir, arcing->travel_speed);
         Vector2 next_center_position = v2_add(entity_center, v2_mul_s(next_velocity, dt));
-        f32 dist_to_target = v2_dist_sq(entity_center, arcing->target_position);
+        f32 dist_to_target = v2_dist_sq(entity_center, target_pos);
         f32 dist_to_next_pos = v2_dist_sq(entity_center, next_center_position);
 
         if (dist_to_target < 100.0f) {
             physics->velocity = V2_ZERO;
+
+            if (target) {
+                try_deal_damage_to_entity(world, target, entity, arcing->damage_on_target_reached);
+            }
 
             es_remove_component(entity, ArcingComponent);
         } else if (dist_to_target > dist_to_next_pos) {
@@ -357,6 +410,21 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 	    sprite->color, shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
+    if (es_has_component(entity, ChainComponent)) {
+        // TODO: make it possible to customize how chains are rendered
+        ChainComponent *chain = es_get_component(entity, ChainComponent);
+        Entity *next_link = get_next_entity_in_chain(&world->entity_system, chain);
+
+        if (next_link) {
+            PhysicsComponent *next_link_physics = es_get_component(next_link, PhysicsComponent);
+
+            if (next_link_physics) {
+                draw_line(rbs.world_rb, scratch, physics->position, next_link_physics->position,
+                    RGBA32_WHITE, 8.0f, shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
+            }
+        }
+    }
+
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
@@ -421,33 +489,6 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
 	retrigger_behaviour, &world->world_arena);
 }
 
-static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
-{
-    Damage damage_taken = calculate_damage_received(&world->entity_system, entity, damage);
-    StatValue dmg_sum = calculate_damage_sum(damage_taken);
-    ASSERT(dmg_sum >= 0);
-
-    StatValue new_hp = hp->health.current_hitpoints - dmg_sum;
-    set_current_health(&hp->health, new_hp);
-
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-    ASSERT(physics && "I guess a non-spatial entity could take damage?");
-
-    if (physics) {
-        hitsplats_create(world, physics->position, damage_taken);
-    }
-}
-
-static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, DamageInstance damage)
-{
-    (void)sender;
-
-    HealthComponent *hp = es_get_component(receiver, HealthComponent);
-
-    if (hp) {
-        deal_damage_to_entity(world, receiver, hp, damage);
-    }
-}
 
 static Rectangle get_entity_collider_rectangle(ColliderComponent *collider, PhysicsComponent *physics)
 {
@@ -978,15 +1019,15 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 	}
     }
 
-    tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})->type = TILE_WALL;
+    //tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})->type = TILE_WALL;
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 5; ++i) {
 #if 1
-        EntityWithID entity_with_id = world_spawn_entity(world, v2(128, 128),
+        EntityWithID entity_with_id = world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
 

@@ -2,10 +2,13 @@
 #include "base/maths.h"
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "base/vector.h"
 #include "collision/collision_policy.h"
+#include "components/chain.h"
 #include "components/event_listener.h"
 #include "collision/collider.h"
 #include "components/particle_spawner.h"
+#include "entity/entity_faction.h"
 #include "light.h"
 #include "status_effect.h"
 #include "collision/collision.h"
@@ -13,6 +16,7 @@
 #include "stats.h"
 #include "collision/trigger.h"
 #include "world/chunk.h"
+#include "world/quad_tree.h"
 #include "world/world.h"
 #include "components/component.h"
 #include "platform/asset.h"
@@ -21,7 +25,7 @@
 
 typedef enum {
     SPELL_PROP_PROJECTILE                 = FLAG(0),
-    SPELL_PROP_DAMAGING                   = FLAG(1),
+    SPELL_PROP_DAMAGE_FIELD               = FLAG(1),
     SPELL_PROP_SPRITE                     = FLAG(2),
     SPELL_PROP_BOUNCE_ON_TILES            = FLAG(3),
     SPELL_PROP_DIE_ON_WALL_COLLISION      = FLAG(4),
@@ -33,6 +37,10 @@ typedef enum {
     SPELL_PROP_AREA_OF_EFFECT             = FLAG(10),
     SPELL_PROP_APPLIES_STATUS_EFFECT      = FLAG(11),
     SPELL_PROP_LIGHT_EMITTER              = FLAG(12),
+    SPELL_PROP_CHAINING                   = FLAG(13),
+    SPELL_PROP_STOP_ON_ENTITY_COLLISION   = FLAG(14),
+    SPELL_PROP_FREEZE_ON_ENTITY_COLLISION = FLAG(15),
+    SPELL_PROP_ARCING                     = FLAG(16),
 } SpellProperties;
 
 typedef struct {
@@ -47,7 +55,7 @@ typedef struct {
 	DamageRange base_damage;
 	Damage penetration_values;
 	RetriggerBehaviour retrigger_behaviour;
-    } damaging;
+    } damage_field;
 
     struct {
 	f32 projectile_speed;
@@ -62,8 +70,8 @@ typedef struct {
 
     f32 lifetime;
 
-    ParticleSpawnerSetup    particle_spawner;
-    ParticleSpawnerSetup    on_death_particle_spawner;
+    ParticleSpawnerSetup  particle_spawner;
+    ParticleSpawnerSetup  on_death_particle_spawner;
 
     CallbackFunction hostile_collision_callback;
 
@@ -73,6 +81,19 @@ typedef struct {
     } applies_status_effects;
 
     LightSource light_emitter;
+
+    struct {
+        ChainingBehaviour behaviour;
+        f32 chaining_distance;
+        // TODO: max chains
+    } chaining;
+
+    struct {
+        f32 arcing_speed;
+        DamageRange damage;
+	Damage penetration_values;
+    } arcing;
+
 } Spell;
 
 typedef struct SpellArray {
@@ -127,8 +148,10 @@ static void spell_unset_property(Spell *spell, SpellProperties prop)
     spell->properties &= ~prop;
 }
 
-static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
-    Vector2 spell_origin, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
+// TODO: clean up the parent spell entity business
+
+static void cast_single_spell(World *world, const Spell *spell, Entity *caster, Entity *parent_spell_entity,
+    Vector2 spell_origin, Entity *target_entity, Vector2 target_pos, Vector2 dir, Entity *cooldown_target, // TODO: rename cooldown_target
     RetriggerBehaviour cooldown_retrigger)
 {
     EntityWithID spell_entity_with_id = world_spawn_non_spatial_entity(world, caster->faction);
@@ -167,19 +190,27 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_BOUNCE);
     }
 
-    if (spell_has_prop(spell, SPELL_PROP_DAMAGING)) {
-	Damage damage_roll = roll_damage_in_range(spell->damaging.base_damage);
+    if (spell_has_prop(spell, SPELL_PROP_DAMAGE_FIELD)) {
+	Damage damage_roll = roll_damage_in_range(spell->damage_field.base_damage);
         Damage damage_after_boosts = calculate_damage_dealt(&world->entity_system, caster, damage_roll);
 
 	DamageFieldComponent *dmg_field = es_add_component(spell_entity, DamageFieldComponent);
 
-        DamageInstance damage = {damage_after_boosts, spell->damaging.penetration_values};
+        DamageInstance damage = {damage_after_boosts, spell->damage_field.penetration_values};
 	dmg_field->damage = damage;
-	dmg_field->retrigger_behaviour = spell->damaging.retrigger_behaviour;
+	dmg_field->retrigger_behaviour = spell->damage_field.retrigger_behaviour;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
 	set_collision_policy_vs_hostile_faction(spell_collider, COLLISION_POLICY_DIE, caster->faction);
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_STOP_ON_ENTITY_COLLISION)) {
+	set_collision_policy_vs_hostile_faction(spell_collider, COLLISION_POLICY_STOP, caster->faction);
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_FREEZE_ON_ENTITY_COLLISION)) {
+	set_collision_policy_vs_hostile_faction(spell_collider, COLLISION_POLICY_FREEZE, caster->faction);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_WALL_COLLISION)) {
@@ -231,11 +262,55 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
         le->light = spell->light_emitter;
     }
 
-    if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
-	physics->position = spell_origin;
-    } else {
-	ASSERT(spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT));
+    if (spell_has_prop(spell, SPELL_PROP_ARCING)) {
+        ArcingComponent *arc = es_get_or_add_component(spell_entity, ArcingComponent);
+        ASSERT(spell->arcing.arcing_speed > 0.0f);
+
+        if (target_entity) {
+            arc->target_entity = target_entity->id;
+        }
+
+        arc->travel_speed = spell->arcing.arcing_speed;
+        arc->last_known_target_position = target_pos;
+
+	Damage damage_roll = roll_damage_in_range(spell->damage_field.base_damage);
+        Damage damage_after_boosts = calculate_damage_dealt(&world->entity_system, caster, damage_roll);
+        DamageInstance damage = {damage_after_boosts, spell->damage_field.penetration_values};
+
+        arc->damage_on_target_reached = damage;
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_CHAINING)) {
+        ChainComponent *chain = es_add_component(spell_entity, ChainComponent);
+        ChainComponent *root = 0;
+
+        if (spell->chaining.behaviour == CHAIN_BEHAVIOUR_BEGIN_NEW_CHAIN) {
+            EntityWithID new_chain_root = world_spawn_entity(world, spell_origin, caster->faction);
+            root = es_add_component(new_chain_root.entity, ChainComponent);
+        } else if (spell->chaining.behaviour == CHAIN_BEHAVIOUR_CONTINUE_CURRENT_CHAIN) {
+            // TODO: this will cause trouble if previous chain died
+            ASSERT(parent_spell_entity);
+            root = es_get_component(parent_spell_entity, ChainComponent);
+
+            ASSERT(root && "Previous link has no ChainComponent");
+        } else {
+            ASSERT(0);
+        }
+
+        // NOTE: cooldown_target is the entity that triggered this hit
+        if (cooldown_target) {
+            // TODO: make it possible to allow chaining off same targets
+            chain->chained_off_entity_id = cooldown_target->id;
+        }
+
+        ASSERT(root);
+        append_chain_link(&world->entity_system, root, chain);
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
 	physics->position = target_pos;
+    } else {
+	physics->position = spell_origin;
     }
 
     // Offset so that spells center is centered on the target position
@@ -257,8 +332,8 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     }
 }
 
-static void cast_spell_impl(struct World *world, SpellID id, struct Entity *caster,
-    Vector2 spell_origin, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
+static void cast_spell_impl(World *world, SpellID id, Entity *caster, Entity *parent_spell_entity,
+    Vector2 spell_origin, Entity *target, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
     RetriggerBehaviour cooldown_retrigger)
 {
     const Spell *spell = get_spell_by_id(id);
@@ -277,8 +352,8 @@ static void cast_spell_impl(struct World *world, SpellID id, struct Entity *cast
     for (s32 i = 0; i < spell_count; ++i) {
 	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
 
-	cast_single_spell(world, spell, caster, spell_origin, target_pos, current_dir,
-	    cooldown_target, cooldown_retrigger);
+	cast_single_spell(world, spell, caster, parent_spell_entity, spell_origin, target,
+            target_pos, current_dir, cooldown_target, cooldown_retrigger);
 
 	current_angle += angle_step_size;
     }
@@ -292,7 +367,7 @@ void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 target_p
     Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster, physics));
     Vector2 dir = v2_sub(target_pos, spell_origin);
 
-    cast_spell_impl(world, id, caster, spell_origin, target_pos,
+    cast_spell_impl(world, id, caster, 0, spell_origin, 0, target_pos,
 	dir, 0, retrigger_whenever());
 }
 
@@ -300,7 +375,7 @@ static Spell spell_fireball(void)
 {
     Spell spell = {0};
 
-    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
+    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGE_FIELD
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
 	| SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_SPAWN_PARTICLES_ON_DEATH | SPELL_PROP_LIGHT_EMITTER;
     spell.cast_duration = 0.3f;
@@ -318,8 +393,8 @@ static Spell spell_fireball(void)
     set_damage_value(&damage_range.low_roll, DMG_TYPE_Fire, 10);
     set_damage_value(&damage_range.high_roll, DMG_TYPE_Fire, 20);
 
-    spell.damaging.base_damage = damage_range;
-    spell.damaging.retrigger_behaviour = retrigger_never();
+    spell.damage_field.base_damage = damage_range;
+    spell.damage_field.retrigger_behaviour = retrigger_never();
 
     spell.light_emitter.radius = 250.0f;
     spell.light_emitter.color = RGBA32_RED;
@@ -347,8 +422,9 @@ static Spell spell_spark(void)
 
     // TODO: erratic movement
 
-    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
-	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
+    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGE_FIELD
+	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER
+        | SPELL_PROP_FREEZE_ON_ENTITY_COLLISION;
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
@@ -364,9 +440,9 @@ static Spell spell_spark(void)
 
     spell.lifetime = 5.0f;
 
-    set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_Lightning, 1, 100);
-    set_damage_value(&spell.damaging.penetration_values, DMG_TYPE_Lightning, 20);
-    spell.damaging.retrigger_behaviour = retrigger_after_non_contact();
+    set_damage_range_for_type(&spell.damage_field.base_damage, DMG_TYPE_Lightning, 1, 100);
+    set_damage_value(&spell.damage_field.penetration_values, DMG_TYPE_Lightning, 20);
+    spell.damage_field.retrigger_behaviour = retrigger_after_non_contact();
 
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
 	.particle_color = {1.0f, 1.0f, 0, 0.15f},
@@ -384,7 +460,7 @@ static Spell spell_blizzard(void)
 {
     Spell spell = {0};
 
-    spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGING
+    spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGE_FIELD
 	| SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_APPLIES_STATUS_EFFECT;
     spell.cast_duration = 0.5f;
 
@@ -399,9 +475,9 @@ static Spell spell_blizzard(void)
 
     spell.lifetime = 15.0f;
 
-    set_damage_range_for_type(&spell.damaging.base_damage, DMG_TYPE_Lightning, 1, 100);
-    set_damage_value(&spell.damaging.penetration_values, DMG_TYPE_Lightning, 20);
-    spell.damaging.retrigger_behaviour = retrigger_after_duration(1.0f);
+    set_damage_range_for_type(&spell.damage_field.base_damage, DMG_TYPE_Lightning, 1, 100);
+    set_damage_value(&spell.damage_field.penetration_values, DMG_TYPE_Lightning, 20);
+    spell.damage_field.retrigger_behaviour = retrigger_after_duration(1.0f);
 
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
 	.particle_color = {0.15f, 0.5f, 1.0f, 0.25f},
@@ -437,8 +513,8 @@ static void ice_shard_collision_callback(void *user_data, EventData event_data, 
 
     // TODO: should this kind of behaviour be encoded in a forking property of spells?
     // NOTE: these have no target position, only origin and direction
-    cast_spell_impl(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster,
-	self_physics->position, V2_ZERO, self_physics->direction,
+    cast_spell_impl(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster, self,
+	self_physics->position, 0, V2_ZERO, self_physics->direction,
 	collide_target, retrigger_never());
 }
 
@@ -446,7 +522,7 @@ static Spell spell_ice_shard(void)
 {
     Spell spell = {0};
 
-    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGING
+    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGE_FIELD
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
 	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK | SPELL_PROP_PARTICLE_SPAWNER
 	| SPELL_PROP_SPAWN_PARTICLES_ON_DEATH;
@@ -466,8 +542,8 @@ static Spell spell_ice_shard(void)
     set_damage_value(&damage_range.low_roll, DMG_TYPE_Fire, 50);
     set_damage_value(&damage_range.high_roll, DMG_TYPE_Fire, 70);
 
-    spell.damaging.base_damage = damage_range;
-    spell.damaging.retrigger_behaviour = retrigger_never(); // TODO: unnecessary
+    spell.damage_field.base_damage = damage_range;
+    spell.damage_field.retrigger_behaviour = retrigger_never(); // TODO: unnecessary
 
     spell.hostile_collision_callback = ice_shard_collision_callback;
 
@@ -502,6 +578,121 @@ static Spell spell_ice_shard_trigger(void)
     return spell;
 }
 
+static void arc_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
+{
+    SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
+    EntitySystem *es = &event_data.world->entity_system;
+
+    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
+    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
+    ASSERT(self_physics && "Physics component should have been added when casting spell");
+
+    ChainComponent *self_chain = es_get_component(self, ChainComponent);
+    ASSERT(self_chain);
+    Entity *chain_root_entity = es_get_entity(es, self_chain->chain_root_id);
+    ChainComponent *chain_root = es_get_component(chain_root_entity, ChainComponent);
+
+    // NOTE: caster is the original caster, i.e NOT the previous link in the chain
+    Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);
+    Entity *collide_target = es_get_entity(es, event_data.as.hostile_collision.collided_with);
+
+    // TODO: instead create an event type for first time collisions?
+    if (has_chained_off_entity(es, chain_root, collide_target->id)) {
+        return;
+    }
+
+    f32 search_area_size = 5000.0f;
+    Rectangle search_area = {
+        v2_sub(self_physics->position, v2(search_area_size / 2.0f, search_area_size / 2.0f)),
+        v2(search_area_size, search_area_size),
+    };
+
+    EntityIDList nearby_entities = qt_get_entities_in_area(&event_data.world->quad_tree,
+        search_area, frame_arena);
+    Entity *closest_entity = 0;
+    f32 closest_entity_dist = INFINITY;
+
+    GetHostileFactionResult hostile_faction_result = get_hostile_faction(caster->faction);
+    ASSERT(hostile_faction_result.ok);
+    EntityFaction hostile_faction = hostile_faction_result.hostile_faction;
+
+    for (EntityIDNode *curr = list_head(&nearby_entities); curr; curr = list_next(curr)) {
+        Entity *curr_entity = es_get_entity(es, curr->id);
+        PhysicsComponent *curr_entity_physics = es_get_component(curr_entity, PhysicsComponent);
+        ASSERT(curr_entity_physics);
+
+        if ((curr_entity != caster) && (curr_entity != self) && (curr_entity != collide_target)) {
+            if (curr_entity->faction == hostile_faction) {
+                if (!has_chained_off_entity(es, chain_root, curr_entity->id)) {
+                    f32 dist = v2_dist(curr_entity_physics->position, self_physics->position);
+
+                    if (dist < closest_entity_dist) {
+                        closest_entity = curr_entity;
+                        closest_entity_dist = dist;
+                    }
+                }
+            }
+        }
+    }
+
+    if (closest_entity) {
+        PhysicsComponent *closest_entity_physics = es_get_component(closest_entity, PhysicsComponent);
+        Vector2 target_pos = closest_entity_physics->position;
+        Vector2 dir = v2_norm(v2_sub(target_pos, self_physics->position));
+
+        ASSERT(!has_chained_off_entity(es, chain_root, closest_entity->id));
+
+        cast_spell_impl(event_data.world, SPELL_ARC_TRIGGER, caster, self, self_physics->position,
+            closest_entity, target_pos, dir, collide_target, retrigger_never());
+    }
+}
+static Spell spell_arc(void)
+{
+    Spell spell = {0};
+    spell.cast_duration = 0.3f;
+
+    spell.properties = SPELL_PROP_CHAINING | SPELL_PROP_DAMAGE_FIELD
+        | SPELL_PROP_PROJECTILE
+        | SPELL_PROP_DIE_ON_WALL_COLLISION
+        | SPELL_PROP_FREEZE_ON_ENTITY_COLLISION
+        | SPELL_PROP_HOSTILE_COLLISION_CALLBACK;
+
+    spell.projectile.projectile_speed = 800.0f;
+    spell.projectile.collider_size = v2(4, 4);
+
+    DamageRange damage_range = {0};
+    set_damage_range_for_type(&damage_range, DMG_TYPE_Lightning, 1, 1);
+    spell.damage_field.base_damage = damage_range;
+    spell.damage_field.retrigger_behaviour = retrigger_never();
+
+    spell.chaining.chaining_distance = 500.0f;
+
+    // The first arc spell creates a new chain, while the triggers
+    // continue the chain
+    spell.chaining.behaviour = CHAIN_BEHAVIOUR_BEGIN_NEW_CHAIN;
+
+    spell.hostile_collision_callback = arc_collision_callback;
+
+    return spell;
+}
+
+static Spell spell_arc_trigger(void)
+{
+    Spell spell = spell_arc();
+
+    spell.properties |= SPELL_PROP_ARCING;
+    spell_unset_property(&spell, SPELL_PROP_FREEZE_ON_ENTITY_COLLISION);
+    spell_unset_property(&spell, SPELL_PROP_DAMAGE_FIELD);
+
+    spell.arcing.arcing_speed = 400.0f;
+    spell.arcing.damage = spell.damage_field.base_damage;
+    spell.arcing.penetration_values = spell.damage_field.penetration_values;
+
+    spell.chaining.behaviour = CHAIN_BEHAVIOUR_CONTINUE_CURRENT_CHAIN;
+
+    return spell;
+}
+
 void magic_initialize(void)
 {
     g_spells.spells[SPELL_FIREBALL] = spell_fireball();
@@ -509,6 +700,8 @@ void magic_initialize(void)
     g_spells.spells[SPELL_ICE_SHARD] = spell_ice_shard();
     g_spells.spells[SPELL_ICE_SHARD_TRIGGER] = spell_ice_shard_trigger();
     g_spells.spells[SPELL_BLIZZARD] = spell_blizzard();
+    g_spells.spells[SPELL_ARC] = spell_arc();
+    g_spells.spells[SPELL_ARC_TRIGGER] = spell_arc_trigger();
 }
 
 void magic_add_to_spellbook(SpellCasterComponent *spellcaster, SpellID id)
@@ -530,11 +723,13 @@ void magic_add_to_spellbook(SpellCasterComponent *spellcaster, SpellID id)
 String spell_type_to_string(SpellID id)
 {
     switch (id) {
-	case SPELL_FIREBALL: return str_lit("Fireball");
-	case SPELL_SPARK: return str_lit("Spark");
-	case SPELL_ICE_SHARD: return str_lit("Ice shard");
+	case SPELL_FIREBALL:          return str_lit("Fireball");
+	case SPELL_SPARK:             return str_lit("Spark");
+	case SPELL_ICE_SHARD:         return str_lit("Ice shard");
 	case SPELL_ICE_SHARD_TRIGGER: return str_lit("Ice shard trigger");
-	case SPELL_BLIZZARD: return str_lit("Blizzard");
+	case SPELL_BLIZZARD:          return str_lit("Blizzard");
+	case SPELL_ARC:               return str_lit("Arc");
+	case SPELL_ARC_TRIGGER:       return str_lit("Arc trigger");
 	case SPELL_COUNT: ASSERT(0);
     }
 
@@ -558,6 +753,7 @@ f32 get_spell_cast_duration(SpellID id)
     const Spell *spell = get_spell_by_id(id);
 
     f32 result = spell->cast_duration;
+    ASSERT(result > 0.0f);
 
     return result;
 }

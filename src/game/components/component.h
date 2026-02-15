@@ -44,6 +44,7 @@
     COMPONENT(Equippable)                       \
     COMPONENT(Equipment)			\
     COMPONENT(NameComponent)			\
+    COMPONENT(ArcingComponent)			\
 
 #define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -112,6 +113,11 @@ typedef struct StatusEffectComponent {
     StatusEffectStack stackable_effects[STATUS_EFFECT_COUNT];
     StatusEffectInstance non_stackable_effects[STATUS_EFFECT_COUNT];
 } StatusEffectComponent;
+
+typedef struct {
+    Vector2 target_position;
+    f32 travel_speed;
+} ArcingComponent;
 
 static inline String component_id_to_string(ComponentID id)
 {

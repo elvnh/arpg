@@ -167,7 +167,6 @@ static void handle_entity_removal_side_effects(World *world, EntityID id)
             }
         }
     }
-
 }
 
 static void world_remove_entity(World *world, ssize alive_entity_index)
@@ -257,6 +256,29 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 {
     EntityID id = world->alive_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
+
+    if (es_has_components(entity, component_id(ArcingComponent) | component_id(PhysicsComponent))) {
+        ArcingComponent *arcing = es_get_component(entity, ArcingComponent);
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+        Vector2 entity_center = rect_center(world_get_entity_bounding_box(entity, physics));
+
+        Vector2 dir = v2_norm(v2_sub(arcing->target_position, entity_center));
+        Vector2 next_velocity = v2_mul_s(dir, arcing->travel_speed);
+        Vector2 next_center_position = v2_add(entity_center, v2_mul_s(next_velocity, dt));
+        f32 dist_to_target = v2_dist_sq(entity_center, arcing->target_position);
+        f32 dist_to_next_pos = v2_dist_sq(entity_center, next_center_position);
+
+        if (dist_to_target < 100.0f) {
+            physics->velocity = V2_ZERO;
+
+            es_remove_component(entity, ArcingComponent);
+        } else if (dist_to_target > dist_to_next_pos) {
+            physics->velocity = next_velocity;
+        } else {
+            f32 x = dist_to_target / dist_to_next_pos;
+            physics->velocity = v2_mul_s(next_velocity, x);
+        }
+    }
 
     if (es_has_component(entity, HealthComponent)) {
 	HealthComponent *hp = es_get_component(entity, HealthComponent);

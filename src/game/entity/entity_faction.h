@@ -26,4 +26,24 @@ static inline String entity_faction_to_string(EntityFaction faction)
     return null_string;
 }
 
+typedef struct {
+    b32 ok;
+    EntityFaction hostile_faction;
+} GetHostileFactionResult;
+
+static inline GetHostileFactionResult get_hostile_faction(EntityFaction our_faction)
+{
+    GetHostileFactionResult result = {0};
+
+    if (our_faction == FACTION_PLAYER) {
+        result.ok = true;
+        result.hostile_faction = FACTION_ENEMY;
+    } else if (our_faction == FACTION_ENEMY) {
+        result.ok = true;
+        result.hostile_faction = FACTION_PLAYER;
+    }
+
+    return result;
+}
+
 #endif //ENTITY_FACTION_H

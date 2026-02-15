@@ -28,6 +28,4 @@ void execute_entity_vs_entity_collision_policy(struct World *world,
     struct Entity *other,  struct ColliderComponent *other_collider,
     CollisionInfo collision, EntityPairIndex collision_index, struct LinearArena *frame_arena);
 
-
-
 #endif //COLLISION_POLICY_H

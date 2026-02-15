@@ -13,7 +13,6 @@ typedef struct {
     EntityGeneration generation;
 } EntityID;
 
-
 typedef struct {
     EntityID   entity_a;
     EntityID   entity_b;

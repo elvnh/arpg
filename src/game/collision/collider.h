@@ -47,15 +47,10 @@ static inline void set_collision_policy_vs_hostile_faction(ColliderComponent *co
     ASSERT(our_faction != FACTION_NEUTRAL);
     ASSERT(our_faction != FACTION_COUNT);
 
-    EntityFaction hostile_faction = 0;
+    GetHostileFactionResult result = get_hostile_faction(our_faction);
 
-    if (our_faction == FACTION_PLAYER) {
-	hostile_faction = FACTION_ENEMY;
-    } else {
-	hostile_faction = FACTION_PLAYER;
-    }
-
-    set_collision_policy_vs_faction(collider, policy, hostile_faction);
+    ASSERT(result.ok);
+    set_collision_policy_vs_faction(collider, policy, result.hostile_faction);
 }
 
 #endif //COLLIDER_H

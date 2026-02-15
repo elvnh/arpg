@@ -61,7 +61,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
 EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction);
 EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction);
 Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physics);
-void world_kill_entity(World *world, Entity *entity);
+void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena);
 void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentID component,
                                 RetriggerBehaviour retrigger_behaviour);
 void    world_set_player_entity(World *world, EntityID id);

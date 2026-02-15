@@ -86,8 +86,10 @@ typedef struct {
 static SpellArray g_spells = {0};
 
 // TODO: move to callback file
-static void spawn_particles_on_death(void *user_data, EventData event_data)
+static void spawn_particles_on_death(void *user_data, EventData event_data, LinearArena *frame_arena)
 {
+    (void)frame_arena;
+
     ParticleSpawnerSetup *setup = user_data;
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
@@ -416,8 +418,10 @@ static Spell spell_blizzard(void)
     return spell;
 }
 
-static void ice_shard_collision_callback(void *user_data, EventData event_data)
+static void ice_shard_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
 {
+    (void)frame_arena;
+
     SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);

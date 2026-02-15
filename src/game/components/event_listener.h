@@ -38,7 +38,7 @@ typedef struct {
     } as;
 } EventData;
 
-typedef void (*CallbackFunction)(void *, EventData);
+typedef void (*CallbackFunction)(void *, EventData, struct LinearArena *);
 
 typedef struct {
     CallbackFunction function;
@@ -54,7 +54,8 @@ typedef struct {
     PerEventTypeCallbacks per_event_callbacks[EVENT_COUNT];
 } EventListenerComponent;
 
-void send_event_to_entity(struct Entity *entity, EventData event_data, struct World *world);
+void send_event_to_entity(struct Entity *entity, EventData event_data, struct World *world,
+    struct LinearArena *frame_arena);
 void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
     const void *user_data, s32 data_size, s32 data_alignment);
 

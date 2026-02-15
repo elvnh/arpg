@@ -193,10 +193,10 @@ static void world_remove_entity(World *world, ssize alive_entity_index)
     --world->alive_entity_count;
 }
 
-void world_kill_entity(World *world, Entity *entity)
+void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena)
 {
     EventData death_event = event_data_death();
-    send_event_to_entity(entity, death_event, world);
+    send_event_to_entity(entity, death_event, world, frame_arena);
 
     es_schedule_entity_for_removal(entity);
 }
@@ -252,7 +252,7 @@ static b32 entity_should_die(Entity *entity)
     return false;
 }
 
-static void entity_update(World *world, ssize alive_entity_index, f32 dt)
+static void entity_update(World *world, ssize alive_entity_index, f32 dt, LinearArena *frame_arena)
 {
     EntityID id = world->alive_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
@@ -327,7 +327,7 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt)
 
     if (entity_should_die(entity)) {
         // NOTE: won't be removed until after this frame
-	world_kill_entity(world, entity);
+	world_kill_entity(world, entity, frame_arena);
     }
 }
 
@@ -492,7 +492,7 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 static f32 entity_vs_entity_collision(World *world,
     Entity *a, ColliderComponent *collider_a, PhysicsComponent *physics_a,
     Entity *b, ColliderComponent *collider_b, PhysicsComponent *physics_b,
-    f32 movement_fraction_left, f32 dt)
+    f32 movement_fraction_left, f32 dt, LinearArena *frame_arena)
 {
     ASSERT(a);
     ASSERT(b);
@@ -519,9 +519,9 @@ static f32 entity_vs_entity_collision(World *world,
 
 	if (neither_collider_on_cooldown) {
 	    execute_entity_vs_entity_collision_policy(world, a, physics_a, collider_a,
-                b, collider_b, collision, ENTITY_PAIR_INDEX_FIRST);
+                b, collider_b, collision, ENTITY_PAIR_INDEX_FIRST, frame_arena);
 	    execute_entity_vs_entity_collision_policy(world, b, physics_b, collider_b,
-                a, collider_a, collision, ENTITY_PAIR_INDEX_SECOND);
+                a, collider_a, collision, ENTITY_PAIR_INDEX_SECOND, frame_arena);
 
 	    invoke_entity_vs_entity_collision_triggers(world, a, b);
 	    invoke_entity_vs_entity_collision_triggers(world, b, a);
@@ -533,7 +533,7 @@ static f32 entity_vs_entity_collision(World *world,
 	if (!entities_intersected_previous_frame(world, id_a, id_b)) {
 	    if (a->faction != b->faction) {
 		EventData event_data = event_data_hostile_collision(id_b);
-		send_event_to_entity(a, event_data, world);
+		send_event_to_entity(a, event_data, world, frame_arena);
 	    }
 	}
 
@@ -561,7 +561,7 @@ static Rectangle get_entity_collision_area(ColliderComponent *collider, PhysicsC
 }
 
 static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collider,
-    PhysicsComponent *physics, World *world, f32 movement_fraction_left, f32 dt)
+    PhysicsComponent *physics, World *world, f32 movement_fraction_left, f32 dt, LinearArena *frame_arena)
 {
     Rectangle collision_area = get_entity_collision_area(collider, physics, dt);
 
@@ -597,10 +597,11 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
                 if (collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) {
 		    movement_fraction_left = collision.movement_fraction_left;
 
-		    execute_entity_vs_tilemap_collision_policy(world, entity, physics, collider, collision);
+		    execute_entity_vs_tilemap_collision_policy(world, entity, physics, collider,
+                        collision, frame_arena);
 
 		    EventData event_data = event_data_tilemap_collision(collision_coords);
-		    send_event_to_entity(entity, event_data, world);
+		    send_event_to_entity(entity, event_data, world, frame_arena);
                 }
             }
         }
@@ -628,7 +629,7 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
 
         if (collider_a && physics_a) {
             movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, physics_a, world,
-		movement_fraction_left, dt);
+		movement_fraction_left, dt, frame_arena);
 	    ASSERT(movement_fraction_left >= 0.0f);
 
             Rectangle collision_area = get_entity_collision_area(collider_a, physics_a, dt);
@@ -644,7 +645,8 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
 
                     if (collider_b && physics_b) {
                         movement_fraction_left = entity_vs_entity_collision(world, a, collider_a,
-                            physics_a, b, collider_b, physics_b, movement_fraction_left, dt);
+                            physics_a, b, collider_b, physics_b, movement_fraction_left,
+                            dt, frame_arena);
                     }
                 }
             }
@@ -710,7 +712,7 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     EntityIndex entity_count = world->alive_entity_count;
 
     for (EntityIndex i = 0; i < entity_count; ++i) {
-        entity_update(world, i, frame_data->dt);
+        entity_update(world, i, frame_data->dt, frame_arena);
     }
 
     hitsplats_update(world, frame_data);

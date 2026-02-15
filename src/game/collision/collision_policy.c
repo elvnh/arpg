@@ -5,7 +5,7 @@
 #include "world/world.h"
 
 static void execute_collision_policy(World *world, Entity *entity, PhysicsComponent *physics, CollisionPolicy policy,
-    CollisionInfo collision, EntityPairIndex collision_pair_index, b32 should_block)
+    CollisionInfo collision, EntityPairIndex collision_pair_index, b32 should_block, LinearArena *frame_arena)
 {
     // NOTE: This function handles both entity vs tilemap and entity vs entity collisions.
     // If the collision is vs a tile, pass ENTITY_PAIR_INDEX_FIRST as collision_pair_index.
@@ -39,7 +39,7 @@ static void execute_collision_policy(World *world, Entity *entity, PhysicsCompon
 	} break;
 
 	case COLLISION_POLICY_DIE: {
-	    world_kill_entity(world, entity);
+	    world_kill_entity(world, entity, frame_arena);
 	} break;
 
 
@@ -52,19 +52,21 @@ static void execute_collision_policy(World *world, Entity *entity, PhysicsCompon
 }
 
 void execute_entity_vs_tilemap_collision_policy(World *world, Entity *entity, PhysicsComponent *physics,
-    ColliderComponent *collider, CollisionInfo collision)
+    ColliderComponent *collider, CollisionInfo collision, LinearArena *frame_arena)
 {
     CollisionPolicy policy = collider->tilemap_collision_policy;
 
     b32 should_block = policy != COLLISION_POLICY_PASS_THROUGH;
 
-    execute_collision_policy(world, entity, physics, policy, collision, ENTITY_PAIR_INDEX_FIRST, should_block);
+    execute_collision_policy(world, entity, physics, policy, collision,
+        ENTITY_PAIR_INDEX_FIRST, should_block, frame_arena);
 }
 
 void execute_entity_vs_entity_collision_policy(World *world,
     Entity *entity, PhysicsComponent *entity_physics, ColliderComponent *entity_collider,
     Entity *other,  ColliderComponent *other_collider,
-    CollisionInfo collision, EntityPairIndex collision_index)
+    CollisionInfo collision, EntityPairIndex collision_index,
+    LinearArena *frame_arena)
 {
     ASSERT(entity);
     ASSERT(other);
@@ -86,5 +88,5 @@ void execute_entity_vs_entity_collision_policy(World *world,
     // NOTE: we only execute OUR behaviour for THEM, this function is expected to be called
     // twice for each collision pair
     execute_collision_policy(world, entity, entity_physics, our_policy_for_them, collision,
-	collision_index, should_block);
+	collision_index, should_block, frame_arena);
 }

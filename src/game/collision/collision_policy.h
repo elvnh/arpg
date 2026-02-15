@@ -10,6 +10,7 @@ struct EntitySystem;
 struct FreeListArena;
 struct PhysicsComponent;
 struct ColliderComponent;
+struct LinearArena;
 
 typedef enum {
     COLLISION_POLICY_PASS_THROUGH, // NOTE: since this is the first enum value, it's the default behaviour
@@ -19,13 +20,13 @@ typedef enum {
 } CollisionPolicy;
 
 void execute_entity_vs_tilemap_collision_policy(struct World *world, struct Entity *entity, struct PhysicsComponent *physics,
-    struct ColliderComponent *collider, CollisionInfo collision);
+    struct ColliderComponent *collider, CollisionInfo collision, struct LinearArena *frame_arena);
 
 // TODO: reduce number of parameters
 void execute_entity_vs_entity_collision_policy(struct World *world,
     struct Entity *entity, struct PhysicsComponent *entity_physics, struct ColliderComponent *entity_collider,
     struct Entity *other,  struct ColliderComponent *other_collider,
-    CollisionInfo collision, EntityPairIndex collision_index);
+    CollisionInfo collision, EntityPairIndex collision_index, struct LinearArena *frame_arena);
 
 
 

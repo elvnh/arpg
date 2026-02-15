@@ -33,7 +33,7 @@ void add_event_callback_impl(Entity *entity, EventType event_type, CallbackFunct
     }
 }
 
-void send_event_to_entity(Entity *entity, EventData event_data, World *world)
+void send_event_to_entity(Entity *entity, EventData event_data, World *world, LinearArena *frame_arena)
 {
     ASSERT(event_data.event_type >= 0);
     ASSERT(event_data.event_type < EVENT_COUNT);
@@ -51,7 +51,7 @@ void send_event_to_entity(Entity *entity, EventData event_data, World *world)
 	    ASSERT(current_cb->function);
 
             void *user_data = entity_arena_get(&entity->entity_arena, current_cb->user_data_arena_index);
-	    current_cb->function(user_data, event_data);
+	    current_cb->function(user_data, event_data, frame_arena);
         }
     }
 }

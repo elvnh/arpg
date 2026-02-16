@@ -26,7 +26,8 @@ struct World;
   - Make forking spells be a property
   - Blizzards damage roll should be recalculated each hit
   - Use set_damage_range_for_type
-  - SPELL_PROP_STOP_ON_WALL_COLLISION
+  - Make it so that chaining spells reroll their damage each hit
+  - Make spell callbacks be a union so we always have access to original caster
  */
 
 typedef enum {
@@ -35,6 +36,7 @@ typedef enum {
     SPELL_ICE_SHARD,
     SPELL_ICE_SHARD_TRIGGER,
     SPELL_BLIZZARD,
+    SPELL_CHAIN,
     // SPELL_ARC,
     // SPELL_ARC_TRIGGER,
     SPELL_COUNT,

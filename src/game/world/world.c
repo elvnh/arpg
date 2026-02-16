@@ -4,6 +4,7 @@
 #include "collision/collision.h"
 #include "collision/collision_event.h"
 #include "collision/collider.h"
+#include "components/chain.h"
 #include "components/component.h"
 #include "components/particle_spawner.h"
 #include "entity/entity_system.h"
@@ -115,7 +116,7 @@ EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction fa
 // Handles anything that needs to be handled before removing an entity,
 // such as transferring components that need to stay alive a little longer
 // over to a new entity.
-static void handle_entity_removal_side_effects(World *world, EntityID id)
+static void handle_entity_removal_side_effects(World *world, EntityID id, LinearArena *frame_arena)
 {
     Entity *dying_entity = es_get_entity(&world->entity_system, id);
     PhysicsComponent *dying_entity_physics = es_get_component(dying_entity, PhysicsComponent);
@@ -167,15 +168,41 @@ static void handle_entity_removal_side_effects(World *world, EntityID id)
             }
         }
     }
+
+    if (es_has_component(dying_entity, ChainComponent)) {
+	// If an entity is part of a chain, we kill the next entity in the chain too.
+
+	// NOTE: The next entity will only be marked for removal and therefore there
+	// is no guarantee that it will be removed this frame, it will probably be removed
+	// on the next frame. Given this, each link in the chain will be removed on subsequent
+	// frames, but that probably won't be a problem?
+	ChainComponent *chain = es_get_component(dying_entity, ChainComponent);
+	Entity *next = get_next_entity_in_chain(&world->entity_system, chain);
+
+	if (next) {
+	    world_kill_entity(world, next, frame_arena);
+	}
+
+	/* Entity *current = es_try_get_entity(es, chain->next_link_entity_id); */
+
+	/* while (current) { */
+	/*     ChainComponent *current_link = es_get_component(current, ChainComponent); */
+
+	/*     // Remove chain so */
+	/*     world_kill_entity(world, current, frame_arena); */
+
+	/*     current = next; */
+	/* } */
+    }
 }
 
-static void world_remove_entity(World *world, ssize alive_entity_index)
+static void world_remove_entity(World *world, ssize alive_entity_index, LinearArena *frame_arena)
 {
     ASSERT(alive_entity_index < world->alive_entity_count);
 
     EntityID *id = &world->alive_entity_ids[alive_entity_index];
 
-    handle_entity_removal_side_effects(world, *id);
+    handle_entity_removal_side_effects(world, *id, frame_arena);
 
     es_remove_entity(&world->entity_system, *id);
 
@@ -410,7 +437,7 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 	    sprite->color, shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
-    if (es_has_component(entity, ChainComponent)) {
+    if (es_has_component(entity, ChainComponent) && debug_state->render_chain_links) {
         // TODO: make it possible to customize how chains are rendered
         ChainComponent *chain = es_get_component(entity, ChainComponent);
         Entity *next_link = get_next_entity_in_chain(&world->entity_system, chain);
@@ -419,8 +446,8 @@ static void entity_render(Entity *entity, RenderBatches rbs,
             PhysicsComponent *next_link_physics = es_get_component(next_link, PhysicsComponent);
 
             if (next_link_physics) {
-                draw_line(rbs.world_rb, scratch, physics->position, next_link_physics->position,
-                    RGBA32_WHITE, 8.0f, shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
+                draw_line(rbs.worldspace_ui_rb, scratch, physics->position, next_link_physics->position,
+                    RGBA32_WHITE, 4.0f, shader_handle(SHAPE_SHADER), 0);
             }
         }
     }
@@ -771,14 +798,13 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 
     swap_and_reset_collision_tables(world);
 
-
     // Remove inactive entities on end of frame
     for (ssize i = 0; i < world->alive_entity_count; ++i) {
 	EntityID *id = &world->alive_entity_ids[i];
 	Entity *entity = es_get_entity(&world->entity_system, *id);
 
 	if (es_entity_is_inactive(entity)) {
-	    world_remove_entity(world, i);
+	    world_remove_entity(world, i, frame_arena);
 	    --i;
 	}
     }

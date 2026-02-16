@@ -195,6 +195,7 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     ui_checkbox(ui, str_lit("Render edge list"),         &game->debug_state.render_edge_list);
     ui_checkbox(ui, str_lit("Render camera bounds"),     &game->debug_state.render_camera_bounds);
     ui_checkbox(ui, str_lit("Render chunks"),            &game->debug_state.render_chunks);
+    ui_checkbox(ui, str_lit("Render chain links"),       &game->debug_state.render_chain_links);
 
     ui_spacing(ui, 8);
 

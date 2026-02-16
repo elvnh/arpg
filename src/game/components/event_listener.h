@@ -14,6 +14,8 @@ struct LinearArena;
 struct World;
 struct Entity;
 
+// NOTE: callbacks will be invalid after hot reloading!!!
+
 typedef enum {
     EVENT_HOSTILE_COLLISION,
     EVENT_TILE_COLLISION,

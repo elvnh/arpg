@@ -583,121 +583,75 @@ static Spell spell_ice_shard_trigger(void)
     return spell;
 }
 
-static void arc_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
-{
-    SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
-    EntitySystem *es = &event_data.world->entity_system;
+/* static void arc_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena) */
+/* { */
+/*     SpellCallbackData *cb_data = (SpellCallbackData *)user_data; */
+/*     EntitySystem *es = &event_data.world->entity_system; */
 
-    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
-    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
-    ASSERT(self_physics && "Physics component should have been added when casting spell");
+/*     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id); */
+/*     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent); */
+/*     ASSERT(self_physics && "Physics component should have been added when casting spell"); */
 
-    ChainComponent *self_chain = es_get_component(self, ChainComponent);
-    ASSERT(self_chain);
-    Entity *chain_root_entity = es_get_entity(es, self_chain->chain_root_id);
-    ChainComponent *chain_root = es_get_component(chain_root_entity, ChainComponent);
+/*     ChainComponent *self_chain = es_get_component(self, ChainComponent); */
+/*     ASSERT(self_chain); */
+/*     Entity *chain_root_entity = es_get_entity(es, self_chain->chain_root_id); */
+/*     ChainComponent *chain_root = es_get_component(chain_root_entity, ChainComponent); */
 
-    // NOTE: caster is the original caster, i.e NOT the previous link in the chain
-    Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);
-    Entity *collide_target = es_get_entity(es, event_data.as.hostile_collision.collided_with);
+/*     // NOTE: caster is the original caster, i.e NOT the previous link in the chain */
+/*     Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id); */
+/*     Entity *collide_target = es_get_entity(es, event_data.as.hostile_collision.collided_with); */
 
-    // TODO: instead create an event type for first time collisions?
-    if (has_chained_off_entity(es, chain_root, collide_target->id)) {
-        return;
-    }
+/*     // TODO: instead create an event type for first time collisions? */
+/*     if (has_chained_off_entity(es, chain_root, collide_target->id)) { */
+/*         return; */
+/*     } */
 
-    f32 search_area_size = 500.0f;
-    Rectangle search_area = {
-        v2_sub(self_physics->position, v2(search_area_size / 2.0f, search_area_size / 2.0f)),
-        v2(search_area_size, search_area_size),
-    };
+/*     f32 search_area_size = 500.0f; */
+/*     Rectangle search_area = { */
+/*         v2_sub(self_physics->position, v2(search_area_size / 2.0f, search_area_size / 2.0f)), */
+/*         v2(search_area_size, search_area_size), */
+/*     }; */
 
-    EntityIDList nearby_entities = qt_get_entities_in_area(&event_data.world->quad_tree,
-        search_area, frame_arena);
-    Entity *closest_entity = 0;
-    f32 closest_entity_dist = INFINITY;
+/*     EntityIDList nearby_entities = qt_get_entities_in_area(&event_data.world->quad_tree, */
+/*         search_area, frame_arena); */
+/*     Entity *closest_entity = 0; */
+/*     f32 closest_entity_dist = INFINITY; */
 
-    GetHostileFactionResult hostile_faction_result = get_hostile_faction(caster->faction);
-    ASSERT(hostile_faction_result.ok);
-    EntityFaction hostile_faction = hostile_faction_result.hostile_faction;
+/*     GetHostileFactionResult hostile_faction_result = get_hostile_faction(caster->faction); */
+/*     ASSERT(hostile_faction_result.ok); */
+/*     EntityFaction hostile_faction = hostile_faction_result.hostile_faction; */
 
-    for (EntityIDNode *curr = list_head(&nearby_entities); curr; curr = list_next(curr)) {
-        Entity *curr_entity = es_get_entity(es, curr->id);
-        PhysicsComponent *curr_entity_physics = es_get_component(curr_entity, PhysicsComponent);
-        ASSERT(curr_entity_physics);
+/*     for (EntityIDNode *curr = list_head(&nearby_entities); curr; curr = list_next(curr)) { */
+/*         Entity *curr_entity = es_get_entity(es, curr->id); */
+/*         PhysicsComponent *curr_entity_physics = es_get_component(curr_entity, PhysicsComponent); */
+/*         ASSERT(curr_entity_physics); */
 
-        // TODO: clean this up
-        if ((curr_entity != caster) && (curr_entity != self) && (curr_entity != collide_target)) {
-            if (curr_entity->faction == hostile_faction) {
-                if (!has_chained_off_entity(es, chain_root, curr_entity->id)) {
-                    f32 dist = v2_dist(curr_entity_physics->position, self_physics->position);
+/*         // TODO: clean this up */
+/*         if ((curr_entity != caster) && (curr_entity != self) && (curr_entity != collide_target)) { */
+/*             if (curr_entity->faction == hostile_faction) { */
+/*                 if (!has_chained_off_entity(es, chain_root, curr_entity->id)) { */
+/*                     f32 dist = v2_dist(curr_entity_physics->position, self_physics->position); */
 
-                    if (dist < closest_entity_dist) {
-                        closest_entity = curr_entity;
-                        closest_entity_dist = dist;
-                    }
-                }
-            }
-        }
-    }
+/*                     if (dist < closest_entity_dist) { */
+/*                         closest_entity = curr_entity; */
+/*                         closest_entity_dist = dist; */
+/*                     } */
+/*                 } */
+/*             } */
+/*         } */
+/*     } */
 
-    if (closest_entity) {
-        PhysicsComponent *closest_entity_physics = es_get_component(closest_entity, PhysicsComponent);
-        Vector2 target_pos = closest_entity_physics->position;
-        Vector2 dir = v2_norm(v2_sub(target_pos, self_physics->position));
+/*     if (closest_entity) { */
+/*         PhysicsComponent *closest_entity_physics = es_get_component(closest_entity, PhysicsComponent); */
+/*         Vector2 target_pos = closest_entity_physics->position; */
+/*         Vector2 dir = v2_norm(v2_sub(target_pos, self_physics->position)); */
 
-        ASSERT(!has_chained_off_entity(es, chain_root, closest_entity->id));
+/*         ASSERT(!has_chained_off_entity(es, chain_root, closest_entity->id)); */
 
-        cast_spell_impl(event_data.world, SPELL_ARC_TRIGGER, caster, self, self_physics->position,
-            closest_entity, target_pos, dir, collide_target, retrigger_never());
-    }
-}
-static Spell spell_arc(void)
-{
-    Spell spell = {0};
-    spell.cast_duration = 0.3f;
-
-    spell.properties = SPELL_PROP_CHAINING | SPELL_PROP_DAMAGE_FIELD
-        | SPELL_PROP_PROJECTILE
-        | SPELL_PROP_FREEZE_ON_WALL_COLLISION
-        | SPELL_PROP_FREEZE_ON_ENTITY_COLLISION
-        | SPELL_PROP_HOSTILE_COLLISION_CALLBACK;
-
-    spell.projectile.projectile_speed = 800.0f;
-    spell.projectile.collider_size = v2(4, 4);
-
-    DamageRange damage_range = {0};
-    set_damage_range_for_type(&damage_range, DMG_TYPE_Lightning, 1, 1);
-    spell.damage_field.base_damage = damage_range;
-    spell.damage_field.retrigger_behaviour = retrigger_never();
-
-    spell.chaining.chaining_distance = 500.0f;
-
-    // The first arc spell creates a new chain, while the triggers
-    // continue the chain
-    spell.chaining.behaviour = CHAIN_BEHAVIOUR_BEGIN_NEW_CHAIN;
-
-    spell.hostile_collision_callback = arc_collision_callback;
-
-    return spell;
-}
-
-static Spell spell_arc_trigger(void)
-{
-    Spell spell = spell_arc();
-
-    spell.properties |= SPELL_PROP_ARCING;
-    spell_unset_property(&spell, SPELL_PROP_FREEZE_ON_ENTITY_COLLISION);
-    spell_unset_property(&spell, SPELL_PROP_DAMAGE_FIELD);
-
-    spell.arcing.arcing_speed = 400.0f;
-    spell.arcing.damage = spell.damage_field.base_damage;
-    spell.arcing.penetration_values = spell.damage_field.penetration_values;
-
-    spell.chaining.behaviour = CHAIN_BEHAVIOUR_CONTINUE_CURRENT_CHAIN;
-
-    return spell;
-}
+/*         cast_spell_impl(event_data.world, SPELL_ARC_TRIGGER, caster, self, self_physics->position, */
+/*             closest_entity, target_pos, dir, collide_target, retrigger_never()); */
+/*     } */
+/* } */
 
 void magic_initialize(void)
 {
@@ -706,8 +660,6 @@ void magic_initialize(void)
     g_spells.spells[SPELL_ICE_SHARD] = spell_ice_shard();
     g_spells.spells[SPELL_ICE_SHARD_TRIGGER] = spell_ice_shard_trigger();
     g_spells.spells[SPELL_BLIZZARD] = spell_blizzard();
-    g_spells.spells[SPELL_ARC] = spell_arc();
-    g_spells.spells[SPELL_ARC_TRIGGER] = spell_arc_trigger();
 }
 
 void magic_add_to_spellbook(SpellCasterComponent *spellcaster, SpellID id)
@@ -734,8 +686,6 @@ String spell_type_to_string(SpellID id)
 	case SPELL_ICE_SHARD:         return str_lit("Ice shard");
 	case SPELL_ICE_SHARD_TRIGGER: return str_lit("Ice shard trigger");
 	case SPELL_BLIZZARD:          return str_lit("Blizzard");
-	case SPELL_ARC:               return str_lit("Arc");
-	case SPELL_ARC_TRIGGER:       return str_lit("Arc trigger");
 	case SPELL_COUNT: ASSERT(0);
     }
 

@@ -35,8 +35,8 @@ typedef enum {
     SPELL_ICE_SHARD,
     SPELL_ICE_SHARD_TRIGGER,
     SPELL_BLIZZARD,
-    SPELL_ARC,
-    SPELL_ARC_TRIGGER,
+    // SPELL_ARC,
+    // SPELL_ARC_TRIGGER,
     SPELL_COUNT,
 } SpellID;
 

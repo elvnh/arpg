@@ -131,6 +131,43 @@ static void spawn_particles_on_death(void *user_data, EventData event_data, Line
     spawn_particles_in_chunk(chunk, self_bounds, setup->config, setup->total_particle_count);
 }
 
+static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *self_chain,
+    Vector2 position, Rectangle search_area, Entity *chained_off_entity, LinearArena *frame_arena)
+{
+    EntityIDList nearby_entities = qt_get_entities_in_area(&world->quad_tree,
+        search_area, frame_arena);
+
+    // TODO: break out getting closest entity into function
+    Entity *closest_entity = 0;
+    f32 closest_entity_dist = INFINITY;
+
+    GetHostileFactionResult hostile_faction_result = get_hostile_faction(self->faction);
+    EntityFaction hostile_faction = hostile_faction_result.hostile_faction;
+    ASSERT(hostile_faction_result.ok);
+    // get current chain count
+    // get chain area
+
+    for (EntityIDNode *curr = list_head(&nearby_entities); curr; curr = list_next(curr)) {
+        Entity *curr_entity = es_get_entity(&world->entity_system, curr->id);
+        PhysicsComponent *curr_entity_physics = es_get_component(curr_entity, PhysicsComponent);
+        ASSERT(curr_entity_physics);
+
+        // TODO: clean this up
+        if ((curr_entity->faction == hostile_faction) && (curr_entity != chained_off_entity)) {
+	    if (!has_chained_off_entity(&world->entity_system, self_chain, curr_entity->id)) {
+		f32 dist = v2_dist(curr_entity_physics->position, position);
+
+		if (dist < closest_entity_dist) {
+		    closest_entity = curr_entity;
+		    closest_entity_dist = dist;
+		}
+            }
+        }
+    }
+
+    return closest_entity;
+}
+
 static void chain_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
 {
     SpellCallbackData *cb_data = user_data;
@@ -169,32 +206,8 @@ static void chain_collision_callback(void *user_data, EventData event_data, Line
         search_area, frame_arena);
 
     // TODO: break out getting closest entity into function
-    Entity *closest_entity = 0;
-    f32 closest_entity_dist = INFINITY;
-
-    GetHostileFactionResult hostile_faction_result = get_hostile_faction(self->faction);
-    EntityFaction hostile_faction = hostile_faction_result.hostile_faction;
-    ASSERT(hostile_faction_result.ok);
-    // get current chain count
-    // get chain area
-
-    for (EntityIDNode *curr = list_head(&nearby_entities); curr; curr = list_next(curr)) {
-        Entity *curr_entity = es_get_entity(es, curr->id);
-        PhysicsComponent *curr_entity_physics = es_get_component(curr_entity, PhysicsComponent);
-        ASSERT(curr_entity_physics);
-
-        // TODO: clean this up
-        if ((curr_entity->faction == hostile_faction) && (curr_entity != collide_target)) {
-	    if (!has_chained_off_entity(es, chain, curr_entity->id)) {
-		f32 dist = v2_dist(curr_entity_physics->position, self_physics->position);
-
-		if (dist < closest_entity_dist) {
-		    closest_entity = curr_entity;
-		    closest_entity_dist = dist;
-		}
-            }
-        }
-    }
+    Entity *closest_entity = try_get_chain_target(event_data.world, self, chain,
+	self_physics->position, search_area, collide_target, frame_arena);
 
     if (closest_entity) {
         PhysicsComponent *closest_entity_physics = es_get_component(closest_entity, PhysicsComponent);
@@ -682,7 +695,7 @@ static Spell spell_chain(void)
 	SPRITE_ROTATE_BASED_ON_DIR
     );
 
-    spell.projectile.projectile_speed = 300.0f;
+    spell.projectile.projectile_speed = 1000.0f;
     spell.projectile.collider_size = spell.sprite.size;
 
     DamageRange damage_range = {0};

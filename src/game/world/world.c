@@ -170,29 +170,35 @@ static void handle_entity_removal_side_effects(World *world, EntityID id, Linear
     }
 
     if (es_has_component(dying_entity, ChainComponent)) {
-	// If an entity is part of a chain, we kill the next entity in the chain too.
-
-	// NOTE: The next entity will only be marked for removal and therefore there
-	// is no guarantee that it will be removed this frame, it will probably be removed
-	// on the next frame. Given this, each link in the chain will be removed on subsequent
-	// frames, but that probably won't be a problem?
+	// If an entity is part of a chain, we kill all next and previous entities in the chain too
+	// NOTE: The next and previous entities will only be marked for removal and therefore there
+	// is no guarantee that they will be removed this frame, so don't depend on that
+	Entity *curr = 0;
 	ChainComponent *chain = es_get_component(dying_entity, ChainComponent);
-	Entity *next = get_next_entity_in_chain(&world->entity_system, chain);
 
-	if (next) {
-	    world_kill_entity(world, next, frame_arena);
+	// Remove entities before us in chain
+	curr = get_previous_entity_in_chain(&world->entity_system, chain);
+	while (curr) {
+	    ChainComponent *curr_link = es_get_component(curr, ChainComponent);
+	    Entity *prev = get_previous_entity_in_chain(&world->entity_system, curr_link);
+
+	    remove_link_from_chain(&world->entity_system, curr_link);
+	    world_kill_entity(world, curr, frame_arena);
+
+	    curr = prev;
 	}
 
-	/* Entity *current = es_try_get_entity(es, chain->next_link_entity_id); */
+        // Remove entities after us in chain
+	curr = get_next_entity_in_chain(&world->entity_system, chain);
+	while (curr) {
+	    ChainComponent *curr_link = es_get_component(curr, ChainComponent);
+	    Entity *next = get_next_entity_in_chain(&world->entity_system, curr_link);
 
-	/* while (current) { */
-	/*     ChainComponent *current_link = es_get_component(current, ChainComponent); */
+	    remove_link_from_chain(&world->entity_system, curr_link);
+	    world_kill_entity(world, curr, frame_arena);
 
-	/*     // Remove chain so */
-	/*     world_kill_entity(world, current, frame_arena); */
-
-	/*     current = next; */
-	/* } */
+	    curr = next;
+	}
     }
 }
 

@@ -181,9 +181,6 @@ static void chain_collision_callback(void *user_data, EventData event_data, Line
 	search_area_dims,
     };
 
-    EntityIDList nearby_entities = qt_get_entities_in_area(&event_data.world->quad_tree,
-        search_area, frame_arena);
-
     // TODO: break out getting closest entity into function
     Entity *closest_entity = try_get_chain_target(event_data.world, self, chain,
 	self_physics->position, search_area, collide_target, frame_arena);
@@ -674,7 +671,7 @@ static Spell spell_chain(void)
 	SPRITE_ROTATE_BASED_ON_DIR
     );
 
-    spell.projectile.projectile_speed = 1000.0f;
+    spell.projectile.projectile_speed = 500.0f;
     spell.projectile.collider_size = spell.sprite.size;
 
     DamageRange damage_range = {0};

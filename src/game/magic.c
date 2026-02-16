@@ -105,7 +105,7 @@ typedef struct {
 
     struct {
 	s32 chains_remaining;
-	f32 chain_search_area_size;
+	f32 search_area_size;
     } chain;
 } SpellCallbackData;
 
@@ -134,28 +134,32 @@ static void spawn_particles_on_death(void *user_data, EventData event_data, Line
 static void chain_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
 {
     SpellCallbackData *cb_data = user_data;
+    ASSERT(cb_data->chain.chains_remaining >= 0);
+
     EntitySystem *es = &event_data.world->entity_system;
     Entity *self = es_get_entity(es, event_data.receiver_id);
 
-    ASSERT(cb_data->chain.chains_remaining >= 0);
+    Entity *collide_target = es_get_entity(es, event_data.as.hostile_collision.collided_with);
+    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
+    ASSERT(self_physics);
+
+    // NOTE: the spell must be the root of the chain
+    ChainComponent *chain = es_get_component(self, ChainComponent);
+    ASSERT(chain);
+
+    // NOTE: We check if we have already chained off this entity BEFORE we kill
+    // the entity due to no chains remaining, since we don't want to die on this one
+    // if we've already chained off it, even if we happen to be out of chains
+    if (has_chained_off_entity(es, chain, collide_target->id)) {
+	return;
+    }
 
     if (cb_data->chain.chains_remaining == 0) {
 	world_kill_entity(event_data.world, self, frame_arena);
 	return;
     }
 
-    Entity *collide_target = es_get_entity(es, event_data.as.hostile_collision.collided_with);
-    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
-    ChainComponent *chain = es_get_component(self, ChainComponent);
-    ASSERT(chain);
-    ASSERT(self_physics);
-
-    // NOTE: the spell must be the root of the chain
-    if (has_chained_off_entity(es, chain, collide_target->id)) {
-	return;
-    }
-
-    Vector2 search_area_dims = {cb_data->chain.chain_search_area_size, cb_data->chain.chain_search_area_size};
+    Vector2 search_area_dims = {cb_data->chain.search_area_size, cb_data->chain.search_area_size};
     Rectangle search_area = {
         v2_sub(self_physics->position, v2_div_s(search_area_dims, 2.0f)),
 	search_area_dims,
@@ -387,7 +391,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster, 
 
 	SpellCallbackData data = {0};
 	data.caster_id = caster->id;
-	data.chain.chain_search_area_size = spell->chaining.chain_search_area_size;
+	data.chain.search_area_size = spell->chaining.chain_search_area_size;
 	data.chain.chains_remaining = spell->chaining.max_chains;
 
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, chain_collision_callback, &data);

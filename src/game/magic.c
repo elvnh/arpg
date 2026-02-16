@@ -83,11 +83,6 @@ typedef struct {
     } arcing;
 } Spell;
 
-// TODO: this struct isn't necessary anymore
-typedef struct SpellArray {
-    Spell spells[SPELL_COUNT];
-} SpellArray;
-
 typedef struct {
     EntityID caster_id;
 
@@ -112,7 +107,7 @@ typedef struct {
     f32 spell_cone_angle_in_radians;
 } CastSpellParams;
 
-static SpellArray g_spells = {0};
+Spell g_spells[SPELL_COUNT];
 
 // TODO: move to callback file since this has nothing to do with spells
 static void spawn_particles_on_death(void *user_data, EventData event_data, LinearArena *frame_arena)
@@ -249,7 +244,7 @@ static const Spell *get_spell_by_id(SpellID id)
     ASSERT(id >= 0);
     ASSERT(id < SPELL_COUNT);
 
-    return &g_spells.spells[id];
+    return &g_spells[id];
 }
 
 static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena);
@@ -740,12 +735,12 @@ static Spell spell_chain(void)
 
 void magic_initialize(void)
 {
-    g_spells.spells[SPELL_FIREBALL] = spell_fireball();
-    g_spells.spells[SPELL_SPARK] = spell_spark();
-    g_spells.spells[SPELL_ICE_SHARD] = spell_ice_shard();
-    g_spells.spells[SPELL_ICE_SHARD_TRIGGER] = spell_ice_shard_trigger();
-    g_spells.spells[SPELL_BLIZZARD] = spell_blizzard();
-    g_spells.spells[SPELL_CHAIN] = spell_chain();
+    g_spells[SPELL_FIREBALL] = spell_fireball();
+    g_spells[SPELL_SPARK] = spell_spark();
+    g_spells[SPELL_ICE_SHARD] = spell_ice_shard();
+    g_spells[SPELL_ICE_SHARD_TRIGGER] = spell_ice_shard_trigger();
+    g_spells[SPELL_BLIZZARD] = spell_blizzard();
+    g_spells[SPELL_CHAIN] = spell_chain();
 }
 
 void magic_add_to_spellbook(SpellCasterComponent *spellcaster, SpellID id)

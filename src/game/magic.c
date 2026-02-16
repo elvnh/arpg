@@ -244,7 +244,7 @@ static const Spell *get_spell_by_id(SpellID id)
 static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena);
 
 // TODO: clean up the parent spell entity business
-static void cast_single_spell(World *world, const Spell *spell, Entity *caster, Entity *parent_spell_entity,
+static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     Vector2 spell_origin, Entity *target_entity, Vector2 target_pos, Vector2 dir, Entity *cooldown_target, // TODO: rename cooldown_target
     RetriggerBehaviour cooldown_retrigger)
 {
@@ -438,7 +438,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster, 
 }
 
 
-static void cast_spell_impl(World *world, const Spell *spell, Entity *caster, Entity *parent_spell_entity,
+static void cast_spell_impl(World *world, const Spell *spell, Entity *caster,
     Vector2 spell_origin, Entity *target, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
     RetriggerBehaviour cooldown_retrigger, s32 spell_count)
 {
@@ -459,7 +459,7 @@ static void cast_spell_impl(World *world, const Spell *spell, Entity *caster, En
     for (s32 i = 0; i < spell_count; ++i) {
 	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
 
-	cast_single_spell(world, spell, caster, parent_spell_entity, spell_origin, target,
+	cast_single_spell(world, spell, caster, spell_origin, target,
             target_pos, current_dir, cooldown_target, cooldown_retrigger);
 
 	current_angle += angle_step_size;
@@ -468,6 +468,7 @@ static void cast_spell_impl(World *world, const Spell *spell, Entity *caster, En
 
 static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
 {
+    (void)frame_arena;
     SpellCallbackData *cb_data = user_data;
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
@@ -488,7 +489,7 @@ static void fork_collision_callback(void *user_data, EventData event_data, Linea
     s32 fork_count = cb_data->as.fork.fork_count;
     Vector2 dir = v2_norm(self_physics->velocity);
 
-    cast_spell_impl(event_data.world, fork_spell, caster, self, self_physics->position, 0, V2_ZERO, dir,
+    cast_spell_impl(event_data.world, fork_spell, caster, self_physics->position, 0, V2_ZERO, dir,
 	collide_target, retrigger_never(), fork_count);
 }
 
@@ -507,7 +508,7 @@ void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 target_p
     Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster, physics));
     Vector2 dir = v2_sub(target_pos, spell_origin);
 
-    cast_spell_impl(world, spell, caster, 0, spell_origin, 0, target_pos,
+    cast_spell_impl(world, spell, caster, spell_origin, 0, target_pos,
 	dir, 0, retrigger_whenever(), spell_count);
 }
 

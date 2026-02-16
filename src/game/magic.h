@@ -11,6 +11,7 @@ struct World;
 /*
   TODO:
   - Sparks stutter slightly when passing through entity
+  - Clean up the different spell casting functions
   - Scaling of spell aoe etc by caster stats
   - Don't define the SpellProperty bit values in declaration, do bitshift when needed
   - Healing spells?

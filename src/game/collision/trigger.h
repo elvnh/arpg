@@ -23,9 +23,9 @@ struct Entity;
 struct World;
 
 typedef enum {
-    RETRIGGER_WHENEVER,
-    RETRIGGER_NEVER,
     RETRIGGER_AFTER_NON_CONTACT,
+    RETRIGGER_NEVER,
+    RETRIGGER_WHENEVER,
     RETRIGGER_AFTER_DURATION,
 } RetriggerBehaviourKind;
 

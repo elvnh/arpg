@@ -2,15 +2,7 @@
 #define MAGIC_H
 
 #include "base/vector.h"
-#include "platform/asset.h"
-#include "particle.h"
-#include "components/event_listener.h"
-#include "damage.h"
-#include "collision/collider.h"
-#include "light.h"
-#include "status_effect.h"
-#include "sprite.h"
-#include "collision/trigger.h"
+#include "base/string8.h"
 
 struct SpellCasterComponent;
 struct Entity;
@@ -23,6 +15,10 @@ struct World;
   - Healing spells?
   - Channeling spells
   - Animated spells
+  - Make forking spells be a property
+  - Blizzards damage roll should be recalculated each hit
+  - Use set_damage_range_for_type
+  - Make it so that chaining spells reroll their damage each hit
  */
 
 typedef enum {
@@ -31,6 +27,7 @@ typedef enum {
     SPELL_ICE_SHARD,
     SPELL_ICE_SHARD_TRIGGER,
     SPELL_BLIZZARD,
+    SPELL_CHAIN,
     SPELL_COUNT,
 } SpellID;
 

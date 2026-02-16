@@ -4,6 +4,7 @@
 #include "collision/collision.h"
 #include "collision/collision_event.h"
 #include "collision/collider.h"
+#include "components/chain.h"
 #include "components/component.h"
 #include "components/particle_spawner.h"
 #include "entity/entity_system.h"
@@ -115,7 +116,7 @@ EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction fa
 // Handles anything that needs to be handled before removing an entity,
 // such as transferring components that need to stay alive a little longer
 // over to a new entity.
-static void handle_entity_removal_side_effects(World *world, EntityID id)
+static void handle_entity_removal_side_effects(World *world, EntityID id, LinearArena *frame_arena)
 {
     Entity *dying_entity = es_get_entity(&world->entity_system, id);
     PhysicsComponent *dying_entity_physics = es_get_component(dying_entity, PhysicsComponent);
@@ -167,15 +168,47 @@ static void handle_entity_removal_side_effects(World *world, EntityID id)
             }
         }
     }
+
+    if (es_has_component(dying_entity, ChainComponent)) {
+	// If an entity is part of a chain, we kill all next and previous entities in the chain too
+	// NOTE: The next and previous entities will only be marked for removal and therefore there
+	// is no guarantee that they will be removed this frame, so don't depend on that
+	Entity *curr = 0;
+	ChainComponent *chain = es_get_component(dying_entity, ChainComponent);
+
+	// Remove entities before us in chain
+	curr = get_previous_entity_in_chain(&world->entity_system, chain);
+	while (curr) {
+	    ChainComponent *curr_link = es_get_component(curr, ChainComponent);
+	    Entity *prev = get_previous_entity_in_chain(&world->entity_system, curr_link);
+
+	    remove_link_from_chain(&world->entity_system, curr_link);
+	    world_kill_entity(world, curr, frame_arena);
+
+	    curr = prev;
+	}
+
+        // Remove entities after us in chain
+	curr = get_next_entity_in_chain(&world->entity_system, chain);
+	while (curr) {
+	    ChainComponent *curr_link = es_get_component(curr, ChainComponent);
+	    Entity *next = get_next_entity_in_chain(&world->entity_system, curr_link);
+
+	    remove_link_from_chain(&world->entity_system, curr_link);
+	    world_kill_entity(world, curr, frame_arena);
+
+	    curr = next;
+	}
+    }
 }
 
-static void world_remove_entity(World *world, ssize alive_entity_index)
+static void world_remove_entity(World *world, ssize alive_entity_index, LinearArena *frame_arena)
 {
     ASSERT(alive_entity_index < world->alive_entity_count);
 
     EntityID *id = &world->alive_entity_ids[alive_entity_index];
 
-    handle_entity_removal_side_effects(world, *id);
+    handle_entity_removal_side_effects(world, *id, frame_arena);
 
     es_remove_entity(&world->entity_system, *id);
 
@@ -221,6 +254,34 @@ Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
+static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
+{
+    Damage damage_taken = calculate_damage_received(&world->entity_system, entity, damage);
+    StatValue dmg_sum = calculate_damage_sum(damage_taken);
+    ASSERT(dmg_sum >= 0);
+
+    StatValue new_hp = hp->health.current_hitpoints - dmg_sum;
+    set_current_health(&hp->health, new_hp);
+
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    ASSERT(physics && "I guess a non-spatial entity could take damage?");
+
+    if (physics) {
+        hitsplats_create(world, physics->position, damage_taken);
+    }
+}
+
+static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, DamageInstance damage)
+{
+    (void)sender;
+
+    HealthComponent *hp = es_get_component(receiver, HealthComponent);
+
+    if (hp) {
+        deal_damage_to_entity(world, receiver, hp, damage);
+    }
+}
+
 static b32 entity_should_die(Entity *entity)
 {
     if (es_has_component(entity, HealthComponent)) {
@@ -262,14 +323,39 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt, Linear
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
         Vector2 entity_center = rect_center(world_get_entity_bounding_box(entity, physics));
 
-        Vector2 dir = v2_norm(v2_sub(arcing->target_position, entity_center));
+        Entity *target = es_try_get_entity(&world->entity_system, arcing->target_entity);
+        Vector2 target_pos = {0};
+
+        b32 found = false;
+
+        if (target) {
+            PhysicsComponent *target_physics = es_get_component(target, PhysicsComponent);
+
+            // TODO: make it possible to call get_component on null entity
+            if (target_physics) {
+                target_pos = rect_center(world_get_entity_bounding_box(target, target_physics));
+                arcing->last_known_target_position = target_pos;
+
+                found = true;
+            }
+        }
+
+        if (!found) {
+            target_pos = arcing->last_known_target_position;
+        }
+
+        Vector2 dir = v2_norm(v2_sub(target_pos, entity_center));
         Vector2 next_velocity = v2_mul_s(dir, arcing->travel_speed);
         Vector2 next_center_position = v2_add(entity_center, v2_mul_s(next_velocity, dt));
-        f32 dist_to_target = v2_dist_sq(entity_center, arcing->target_position);
+        f32 dist_to_target = v2_dist_sq(entity_center, target_pos);
         f32 dist_to_next_pos = v2_dist_sq(entity_center, next_center_position);
 
         if (dist_to_target < 100.0f) {
             physics->velocity = V2_ZERO;
+
+            if (target) {
+                try_deal_damage_to_entity(world, target, entity, arcing->damage_on_target_reached);
+            }
 
             es_remove_component(entity, ArcingComponent);
         } else if (dist_to_target > dist_to_next_pos) {
@@ -357,6 +443,21 @@ static void entity_render(Entity *entity, RenderBatches rbs,
 	    sprite->color, shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
+    if (es_has_component(entity, ChainComponent) && debug_state->render_chain_links) {
+        // TODO: make it possible to customize how chains are rendered
+        ChainComponent *chain = es_get_component(entity, ChainComponent);
+        Entity *next_link = get_next_entity_in_chain(&world->entity_system, chain);
+
+        if (next_link) {
+            PhysicsComponent *next_link_physics = es_get_component(next_link, PhysicsComponent);
+
+            if (next_link_physics) {
+                draw_line(rbs.worldspace_ui_rb, scratch, physics->position, next_link_physics->position,
+                    RGBA32_WHITE, 4.0f, shader_handle(SHAPE_SHADER), 0);
+            }
+        }
+    }
+
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
@@ -421,33 +522,6 @@ void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentB
 	retrigger_behaviour, &world->world_arena);
 }
 
-static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
-{
-    Damage damage_taken = calculate_damage_received(&world->entity_system, entity, damage);
-    StatValue dmg_sum = calculate_damage_sum(damage_taken);
-    ASSERT(dmg_sum >= 0);
-
-    StatValue new_hp = hp->health.current_hitpoints - dmg_sum;
-    set_current_health(&hp->health, new_hp);
-
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-    ASSERT(physics && "I guess a non-spatial entity could take damage?");
-
-    if (physics) {
-        hitsplats_create(world, physics->position, damage_taken);
-    }
-}
-
-static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, DamageInstance damage)
-{
-    (void)sender;
-
-    HealthComponent *hp = es_get_component(receiver, HealthComponent);
-
-    if (hp) {
-        deal_damage_to_entity(world, receiver, hp, damage);
-    }
-}
 
 static Rectangle get_entity_collider_rectangle(ColliderComponent *collider, PhysicsComponent *physics)
 {
@@ -730,14 +804,13 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 
     swap_and_reset_collision_tables(world);
 
-
     // Remove inactive entities on end of frame
     for (ssize i = 0; i < world->alive_entity_count; ++i) {
 	EntityID *id = &world->alive_entity_ids[i];
 	Entity *entity = es_get_entity(&world->entity_system, *id);
 
 	if (es_entity_is_inactive(entity)) {
-	    world_remove_entity(world, i);
+	    world_remove_entity(world, i, frame_arena);
 	    --i;
 	}
     }
@@ -978,15 +1051,15 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 	}
     }
 
-    tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})->type = TILE_WALL;
+    //tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})->type = TILE_WALL;
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 5; ++i) {
 #if 1
-        EntityWithID entity_with_id = world_spawn_entity(world, v2(128, 128),
+        EntityWithID entity_with_id = world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
 

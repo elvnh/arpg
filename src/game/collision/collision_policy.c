@@ -26,6 +26,19 @@ static void execute_collision_policy(World *world, Entity *entity, PhysicsCompon
 	    }
 	} break;
 
+	case COLLISION_POLICY_FREEZE: {
+	    if (should_block) {
+		if (collision_pair_index == ENTITY_PAIR_INDEX_FIRST) {
+		    physics->position = collision.new_position_a;
+		    physics->velocity = V2_ZERO;
+
+		} else {
+		    physics->position = collision.new_position_b;
+		    physics->velocity = V2_ZERO;
+		}
+	    }
+	} break;
+
 	case COLLISION_POLICY_BOUNCE: {
 	    if (should_block) {
 		if (collision_pair_index == ENTITY_PAIR_INDEX_FIRST) {

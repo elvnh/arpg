@@ -61,6 +61,7 @@ set(
   src/game/ui/ui_core.c
   src/game/ui/ui_builder.c
   src/game/status_effect.c
+  src/game/components/chain.c
   src/game/components/particle_spawner.c
   src/game/components/event_listener.c
   src/game/components/inventory.c

@@ -19,7 +19,7 @@ static void transition_out_of_current_state(World *world, Entity *entity)
 	    SpellID spell = entity->state.as.attacking.spell_being_cast;
 	    Vector2 target_pos = entity->state.as.attacking.target_position;
 
-	    magic_cast_spell(world, spell, entity, target_pos);
+	    magic_cast_spell_toward_target(world, spell, entity, target_pos);
 	} break;
 
 	default: {

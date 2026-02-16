@@ -1,5 +1,6 @@
 #include "magic.h"
 #include "base/maths.h"
+#include "collision/trigger.h"
 #include "world/world.h"
 #include "asset_table.h"
 
@@ -72,6 +73,7 @@ typedef struct {
     struct {
 	s32 fork_count;
 	SpellID fork_spell;
+	f32 forking_angle;
     } forking;
 
     struct {
@@ -81,6 +83,7 @@ typedef struct {
     } arcing;
 } Spell;
 
+// TODO: this struct isn't necessary anymore
 typedef struct SpellArray {
     Spell spells[SPELL_COUNT];
 } SpellArray;
@@ -100,6 +103,14 @@ typedef struct {
 	} fork;
     } as;
 } SpellCallbackData;
+
+typedef struct {
+    Entity *target_entity;
+    Entity *start_with_cooldown_against_entity;
+    RetriggerBehaviour cooldown_retrigger_behaviour;
+    Vector2 target_position;
+    f32 spell_cone_angle_in_radians;
+} CastSpellParams;
 
 static SpellArray g_spells = {0};
 
@@ -243,10 +254,8 @@ static const Spell *get_spell_by_id(SpellID id)
 
 static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena);
 
-// TODO: clean up the parent spell entity business
-static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
-    Vector2 spell_origin, Entity *target_entity, Vector2 target_pos, Vector2 dir, Entity *cooldown_target, // TODO: rename cooldown_target
-    RetriggerBehaviour cooldown_retrigger)
+static void create_spell_entity(World *world, const Spell *spell, Entity *caster,
+    Vector2 spell_start_position, Vector2 dir, CastSpellParams params)
 {
     EntityWithID spell_entity_with_id = world_spawn_non_spatial_entity(world, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
@@ -364,12 +373,12 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
         ArcingComponent *arc = es_get_or_add_component(spell_entity, ArcingComponent);
         ASSERT(spell->arcing.arcing_speed > 0.0f);
 
-        if (target_entity) {
-            arc->target_entity = target_entity->id;
+        if (params.target_entity) {
+            arc->target_entity = params.target_entity->id;
         }
 
         arc->travel_speed = spell->arcing.arcing_speed;
-        arc->last_known_target_position = target_pos;
+        arc->last_known_target_position = params.target_position;
 
 	Damage damage_roll = roll_damage_in_range(spell->damage_field.base_damage);
         Damage damage_after_boosts = calculate_damage_dealt(&world->entity_system, caster, damage_roll);
@@ -382,13 +391,7 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
 	ASSERT(!spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION) &&
 	    "A spell can't chain if it dies on collisions");
 	es_get_or_add_component(spell_entity, EventListenerComponent);
-	ChainComponent *chain = es_add_component(spell_entity, ChainComponent);
-
-	// NOTE: cooldown_target is the entity that triggered this hit
-        if (cooldown_target) {
-            // TODO: make it possible to allow chaining off same targets
-            chain->chained_off_entity_id = cooldown_target->id;
-        }
+	es_add_component(spell_entity, ChainComponent);
 
 	ASSERT(spell->chaining.chain_search_area_size > 0.0f);
 	ASSERT(spell->chaining.max_chains > 0);
@@ -413,9 +416,9 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     }
 
     if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
-	physics->position = target_pos;
+	physics->position = params.target_position;
     } else {
-	physics->position = spell_origin;
+	physics->position = spell_start_position;;
     }
 
     // Offset so that spells center is centered on the target position
@@ -425,45 +428,73 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster,
     // Spells may need to be spawned with a collision cooldown against a specific entity,
     // likely the entity just collided with for forking spells so that the child spells
     // don't immediately collide with that entity
-    if (cooldown_target) {
+    if (params.start_with_cooldown_against_entity) {
 	EntityID spell_entity_id = spell_entity_with_id.id;
-	EntityID target_id = es_get_id_of_entity(&world->entity_system, cooldown_target);
+	EntityID target_id = es_get_id_of_entity(&world->entity_system,
+	    params.start_with_cooldown_against_entity);
 
 	// TODO: allow customizing which components are on cooldown, and setting multiple at once
 	// For now, only add the collider so that nothing else can be
 	// triggered until it's off cooldown
 	world_add_trigger_cooldown(world, spell_entity_id, target_id,
-	    component_id(ColliderComponent), cooldown_retrigger);
+	    component_id(ColliderComponent), params.cooldown_retrigger_behaviour);
     }
 }
 
-
-static void cast_spell_impl(World *world, const Spell *spell, Entity *caster,
-    Vector2 spell_origin, Entity *target, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
-    RetriggerBehaviour cooldown_retrigger, s32 spell_count)
+static void cast_spell_projectiles(World *world, const Spell *spell, Entity *caster,
+    Vector2 spell_origin, Vector2 dir, s32 projectile_count, CastSpellParams params)
 {
+    ASSERT(projectile_count > 0);
+
+    if (projectile_count == 0) {
+	return;
+    }
+
     f32 current_angle = atan2f(dir.y, dir.x);
     f32 angle_step_size = 0.0f;
 
-    if (spell_count >= 2) {
-	f32 cone = spell->projectile.projectile_cone_in_radians;
+    if (projectile_count >= 2) {
+	f32 cone = params.spell_cone_angle_in_radians;
 
 	if (cone == 0.0f) {
 	    cone = deg_to_rad(180);
 	}
 
 	current_angle -= cone / 2.0f;
-	angle_step_size = cone / (f32)spell_count;
+	angle_step_size = cone / (f32)projectile_count;
     }
 
-    for (s32 i = 0; i < spell_count; ++i) {
+    for (s32 i = 0; i < projectile_count; ++i) {
 	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
 
-	cast_single_spell(world, spell, caster, spell_origin, target,
-            target_pos, current_dir, cooldown_target, cooldown_retrigger);
+	create_spell_entity(world, spell, caster, spell_origin, current_dir, params);
 
 	current_angle += angle_step_size;
     }
+}
+
+
+void magic_cast_spell_toward_target(World *world, SpellID id, Entity *caster, Vector2 target_pos)
+{
+    PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
+    ASSERT(physics && "It probably doesn't make sense for a non-spatial entity to cast a spell");
+
+    const Spell *spell = get_spell_by_id(id);
+
+    CastSpellParams params = {0};
+    params.target_position = target_pos;
+
+    s32 projectile_count = 1;
+
+    if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
+	projectile_count += spell->projectile.extra_projectile_count;
+	params.spell_cone_angle_in_radians = spell->projectile.projectile_cone_in_radians;
+    }
+
+    Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster, physics));
+    Vector2 dir = v2_sub(target_pos, spell_origin);
+
+    cast_spell_projectiles(world, spell, caster, spell_origin, dir, projectile_count, params);
 }
 
 static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
@@ -486,30 +517,16 @@ static void fork_collision_callback(void *user_data, EventData event_data, Linea
     ASSERT(!spell_has_prop(fork_spell, SPELL_PROP_FORKING)
 	&& "A forking spell casting a forking spell would infinitely loop");
 
+    CastSpellParams params = {0};
+    params.start_with_cooldown_against_entity = collide_target;
+    params.cooldown_retrigger_behaviour = retrigger_never();
+    params.spell_cone_angle_in_radians = deg_to_rad(360);
+
     s32 fork_count = cb_data->as.fork.fork_count;
     Vector2 dir = v2_norm(self_physics->velocity);
 
-    cast_spell_impl(event_data.world, fork_spell, caster, self_physics->position, 0, V2_ZERO, dir,
-	collide_target, retrigger_never(), fork_count);
-}
-
-void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 target_pos)
-{
-    PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
-    ASSERT(physics && "It probably doesn't make sense for a non-spatial entity to cast a spell");
-
-    const Spell *spell = get_spell_by_id(id);
-    s32 spell_count = 1;
-
-    if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
-	spell_count += spell->projectile.extra_projectile_count;
-    }
-
-    Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster, physics));
-    Vector2 dir = v2_sub(target_pos, spell_origin);
-
-    cast_spell_impl(world, spell, caster, spell_origin, 0, target_pos,
-	dir, 0, retrigger_whenever(), spell_count);
+    cast_spell_projectiles(event_data.world, fork_spell, caster, self_physics->position, dir,
+	fork_count, params);
 }
 
 static Spell spell_fireball(void)

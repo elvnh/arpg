@@ -1057,7 +1057,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 5; ++i) {
+    for (s32 i = 0; i < 3; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
@@ -1109,7 +1109,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
 	stats->stats = create_base_stats();
-	set_stat_value(&stats->stats, STAT_HEALTH, 1000);
+	set_stat_value(&stats->stats, STAT_HEALTH, 10000000);
 
 	HealthComponent *hp = es_add_component(entity, HealthComponent);
 	hp->health = create_health_instance(world, entity);

@@ -102,11 +102,16 @@ typedef struct SpellArray {
 
 typedef struct {
     EntityID caster_id;
+
+    struct {
+	s32 chains_remaining;
+	f32 chain_search_area_size;
+    } chain;
 } SpellCallbackData;
 
 static SpellArray g_spells = {0};
 
-// TODO: move to callback file
+// TODO: move to callback file since this has nothing to do with spells
 static void spawn_particles_on_death(void *user_data, EventData event_data, LinearArena *frame_arena)
 {
     (void)frame_arena;
@@ -126,21 +131,15 @@ static void spawn_particles_on_death(void *user_data, EventData event_data, Line
     spawn_particles_in_chunk(chunk, self_bounds, setup->config, setup->total_particle_count);
 }
 
-// TODO: make into union in spellcallbackdata
-typedef struct {
-    s32 chains_remaining;
-    f32 chain_search_area_size;
-} ChainCallbackData;
-
 static void chain_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
 {
-    ChainCallbackData *cb_data = user_data;
+    SpellCallbackData *cb_data = user_data;
     EntitySystem *es = &event_data.world->entity_system;
     Entity *self = es_get_entity(es, event_data.receiver_id);
 
-    ASSERT(cb_data->chains_remaining >= 0);
+    ASSERT(cb_data->chain.chains_remaining >= 0);
 
-    if (cb_data->chains_remaining == 0) {
+    if (cb_data->chain.chains_remaining == 0) {
 	world_kill_entity(event_data.world, self, frame_arena);
 	return;
     }
@@ -156,7 +155,7 @@ static void chain_collision_callback(void *user_data, EventData event_data, Line
 	return;
     }
 
-    Vector2 search_area_dims = {cb_data->chain_search_area_size, cb_data->chain_search_area_size};
+    Vector2 search_area_dims = {cb_data->chain.chain_search_area_size, cb_data->chain.chain_search_area_size};
     Rectangle search_area = {
         v2_sub(self_physics->position, v2_div_s(search_area_dims, 2.0f)),
 	search_area_dims,
@@ -201,7 +200,7 @@ static void chain_collision_callback(void *user_data, EventData event_data, Line
 
 	self_physics->velocity = v2_mul_s(target_dir, current_speed);
 
-	--cb_data->chains_remaining;
+	--cb_data->chain.chains_remaining;
 
 	// TODO: remove entire chain of entities
 	EntityWithID chain_link_entity = world_spawn_entity(event_data.world,
@@ -386,9 +385,10 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster, 
 	ASSERT(spell->chaining.chain_search_area_size > 0.0f);
 	ASSERT(spell->chaining.max_chains > 0);
 
-	ChainCallbackData data = {0};
-	data.chain_search_area_size = spell->chaining.chain_search_area_size;
-	data.chains_remaining = spell->chaining.max_chains;
+	SpellCallbackData data = {0};
+	data.caster_id = caster->id;
+	data.chain.chain_search_area_size = spell->chaining.chain_search_area_size;
+	data.chain.chains_remaining = spell->chaining.max_chains;
 
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, chain_collision_callback, &data);
     }

@@ -10,12 +10,12 @@ struct World;
 
 /*
   TODO:
+  - Sparks stutter slightly when passing through entity
   - Scaling of spell aoe etc by caster stats
   - Don't define the SpellProperty bit values in declaration, do bitshift when needed
   - Healing spells?
   - Channeling spells
   - Animated spells
-  - Make forking spells be a property
   - Blizzards damage roll should be recalculated each hit
   - Use set_damage_range_for_type
   - Make it so that chaining spells reroll their damage each hit

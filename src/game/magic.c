@@ -1,4 +1,5 @@
 #include "magic.h"
+#include "base/maths.h"
 #include "world/world.h"
 #include "asset_table.h"
 
@@ -21,6 +22,7 @@ typedef enum {
     SPELL_PROP_FREEZE_ON_ENTITY_COLLISION = FLAG(15),
     SPELL_PROP_FREEZE_ON_WALL_COLLISION   = FLAG(16),
     SPELL_PROP_ARCING                     = FLAG(17),
+    SPELL_PROP_FORKING                    = FLAG(18),
 } SpellProperties;
 
 typedef struct {
@@ -68,11 +70,15 @@ typedef struct {
     } chaining;
 
     struct {
+	s32 fork_count;
+	SpellID fork_spell;
+    } forking;
+
+    struct {
         f32 arcing_speed;
         DamageRange damage;
 	Damage penetration_values;
     } arcing;
-
 } Spell;
 
 typedef struct SpellArray {
@@ -82,10 +88,17 @@ typedef struct SpellArray {
 typedef struct {
     EntityID caster_id;
 
-    struct {
-	s32 chains_remaining;
-	f32 search_area_size;
-    } chain;
+    union {
+	struct {
+	    s32 chains_remaining;
+	    f32 search_area_size;
+	} chain;
+
+	struct {
+	    s32 fork_count;
+	    SpellID fork_spell;
+	} fork;
+    } as;
 } SpellCallbackData;
 
 static SpellArray g_spells = {0};
@@ -150,7 +163,7 @@ static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *
 static void chain_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
 {
     SpellCallbackData *cb_data = user_data;
-    ASSERT(cb_data->chain.chains_remaining >= 0);
+    ASSERT(cb_data->as.chain.chains_remaining >= 0);
 
     EntitySystem *es = &event_data.world->entity_system;
     Entity *self = es_get_entity(es, event_data.receiver_id);
@@ -170,12 +183,13 @@ static void chain_collision_callback(void *user_data, EventData event_data, Line
 	return;
     }
 
-    if (cb_data->chain.chains_remaining == 0) {
+    if (cb_data->as.chain.chains_remaining == 0) {
 	world_kill_entity(event_data.world, self, frame_arena);
 	return;
     }
 
-    Vector2 search_area_dims = {cb_data->chain.search_area_size, cb_data->chain.search_area_size};
+    f32 search_area_size = cb_data->as.chain.search_area_size;
+    Vector2 search_area_dims = {search_area_size, search_area_size};
     Rectangle search_area = {
         v2_sub(self_physics->position, v2_div_s(search_area_dims, 2.0f)),
 	search_area_dims,
@@ -193,7 +207,7 @@ static void chain_collision_callback(void *user_data, EventData event_data, Line
 
 	self_physics->velocity = v2_mul_s(target_dir, current_speed);
 
-	--cb_data->chain.chains_remaining;
+	--cb_data->as.chain.chains_remaining;
 
 	// TODO: remove entire chain of entities
 	EntityWithID chain_link_entity = world_spawn_entity(event_data.world,
@@ -203,14 +217,6 @@ static void chain_collision_callback(void *user_data, EventData event_data, Line
 
 	push_link_to_front_of_chain(es, chain, chain_link);
     }
-}
-
-static const Spell *get_spell_by_id(SpellID id)
-{
-    ASSERT(id >= 0);
-    ASSERT(id < SPELL_COUNT);
-
-    return &g_spells.spells[id];
 }
 
 static b32 spell_has_prop(const Spell *spell, SpellProperties prop)
@@ -227,8 +233,17 @@ static void spell_unset_property(Spell *spell, SpellProperties prop)
     spell->properties &= ~prop;
 }
 
-// TODO: clean up the parent spell entity business
+static const Spell *get_spell_by_id(SpellID id)
+{
+    ASSERT(id >= 0);
+    ASSERT(id < SPELL_COUNT);
 
+    return &g_spells.spells[id];
+}
+
+static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena);
+
+// TODO: clean up the parent spell entity business
 static void cast_single_spell(World *world, const Spell *spell, Entity *caster, Entity *parent_spell_entity,
     Vector2 spell_origin, Entity *target_entity, Vector2 target_pos, Vector2 dir, Entity *cooldown_target, // TODO: rename cooldown_target
     RetriggerBehaviour cooldown_retrigger)
@@ -380,10 +395,21 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster, 
 
 	SpellCallbackData data = {0};
 	data.caster_id = caster->id;
-	data.chain.search_area_size = spell->chaining.chain_search_area_size;
-	data.chain.chains_remaining = spell->chaining.max_chains;
+	data.as.chain.search_area_size = spell->chaining.chain_search_area_size;
+	data.as.chain.chains_remaining = spell->chaining.max_chains;
 
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, chain_collision_callback, &data);
+    }
+
+    if (spell_has_prop(spell, SPELL_PROP_FORKING)) {
+	es_get_or_add_component(spell_entity, EventListenerComponent);
+
+	SpellCallbackData data = {0};
+	data.caster_id = caster->id;
+	data.as.fork.fork_count = spell->forking.fork_count;
+	data.as.fork.fork_spell = spell->forking.fork_spell;
+
+	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, fork_collision_callback, &data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
@@ -411,21 +437,23 @@ static void cast_single_spell(World *world, const Spell *spell, Entity *caster, 
     }
 }
 
-static void cast_spell_impl(World *world, SpellID id, Entity *caster, Entity *parent_spell_entity,
-    Vector2 spell_origin, Entity *target, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
-    RetriggerBehaviour cooldown_retrigger)
-{
-    const Spell *spell = get_spell_by_id(id);
-    s32 spell_count = 1 + spell->projectile.extra_projectile_count;
 
+static void cast_spell_impl(World *world, const Spell *spell, Entity *caster, Entity *parent_spell_entity,
+    Vector2 spell_origin, Entity *target, Vector2 target_pos, Vector2 dir, Entity *cooldown_target,
+    RetriggerBehaviour cooldown_retrigger, s32 spell_count)
+{
     f32 current_angle = atan2f(dir.y, dir.x);
     f32 angle_step_size = 0.0f;
 
     if (spell_count >= 2) {
 	f32 cone = spell->projectile.projectile_cone_in_radians;
 
+	if (cone == 0.0f) {
+	    cone = deg_to_rad(180);
+	}
+
 	current_angle -= cone / 2.0f;
-	angle_step_size = cone / ((f32)(spell_count - 1));
+	angle_step_size = cone / (f32)spell_count;
     }
 
     for (s32 i = 0; i < spell_count; ++i) {
@@ -438,16 +466,49 @@ static void cast_spell_impl(World *world, SpellID id, Entity *caster, Entity *pa
     }
 }
 
+static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
+{
+    SpellCallbackData *cb_data = user_data;
+
+    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
+    Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);
+    ASSERT(caster && "Entity died before impact collision callback was called. "
+        "This should probably never happen?");
+
+    Entity *collide_target = es_get_entity(&event_data.world->entity_system,
+	event_data.as.hostile_collision.collided_with);
+
+    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
+    ASSERT(self_physics && "Physics component should have been added when casting spell");
+
+    const Spell *fork_spell = get_spell_by_id(cb_data->as.fork.fork_spell);
+    ASSERT(!spell_has_prop(fork_spell, SPELL_PROP_FORKING)
+	&& "A forking spell casting a forking spell would infinitely loop");
+
+    s32 fork_count = cb_data->as.fork.fork_count;
+    Vector2 dir = v2_norm(self_physics->velocity);
+
+    cast_spell_impl(event_data.world, fork_spell, caster, self, self_physics->position, 0, V2_ZERO, dir,
+	collide_target, retrigger_never(), fork_count);
+}
+
 void magic_cast_spell(World *world, SpellID id, Entity *caster, Vector2 target_pos)
 {
     PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
     ASSERT(physics && "It probably doesn't make sense for a non-spatial entity to cast a spell");
 
+    const Spell *spell = get_spell_by_id(id);
+    s32 spell_count = 1;
+
+    if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
+	spell_count += spell->projectile.extra_projectile_count;
+    }
+
     Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster, physics));
     Vector2 dir = v2_sub(target_pos, spell_origin);
 
-    cast_spell_impl(world, id, caster, 0, spell_origin, 0, target_pos,
-	dir, 0, retrigger_whenever());
+    cast_spell_impl(world, spell, caster, 0, spell_origin, 0, target_pos,
+	dir, 0, retrigger_whenever(), spell_count);
 }
 
 static Spell spell_fireball(void)
@@ -502,8 +563,7 @@ static Spell spell_spark(void)
     // TODO: erratic movement
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGE_FIELD
-	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER
-        | SPELL_PROP_FREEZE_ON_ENTITY_COLLISION;
+	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
@@ -573,37 +633,14 @@ static Spell spell_blizzard(void)
     return spell;
 }
 
-static void ice_shard_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
-{
-    (void)frame_arena;
-
-    SpellCallbackData *cb_data = (SpellCallbackData *)user_data;
-
-    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
-    Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);
-    ASSERT(caster && "Entity died before impact collision callback was called. "
-        "This should probably never happen?");
-
-    Entity *collide_target = es_get_entity(&event_data.world->entity_system,
-	event_data.as.hostile_collision.collided_with);
-
-    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
-    ASSERT(self_physics && "Physics component should have been added when casting spell");
-
-    // TODO: should this kind of behaviour be encoded in a forking property of spells?
-    // NOTE: these have no target position, only origin and direction
-    cast_spell_impl(event_data.world, SPELL_ICE_SHARD_TRIGGER, caster, self,
-	self_physics->position, 0, V2_ZERO, self_physics->direction,
-	collide_target, retrigger_never());
-}
-
 static Spell spell_ice_shard(void)
 {
     Spell spell = {0};
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGE_FIELD
 	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	| SPELL_PROP_HOSTILE_COLLISION_CALLBACK | SPELL_PROP_PARTICLE_SPAWNER
+	| SPELL_PROP_FORKING
+	| SPELL_PROP_PARTICLE_SPAWNER
 	| SPELL_PROP_SPAWN_PARTICLES_ON_DEATH;
 
     spell.cast_duration = 0.3f;
@@ -624,8 +661,6 @@ static Spell spell_ice_shard(void)
     spell.damage_field.base_damage = damage_range;
     spell.damage_field.retrigger_behaviour = retrigger_never(); // TODO: unnecessary
 
-    spell.hostile_collision_callback = ice_shard_collision_callback;
-
     spell.particle_spawner.config = (ParticleSpawnerConfig) {
 	.particle_color = {0.0f, 0.3f, 1.0f, 0.5f},
 	.particle_size = 3.0f,
@@ -638,19 +673,19 @@ static Spell spell_ice_shard(void)
     spell.on_death_particle_spawner.config = spell.particle_spawner.config;
     spell.on_death_particle_spawner.total_particle_count = 20;
 
+    spell.forking.fork_count = 8;
+    spell.forking.fork_spell = SPELL_ICE_SHARD_TRIGGER;
+
     return spell;
 }
 
 static Spell spell_ice_shard_trigger(void)
 {
     Spell spell = spell_ice_shard();
+    spell_unset_property(&spell, SPELL_PROP_FORKING);
+    spell_unset_property(&spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION);
 
-    spell_unset_property(&spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK);
-    spell.hostile_collision_callback = 0;
-
-    spell.projectile.extra_projectile_count = 10;
     spell.projectile.projectile_cone_in_radians = deg_to_rad(360);
-
     spell.sprite.size = v2_div_s(spell.sprite.size, 2);
     spell.projectile.collider_size = spell.sprite.size;
 

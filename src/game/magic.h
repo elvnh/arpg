@@ -11,8 +11,10 @@ struct World;
 
 /*
   TODO:
-  - Sparks stutter slightly when passing through entity
+  - move spell callbacks into separate file
+  - Separate spell definitions from casting of spells
   - Clean up the different spell casting functions
+  - Sparks stutter slightly when passing through entity
   - Scaling of spell aoe etc by caster stats
   - Don't define the SpellProperty bit values in declaration, do bitshift when needed
   - Healing spells?
@@ -32,22 +34,6 @@ typedef enum {
     SPELL_CHAIN,
     SPELL_COUNT,
 } SpellID;
-
-typedef struct {
-    EntityID caster_id;
-
-    union {
-	struct {
-	    s32 chains_remaining;
-	    f32 search_area_size;
-	} chain;
-
-	struct {
-	    s32 fork_count;
-	    SpellID fork_spell;
-	} fork;
-    } as;
-} SpellCallbackData;
 
 void    magic_initialize(void);
 void    magic_cast_spell_toward_target(struct World *world, SpellID id, struct Entity *caster,

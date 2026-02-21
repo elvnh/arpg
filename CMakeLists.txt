@@ -39,6 +39,7 @@ set(
   GAME_SOURCES
   src/game/game.c
   src/game/health.c
+  src/game/callback_functions.c
   src/game/collision/trigger.c
   src/game/collision/collision.c
   src/game/collision/collision_event.c

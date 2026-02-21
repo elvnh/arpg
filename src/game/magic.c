@@ -1,5 +1,6 @@
 #include "magic.h"
 #include "base/maths.h"
+#include "callback_functions.h"
 #include "collision/trigger.h"
 #include "components/event_listener.h"
 #include "world/world.h"
@@ -95,24 +96,6 @@ typedef struct {
 Spell g_spells[SPELL_COUNT];
 
 // TODO: move to callback file since this has nothing to do with spells
-static void spawn_particles_on_death(CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)
-{
-    (void)frame_arena;
-
-    ParticleSpawnerSetup *setup = &user_data.particle_spawner;
-
-    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
-    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
-    ASSERT(self_physics && "Physics was removed inbetween death and callback getting called, "
-          "probably shouldn't happen?");
-
-    Rectangle self_bounds = world_get_entity_bounding_box(self, self_physics);
-
-    Chunk *chunk = get_chunk_at_position(&event_data.world->map_chunks, self_physics->position);
-    ASSERT(chunk);
-
-    spawn_particles_in_chunk(chunk, self_bounds, setup->config, setup->total_particle_count);
-}
 
 static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *self_chain,
     Vector2 position, Rectangle search_area, Entity *chained_off_entity, LinearArena *frame_arena)
@@ -154,7 +137,7 @@ static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *
 static void chain_collision_callback(CallbackUserData user_data, EventData event_data,
     LinearArena *frame_arena)
 {
-    SpellCallbackData *cb_data = &user_data.spell_callback;
+    SpellCallbackData *cb_data = &user_data.spell_data;
     ASSERT(cb_data->as.chain.chains_remaining >= 0);
 
     EntitySystem *es = &event_data.world->entity_system;
@@ -232,6 +215,7 @@ static const Spell *get_spell_by_id(SpellID id)
 
     return &g_spells[id];
 }
+
 
 static void fork_collision_callback(CallbackUserData user_data, EventData event_data,
     LinearArena *frame_arena);
@@ -327,8 +311,8 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
 	es_get_or_add_component(spell_entity, EventListenerComponent);
 
 	CallbackUserData user_data = {0};
-	user_data.particle_spawner = spell->on_death_particle_spawner;
-	add_event_callback(spell_entity, EVENT_ENTITY_DIED, spawn_particles_on_death,
+	user_data.particle_spawner_data = spell->on_death_particle_spawner;
+	add_event_callback(spell_entity, EVENT_ENTITY_DIED, callback_spawn_particles,
 	    &user_data);
     }
 
@@ -341,7 +325,7 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
 	data.caster_id = es_get_id_of_entity(&world->entity_system, caster);
 
 	CallbackUserData user_data = {
-	    .spell_callback = data
+	    .spell_data = data
 	};
 
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION,
@@ -392,7 +376,7 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
 	data.as.chain.chains_remaining = spell->chaining.max_chains;
 
 	CallbackUserData user_data = {0};
-	user_data.spell_callback = data;
+	user_data.spell_data = data;
 
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, chain_collision_callback, &user_data);
     }
@@ -406,7 +390,7 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
 	data.as.fork.fork_spell = spell->forking.fork_spell;
 
 	CallbackUserData user_data = {0};
-	user_data.spell_callback = data;
+	user_data.spell_data = data;
 
 	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, fork_collision_callback, &user_data);
     }
@@ -496,7 +480,7 @@ void magic_cast_spell_toward_target(World *world, SpellID id, Entity *caster, Ve
 static void fork_collision_callback(CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)
 {
     (void)frame_arena;
-    SpellCallbackData *cb_data = &user_data.spell_callback;
+    SpellCallbackData *cb_data = &user_data.spell_data;
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
     Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);

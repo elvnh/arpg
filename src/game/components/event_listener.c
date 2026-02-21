@@ -6,8 +6,8 @@
 
 #include <string.h>
 
-void add_event_callback_impl(Entity *entity, EventType event_type, CallbackFunction func,
-    const void *user_data, s32 data_size, s32 data_alignment)
+void add_event_callback(Entity *entity, EventType event_type, CallbackFunction func,
+    CallbackUserData *user_data)
 {
     ASSERT(event_type >= 0);
     ASSERT(event_type < EVENT_COUNT);
@@ -22,14 +22,7 @@ void add_event_callback_impl(Entity *entity, EventType event_type, CallbackFunct
     cb->function = func;
 
     if (user_data) {
-        EntityArenaAllocation user_data_copy =
-            entity_arena_allocate(&entity->entity_arena, data_size, data_alignment);
-
-	memcpy(user_data_copy.ptr, user_data, ssize_to_usize(data_size));
-
-        cb->user_data_arena_index = user_data_copy.index;
-    } else {
-        cb->user_data_arena_index.offset = -1;
+	cb->user_data = *user_data;
     }
 }
 
@@ -50,8 +43,7 @@ void send_event_to_entity(Entity *entity, EventData event_data, World *world, Li
             EventCallback *current_cb = &cb_list->callbacks[i];
 	    ASSERT(current_cb->function);
 
-            void *user_data = entity_arena_get(&entity->entity_arena, current_cb->user_data_arena_index);
-	    current_cb->function(user_data, event_data, frame_arena);
+	    current_cb->function(current_cb->user_data, event_data, frame_arena);
         }
     }
 }

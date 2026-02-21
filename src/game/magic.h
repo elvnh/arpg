@@ -3,6 +3,7 @@
 
 #include "base/vector.h"
 #include "base/string8.h"
+#include "entity/entity_id.h"
 
 struct SpellCasterComponent;
 struct Entity;
@@ -31,6 +32,22 @@ typedef enum {
     SPELL_CHAIN,
     SPELL_COUNT,
 } SpellID;
+
+typedef struct {
+    EntityID caster_id;
+
+    union {
+	struct {
+	    s32 chains_remaining;
+	    f32 search_area_size;
+	} chain;
+
+	struct {
+	    s32 fork_count;
+	    SpellID fork_spell;
+	} fork;
+    } as;
+} SpellCallbackData;
 
 void    magic_initialize(void);
 void    magic_cast_spell_toward_target(struct World *world, SpellID id, struct Entity *caster,

@@ -11,13 +11,6 @@
 typedef struct Entity {
     EntityID id;
 
-    /* This arena should be used by any components that require dynamically
-       sized allocations. The arena buffer is stored in place inside the entity
-       and pointers into it are only indices. As long as only pointers of that
-       kind are used, entities should be trivially serializable/copyable/movable.
-     */
-    EntityArena entity_arena;
-
     ComponentBitset active_components;
     b32 is_inactive;
 

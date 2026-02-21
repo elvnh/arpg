@@ -2,13 +2,17 @@
 #define EVENT_LISTENER_H
 
 #include "base/vector.h"
+#include "components/particle_spawner.h"
 #include "entity/entity_arena.h"
 #include "entity/entity_id.h"
+#include "magic.h"
 
 #define MAX_CALLBACKS_PER_EVENT_TYPE 2
 
-#define add_event_callback(entity, type, func, data) add_event_callback_impl(entity, type, func, data, \
-	SIZEOF(*data), ALIGNOF(*data))
+/*
+  TODO:
+  - Make it easier to construct user data
+ */
 
 struct LinearArena;
 struct World;
@@ -40,11 +44,16 @@ typedef struct {
     } as;
 } EventData;
 
-typedef void (*CallbackFunction)(void *, EventData, struct LinearArena *);
+typedef union {
+    SpellCallbackData    spell_callback;
+    ParticleSpawnerSetup particle_spawner;
+} CallbackUserData;
+
+typedef void (*CallbackFunction)(CallbackUserData, EventData, struct LinearArena *);
 
 typedef struct {
     CallbackFunction function;
-    EntityArenaIndex user_data_arena_index;
+    CallbackUserData user_data;
 } EventCallback;
 
 typedef struct {
@@ -58,8 +67,8 @@ typedef struct {
 
 void send_event_to_entity(struct Entity *entity, EventData event_data, struct World *world,
     struct LinearArena *frame_arena);
-void add_event_callback_impl(struct Entity *entity, EventType event_type, CallbackFunction func,
-    const void *user_data, s32 data_size, s32 data_alignment);
+void add_event_callback(struct Entity *entity, EventType event_type, CallbackFunction func,
+    CallbackUserData *user_data);
 
 static inline EventData event_data_death(void)
 {

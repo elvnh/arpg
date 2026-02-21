@@ -1,6 +1,7 @@
 #include "magic.h"
 #include "base/maths.h"
 #include "collision/trigger.h"
+#include "components/event_listener.h"
 #include "world/world.h"
 #include "asset_table.h"
 
@@ -84,22 +85,6 @@ typedef struct {
 } Spell;
 
 typedef struct {
-    EntityID caster_id;
-
-    union {
-	struct {
-	    s32 chains_remaining;
-	    f32 search_area_size;
-	} chain;
-
-	struct {
-	    s32 fork_count;
-	    SpellID fork_spell;
-	} fork;
-    } as;
-} SpellCallbackData;
-
-typedef struct {
     Entity *target_entity;
     Entity *start_with_cooldown_against_entity;
     RetriggerBehaviour cooldown_retrigger_behaviour;
@@ -110,11 +95,11 @@ typedef struct {
 Spell g_spells[SPELL_COUNT];
 
 // TODO: move to callback file since this has nothing to do with spells
-static void spawn_particles_on_death(void *user_data, EventData event_data, LinearArena *frame_arena)
+static void spawn_particles_on_death(CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)
 {
     (void)frame_arena;
 
-    ParticleSpawnerSetup *setup = user_data;
+    ParticleSpawnerSetup *setup = &user_data.particle_spawner;
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
@@ -166,9 +151,10 @@ static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *
     return closest_entity;
 }
 
-static void chain_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
+static void chain_collision_callback(CallbackUserData user_data, EventData event_data,
+    LinearArena *frame_arena)
 {
-    SpellCallbackData *cb_data = user_data;
+    SpellCallbackData *cb_data = &user_data.spell_callback;
     ASSERT(cb_data->as.chain.chains_remaining >= 0);
 
     EntitySystem *es = &event_data.world->entity_system;
@@ -247,7 +233,8 @@ static const Spell *get_spell_by_id(SpellID id)
     return &g_spells[id];
 }
 
-static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena);
+static void fork_collision_callback(CallbackUserData user_data, EventData event_data,
+    LinearArena *frame_arena);
 
 static void create_spell_entity(World *world, const Spell *spell, Entity *caster,
     Vector2 spell_start_position, Vector2 dir, CastSpellParams params)
@@ -339,8 +326,10 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
 
 	es_get_or_add_component(spell_entity, EventListenerComponent);
 
+	CallbackUserData user_data = {0};
+	user_data.particle_spawner = spell->on_death_particle_spawner;
 	add_event_callback(spell_entity, EVENT_ENTITY_DIED, spawn_particles_on_death,
-	    &spell->on_death_particle_spawner);
+	    &user_data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK)) {
@@ -350,7 +339,13 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
 
 	SpellCallbackData data = {0};
 	data.caster_id = es_get_id_of_entity(&world->entity_system, caster);
-	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, spell->hostile_collision_callback, &data);
+
+	CallbackUserData user_data = {
+	    .spell_callback = data
+	};
+
+	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION,
+	    spell->hostile_collision_callback, &user_data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_APPLIES_STATUS_EFFECT)) {
@@ -396,7 +391,10 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
 	data.as.chain.search_area_size = spell->chaining.chain_search_area_size;
 	data.as.chain.chains_remaining = spell->chaining.max_chains;
 
-	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, chain_collision_callback, &data);
+	CallbackUserData user_data = {0};
+	user_data.spell_callback = data;
+
+	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, chain_collision_callback, &user_data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_FORKING)) {
@@ -407,13 +405,16 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
 	data.as.fork.fork_count = spell->forking.fork_count;
 	data.as.fork.fork_spell = spell->forking.fork_spell;
 
-	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, fork_collision_callback, &data);
+	CallbackUserData user_data = {0};
+	user_data.spell_callback = data;
+
+	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, fork_collision_callback, &user_data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
 	physics->position = params.target_position;
     } else {
-	physics->position = spell_start_position;;
+	physics->position = spell_start_position;
     }
 
     // Offset so that spells center is centered on the target position
@@ -492,10 +493,10 @@ void magic_cast_spell_toward_target(World *world, SpellID id, Entity *caster, Ve
     cast_spell_projectiles(world, spell, caster, spell_origin, dir, projectile_count, params);
 }
 
-static void fork_collision_callback(void *user_data, EventData event_data, LinearArena *frame_arena)
+static void fork_collision_callback(CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)
 {
     (void)frame_arena;
-    SpellCallbackData *cb_data = user_data;
+    SpellCallbackData *cb_data = &user_data.spell_callback;
 
     Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
     Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);

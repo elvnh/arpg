@@ -136,7 +136,6 @@ EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
     ASSERT(!entity_id_is_null(entity->id));
 
     EntityWithID result = {entity, entity->id};
-    ASSERT(entity_arena_get_memory_usage(&entity->entity_arena) == 0);
 
     return result;
 }

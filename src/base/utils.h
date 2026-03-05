@@ -6,7 +6,6 @@
 #include "typedefs.h"
 
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
-#define ASSERT_BREAK(expr) do { if (!(expr)) { DEBUG_BREAK; } } while (0)
 #define INVALID_DEFAULT_CASE default: ASSERT(0); break;
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -23,24 +22,16 @@
 #define unset_flag(flags, flag) ((flags) &= ~(flag))
 
 // TODO: define everything for non-debug builds
-
-#define ASSERT(expr)                                    \
-    do {                                                \
-        if (!(expr)) {                                  \
-            fprintf(stderr,                             \
-                "\n*** ASSERTION FAILURE ***\n"         \
-                "Expression: '%s'\n\n"                  \
-                "%s:\n"                                 \
-                "%s:%d:\n",                             \
-                #expr, __func__, FILE_NAME, LINE);      \
-            DEBUG_BREAK;                                \
-        }                                               \
+#define ASSERT(expr) if (!(expr)) ABORT_WITH_MSG("ASSERTION FAILURE", "Expression: '"#expr"'\n");
+#define ASSERT_FAIL DEBUG_BREAK
+#define UNIMPLEMENTED ABORT_WITH_MSG("UNIMPLEMENTED", "")
+#define TODO(msg) ABORT_WITH_MSG("TODO", msg)
+#define ABORT_WITH_MSG(title, msg)                                         \
+    do {                                                                   \
+        fprintf(stderr, "\n*** "title" ***\n"msg"\nFunction: %s\n%s:%d:\n", \
+            __func__, FILE_NAME, LINE);                                    \
+        ASSERT_FAIL;                                                       \
     } while (0)
-
-
-#define UNIMPLEMENTED                                                                     \
-    fprintf(stderr, "\n*** UNIMPLEMENTED ***\n%s:\n%s:%d:\n", __func__, FILE_NAME, LINE); \
-    DEBUG_BREAK
 
 #if defined(__GNUC__)
 #    define ALIGNOF(t)              (ssize)__alignof__(t)

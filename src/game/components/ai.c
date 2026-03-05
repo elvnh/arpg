@@ -1,4 +1,5 @@
 #include "ai.h"
+#include "base/utils.h"
 #include "components/component.h"
 #include "entity/entity_faction.h"
 #include "entity/entity_state.h"
@@ -106,6 +107,19 @@ static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *a
     }
 }
 
+static void ai_behaviour_normal_enemy(World *world, Entity *entity, AIComponent *ai, PhysicsComponent *physics)
+{
+    switch (ai->current_state.kind) {
+	case AI_STATE_IDLE: {
+	    update_ai_state_idle(world, entity, ai, physics);
+	} break;
+
+	case AI_STATE_CHASING: {
+	    update_ai_state_chasing(world, entity, ai, physics);
+	} break;
+    }
+}
+
 void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
 {
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
@@ -115,15 +129,11 @@ void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
         return;
     }
 
-    return;
+    switch (ai->behaviour) {
+        case AI_BEHAVIOUR_NORMAL_ENEMY: {
+            ai_behaviour_normal_enemy(world, entity, ai, physics);
+        } break;
 
-    switch (ai->current_state.kind) {
-	case AI_STATE_IDLE: {
-	    update_ai_state_idle(world, entity, ai, physics);
-	} break;
-
-	case AI_STATE_CHASING: {
-	    update_ai_state_chasing(world, entity, ai, physics);
-	} break;
+        INVALID_DEFAULT_CASE;
     }
 }

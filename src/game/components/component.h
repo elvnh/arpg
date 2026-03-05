@@ -22,6 +22,7 @@
 #include "ai.h"
 #include "health.h"
 #include "name.h"
+#include "ai.h"
 
 #define COMPONENT_LIST                          \
     COMPONENT(PhysicsComponent)                 \
@@ -97,9 +98,6 @@ typedef struct {
     RetriggerBehaviour retrigger_behaviour;
 } EffectApplierComponent;
 
-typedef struct AIComponent {
-    AIState current_state;
-} AIComponent;
 
 typedef struct {
     Health health;

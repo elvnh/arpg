@@ -5,12 +5,15 @@
 
 struct World;
 struct Entity;
-struct AIComponent;
 
 typedef enum {
     AI_STATE_IDLE,
     AI_STATE_CHASING,
 } AIStateKind;
+
+typedef enum {
+    AI_BEHAVIOUR_NORMAL_ENEMY,
+} AIBehaviour;
 
 typedef struct {
     AIStateKind kind;
@@ -22,6 +25,11 @@ typedef struct {
     } as;
 } AIState;
 
-void entity_update_ai(struct World *world, struct Entity *entity, struct AIComponent *ai);
+typedef struct {
+    AIBehaviour behaviour;
+    AIState current_state;
+} AIComponent;
+
+void entity_update_ai(struct World *world, struct Entity *entity, AIComponent *ai);
 
 #endif //AI_H

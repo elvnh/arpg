@@ -108,6 +108,7 @@ static Vector2 get_wall_line_segment_begin(Vector2 tile_world_coords, CardinalDi
 {
     Vector2 result = {0};
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_NORTH: {
         case CARDINAL_DIR_WEST:
@@ -118,18 +119,18 @@ static Vector2 get_wall_line_segment_begin(Vector2 tile_world_coords, CardinalDi
             result = v2_add(tile_world_coords, v2(TILE_SIZE, TILE_SIZE));
         } break;
 
-        case CARDINAL_DIR_SOUTH: {
-            ASSERT(0);
-        } break;
-
-        default: ASSERT(0);
+        INVALID_CASE(CARDINAL_DIR_SOUTH);
+        INVALID_CASE(CARDINAL_DIR_COUNT);
+        INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     return result;
 }
 
 static Vector2 wall_line_direction_vector(CardinalDirection edge_dir)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_NORTH:
         case CARDINAL_DIR_SOUTH:
@@ -139,10 +140,12 @@ static Vector2 wall_line_direction_vector(CardinalDirection edge_dir)
         case CARDINAL_DIR_WEST:
             return (Vector2)  {0, -1};
 
-        default:
-            ASSERT(0);
-            return V2_ZERO;
+        INVALID_CASE(CARDINAL_DIR_COUNT);
+        INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
+
+    return V2_ZERO;
 }
 
 static Vector2 get_wall_line_segment_end(Vector2 line_begin, CardinalDirection edge_dir)
@@ -157,6 +160,7 @@ static Vector2 get_wall_line_segment_end(Vector2 line_begin, CardinalDirection e
 
 static CardinalDirection get_connectible_neighbour_direction(CardinalDirection edge_dir)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_WEST:
         case CARDINAL_DIR_EAST:
@@ -173,6 +177,7 @@ static CardinalDirection get_connectible_neighbour_direction(CardinalDirection e
             ASSERT(0);
             break;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     ASSERT(0);
     return 0;

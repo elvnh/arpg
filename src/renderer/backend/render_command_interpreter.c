@@ -119,6 +119,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
     }
 
     for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
+        BEGIN_EXHAUSTIVE_SWITCH;
         switch (setup_cmd->kind) {
             case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformVec4): {
                 SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
@@ -133,10 +134,13 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
 
                 renderer_backend_set_uniform_float(shader, cmd->header.uniform_name, cmd->value, scratch);
             } break;
-                INVALID_DEFAULT_CASE;
+
+            INVALID_DEFAULT_CASE;
         }
+        END_EXHAUSTIVE_SWITCH;
     }
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (entry->data->kind) {
         // TODO: can these switch cases be simplified?
         case RENDER_COMMAND_ENUM_NAME(RectangleCmd): {
@@ -393,7 +397,10 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
                 renderer_backend_draw_triangle(backend, verts.a, verts.b, verts.c);
             }
         } break;
+
+        INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     // If this render entry had setup commands we need to flush afterwards since
     // those may set uniform variables and we don't want those to leak into next render entry

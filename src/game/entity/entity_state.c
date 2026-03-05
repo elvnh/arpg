@@ -52,6 +52,7 @@ static void play_state_animation(Entity *entity, EntityState state)
 		anim_comp->current_animation = anim_begin_animation(next_anim, 1.0f);
 	    }
 
+            BEGIN_EXHAUSTIVE_SWITCH;
 	    switch (state.kind) {
 		case ENTITY_STATE_IDLE:
 		case ENTITY_STATE_WALKING: {
@@ -63,8 +64,10 @@ static void play_state_animation(Entity *entity, EntityState state)
 		    physics->direction = v2_sub(state.as.attacking.target_position, physics->position);
 		} break;
 
-		    INVALID_DEFAULT_CASE;
+                INVALID_CASE(ENTITY_STATE_COUNT);
+		INVALID_DEFAULT_CASE;
 	    }
+            END_EXHAUSTIVE_SWITCH;
 	}
     }
 }

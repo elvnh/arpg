@@ -32,6 +32,7 @@ static StatValue accumulate_modifier_value(StatValue lhs, StatValue rhs, Numeric
 {
     StatValue result = lhs;
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (mod_type) {
 	case NUMERIC_MOD_FLAT_ADDITIVE:
 	case NUMERIC_MOD_ADDITIVE_PERCENTAGE: {
@@ -42,8 +43,10 @@ static StatValue accumulate_modifier_value(StatValue lhs, StatValue rhs, Numeric
 	    result = modify_stat_by_percentage(lhs, rhs);
 	} break;
 
+        INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
 	INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     return result;
 }
@@ -52,6 +55,7 @@ StatValue apply_modifier(StatValue base, StatValue modifier, NumericModifierType
 {
     StatValue result = base;
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (mod_type) {
 	case NUMERIC_MOD_FLAT_ADDITIVE: {
 	    result += modifier;
@@ -62,8 +66,10 @@ StatValue apply_modifier(StatValue base, StatValue modifier, NumericModifierType
 	    result = modify_stat_by_percentage(base, modifier);
 	} break;
 
+        INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
 	INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     return result;
 }

@@ -200,6 +200,7 @@ static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
 {
     ui_core_begin_frame(ui);
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (overlay) {
         case UI_OVERLAY_GAME: {
             game_ui(game, scratch, frame_data);
@@ -211,6 +212,7 @@ static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
 
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     UIInteraction interaction = ui_core_end_layout(ui, frame_data, Y_IS_DOWN, platform_code);
 

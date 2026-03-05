@@ -12,6 +12,7 @@ static void execute_collision_policy(World *world, Entity *entity, PhysicsCompon
     ASSERT(entity);
     ASSERT(entity || (collision_pair_index == ENTITY_PAIR_INDEX_FIRST));
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (policy) {
 	case COLLISION_POLICY_STOP: {
 	    if (should_block) {
@@ -62,6 +63,7 @@ static void execute_collision_policy(World *world, Entity *entity, PhysicsCompon
 
 	INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 }
 
 void execute_entity_vs_tilemap_collision_policy(World *world, Entity *entity, PhysicsComponent *physics,

@@ -42,6 +42,7 @@ void unequip_item_and_put_in_inventory(struct EntitySystem *es, Equipment *equip
 
 static inline String equipment_slot_to_string(EquipmentSlot slot)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (slot) {
 	case EQUIP_SLOT_HEAD:         return str_lit("Head");
 	case EQUIP_SLOT_NECK:         return str_lit("Neck");
@@ -53,8 +54,11 @@ static inline String equipment_slot_to_string(EquipmentSlot slot)
 	case EQUIP_SLOT_FEET:         return str_lit("Feet");
 	case EQUIP_SLOT_WEAPON:       return str_lit("Weapon");
 
+        INVALID_CASE(EQUIP_SLOT_COUNT);
+        INVALID_CASE(EQUIPPABLE_IN_FINGER_SLOT);
 	INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     ASSERT(0);
     return (String){0};

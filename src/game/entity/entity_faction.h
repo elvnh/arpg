@@ -15,12 +15,14 @@ typedef enum {
 
 static inline String entity_faction_to_string(EntityFaction faction)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (faction) {
         case FACTION_NEUTRAL:  return str_lit("Neutral");
         case FACTION_PLAYER:   return str_lit("Player");
         case FACTION_ENEMY:    return str_lit("Enemy");
         case FACTION_COUNT:    break;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     ASSERT(0);
     return null_string;

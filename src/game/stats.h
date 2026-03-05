@@ -81,6 +81,7 @@ static inline StatValue get_base_stat_value(StatValues stats, Stat stat)
 
 static inline String stat_to_string(Stat stat)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (stat) {
 	case STAT_FIRE_DAMAGE:		  return str_lit("Fire damage");
 	case STAT_LIGHTNING_DAMAGE:	  return str_lit("Lightning damage");
@@ -90,8 +91,11 @@ static inline String stat_to_string(Stat stat)
 	case STAT_MOVEMENT_SPEED:	  return str_lit("Movement speed");
 	case STAT_ACTION_SPEED:		  return str_lit("Action speed");
 	case STAT_HEALTH:		  return str_lit("Health");
-	case STAT_COUNT:		  ASSERT(0);
+
+        INVALID_CASE(STAT_COUNT);
+        INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     ASSERT(0);
     return str_lit("");

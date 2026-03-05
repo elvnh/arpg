@@ -153,6 +153,7 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
 
     color.a = MAX(0.0f, color.a);
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (light.kind) {
         case LIGHT_REGULAR: {
             entry = draw_circle(rb, arena, origin, color, light.radius,
@@ -167,6 +168,7 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
 
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     Vector4 extended_pos = {origin.x, origin.y, 0.0f, 0.0f};
     set_vec4_uniform(entry, arena, LIGHT_SHADER_ORIGIN_UNIFORM_NAME, extended_pos);

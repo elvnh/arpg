@@ -74,6 +74,7 @@ static void assign_asset_slot_data(AssetSlot *slot, AssetKind kind, void *data)
 {
     slot->kind = kind;
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (kind) {
         case ASSET_KIND_TEXTURE: {
             slot->as.texture_asset = data;
@@ -89,6 +90,7 @@ static void assign_asset_slot_data(AssetSlot *slot, AssetKind kind, void *data)
 
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 }
 
 static void *get_asset_data(AssetID id, AssetKind kind)
@@ -98,13 +100,14 @@ static void *get_asset_data(AssetID id, AssetKind kind)
     AssetSlot *asset = get_asset_slot(id);
     ASSERT(asset->kind == kind);
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (kind) {
 	case ASSET_KIND_SHADER:  return asset->as.shader_asset;
 	case ASSET_KIND_TEXTURE: return asset->as.texture_asset;
 	case ASSET_KIND_FONT:    return asset->as.font_asset;
+        INVALID_DEFAULT_CASE;
     }
-
-    ASSERT(false);
+    END_EXHAUSTIVE_SWITCH;
 
     return 0;
 }
@@ -145,6 +148,7 @@ static String get_canonical_asset_path(String name, AssetKind kind, FreeListAren
 
     path = platform_get_canonical_path(path, scratch, scratch_arena);
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (kind) {
         case ASSET_KIND_SHADER: {
             path = str_concat(path, str_lit("/"SHADER_DIRECTORY), scratch);
@@ -160,6 +164,7 @@ static String get_canonical_asset_path(String name, AssetKind kind, FreeListAren
 
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     path = str_concat(path, name, scratch);
 
@@ -314,6 +319,7 @@ b32 assets_reload_asset_with_path(String path, LinearArena *scratch)
     AssetSlot *slot = get_asset_by_path(path, scratch);
 
     if (slot) {
+        BEGIN_EXHAUSTIVE_SWITCH;
         switch (slot->kind) {
             case ASSET_KIND_SHADER: return assets_reload_shader(slot, scratch);
             case ASSET_KIND_TEXTURE: return assets_reload_texture(slot, scratch);
@@ -321,6 +327,7 @@ b32 assets_reload_asset_with_path(String path, LinearArena *scratch)
 
             INVALID_DEFAULT_CASE;
         }
+        END_EXHAUSTIVE_SWITCH;
     }
 
     return false;

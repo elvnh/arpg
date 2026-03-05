@@ -107,12 +107,14 @@ typedef enum {
 
 static TraversalOrder get_layout_traversal_order(UISizeKind size_kind)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (size_kind) {
         case UI_SIZE_KIND_ABSOLUTE:          return TRAVERSAL_ORDER_PREORDER;
         case UI_SIZE_KIND_PERCENT_OF_PARENT: return TRAVERSAL_ORDER_PREORDER;
         case UI_SIZE_KIND_SUM_OF_CHILDREN:   return TRAVERSAL_ORDER_POSTORDER;
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     ASSERT(0);
     return 0;
@@ -159,6 +161,7 @@ static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, Plat
         calculate_layout_of_children(widget, platform_code);
     }
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (size_kind) {
         case UI_SIZE_KIND_ABSOLUTE: {
             *v2_index(&widget->final_size, axis) = widget->semantic_size[axis].value;
@@ -191,6 +194,7 @@ static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset, Plat
 
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     if (order == TRAVERSAL_ORDER_PREORDER) {
         calculate_layout_of_children(widget, platform_code);

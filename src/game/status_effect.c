@@ -142,10 +142,14 @@ Modifier get_status_effect_stat_modifier(StatusEffectID effect_id)
 
 String status_effect_to_string(StatusEffectID effect_id)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (effect_id) {
 	case STATUS_EFFECT_CHILLED: return str_lit("Chilled");
-	case STATUS_EFFECT_COUNT:   ASSERT(0);
+
+        INVALID_CASE(STATUS_EFFECT_COUNT);
+        INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     ASSERT(0);
     return (String){0};

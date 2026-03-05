@@ -42,6 +42,7 @@ static inline String modifier_to_string(Modifier modifier, LinearArena *arena)
 {
     String result = {0};
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (modifier.modifier_type) {
         case NUMERIC_MOD_FLAT_ADDITIVE: {
             result = format(arena, "+%ld", modifier.value);
@@ -55,8 +56,11 @@ static inline String modifier_to_string(Modifier modifier, LinearArena *arena)
             result = format(arena, "%.2fx", (f64)modifier.value / 100.0);
         } break;
 
+        INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
+
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     result = format(arena, FMT_STR" "FMT_STR,
         FMT_STR_ARG(result), FMT_STR_ARG(stat_to_string(modifier.target_stat)));

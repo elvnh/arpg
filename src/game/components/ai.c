@@ -43,6 +43,7 @@ static void transition_to_ai_state(World *world, Entity *entity, AIComponent *ai
 {
     ai->current_state = new_state;
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (new_state.kind) {
 	case AI_STATE_IDLE: {
 	    entity_try_transition_to_state(world, entity, physics, state_idle());
@@ -50,7 +51,10 @@ static void transition_to_ai_state(World *world, Entity *entity, AIComponent *ai
 
 	case AI_STATE_CHASING: {
 	} break;
+
+        INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 }
 
 static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai, PhysicsComponent *self_physics)
@@ -109,6 +113,7 @@ static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *a
 
 static void ai_behaviour_normal_enemy(World *world, Entity *entity, AIComponent *ai, PhysicsComponent *physics)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (ai->current_state.kind) {
 	case AI_STATE_IDLE: {
 	    update_ai_state_idle(world, entity, ai, physics);
@@ -118,6 +123,7 @@ static void ai_behaviour_normal_enemy(World *world, Entity *entity, AIComponent 
 	    update_ai_state_chasing(world, entity, ai, physics);
 	} break;
     }
+    END_EXHAUSTIVE_SWITCH;
 }
 
 void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
@@ -129,6 +135,7 @@ void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
         return;
     }
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (ai->behaviour) {
         case AI_BEHAVIOUR_NORMAL_ENEMY: {
             ai_behaviour_normal_enemy(world, entity, ai, physics);
@@ -136,4 +143,5 @@ void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
 
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 }

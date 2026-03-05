@@ -82,6 +82,7 @@ Vector2i platform_get_window_size(WindowHandle *window)
 /* Input */
 static s32 get_glfw_key_equivalent(Key key)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (key) {
 #define INPUT_KEY(key) case key: return GLFW_##key;
         INPUT_KEY_LIST
@@ -90,8 +91,10 @@ static s32 get_glfw_key_equivalent(Key key)
         case MOUSE_LEFT:  return GLFW_MOUSE_BUTTON_LEFT;
         case MOUSE_RIGHT: return GLFW_MOUSE_BUTTON_RIGHT;
 
+        INVALID_CASE(KEY_COUNT);
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     ASSERT(false);
 

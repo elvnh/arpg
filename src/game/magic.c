@@ -756,6 +756,7 @@ void magic_add_to_spellbook(SpellCasterComponent *spellcaster, SpellID id)
 
 String spell_type_to_string(SpellID id)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (id) {
 	case SPELL_FIREBALL:          return str_lit("Fireball");
 	case SPELL_SPARK:             return str_lit("Spark");
@@ -763,8 +764,11 @@ String spell_type_to_string(SpellID id)
 	case SPELL_ICE_SHARD_TRIGGER: return str_lit("Ice shard trigger");
 	case SPELL_BLIZZARD:          return str_lit("Blizzard");
 	case SPELL_CHAIN:             return str_lit("Chain");
-	case SPELL_COUNT: ASSERT(0);
+
+        INVALID_CASE(SPELL_COUNT);
+	INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     ASSERT(0);
 

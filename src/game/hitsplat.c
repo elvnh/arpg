@@ -37,6 +37,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 	f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
 	RGBA32 color = get_damage_type_color(hitsplat->damage.type);
 
+        BEGIN_EXHAUSTIVE_SWITCH;
 	switch (hitsplat->damage.type) {
 	    case DMG_TYPE_Fire: {
 		color = RGBA32_RED;
@@ -46,8 +47,10 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 		color = RGBA32_YELLOW;
 	    } break;
 
+            INVALID_CASE(DMG_TYPE_COUNT);
 	    INVALID_DEFAULT_CASE;
 	}
+        END_EXHAUSTIVE_SWITCH;
 
 	color.a = alpha;
 

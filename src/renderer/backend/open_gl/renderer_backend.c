@@ -576,6 +576,7 @@ void renderer_backend_begin_frame(RendererBackend *backend)
 
 void renderer_backend_set_blend_function(BlendFunction function)
 {
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (function) {
         case BLEND_FUNCTION_ADDITIVE: {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -584,7 +585,10 @@ void renderer_backend_set_blend_function(BlendFunction function)
         case BLEND_FUNCTION_MULTIPLICATIVE: {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         } break;
+
+        INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 }
 
 void renderer_backend_enable_stencil_writes(void)
@@ -603,6 +607,7 @@ void renderer_backend_set_stencil_pass_operation(RendererBackend *backend, Stenc
 
     GLenum gl_enum = 0;
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (op) {
         case STENCIL_OP_REPLACE: {
             gl_enum = GL_REPLACE;
@@ -614,6 +619,7 @@ void renderer_backend_set_stencil_pass_operation(RendererBackend *backend, Stenc
 
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     glStencilOp(gl_enum, gl_enum, gl_enum);
 }
@@ -623,6 +629,7 @@ void renderer_backend_set_stencil_function(RendererBackend *backend, StencilFunc
 
     GLenum gl_enum = 0;
 
+    BEGIN_EXHAUSTIVE_SWITCH;
     switch (function) {
         case STENCIL_FUNCTION_ALWAYS: {
             gl_enum = GL_ALWAYS;
@@ -638,6 +645,7 @@ void renderer_backend_set_stencil_function(RendererBackend *backend, StencilFunc
 
         INVALID_DEFAULT_CASE;
     }
+    END_EXHAUSTIVE_SWITCH;
 
     glStencilFunc(gl_enum, arg, 0xFF);
 }

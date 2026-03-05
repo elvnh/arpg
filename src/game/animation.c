@@ -127,7 +127,6 @@ void anim_update_instance(World *world, Entity *entity, PhysicsComponent *physic
 		default: {
 		} break;
 	    }
-
         }
     }
 }

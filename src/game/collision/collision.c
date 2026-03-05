@@ -91,6 +91,7 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
             result.movement_fraction_left = MAX(0.0f, remaining);
             result.collision_status = COLLISION_STATUS_WILL_COLLIDE_THIS_FRAME;
 
+            BEGIN_EXHAUSTIVE_SWITCH;
             switch (intersection.side_of_collision) {
                 case CARDINAL_DIR_NORTH: {
                     result.collision_normal = v2(0, -1);
@@ -108,8 +109,10 @@ CollisionInfo collision_rect_vs_rect(f32 movement_fraction_left, Rectangle rect_
                     result.collision_normal = v2(1, 0);
                 } break;
 
+                INVALID_CASE(CARDINAL_DIR_COUNT);
                 INVALID_DEFAULT_CASE;
             }
+            END_EXHAUSTIVE_SWITCH;
         }
     }
 

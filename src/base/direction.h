@@ -23,7 +23,7 @@ static inline Vector2 cardinal_direction_vector(CardinalDirection dir)
         case CARDINAL_DIR_EAST:  return (Vector2)  { 1,   0};
         case CARDINAL_DIR_SOUTH: return (Vector2)  { 0,  -1};
         case CARDINAL_DIR_WEST:  return (Vector2)  {-1,   0};
-        case CARDINAL_DIR_COUNT: break;
+        INVALID_DEFAULT_CASE;
     }
 
     ASSERT(0);

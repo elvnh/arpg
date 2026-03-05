@@ -1051,13 +1051,14 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 	}
     }
 
-    //tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})->type = TILE_WALL;
+    tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})->type = TILE_WALL;
+    tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2 - 2, world_height / 2 - 2})->type = TILE_WALL;
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 3; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),
 	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
@@ -1104,7 +1105,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
         anim->state_animations[ENTITY_STATE_WALKING] = ANIM_PLAYER_WALKING;
         anim->state_animations[ENTITY_STATE_ATTACKING] = ANIM_PLAYER_ATTACKING;
 
-	entity_transition_to_state(world, entity, physics, state_idle());
+	entity_try_transition_to_state(world, entity, physics, state_idle());
 #endif
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
@@ -1119,7 +1120,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
         light->light.radius = 500.0f;
         light->light.kind = LIGHT_RAYCASTED;
 
-        if (true || i == 0) {
+        if (i == 0) {
             light->light.color = RGBA32_GREEN;
         } else {
             light->light.color = RGBA32_BLUE;
@@ -1156,8 +1157,8 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
             particle_spawner_initialize(ps, config);
         }
-#endif
 
+#endif
         {
             /*Inventory *inv = */es_add_component(entity, Inventory);
             if (i != 0) {

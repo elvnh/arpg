@@ -7,6 +7,7 @@
 
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
 #define INVALID_DEFAULT_CASE default: ASSERT(0); break;
+#define INVALID_CASE(c) case (c): ASSERT(0); break;
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define KB(n) (n * 1024)

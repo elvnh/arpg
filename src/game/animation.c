@@ -120,7 +120,8 @@ void anim_update_instance(World *world, Entity *entity, PhysicsComponent *physic
 		} break;
 
 		case ANIM_ON_END_TRANSITION_TO_STATE: {
-		    entity_transition_to_state(world, entity, physics, anim->state_transition_when_done);
+		    entity_force_transition_to_state(world, entity, physics,
+			anim->state_transition_when_done);
 		} break;
 
 		default: {

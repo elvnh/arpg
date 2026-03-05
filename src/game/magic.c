@@ -2,7 +2,9 @@
 #include "base/maths.h"
 #include "callback_functions.h"
 #include "collision/trigger.h"
+#include "components/component.h"
 #include "components/event_listener.h"
+#include "entity/entity_system.h"
 #include "world/world.h"
 #include "asset_table.h"
 
@@ -473,6 +475,16 @@ void spawn_spell_entities(World *world, SpellID id, Entity *caster, Vector2 targ
     Vector2 dir = v2_sub(target_pos, spell_origin);
 
     spawn_spell_entities_impl(world, spell, caster, spell_origin, dir, projectile_count, params);
+}
+
+void try_cast_spell(World *world, SpellID spell, struct Entity *caster, Vector2 target_pos)
+{
+    PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
+    ASSERT(physics);
+    StatValue total_cast_speed = get_total_cast_speed(&world->entity_system, caster);
+
+    entity_try_transition_to_state(world, caster, physics,
+	state_attacking(spell, target_pos, total_cast_speed));
 }
 
 static void fork_collision_callback(CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)

@@ -31,8 +31,8 @@ typedef struct {
     } as;
 } EntityState;
 
-void entity_transition_to_state(struct World *world, struct Entity *entity,
-                                struct PhysicsComponent *physics, EntityState state);
+void entity_force_transition_to_state(struct World *world, struct Entity *entity,
+                                      struct PhysicsComponent *physics, EntityState state);
 b32 entity_try_transition_to_state(struct World *world, struct Entity *entity,
                                    struct PhysicsComponent *physics, EntityState state);
 

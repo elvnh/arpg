@@ -47,8 +47,8 @@ typedef struct {
 
 StatValue  get_total_stat_value(struct EntitySystem *es, struct Entity *entity, Stat stat);
 StatValue  get_total_stat_modifier_of_type(struct EntitySystem *es, struct Entity *entity,
-					       Stat stat, NumericModifierType mod_type);
-
+					   Stat stat, NumericModifierType mod_type);
+StatValue  get_total_cast_speed(struct EntitySystem *es, struct Entity *entity);
 StatValue  apply_modifier(StatValue lhs, StatValue rhs, NumericModifierType mod_type);
 StatValue  modify_stat_by_percentage(StatValue lhs, StatValue percentage);
 StatValues create_base_stats(void);

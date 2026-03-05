@@ -220,3 +220,15 @@ StatValue get_total_stat_modifier_of_type(EntitySystem *es, Entity *entity,
 
     return result;
 }
+
+StatValue get_total_cast_speed(EntitySystem *es, Entity *entity)
+{
+    // TODO: generalize the way derived stats like this are calculated
+    StatValue cast_speed = get_total_stat_value(es, entity, STAT_CAST_SPEED);
+    StatValue action_speed = get_total_stat_value(es, entity, STAT_ACTION_SPEED);
+
+    StatValue result = apply_modifier(cast_speed, action_speed,
+	NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
+
+    return result;
+}

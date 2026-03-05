@@ -72,7 +72,8 @@ static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai, 
     }
 }
 
-static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *ai, PhysicsComponent *self_physics)
+static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *ai,
+    PhysicsComponent *self_physics)
 {
     ASSERT(ai->current_state.kind == AI_STATE_CHASING);
 
@@ -90,11 +91,10 @@ static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *a
 	    ASSERT(caster);
 	    ASSERT(caster->spell_count > 0);
 
+	    // TODO: don't always cast first spell
 	    SpellID spell = get_spell_at_spellbook_index(caster, 0);
-	    StatValue cast_speed = get_total_stat_value(&world->entity_system, entity, STAT_CAST_SPEED);
 
-	    entity_try_transition_to_state(world, entity, self_physics, state_attacking(spell,
-		    target_physics->position, cast_speed));
+	    try_cast_spell(world, spell, entity, target_physics->position);
 	} else if (distance < AI_CHASE_DISTANCE) {
 	    Vector2 direction = v2_sub(target_physics->position, self_physics->position);
 	    direction = v2_norm(direction);

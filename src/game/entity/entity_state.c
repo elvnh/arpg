@@ -69,7 +69,8 @@ static void play_state_animation(Entity *entity, EntityState state)
     }
 }
 
-void entity_transition_to_state(World *world, Entity *entity, PhysicsComponent *physics, EntityState state)
+void entity_force_transition_to_state(World *world, Entity *entity, PhysicsComponent *physics,
+    EntityState state)
 {
     if (state.kind == ENTITY_STATE_WALKING && v2_is_zero(state.as.walking.direction)) {
 	state = state_idle();
@@ -109,7 +110,7 @@ b32 entity_try_transition_to_state(World *world, Entity *entity, PhysicsComponen
     b32 result = false;
 
     if (can_transition_to_state(entity, state)) {
-	entity_transition_to_state(world, entity, physics, state);
+	entity_force_transition_to_state(world, entity, physics, state);
 	result = true;
     }
 

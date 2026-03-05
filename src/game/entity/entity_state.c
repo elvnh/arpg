@@ -76,6 +76,7 @@ void entity_force_transition_to_state(World *world, Entity *entity, PhysicsCompo
 	state = state_idle();
     }
 
+    // TODO: allow force transitioning without running "on exit"-effects
     transition_out_of_current_state(world, entity);
 
     entity->state = state;
@@ -84,18 +85,8 @@ void entity_force_transition_to_state(World *world, Entity *entity, PhysicsCompo
 
     switch (state.kind) {
 	case ENTITY_STATE_WALKING: {
-	    f32 speed = 300.0f; // Base movement speed
+	    f32 speed = get_total_movement_speed_value(&world->entity_system, entity);
 
-	    StatValue move_speed = get_total_stat_value(
-		&world->entity_system, entity, STAT_MOVEMENT_SPEED);
-	    StatValue action_speed = get_total_stat_value(
-		&world->entity_system, entity, STAT_ACTION_SPEED);
-	    StatValue final_move_speed = apply_modifier(move_speed, action_speed,
-		NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
-
-	    speed = speed * stat_value_percentage_as_factor(final_move_speed);
-
-	    ASSERT(!v2_is_zero(state.as.walking.direction));
 	    physics->velocity = v2_mul_s(state.as.walking.direction, speed);
 	} break;
 

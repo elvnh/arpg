@@ -232,3 +232,24 @@ StatValue get_total_cast_speed(EntitySystem *es, Entity *entity)
 
     return result;
 }
+
+StatValue get_total_movement_speed(struct EntitySystem *es, struct Entity *entity)
+{
+    StatValue move_speed = get_total_stat_value(es, entity, STAT_MOVEMENT_SPEED);
+    StatValue action_speed = get_total_stat_value(es, entity, STAT_ACTION_SPEED);
+
+    StatValue result = apply_modifier(move_speed, action_speed, NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
+
+    return result;
+}
+
+f32 get_total_movement_speed_value(struct EntitySystem *es, struct Entity *entity)
+{
+    StatValue movement_speed = get_total_movement_speed(es, entity);
+
+    // TODO: don't hardcode base speed
+    f32 base_movement_speed = 300.0f;
+    f32 result = base_movement_speed * stat_value_percentage_as_factor(movement_speed);
+
+    return result;
+}

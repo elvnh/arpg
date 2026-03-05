@@ -34,6 +34,10 @@
     } while (0)
 
 #if defined(__GNUC__)
+#    define BEGIN_EXHAUSTIVE_SWITCH                     \
+     _Pragma("GCC diagnostic push")                      \
+     _Pragma("GCC diagnostic error \"-Wswitch-enum\"")
+#    define END_EXHAUSTIVE_SWITCH _Pragma("GCC diagnostic pop")
 #    define ALIGNOF(t)              (ssize)__alignof__(t)
 #    define ALIGNAS(n)              __attribute__ ((aligned ((n))))
 #    define ALIGNAS_T(t)            __attribute__ ((aligned ((ALIGNOF(t)))))

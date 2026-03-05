@@ -93,7 +93,8 @@ static Animation *anim_get_by_id(AnimationID id)
     return result;
 }
 
-void anim_update_instance(World *world, Entity *entity, PhysicsComponent *physics, AnimationInstance *anim_instance, f32 dt)
+void anim_update_instance(World *world, Entity *entity, PhysicsComponent *physics,
+    AnimationInstance *anim_instance, f32 dt)
 {
     Animation *anim = anim_get_by_id(anim_instance->animation_id);
     ASSERT(anim_instance->current_frame < anim->frame_count);

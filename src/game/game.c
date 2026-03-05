@@ -128,6 +128,7 @@ static void update_player(World *world, const FrameData *frame_data,
 	    SpellID selected_spell = get_spell_at_spellbook_index(
 		spellcaster, game_ui->selected_spellbook_index);
 
+	    // TODO: break out these calculations into function as enemies will need to do them too
 	    StatValue cast_speed = get_total_stat_value(&world->entity_system, player, STAT_CAST_SPEED);
 	    StatValue action_speed = get_total_stat_value(&world->entity_system, player, STAT_ACTION_SPEED);
 

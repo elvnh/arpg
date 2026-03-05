@@ -216,11 +216,10 @@ static const Spell *get_spell_by_id(SpellID id)
     return &g_spells[id];
 }
 
-
 static void fork_collision_callback(CallbackUserData user_data, EventData event_data,
     LinearArena *frame_arena);
 
-static void create_spell_entity(World *world, const Spell *spell, Entity *caster,
+static void spawn_spell_entity(World *world, const Spell *spell, Entity *caster,
     Vector2 spell_start_position, Vector2 dir, CastSpellParams params)
 {
     EntityWithID spell_entity_with_id = world_spawn_non_spatial_entity(world, caster->faction);
@@ -421,7 +420,7 @@ static void create_spell_entity(World *world, const Spell *spell, Entity *caster
     }
 }
 
-static void cast_spell_projectiles(World *world, const Spell *spell, Entity *caster,
+static void spawn_spell_entities_impl(World *world, const Spell *spell, Entity *caster,
     Vector2 spell_origin, Vector2 dir, s32 projectile_count, CastSpellParams params)
 {
     ASSERT(projectile_count > 0);
@@ -447,14 +446,13 @@ static void cast_spell_projectiles(World *world, const Spell *spell, Entity *cas
     for (s32 i = 0; i < projectile_count; ++i) {
 	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
 
-	create_spell_entity(world, spell, caster, spell_origin, current_dir, params);
+	spawn_spell_entity(world, spell, caster, spell_origin, current_dir, params);
 
 	current_angle += angle_step_size;
     }
 }
 
-
-void magic_cast_spell_toward_target(World *world, SpellID id, Entity *caster, Vector2 target_pos)
+void spawn_spell_entities(World *world, SpellID id, Entity *caster, Vector2 target_pos)
 {
     PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
     ASSERT(physics && "It probably doesn't make sense for a non-spatial entity to cast a spell");
@@ -474,7 +472,7 @@ void magic_cast_spell_toward_target(World *world, SpellID id, Entity *caster, Ve
     Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster, physics));
     Vector2 dir = v2_sub(target_pos, spell_origin);
 
-    cast_spell_projectiles(world, spell, caster, spell_origin, dir, projectile_count, params);
+    spawn_spell_entities_impl(world, spell, caster, spell_origin, dir, projectile_count, params);
 }
 
 static void fork_collision_callback(CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)
@@ -505,7 +503,7 @@ static void fork_collision_callback(CallbackUserData user_data, EventData event_
     s32 fork_count = cb_data->as.fork.fork_count;
     Vector2 dir = v2_norm(self_physics->velocity);
 
-    cast_spell_projectiles(event_data.world, fork_spell, caster, self_physics->position, dir,
+    spawn_spell_entities_impl(event_data.world, fork_spell, caster, self_physics->position, dir,
 	fork_count, params);
 }
 

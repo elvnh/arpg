@@ -36,7 +36,7 @@ typedef enum {
 } SpellID;
 
 void    magic_initialize(void);
-void    magic_cast_spell_toward_target(struct World *world, SpellID id, struct Entity *caster,
+void    spawn_spell_entities(struct World *world, SpellID id, struct Entity *caster,
     Vector2 target_pos);
 void    magic_add_to_spellbook(struct SpellCasterComponent *spellcaster, SpellID id);
 String  spell_type_to_string(SpellID id);

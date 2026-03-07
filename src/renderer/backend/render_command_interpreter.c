@@ -86,22 +86,22 @@ static void render_line(
     // TODO: UV constants to make this easier to remember
     Vertex vtl = {0};
     vtl.position = tl;
-    vtl.uv = {0, 1};
+    vtl.uv = v2(0, 1);
     vtl.color = color;
 
     Vertex vtr = {0};
     vtr.position = tr;
-    vtr.uv = {1, 1};
+    vtr.uv = v2(1, 1);
     vtr.color = color;
 
     Vertex vbr = {0};
     vbr.position = br;
-    vbr.uv = {1, 0};
+    vbr.uv = v2(1, 0);
     vbr.color = color;
 
     Vertex vbl = {0};
     vbl.position = bl;
-    vbl.uv = {0, 0};
+    vbl.uv = v2(0, 0);
     vbl.color = color;
 
     renderer_backend_draw_quad(backend, vtl, vtr, vbr, vbl);

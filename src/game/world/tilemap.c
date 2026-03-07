@@ -115,7 +115,8 @@ static Vector2 get_wall_line_segment_begin(
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_NORTH: {
-            case CARDINAL_DIR_WEST: result = v2_add(tile_world_coords, v2(0, TILE_SIZE));
+            case CARDINAL_DIR_WEST:
+                result = v2_add(tile_world_coords, v2(0, TILE_SIZE));
         } break;
 
         case CARDINAL_DIR_EAST: {
@@ -136,7 +137,8 @@ static Vector2 wall_line_direction_vector(CardinalDirection edge_dir)
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_NORTH:
-        case CARDINAL_DIR_SOUTH: return (Vector2){1, 0};
+        case CARDINAL_DIR_SOUTH:
+            return (Vector2){1, 0};
 
         case CARDINAL_DIR_EAST:
         case CARDINAL_DIR_WEST:
@@ -165,15 +167,19 @@ static CardinalDirection get_connectible_neighbour_direction(CardinalDirection e
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_WEST:
-        case CARDINAL_DIR_EAST: return CARDINAL_DIR_NORTH;
+        case CARDINAL_DIR_EAST:
+            return CARDINAL_DIR_NORTH;
 
-        case CARDINAL_DIR_NORTH: return CARDINAL_DIR_WEST;
+        case CARDINAL_DIR_NORTH:
+            return CARDINAL_DIR_WEST;
 
         case CARDINAL_DIR_SOUTH:
             ASSERT(0 && "Southern edges aren't created anymore");
             break;
 
-        case CARDINAL_DIR_COUNT: ASSERT(0); break;
+        case CARDINAL_DIR_COUNT:
+            ASSERT(0);
+            break;
     }
     END_EXHAUSTIVE_SWITCH;
 

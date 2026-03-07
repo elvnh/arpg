@@ -1,17 +1,20 @@
 #include "render_command_interpreter.h"
+
 #include "base/rectangle.h"
 #include "base/rgba.h"
 #include "base/triangle.h"
 #include "base/vector.h"
-#include "platform/font.h"
+#include "game/particle.h"
 #include "platform/asset_system.h"
+#include "platform/font.h"
+#include "renderer/backend/renderer_backend.h"
 #include "renderer/frontend/render_command.h"
 #include "renderer/frontend/render_key.h"
 #include "renderer/frontend/render_target.h"
-#include "renderer/backend/renderer_backend.h"
-#include "game/particle.h"
 
+// clang-format off
 #define INVALID_RENDERER_STATE (RendererState){{(AssetID)-1}, {(AssetID)-1}}
+// clang-format on
 
 typedef struct {
     ShaderHandle shader;
@@ -46,7 +49,8 @@ static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
     return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
 }
 
-static RendererState switch_renderer_state(RendererState new_state, RendererState old_state, RendererBackend *backend)
+static RendererState switch_renderer_state(
+    RendererState new_state, RendererState old_state, RendererBackend *backend)
 {
     (void)backend;
 
@@ -66,11 +70,12 @@ static RendererState switch_renderer_state(RendererState new_state, RendererStat
     return new_state;
 }
 
-static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f32 thickness, RGBA32 color)
+static void render_line(
+    RendererBackend *backend, Vector2 start, Vector2 end, f32 thickness, RGBA32 color)
 {
     Vector2 dir_r = v2_mul_s(v2_norm(v2_sub(end, start)), thickness / 2.0f);
     Vector2 dir_l = v2_neg(dir_r);
-    Vector2 dir_u = { -dir_r.y, dir_r.x };
+    Vector2 dir_u = {-dir_r.y, dir_r.x};
     Vector2 dir_d = v2_neg(dir_u);
 
     Vector2 tl = v2_add(v2_add(start, dir_l), dir_u);
@@ -79,35 +84,31 @@ static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f3
     Vector2 bl = v2_add(start, v2_add(dir_d, dir_l));
 
     // TODO: UV constants to make this easier to remember
-    Vertex vtl = {
-	.position = tl,
-	.uv = {0, 1},
-	.color = color
-    };
+    Vertex vtl = {0};
+    vtl.position = tl;
+    vtl.uv = {0, 1};
+    vtl.color = color;
 
-    Vertex vtr = {
-	.position = tr,
-	.uv = {1, 1},
-	.color = color
-    };
+    Vertex vtr = {0};
+    vtr.position = tr;
+    vtr.uv = {1, 1};
+    vtr.color = color;
 
-    Vertex vbr = {
-	.position = br,
-	.uv = {1, 0},
-	.color = color
-    };
+    Vertex vbr = {0};
+    vbr.position = br;
+    vbr.uv = {1, 0};
+    vbr.color = color;
 
-    Vertex vbl = {
-	.position = bl,
-	.uv = {0, 0},
-	.color = color
-    };
+    Vertex vbl = {0};
+    vbl.position = bl;
+    vbl.uv = {0, 0};
+    vbl.color = color;
 
     renderer_backend_draw_quad(backend, vtl, vtr, vbr, vbl);
 }
 
-static void execute_render_command(RenderEntry *entry, RenderBatch *rb, RendererState *current_state,
-    RendererBackend *backend, LinearArena *scratch)
+static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
+    RendererState *current_state, RendererBackend *backend, LinearArena *scratch)
 {
     RenderCmdHeader *header = entry->data;
 
@@ -118,24 +119,27 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
         *current_state = switch_renderer_state(needed_state, *current_state, backend);
     }
 
-    for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd; setup_cmd = setup_cmd->next) {
+    for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd;
+         setup_cmd = setup_cmd->next) {
         BEGIN_EXHAUSTIVE_SWITCH;
         switch (setup_cmd->kind) {
             case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformVec4): {
                 SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
                 ShaderAsset *shader = assets_get_shader(current_state->shader);
 
-                renderer_backend_set_uniform_vec4(shader, cmd->header.uniform_name, cmd->value, scratch);
+                renderer_backend_set_uniform_vec4(
+                    shader, cmd->header.uniform_name, cmd->value, scratch);
             } break;
 
             case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformFloat): {
                 SetupCmdUniformFloat *cmd = (SetupCmdUniformFloat *)setup_cmd;
                 ShaderAsset *shader = assets_get_shader(current_state->shader);
 
-                renderer_backend_set_uniform_float(shader, cmd->header.uniform_name, cmd->value, scratch);
+                renderer_backend_set_uniform_float(
+                    shader, cmd->header.uniform_name, cmd->value, scratch);
             } break;
 
-            INVALID_DEFAULT_CASE;
+                INVALID_DEFAULT_CASE;
         }
         END_EXHAUSTIVE_SWITCH;
     }
@@ -145,7 +149,8 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
         // TODO: can these switch cases be simplified?
         case RENDER_COMMAND_ENUM_NAME(RectangleCmd): {
             RectangleCmd *cmd = (RectangleCmd *)entry->data;
-            RectangleVertices verts = rect_get_vertices(cmd->rect, cmd->color, rb->y_direction);
+            RectangleVertices verts =
+                rect_get_vertices(cmd->rect, cmd->color, rb->y_direction);
             ASSERT(rect_is_valid(cmd->rect));
 
             f32 rotation = cmd->rotation_in_radians;
@@ -173,10 +178,14 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
             // TODO: rotate around origin instead?
             Vector2 origin = rect_center(cmd->rect);
 
-            verts.top_left.position = v2_rotate_around_point(verts.top_left.position, rotation, origin);
-            verts.top_right.position = v2_rotate_around_point(verts.top_right.position, rotation, origin);
-            verts.bottom_right.position = v2_rotate_around_point(verts.bottom_right.position, rotation, origin);
-            verts.bottom_left.position = v2_rotate_around_point(verts.bottom_left.position, rotation, origin);
+            verts.top_left.position =
+                v2_rotate_around_point(verts.top_left.position, rotation, origin);
+            verts.top_right.position =
+                v2_rotate_around_point(verts.top_right.position, rotation, origin);
+            verts.bottom_right.position =
+                v2_rotate_around_point(verts.bottom_right.position, rotation, origin);
+            verts.bottom_left.position =
+                v2_rotate_around_point(verts.bottom_left.position, rotation, origin);
 
             renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
                 verts.bottom_right, verts.bottom_left);
@@ -189,16 +198,13 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
             Rectangle viewport = cmd->viewport_rect;
             RGBA32 color = cmd->color;
 
-            ClippedRectangleVertices verts = rect_get_clipped_vertices(rect, viewport, color, rb->y_direction);
+            ClippedRectangleVertices verts =
+                rect_get_clipped_vertices(rect, viewport, color, rb->y_direction);
 
             if (verts.is_visible) {
-                renderer_backend_draw_quad(
-                    backend,
-                    verts.vertices.top_left,
-                    verts.vertices.top_right,
-                    verts.vertices.bottom_right,
-                    verts.vertices.bottom_left
-                );
+                renderer_backend_draw_quad(backend, verts.vertices.top_left,
+                    verts.vertices.top_right, verts.vertices.bottom_right,
+                    verts.vertices.bottom_left);
             }
         } break;
 
@@ -251,7 +257,11 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
             f32 posy = cmd->position.y;
             RGBA32 color = cmd->color;
 
-            Vertex a = { {posx, posy}, {0.5f, 0.5f}, color };
+            Vertex a = {
+                {posx, posy},
+                {0.5f, 0.5f},
+                color
+            };
 
             f32 step_angle = (2.0f * PI) / (f32)segments;
 
@@ -268,8 +278,17 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
                 f32 tx2 = (x2 / radius + 1.0f) * 0.5f;
                 f32 ty2 = 1.0f - ((y2 / radius + 1.0f) * 0.5f);
 
-                Vertex b = { {x1, y1}, {tx1, ty1}, color};
-                Vertex c = { {x2, y2}, {tx2, ty2}, color};
+                Vertex b = {
+                    {x1,  y1 },
+                    {tx1, ty1},
+                    color
+                };
+
+                Vertex c = {
+                    {x2,  y2 },
+                    {tx2, ty2},
+                    color
+                };
 
                 renderer_backend_draw_triangle(backend, a, b, c);
             }
@@ -284,7 +303,8 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
         case RENDER_COMMAND_ENUM_NAME(TextCmd): {
             TextCmd *cmd = (TextCmd *)entry->data;
 
-            FontHandle font_handle = (FontHandle){(u32)render_key_extract_font(entry->key)};
+            FontHandle font_handle =
+                (FontHandle){(u32)render_key_extract_font(entry->key)};
             FontAsset *font_asset = assets_get_font(font_handle);
 
             RGBA32 color = cmd->color;
@@ -310,32 +330,26 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
                         cursor.y += newline_advance;
                     }
                 } else if (glyph == '\t') {
-                    RenderedGlyphInfo verts = font_get_glyph_vertices(font_asset, ' ', cursor,
-                        text_size, color, rb->y_direction);
+                    RenderedGlyphInfo verts = font_get_glyph_vertices(
+                        font_asset, ' ', cursor, text_size, color, rb->y_direction);
 
                     cursor.x += verts.advance_x * 4;
                 } else {
                     RenderedGlyphInfo verts = {0};
 
                     if (is_clipped) {
-                        verts = font_get_clipped_glyph_vertices(
-                            font_asset, glyph, cursor, clip_rect, text_size, color, rb->y_direction
-                        );
+                        verts = font_get_clipped_glyph_vertices(font_asset, glyph, cursor,
+                            clip_rect, text_size, color, rb->y_direction);
                     } else {
                         verts = font_get_glyph_vertices(
-                            font_asset, glyph, cursor, text_size, color, rb->y_direction
-                        );
+                            font_asset, glyph, cursor, text_size, color, rb->y_direction);
                     }
 
                     if (verts.is_visible) {
                         // TODO: overload for this that takes RectangleVertices
-                        renderer_backend_draw_quad(
-                            backend,
-                            verts.vertices.top_left,
-                            verts.vertices.top_right,
-                            verts.vertices.bottom_right,
-                            verts.vertices.bottom_left
-                        );
+                        renderer_backend_draw_quad(backend, verts.vertices.top_left,
+                            verts.vertices.top_right, verts.vertices.bottom_right,
+                            verts.vertices.bottom_left);
                     }
 
                     cursor.x += verts.advance_x;
@@ -360,13 +374,8 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
 
                 RectangleVertices verts = rect_get_vertices(rect, color, Y_IS_UP);
 
-                renderer_backend_draw_quad(
-                    backend,
-                    verts.top_left,
-                    verts.top_right,
-                    verts.bottom_right,
-                    verts.bottom_left
-                );
+                renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
+                    verts.bottom_right, verts.bottom_left);
             }
         } break;
 
@@ -374,7 +383,8 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
             PolygonCmd *cmd = (PolygonCmd *)entry->data;
             RGBA32 color = cmd->color;
 
-            for (PolygonTriangle *tri = list_head(&cmd->polygon); tri; tri = list_next(tri)) {
+            for (PolygonTriangle *tri = list_head(&cmd->polygon); tri;
+                 tri = list_next(tri)) {
                 TriangleVertices verts = triangle_get_vertices(tri->triangle, color);
 
                 renderer_backend_draw_triangle(backend, verts.a, verts.b, verts.c);
@@ -398,7 +408,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
             }
         } break;
 
-        INVALID_DEFAULT_CASE;
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
@@ -409,7 +419,8 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb, Renderer
     }
 }
 
-void execute_render_commands(RenderBatch *rb, RendererBackend *backend, LinearArena *scratch)
+void execute_render_commands(
+    RenderBatch *rb, RendererBackend *backend, LinearArena *scratch)
 {
     // NOTE: The color buffer should always be cleared, even if there is nothing to draw
     // as some batches may always need the background color to be drawn
@@ -427,7 +438,8 @@ void execute_render_commands(RenderBatch *rb, RendererBackend *backend, LinearAr
         // This batch has a stencil pass, run it before rendering this batch
         RenderBatch *stencil = rb->stencil_batch;
         ASSERT(stencil->render_target == rb->render_target);
-        ASSERT(!stencil->stencil_batch && "A stencil batch can't have a stencil batch of it's own");
+        ASSERT(!stencil->stencil_batch
+               && "A stencil batch can't have a stencil batch of it's own");
 
         // The stencil pass should only write to stencil buffer, not color buffer
         renderer_backend_enable_stencil_writes();
@@ -439,11 +451,13 @@ void execute_render_commands(RenderBatch *rb, RendererBackend *backend, LinearAr
         renderer_backend_disable_stencil_writes();
         renderer_backend_enable_color_buffer_writes(backend);
 
-        renderer_backend_set_stencil_function(backend, stencil->stencil_func, stencil->stencil_func_arg);
+        renderer_backend_set_stencil_function(
+            backend, stencil->stencil_func, stencil->stencil_func_arg);
     } else {
         // Either we are a stencil batch or a batch without a stencil pass, either way we should
         // always pass stencil test
-        renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, rb->stencil_func_arg);
+        renderer_backend_set_stencil_function(
+            backend, STENCIL_FUNCTION_ALWAYS, rb->stencil_func_arg);
 
         // If we are a stencil batch, stencil buffer writes will be enabled. If not, they're disabled
         // so this won't affect anything

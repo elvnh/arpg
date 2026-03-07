@@ -113,8 +113,10 @@ static TraversalOrder get_layout_traversal_order(UISizeKind size_kind)
 {
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (size_kind) {
-        case UI_SIZE_KIND_ABSOLUTE: return TRAVERSAL_ORDER_PREORDER;
-        case UI_SIZE_KIND_PERCENT_OF_PARENT: return TRAVERSAL_ORDER_PREORDER;
+        case UI_SIZE_KIND_ABSOLUTE:
+            return TRAVERSAL_ORDER_PREORDER;
+        case UI_SIZE_KIND_PERCENT_OF_PARENT:
+            return TRAVERSAL_ORDER_PREORDER;
         case UI_SIZE_KIND_SUM_OF_CHILDREN:
             return TRAVERSAL_ORDER_POSTORDER;
             INVALID_DEFAULT_CASE;

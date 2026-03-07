@@ -57,11 +57,14 @@ static inline String damage_type_to_string(DamageType type)
 {
     switch (type) {
 #define DAMAGE_TYPE(name, dmg_stat, res_stat, color)                                     \
-    case DMG_TYPE_##name: return str_lit(#name);
+    case DMG_TYPE_##name:                                                                \
+        return str_lit(#name);
+
         DAMAGE_TYPE_LIST
 #undef DAMAGE_TYPE
 
-        case DMG_TYPE_COUNT: ASSERT(0);
+        case DMG_TYPE_COUNT:
+            ASSERT(0);
     }
 
     ASSERT(0);
@@ -73,11 +76,13 @@ static inline RGBA32 get_damage_type_color(DamageType type)
 {
     switch (type) {
 #define DAMAGE_TYPE(name, dmg_stat, res_stat, color)                                     \
-    case DMG_TYPE_##name: return color;
+    case DMG_TYPE_##name:                                                                \
+        return color;
         DAMAGE_TYPE_LIST
 #undef DAMAGE_TYPE
 
-        case DMG_TYPE_COUNT: ASSERT(0);
+        case DMG_TYPE_COUNT:
+            ASSERT(0);
     }
 
     ASSERT(0);

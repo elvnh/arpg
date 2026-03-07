@@ -31,7 +31,7 @@ static Stat get_stat_affecting_damage_type(DamageType dmg_type)
         DAMAGE_TYPE_LIST
 #undef DAMAGE_TYPE
 
-            INVALID_CASE(DMG_TYPE_COUNT);
+        INVALID_CASE(DMG_TYPE_COUNT);
     }
 
     ASSERT(0);

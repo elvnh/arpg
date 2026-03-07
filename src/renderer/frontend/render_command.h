@@ -2,34 +2,34 @@
 #define RENDER_COMMAND_H
 
 #include "base/polygon.h"
-#include "base/utils.h"
 #include "base/rectangle.h"
 #include "base/string8.h"
 #include "base/triangle.h"
+#include "base/utils.h"
 #include "platform/asset.h"
 
 // TODO: X macro to avoid defining new commands in multiple places
 
 struct ParticleBufferNew;
 
-#define RENDER_COMMAND_LIST                     \
-    RENDER_COMMAND(RectangleCmd)                \
-    RENDER_COMMAND(ClippedRectangleCmd)         \
-    RENDER_COMMAND(OutlinedRectangleCmd)        \
-    RENDER_COMMAND(CircleCmd)                   \
-    RENDER_COMMAND(TriangleCmd)                 \
-    RENDER_COMMAND(OutlinedTriangleCmd)         \
-    RENDER_COMMAND(LineCmd)                     \
-    RENDER_COMMAND(TextCmd)                     \
-    RENDER_COMMAND(ParticleGroupCmd)            \
-    RENDER_COMMAND(PolygonCmd)                  \
-    RENDER_COMMAND(TriangleFanCmd)              \
+#define RENDER_COMMAND_LIST                                                              \
+    RENDER_COMMAND(RectangleCmd)                                                         \
+    RENDER_COMMAND(ClippedRectangleCmd)                                                  \
+    RENDER_COMMAND(OutlinedRectangleCmd)                                                 \
+    RENDER_COMMAND(CircleCmd)                                                            \
+    RENDER_COMMAND(TriangleCmd)                                                          \
+    RENDER_COMMAND(OutlinedTriangleCmd)                                                  \
+    RENDER_COMMAND(LineCmd)                                                              \
+    RENDER_COMMAND(TextCmd)                                                              \
+    RENDER_COMMAND(ParticleGroupCmd)                                                     \
+    RENDER_COMMAND(PolygonCmd)                                                           \
+    RENDER_COMMAND(TriangleFanCmd)
 
-#define RENDER_SETUP_COMMAND_LIST               \
-    RENDER_SETUP_COMMAND(SetupCmdUniformVec4)   \
-    RENDER_SETUP_COMMAND(SetupCmdUniformFloat)  \
+#define RENDER_SETUP_COMMAND_LIST                                                        \
+    RENDER_SETUP_COMMAND(SetupCmdUniformVec4)                                            \
+    RENDER_SETUP_COMMAND(SetupCmdUniformFloat)
 
-#define RENDER_COMMAND_ENUM_NAME(type) RENDER_CMD_##type
+#define RENDER_COMMAND_ENUM_NAME(type)       RENDER_CMD_##type
 #define RENDER_SETUP_COMMAND_ENUM_NAME(type) RENDER_SETUP_CMD_##type
 
 typedef enum {

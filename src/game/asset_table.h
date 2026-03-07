@@ -58,7 +58,8 @@ static inline AssetKind get_game_asset_kind(GameAsset asset_name)
 {
     switch (asset_name) {
 #define DEFINE_ASSET(name, type, path)                                                   \
-    case ASSET_NAME_TO_ENUM(name): return ASSET_KIND_##type;
+    case ASSET_NAME_TO_ENUM(name):                                                       \
+        return ASSET_KIND_##type;
         GAME_ASSET_LIST
 #undef DEFINE_ASSET
 

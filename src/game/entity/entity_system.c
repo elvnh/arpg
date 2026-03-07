@@ -31,7 +31,8 @@ static ssize get_component_size(ComponentType type)
 {
     switch (type) {
 #define COMPONENT(type)                                                                  \
-    case ES_IMPL_COMP_ENUM_NAME(type): return SIZEOF(type);
+    case ES_IMPL_COMP_ENUM_NAME(type):                                                   \
+        return SIZEOF(type);
         COMPONENT_LIST
 #undef COMPONENT
 

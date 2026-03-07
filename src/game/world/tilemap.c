@@ -89,13 +89,12 @@ Tile *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
 Rectangle tilemap_get_bounding_box(const Tilemap *tilemap)
 {
     Rectangle result = {0};
-    result.position = {
-        (f32)(tilemap->min_x * TILE_SIZE), (f32)(tilemap->min_y * TILE_SIZE)};
-    result.size = {(f32)((tilemap->max_x - tilemap->min_x + 1) * TILE_SIZE),
-        (f32)((tilemap->max_y - tilemap->min_y + 1) * TILE_SIZE)};
-};
+    result.position =
+        v2((f32)(tilemap->min_x * TILE_SIZE), (f32)(tilemap->min_y * TILE_SIZE));
+    result.size = v2((f32)((tilemap->max_x - tilemap->min_x + 1) * TILE_SIZE),
+        (f32)((tilemap->max_y - tilemap->min_y + 1) * TILE_SIZE));
 
-return result;
+    return result;
 }
 
 static Tile *get_tile_neighbour(

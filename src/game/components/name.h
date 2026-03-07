@@ -6,7 +6,7 @@
 
 typedef struct {
     char data[64];
-    s32  length;
+    s32 length;
 } NameComponent;
 
 static inline NameComponent name_component(String name)

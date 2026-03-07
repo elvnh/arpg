@@ -1,20 +1,21 @@
-#include <stb_truetype.h>
+#include "font.h"
 
+#include "asset_system.h"
 #include "base/linear_arena.h"
 #include "base/matrix.h"
 #include "base/rectangle.h"
 #include "base/utils.h"
-#include "font.h"
-#include "asset_system.h"
 #include "platform.h"
 
+#include <stb_truetype.h>
+
 // TODO: dynamically decide size of atlas
-#define FONT_ATLAS_WIDTH             2048
-#define FONT_ATLAS_HEIGHT            2048
-#define FONT_FIRST_CHAR              ' '
-#define FONT_LAST_CHAR               '~'
-#define FONT_CHAR_COUNT              (FONT_LAST_CHAR - FONT_FIRST_CHAR)
-#define FONT_RASTERIZED_SIZE         128
+#define FONT_ATLAS_WIDTH     2048
+#define FONT_ATLAS_HEIGHT    2048
+#define FONT_FIRST_CHAR      ' '
+#define FONT_LAST_CHAR       '~'
+#define FONT_CHAR_COUNT      (FONT_LAST_CHAR - FONT_FIRST_CHAR)
+#define FONT_RASTERIZED_SIZE 128
 
 typedef struct {
     /* NOTE: These are unscaled */
@@ -28,15 +29,15 @@ typedef struct {
 } GlyphTexturePosition;
 
 struct FontAsset {
-    Span                 font_file_buffer; // NOTE: Must stay loaded for asset's entire lifetime
-    TextureHandle        texture_handle;
-    stbtt_fontinfo       font_info;
+    Span font_file_buffer; // NOTE: Must stay loaded for asset's entire lifetime
+    TextureHandle texture_handle;
+    stbtt_fontinfo font_info;
     GlyphTexturePosition glyph_texture_positions[FONT_CHAR_COUNT];
 
     /* NOTE: These are unscaled */
-    f32                  ascent;
-    f32                  descent;
-    f32                  line_gap;
+    f32 ascent;
+    f32 descent;
+    f32 line_gap;
 };
 
 static inline s32 char_index(char ch)
@@ -63,16 +64,19 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator, LinearArena 
         goto error;
     }
 
-    byte *mono_font_bitmap = la_allocate_array(scratch, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT);
+    byte *mono_font_bitmap =
+        la_allocate_array(scratch, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT);
 
     stbtt_pack_context pack_ctx;
-    if (!stbtt_PackBegin(&pack_ctx, mono_font_bitmap, FONT_ATLAS_WIDTH, FONT_ATLAS_HEIGHT, 0, 1, 0)) {
+    if (!stbtt_PackBegin(
+            &pack_ctx, mono_font_bitmap, FONT_ATLAS_WIDTH, FONT_ATLAS_HEIGHT, 0, 1, 0)) {
         goto error;
     }
 
     stbtt_PackSetOversampling(&pack_ctx, 2, 2);
 
-    stbtt_packedchar *glyph_metrics = la_allocate_array(scratch, stbtt_packedchar, FONT_CHAR_COUNT);
+    stbtt_packedchar *glyph_metrics =
+        la_allocate_array(scratch, stbtt_packedchar, FONT_CHAR_COUNT);
     if (!stbtt_PackFontRange(&pack_ctx, font_file_contents.data, 0, FONT_RASTERIZED_SIZE,
             FONT_FIRST_CHAR, FONT_CHAR_COUNT, glyph_metrics)) {
         goto error;
@@ -83,14 +87,14 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator, LinearArena 
     f32 unused_x, unused_y;
     for (s32 i = 0; i < FONT_CHAR_COUNT; ++i) {
         stbtt_aligned_quad quad;
-        stbtt_GetPackedQuad(glyph_metrics, FONT_ATLAS_WIDTH, FONT_ATLAS_HEIGHT,
-            i, &unused_x, &unused_y, &quad, 0);
+        stbtt_GetPackedQuad(glyph_metrics, FONT_ATLAS_WIDTH, FONT_ATLAS_HEIGHT, i,
+            &unused_x, &unused_y, &quad, 0);
 
         char ch = (char)(FONT_FIRST_CHAR + i);
         s32 advance_x, lsb;
         stbtt_GetCodepointHMetrics(&result->font_info, ch, &advance_x, &lsb);
 
-        result->glyph_texture_positions[i] = (GlyphTexturePosition) {
+        result->glyph_texture_positions[i] = (GlyphTexturePosition){
             .advance_x = (f32)advance_x,
             .left_side_bearing = (f32)lsb,
             .uv_top_left = {quad.s0, quad.t0},
@@ -100,7 +104,8 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator, LinearArena 
         };
     }
 
-    byte *rgba_font_bitmap = la_allocate_array(scratch, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT * 4);
+    byte *rgba_font_bitmap =
+        la_allocate_array(scratch, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT * 4);
 
     for (s32 y = 0; y < FONT_ATLAS_HEIGHT; ++y) {
         for (s32 x = 0; x < FONT_ATLAS_WIDTH; ++x) {
@@ -115,12 +120,11 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator, LinearArena 
         }
     }
 
-    Image font_image = {
-        .data = rgba_font_bitmap,
-        .width = FONT_ATLAS_WIDTH,
-        .height = FONT_ATLAS_HEIGHT,
-        .channels = 4
-    };
+    Image font_image = {0};
+    font_image.data = rgba_font_bitmap;
+    font_image.width = FONT_ATLAS_WIDTH;
+    font_image.height = FONT_ATLAS_HEIGHT;
+    font_image.channels = 4;
 
     s32 ascent, descent, line_gap;
     stbtt_GetFontVMetrics(&result->font_info, &ascent, &descent, &line_gap);
@@ -132,7 +136,7 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator, LinearArena 
 
     return result;
 
-  error:
+error:
     ASSERT(0);
     font_destroy_atlas(result, allocator);
 
@@ -156,7 +160,6 @@ TextureHandle font_get_texture_handle(FontAsset *asset)
 
     return result;
 }
-
 
 static inline f32 get_text_scale(FontAsset *asset, s32 text_size)
 {
@@ -182,8 +185,8 @@ f32 font_get_newline_advance(FontAsset *asset, s32 text_size)
     return result;
 }
 
-RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vector2 position,
-    Rectangle bounds, s32 text_size, RGBA32 color, YDirection y_dir)
+RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch,
+    Vector2 position, Rectangle bounds, s32 text_size, RGBA32 color, YDirection y_dir)
 {
     GlyphTexturePosition glyph_pos = asset->glyph_texture_positions[char_index(ch)];
 
@@ -208,37 +211,44 @@ RenderedGlyphInfo font_get_clipped_glyph_vertices(FontAsset *asset, char ch, Vec
 
     f32 uv_left = glyph_pos.uv_top_left.x;
     f32 uv_right = glyph_pos.uv_top_right.x;
-    f32 uv_top = (y_dir == Y_IS_UP) ? glyph_pos.uv_top_left.y : glyph_pos.uv_bottom_left.y;
-    f32 uv_bottom = (y_dir == Y_IS_UP) ? glyph_pos.uv_bottom_left.y : glyph_pos.uv_top_left.y;
+    f32 uv_top =
+        (y_dir == Y_IS_UP) ? glyph_pos.uv_top_left.y : glyph_pos.uv_bottom_left.y;
+    f32 uv_bottom =
+        (y_dir == Y_IS_UP) ? glyph_pos.uv_bottom_left.y : glyph_pos.uv_top_left.y;
 
+    // clang-format off
     RectangleUVCoords uv_coords = {
-	.top_left = {uv_left, uv_top},
-	.top_right = {uv_right, uv_top},
-	.bottom_right = {uv_right, uv_bottom},
-	.bottom_left = {uv_left, uv_bottom},
+        .top_left = {uv_left,  uv_top},
+        .top_right = {uv_right, uv_top},
+        .bottom_right = {uv_right, uv_bottom},
+        .bottom_left = {uv_left,  uv_bottom},
     };
+    // clang-format on
 
     ClippedRectangleVertices clipped_vertices = {0};
     if (ch != ' ') {
-        clipped_vertices = rect_get_clipped_vertices_with_uvs(glyph_rect, bounds, color, y_dir, uv_coords);
+        clipped_vertices = rect_get_clipped_vertices_with_uvs(
+            glyph_rect, bounds, color, y_dir, uv_coords);
     }
 
-    RenderedGlyphInfo result = {
-	.vertices = clipped_vertices.vertices,
-	.advance_x = advance_x,
-	.is_visible = clipped_vertices.is_visible
-    };
+    RenderedGlyphInfo result = {.vertices = clipped_vertices.vertices,
+        .advance_x = advance_x,
+        .is_visible = clipped_vertices.is_visible};
 
     return result;
 }
 
-RenderedGlyphInfo font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position, s32 text_size, RGBA32 color, YDirection y_dir)
+RenderedGlyphInfo font_get_glyph_vertices(FontAsset *asset, char ch, Vector2 position,
+    s32 text_size, RGBA32 color, YDirection y_dir)
 {
     // TODO: don't set this arbitrary value, use the window bounds or something similary
-    Rectangle glyph_bounds = {{-100000, -100000}, {10000000, 10000000}};
+    Rectangle glyph_bounds = {
+        {-100000,  -100000 },
+        {10000000, 10000000}
+    };
 
     RenderedGlyphInfo result = font_get_clipped_glyph_vertices(
-	asset, ch, position, glyph_bounds, text_size, color, y_dir);
+        asset, ch, position, glyph_bounds, text_size, color, y_dir);
 
     return result;
 }
@@ -260,18 +270,19 @@ Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
             result.x = 0.0f;
             result.y += font_height;
         } else if (ch == '\t') {
-            GlyphTexturePosition glyph_pos = asset->glyph_texture_positions[char_index(' ')];
+            GlyphTexturePosition glyph_pos =
+                asset->glyph_texture_positions[char_index(' ')];
 
             result.x += (glyph_pos.advance_x + glyph_pos.left_side_bearing) * 4;
             max_x = MAX(result.x, max_x);
         } else {
-            GlyphTexturePosition glyph_info = asset->glyph_texture_positions[char_index(ch)];
+            GlyphTexturePosition glyph_info =
+                asset->glyph_texture_positions[char_index(ch)];
 
             result.x += glyph_info.advance_x + glyph_info.left_side_bearing;
             max_x = MAX(result.x, max_x);
         }
     }
-
 
     result.x *= scale;
     result.y *= scale;

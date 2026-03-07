@@ -1,9 +1,11 @@
 #include "entity_arena.h"
+
 #include "base/utils.h"
 
 #include <string.h>
 
-EntityArenaAllocation entity_arena_allocate(EntityArena *arena, s32 byte_count, s32 alignment)
+EntityArenaAllocation entity_arena_allocate(
+    EntityArena *arena, s32 byte_count, s32 alignment)
 {
     ASSERT(byte_count > 0);
     ASSERT(is_pow2(alignment));

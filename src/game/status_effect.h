@@ -2,8 +2,8 @@
 #define STATUS_EFFECT_H
 
 #include "base/utils.h"
-#include "damage.h"
 #include "components/modifier.h"
+#include "damage.h"
 
 /*
   TODO:
@@ -38,18 +38,20 @@ typedef struct {
     StatusEffectInstance *instance;
 } StatusEffectCallbackParams;
 
-typedef StatusEffectCallbackResult (*StatusEffectCallback)(StatusEffectCallbackParams, void *);
+typedef StatusEffectCallbackResult (*StatusEffectCallback)(
+    StatusEffectCallbackParams, void *);
 
-void     initialize_status_effect_system(void);
-void     update_status_effects(struct StatusEffectComponent *status_effects, f32 dt);
-void     apply_status_effect(struct StatusEffectComponent *comp, StatusEffectID effect_id);
-void     try_apply_status_effect_to_entity(struct Entity *entity, StatusEffectID effect_id);
-String	 status_effect_to_string(StatusEffectID effect_id);
-b32	 has_status_effect(struct StatusEffectComponent *comp, StatusEffectID id);
-b32      status_effect_is_stackable(StatusEffectID id);
+void initialize_status_effect_system(void);
+void update_status_effects(struct StatusEffectComponent *status_effects, f32 dt);
+void apply_status_effect(struct StatusEffectComponent *comp, StatusEffectID effect_id);
+void try_apply_status_effect_to_entity(struct Entity *entity, StatusEffectID effect_id);
+String status_effect_to_string(StatusEffectID effect_id);
+b32 has_status_effect(struct StatusEffectComponent *comp, StatusEffectID id);
+b32 status_effect_is_stackable(StatusEffectID id);
 Modifier get_status_effect_stat_modifier(StatusEffectID effect_id);
-b32      status_effect_modifies_stat(StatusEffectID effect_id, Stat stat, NumericModifierType mod_type);
-void     for_each_active_status_effect(struct StatusEffectComponent *comp,
-				       StatusEffectCallback fn, void *data);
+b32 status_effect_modifies_stat(
+    StatusEffectID effect_id, Stat stat, NumericModifierType mod_type);
+void for_each_active_status_effect(
+    struct StatusEffectComponent *comp, StatusEffectCallback fn, void *data);
 
 #endif //STATUS_EFFECT_H

@@ -1,10 +1,10 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#include <stdio.h>
-
 #include "camera.h"
 #include "ui/ui_core.h"
+
+#include <stdio.h>
 
 struct Game;
 struct GameMemory;
@@ -49,10 +49,11 @@ static inline void print_v2(Vector2 v)
 }
 
 void debug_update(struct Game *game, const struct FrameData *frame_data);
-void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch, const struct FrameData *frame_data);
-void debug_render_quad_tree(struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena,
-    ssize depth);
-void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct LinearArena *arena);
-
+void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch,
+    const struct FrameData *frame_data);
+void debug_render_quad_tree(
+    struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena, ssize depth);
+void debug_render_chunks(
+    struct Game *game, struct RenderBatch *rb, struct LinearArena *arena);
 
 #endif //DEBUG_H

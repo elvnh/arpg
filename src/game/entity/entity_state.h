@@ -19,22 +19,22 @@ typedef struct {
     EntityStateKind kind;
 
     union {
-	struct {
-	    SpellID spell_being_cast;
-	    Vector2 target_position;
-	    StatValue total_cast_speed;
-	} attacking;
+        struct {
+            SpellID spell_being_cast;
+            Vector2 target_position;
+            StatValue total_cast_speed;
+        } attacking;
 
-	struct {
-	    Vector2 direction;
-	} walking;
+        struct {
+            Vector2 direction;
+        } walking;
     } as;
 } EntityState;
 
 void entity_force_transition_to_state(struct World *world, struct Entity *entity,
-                                      struct PhysicsComponent *physics, EntityState state);
+    struct PhysicsComponent *physics, EntityState state);
 b32 entity_try_transition_to_state(struct World *world, struct Entity *entity,
-                                   struct PhysicsComponent *physics, EntityState state);
+    struct PhysicsComponent *physics, EntityState state);
 
 static inline EntityState state_idle(void)
 {
@@ -53,7 +53,8 @@ static inline EntityState state_walking(Vector2 direction)
     return result;
 }
 
-static inline EntityState state_attacking(SpellID spell_being_cast, Vector2 target_pos, StatValue cast_speed)
+static inline EntityState state_attacking(
+    SpellID spell_being_cast, Vector2 target_pos, StatValue cast_speed)
 {
     EntityState result = {0};
     result.kind = ENTITY_STATE_ATTACKING;

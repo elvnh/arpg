@@ -1,7 +1,8 @@
-#include <string.h>
-
 #include "string8.h"
+
 #include "utils.h"
+
+#include <string.h>
 
 String str_concat(String a, String b, Allocator alloc)
 {
@@ -27,7 +28,8 @@ bool str_equal(String a, String b)
         return false;
     }
 
-    return (!a.data && !b.data) || (memcmp(a.data, b.data, ssize_to_usize(a.length)) == 0);
+    return (!a.data && !b.data)
+           || (memcmp(a.data, b.data, ssize_to_usize(a.length)) == 0);
 }
 
 String str_null_terminate(String str, Allocator alloc)
@@ -51,10 +53,7 @@ String str_copy(String str, Allocator alloc)
     char *new_string = allocate_array(alloc, char, str.length);
     memcpy(new_string, str.data, ssize_to_usize(str.length));
 
-    String result = {
-        .data = new_string,
-        .length = str.length
-    };
+    String result = {.data = new_string, .length = str.length};
 
     return result;
 }
@@ -128,10 +127,7 @@ String str_allocate(ssize length, Allocator allocator)
     ASSERT(length > 0);
     char *data = allocate_array(allocator, char, length);
 
-    String result = {
-        .data = data,
-        .length = length
-    };
+    String result = {.data = data, .length = length};
 
     return result;
 }
@@ -147,10 +143,7 @@ String str_create_span(String str, ssize start_index, ssize length)
     ASSERT(str.length);
     ASSERT(start_index + length <= str.length);
 
-    String result = {
-        .data = str.data + start_index,
-        .length = length
-    };
+    String result = {.data = str.data + start_index, .length = length};
 
     return result;
 }
@@ -174,10 +167,7 @@ StringBuilder str_builder_allocate(ssize capacity, Allocator allocator)
     String buffer = str_allocate(capacity, allocator);
     buffer.length = 0;
 
-    StringBuilder result = {
-        .buffer = buffer,
-        .capacity = capacity
-    };
+    StringBuilder result = {.buffer = buffer, .capacity = capacity};
 
     return result;
 }
@@ -194,7 +184,7 @@ void str_builder_append(StringBuilder *sb, String str)
 
 b32 str_builder_has_capacity_for(const StringBuilder *sb, String str)
 {
-    b32 result  = sb->buffer.length + str.length <= sb->capacity;
+    b32 result = sb->buffer.length + str.length <= sb->capacity;
     return result;
 }
 
@@ -203,7 +193,7 @@ String str_substring_before_pattern(String str, String substr)
     ssize index = str_find_first_occurence(str, substr);
 
     if (index == -1) {
-	index = str.length;
+        index = str.length;
     }
 
     String result = str_create_span(str, 0, index);

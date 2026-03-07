@@ -1,7 +1,9 @@
 #ifndef COMPONENT_ID_H
 #define COMPONENT_ID_H
 
-#define component_id(type) ES_IMPL_COMP_ENUM_BIT_VALUE(ES_IMPL_COMP_ENUM_NAME(type))
+#include "base/typedefs.h"
+
+#define component_id(type)             ES_IMPL_COMP_ENUM_BIT_VALUE(ES_IMPL_COMP_ENUM_NAME(type))
 #define ES_IMPL_COMP_ENUM_BIT_VALUE(e) ((u64)1 << (e))
 
 typedef u64 ComponentBitset;

@@ -1,10 +1,10 @@
 #ifndef VECTOR2_H
 #define VECTOR2_H
 
-#include "utils.h"
 #include "maths.h"
+#include "utils.h"
 
-#define V2_ZERO ((Vector2) {0})
+#define V2_ZERO ((Vector2){0})
 
 typedef struct {
     f32 x;
@@ -50,21 +50,21 @@ static inline Vector2i v2i(s32 x, s32 y)
 
 static inline Vector2 v2_add(Vector2 lhs, Vector2 rhs)
 {
-    Vector2 result = { lhs.x + rhs.x, lhs.y + rhs.y };
+    Vector2 result = {lhs.x + rhs.x, lhs.y + rhs.y};
 
     return result;
 }
 
 static inline Vector2 v2_sub(Vector2 lhs, Vector2 rhs)
 {
-    Vector2 result = { lhs.x - rhs.x, lhs.y - rhs.y };
+    Vector2 result = {lhs.x - rhs.x, lhs.y - rhs.y};
 
     return result;
 }
 
 static inline Vector2 v2_mul_s(Vector2 lhs, f32 scalar)
 {
-    Vector2 result = { lhs.x * scalar, lhs.y * scalar};
+    Vector2 result = {lhs.x * scalar, lhs.y * scalar};
 
     return result;
 }
@@ -78,7 +78,7 @@ static inline Vector2 v2_div_s(Vector2 lhs, f32 scalar)
 
 static inline Vector2 v2_neg(Vector2 v)
 {
-    Vector2 result = { -v.x, -v.y };
+    Vector2 result = {-v.x, -v.y};
 
     return result;
 }
@@ -235,16 +235,14 @@ static inline Vector2i v2_to_v2i(Vector2 from)
     return result;
 }
 
-
-static inline Vector2 v2_rotate_around_point(Vector2 v, f32 rotation_in_radians, Vector2 origin)
+static inline Vector2 v2_rotate_around_point(
+    Vector2 v, f32 rotation_in_radians, Vector2 origin)
 {
     f32 s = sin_f32(rotation_in_radians);
     f32 c = cos_f32(rotation_in_radians);
 
-    Vector2 result = {
-        (v.x - origin.x) * c - (v.y - origin.y) * s + origin.x,
-        (v.x - origin.x) * s + (v.y - origin.y) * c + origin.y
-    };
+    Vector2 result = {(v.x - origin.x) * c - (v.y - origin.y) * s + origin.x,
+        (v.x - origin.x) * s + (v.y - origin.y) * c + origin.y};
 
     return result;
 }

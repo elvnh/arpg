@@ -1,8 +1,8 @@
 #ifndef GAME_UI_H
 #define GAME_UI_H
 
-#include "ui/ui_builder.h"
 #include "entity/entity.h"
+#include "ui/ui_builder.h"
 
 struct Game;
 struct LinearArena;
@@ -16,6 +16,7 @@ typedef struct GameUIState {
     ssize selected_spellbook_index;
 } GameUIState;
 
-void game_ui(struct Game *game, struct LinearArena *scratch, const struct FrameData *frame_data);
+void game_ui(
+    struct Game *game, struct LinearArena *scratch, const struct FrameData *frame_data);
 
 #endif //GAME_UI_H

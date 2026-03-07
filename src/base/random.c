@@ -1,4 +1,5 @@
 #include "random.h"
+
 #include "base/maths.h"
 #include "base/utils.h"
 
@@ -110,9 +111,8 @@ Vector2 rng_position_in_rect(Rectangle rect)
     f32 x_offs = rng_f32(-rect.size.x / 2.0f, rect.size.x / 2.0f);
     f32 y_offs = rng_f32(-rect.size.y / 2.0f, rect.size.y / 2.0f);
 
-    Vector2 result = v2_add(
-	v2_add(rect.position, v2_div_s(rect.size, 2.0f)),
-	v2(x_offs, y_offs));
+    Vector2 result =
+        v2_add(v2_add(rect.position, v2_div_s(rect.size, 2.0f)), v2(x_offs, y_offs));
 
     return result;
 }

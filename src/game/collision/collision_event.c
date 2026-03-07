@@ -1,22 +1,26 @@
 #include "collision_event.h"
+
 #include "base/free_list_arena.h"
 #include "base/sl_list.h"
 #include "world/world.h"
 
-#define INTERSECTION_TABLE_ARENA_SIZE (INTERSECTION_TABLE_SIZE * SIZEOF(CollisionEvent) * 2)
+#define INTERSECTION_TABLE_ARENA_SIZE                                                    \
+    (INTERSECTION_TABLE_SIZE * SIZEOF(CollisionEvent) * 2)
 #define INTERSECTION_TABLE_SIZE 512
 
 CollisionEventTable collision_event_table_create(LinearArena *parent_arena)
 {
     CollisionEventTable result = {0};
-    result.table = la_allocate_array(parent_arena, CollisionEventList, INTERSECTION_TABLE_SIZE);
+    result.table =
+        la_allocate_array(parent_arena, CollisionEventList, INTERSECTION_TABLE_SIZE);
     result.table_size = INTERSECTION_TABLE_SIZE;
     result.arena = la_create(la_allocator(parent_arena), INTERSECTION_TABLE_ARENA_SIZE);
 
     return result;
 }
 
-CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID a, EntityID b)
+CollisionEvent *collision_event_table_find(
+    CollisionEventTable *table, EntityID a, EntityID b)
 {
     EntityPair searched_pair = unordered_entity_pair(a, b);
     u64 hash = entity_pair_hash(searched_pair);

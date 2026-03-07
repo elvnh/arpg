@@ -1,14 +1,15 @@
+#include "file_watcher.h"
+
+#include "asset_system.h"
+#include "base/format.h"
+#include "platform/platform.h"
+
+#include <linux/limits.h>
+#include <pthread.h>
+#include <string.h>
 #include <sys/inotify.h>
 #include <sys/poll.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <string.h>
-#include <linux/limits.h>
-
-#include "base/format.h"
-#include "file_watcher.h"
-#include "asset_system.h"
-#include "platform/platform.h"
 
 #define INOTIFY_MAX_BUFFER_LENGTH (sizeof(struct inotify_event) + NAME_MAX + 1)
 
@@ -21,7 +22,8 @@ typedef struct ModifiedAsset {
 static String get_assets_directory(LinearArena *arena)
 {
     String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
-    String result = format(arena, FMT_STR"/../"ASSET_DIRECTORY, FMT_STR_ARG(executable_dir));
+    String result =
+        format(arena, FMT_STR "/../" ASSET_DIRECTORY, FMT_STR_ARG(executable_dir));
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;
@@ -30,7 +32,8 @@ static String get_assets_directory(LinearArena *arena)
 static String get_shader_directory(LinearArena *arena)
 {
     String assets_dir = get_assets_directory(arena);
-    String result = str_concat(assets_dir, str_lit(SHADER_DIRECTORY), la_allocator(arena));
+    String result =
+        str_concat(assets_dir, str_lit(SHADER_DIRECTORY), la_allocator(arena));
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;
@@ -39,7 +42,8 @@ static String get_shader_directory(LinearArena *arena)
 static String get_sprite_directory(LinearArena *arena)
 {
     String assets_dir = get_assets_directory(arena);
-    String result = str_concat(assets_dir, str_lit(SPRITE_DIRECTORY), la_allocator(arena));
+    String result =
+        str_concat(assets_dir, str_lit(SPRITE_DIRECTORY), la_allocator(arena));
 
     result = str_null_terminate(result, la_allocator(arena));
 
@@ -59,7 +63,7 @@ static String get_font_directory(LinearArena *arena)
 void *file_watcher_thread(void *user_data)
 {
     AssetWatcherContext *ctx = user_data;
-    LinearArena scratch = la_create(ctx->allocator, MB(1)) ;
+    LinearArena scratch = la_create(ctx->allocator, MB(1));
 
     s32 fd = inotify_init();
     ASSERT(fd >= 0);
@@ -80,11 +84,7 @@ void *file_watcher_thread(void *user_data)
     ASSERT(sprite_wd != -1);
     ASSERT(font_wd != -1);
 
-    struct pollfd poll_desc = {
-        .fd = fd,
-        .events = POLLIN,
-        .revents = 0
-    };
+    struct pollfd poll_desc = {.fd = fd, .events = POLLIN, .revents = 0};
 
     s32 timeout = 100;
 
@@ -100,8 +100,8 @@ void *file_watcher_thread(void *user_data)
         ssize buffer_offset = 0;
 
         while (buffer_offset < length) {
-	    struct inotify_event event;
-	    memcpy(&event, event_buffer + buffer_offset, sizeof(event));
+            struct inotify_event event;
+            memcpy(&event, event_buffer + buffer_offset, sizeof(event));
 
             ASSERT(event.mask & IN_MODIFY);
 
@@ -114,20 +114,22 @@ void *file_watcher_thread(void *user_data)
                     parent_path = sprite_path;
                 } else if (event.wd == font_wd) {
                     parent_path = font_path;
-		} else {
+                } else {
                     ASSERT(0);
                 }
 
-                String name = { event.name, (ssize)event.len };
-                ModifiedAsset *modified_asset = allocate_item(ctx->allocator, ModifiedAsset);
+                String name = {event.name, (ssize)event.len};
+                ModifiedAsset *modified_asset =
+                    allocate_item(ctx->allocator, ModifiedAsset);
 
                 // TODO: instead store the canonical path
                 String asset_path = str_concat(parent_path, name, ctx->allocator);
-                modified_asset->path = platform_get_canonical_path(asset_path, ctx->allocator, &scratch);
+                modified_asset->path =
+                    platform_get_canonical_path(asset_path, ctx->allocator, &scratch);
 
-		mutex_lock(ctx->lock);
+                mutex_lock(ctx->lock);
                 list_push_back(&ctx->asset_reload_queue, modified_asset);
-		mutex_release(ctx->lock);
+                mutex_release(ctx->lock);
             }
 
             buffer_offset += (SIZEOF(struct inotify_event) + event.len);

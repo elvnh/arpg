@@ -1,11 +1,12 @@
 #include "particle.h"
+
+#include "asset_table.h"
+#include "base/random.h"
 #include "components/component.h"
 #include "entity/entity_system.h"
-#include "base/random.h"
+#include "renderer/frontend/render_batch.h"
 #include "world/chunk.h"
 #include "world/world.h"
-#include "renderer/frontend/render_batch.h"
-#include "asset_table.h"
 
 static void update_particle_buffer(ParticleBuffer *buffer, f32 dt)
 {
@@ -29,7 +30,8 @@ void update_particle_buffers(ParticleBuffers *buffers, f32 dt)
     update_particle_buffer(&buffers->light_emitting_particles, dt);
 }
 
-void render_particle_buffers(ParticleBuffers *buffers, RenderBatches rbs, struct LinearArena *arena)
+void render_particle_buffers(
+    ParticleBuffers *buffers, RenderBatches rbs, struct LinearArena *arena)
 {
     if (ring_length(&buffers->normal_particles) > 0) {
         draw_particles(rbs.world_rb, arena, &buffers->normal_particles,

@@ -1,12 +1,12 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
+#include "base/rgba.h"
 #include "base/ring_buffer.h"
 #include "base/typedefs.h"
 #include "base/vector.h"
-#include "base/rgba.h"
-#include "platform/asset.h"
 #include "light.h"
+#include "platform/asset.h"
 #include "renderer/frontend/render_target.h"
 
 struct Entity;
@@ -33,6 +33,7 @@ typedef struct {
 } ParticleBuffers;
 
 void update_particle_buffers(ParticleBuffers *buffer, f32 dt);
-void render_particle_buffers(ParticleBuffers *buffer, RenderBatches rbs, struct LinearArena *arena);
+void render_particle_buffers(
+    ParticleBuffers *buffer, RenderBatches rbs, struct LinearArena *arena);
 
 #endif //PARTICLE_H

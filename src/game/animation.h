@@ -50,12 +50,14 @@ typedef struct AnimationInstance {
 } AnimationInstance;
 
 void anim_initialize(void);
-void anim_update_instance(struct World *world, struct Entity *entity, struct PhysicsComponent *physics,
-    struct AnimationInstance *anim_instance, f32 dt);
-void anim_render_instance(struct AnimationInstance *anim_instance, struct PhysicsComponent *physics,
-    struct RenderBatch *rb, struct LinearArena *scratch);
+void anim_update_instance(struct World *world, struct Entity *entity,
+    struct PhysicsComponent *physics, struct AnimationInstance *anim_instance, f32 dt);
+void anim_render_instance(struct AnimationInstance *anim_instance,
+    struct PhysicsComponent *physics, struct RenderBatch *rb,
+    struct LinearArena *scratch);
 AnimationInstance anim_begin_animation(AnimationID next_anim, f32 speed_factor);
-AnimationInstance anim_begin_animation_with_duration(AnimationID anim, f32 duration, f32 speed_factor);
+AnimationInstance anim_begin_animation_with_duration(
+    AnimationID anim, f32 duration, f32 speed_factor);
 AnimationFrame anim_get_current_frame(AnimationInstance *anim_instance);
 
 #endif //ANIMATION_H

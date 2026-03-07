@@ -2,12 +2,12 @@
 #include <stdlib.h>
 // TODO: don't use qsort_r
 
-#include "base/utils.h"
-#include "polygon.h"
 #include "base/list.h"
+#include "base/utils.h"
+#include "linear_arena.h"
+#include "polygon.h"
 #include "sl_list.h"
 #include "triangle.h"
-#include "linear_arena.h"
 #include "vector.h"
 
 static b32 angle_is_convex(Vector2 middle, Vector2 prev, Vector2 next)
@@ -27,7 +27,8 @@ static ssize polygon_size(Polygon *polygon)
     return result;
 }
 
-static b32 triangle_is_ear(Polygon *polygon, PolygonVertex *a, PolygonVertex *b, PolygonVertex *c)
+static b32 triangle_is_ear(
+    Polygon *polygon, PolygonVertex *a, PolygonVertex *b, PolygonVertex *c)
 {
     Triangle potential_triangle = {a->point, b->point, c->point};
 
@@ -73,8 +74,10 @@ static int sort_polygon_cmp(const void *a, const void *b, void *data)
     Vector2 pa = *(Vector2 *)a;
     Vector2 pb = *(Vector2 *)b;
 
-    f32 angle_a = (f32)fmodf(rad_to_deg(atan2f(pa.x - center.x, pa.y - center.y)) + 360, 360);
-    f32 angle_b = (f32)fmodf(rad_to_deg(atan2f(pb.x - center.x, pb.y - center.y)) + 360, 360);
+    f32 angle_a =
+        (f32)fmodf(rad_to_deg(atan2f(pa.x - center.x, pa.y - center.y)) + 360, 360);
+    f32 angle_b =
+        (f32)fmodf(rad_to_deg(atan2f(pb.x - center.x, pb.y - center.y)) + 360, 360);
 
     int result = (int)(angle_a - angle_b);
     return result;
@@ -95,7 +98,8 @@ void sort_polygon_vertices(Polygon *polygon, Vector2 center, LinearArena *arena)
 
     list_clear(polygon);
 
-    qsort_r(verts, ssize_to_usize(point_count), sizeof(*verts), sort_polygon_cmp, &center);
+    qsort_r(
+        verts, ssize_to_usize(point_count), sizeof(*verts), sort_polygon_cmp, &center);
 
     for (ssize i = 0; i < point_count; ++i) {
         PolygonVertex *vert = la_allocate_item(arena, PolygonVertex);
@@ -104,7 +108,8 @@ void sort_polygon_vertices(Polygon *polygon, Vector2 center, LinearArena *arena)
     }
 }
 
-TriangulatedPolygon triangulate_polygon(Polygon *polygon, Vector2 center, LinearArena *arena)
+TriangulatedPolygon triangulate_polygon(
+    Polygon *polygon, Vector2 center, LinearArena *arena)
 {
     sort_polygon_vertices(polygon, center, arena);
 
@@ -113,7 +118,6 @@ TriangulatedPolygon triangulate_polygon(Polygon *polygon, Vector2 center, Linear
     // TODO: don't modify polygon in place
     ASSERT(polygon_size(polygon) >= 3);
     ASSERT(polygon_winding_order(*polygon) == WINDING_ORDER_CLOCKWISE);
-
 
     ASSERT(polygon_size(polygon) >= 3);
 
@@ -140,11 +144,8 @@ TriangulatedPolygon triangulate_polygon(Polygon *polygon, Vector2 center, Linear
 
     ASSERT(polygon_size(polygon) == 3);
 
-    Triangle final_triangle = {
-        list_head(polygon)->point,
-        list_head(polygon)->next->point,
-        list_tail(polygon)->point
-    };
+    Triangle final_triangle = {list_head(polygon)->point, list_head(polygon)->next->point,
+        list_tail(polygon)->point};
 
     PolygonTriangle *final_node = la_allocate_item(arena, PolygonTriangle);
     final_node->triangle = final_triangle;
@@ -169,9 +170,7 @@ PolygonWindingOrder polygon_winding_order(Polygon polygon)
     }
 
     PolygonWindingOrder result =
-        (sum > 0)
-        ? WINDING_ORDER_CLOCKWISE
-        : WINDING_ORDER_COUNTER_CLOCKWISE;
+        (sum > 0) ? WINDING_ORDER_CLOCKWISE : WINDING_ORDER_COUNTER_CLOCKWISE;
 
     return result;
 }

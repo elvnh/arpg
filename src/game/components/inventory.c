@@ -1,4 +1,5 @@
 #include "inventory.h"
+
 #include "components/component.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
@@ -20,7 +21,8 @@ static InventoryStorable *get_inventory_item(EntitySystem *es, EntityID id)
     return result;
 }
 
-void append_item_to_inventory(EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add)
+void append_item_to_inventory(
+    EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add)
 {
     ASSERT(!inventory_contains_item(es, inv, item_to_add));
     ASSERT(entity_id_is_null(item_to_add->next_item_in_inventory));
@@ -39,7 +41,8 @@ void append_item_to_inventory(EntitySystem *es, Inventory *inv, InventoryStorabl
         inv->first_item_in_inventory = item_entity->id;
         inv->last_item_in_inventory = item_entity->id;
     } else {
-        InventoryStorable *last_item = get_inventory_item(es, inv->last_item_in_inventory);
+        InventoryStorable *last_item =
+            get_inventory_item(es, inv->last_item_in_inventory);
 
         insert_item_in_inventory(es, inv, item_to_add, last_item);
     }
@@ -48,8 +51,8 @@ void append_item_to_inventory(EntitySystem *es, Inventory *inv, InventoryStorabl
     es_remove_component(item_entity, PhysicsComponent);
 }
 
-void insert_item_in_inventory(EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add,
-    InventoryStorable *insert_after)
+void insert_item_in_inventory(EntitySystem *es, Inventory *inv,
+    InventoryStorable *item_to_add, InventoryStorable *insert_after)
 {
     ASSERT(insert_after && "Should never be called on empty inventory");
     ASSERT(!inventory_contains_item(es, inv, item_to_add));
@@ -59,10 +62,13 @@ void insert_item_in_inventory(EntitySystem *es, Inventory *inv, InventoryStorabl
     ASSERT(entity_id_is_null(item_to_add->prev_item_in_inventory));
     ASSERT(item_to_add != insert_after);
 
-    Entity *item_to_add_entity = es_get_component_owner(es, item_to_add, InventoryStorable);
-    Entity *insert_after_entity = es_get_component_owner(es, insert_after, InventoryStorable);
+    Entity *item_to_add_entity =
+        es_get_component_owner(es, item_to_add, InventoryStorable);
+    Entity *insert_after_entity =
+        es_get_component_owner(es, insert_after, InventoryStorable);
 
-    InventoryStorable *next_item = get_inventory_item(es, insert_after->next_item_in_inventory);
+    InventoryStorable *next_item =
+        get_inventory_item(es, insert_after->next_item_in_inventory);
 
     if (next_item) {
         next_item->prev_item_in_inventory = item_to_add_entity->id;
@@ -73,7 +79,8 @@ void insert_item_in_inventory(EntitySystem *es, Inventory *inv, InventoryStorabl
 
     insert_after->next_item_in_inventory = item_to_add_entity->id;
 
-    b32 inserted_last = entity_id_equal(inv->last_item_in_inventory, insert_after_entity->id);
+    b32 inserted_last =
+        entity_id_equal(inv->last_item_in_inventory, insert_after_entity->id);
 
     if (inserted_last) {
         inv->last_item_in_inventory = item_to_add_entity->id;
@@ -83,7 +90,8 @@ void insert_item_in_inventory(EntitySystem *es, Inventory *inv, InventoryStorabl
     es_remove_component(item_to_add_entity, PhysicsComponent);
 }
 
-void remove_item_from_inventory(EntitySystem *es, Inventory *inv, InventoryStorable *item_to_remove)
+void remove_item_from_inventory(
+    EntitySystem *es, Inventory *inv, InventoryStorable *item_to_remove)
 {
     ASSERT(inventory_contains_item(es, inv, item_to_remove));
 
@@ -113,7 +121,8 @@ void remove_item_from_inventory(EntitySystem *es, Inventory *inv, InventoryStora
     *item_to_remove = zero_struct(InventoryStorable);
 }
 
-void drop_item_on_ground(EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2 pos)
+void drop_item_on_ground(
+    EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2 pos)
 {
     ASSERT(inventory_contains_item(es, inv, item));
 
@@ -126,7 +135,8 @@ void drop_item_on_ground(EntitySystem *es, Inventory *inv, InventoryStorable *it
     remove_item_from_inventory(es, inv, item);
 }
 
-b32 inventory_contains_item(EntitySystem *es, Inventory *inventory, InventoryStorable *item)
+b32 inventory_contains_item(
+    EntitySystem *es, Inventory *inventory, InventoryStorable *item)
 {
     // TODO: keep a ID from item to inventory, or in general from entity to it's parent
     b32 result = false;

@@ -18,13 +18,16 @@ typedef enum {
 
 static inline Vector2 cardinal_direction_vector(CardinalDirection dir)
 {
+    // clang-format off
     switch (dir) {
-        case CARDINAL_DIR_NORTH: return (Vector2)  { 0,   1};
-        case CARDINAL_DIR_EAST:  return (Vector2)  { 1,   0};
-        case CARDINAL_DIR_SOUTH: return (Vector2)  { 0,  -1};
-        case CARDINAL_DIR_WEST:  return (Vector2)  {-1,   0};
+        case CARDINAL_DIR_NORTH: return (Vector2){0, 1};
+        case CARDINAL_DIR_EAST:  return (Vector2){1, 0};
+        case CARDINAL_DIR_SOUTH: return (Vector2){0, -1};
+        case CARDINAL_DIR_WEST:  return (Vector2){-1, 0};
+
         INVALID_DEFAULT_CASE;
     }
+    // clang-format on
 
     ASSERT(0);
     return (Vector2){0};

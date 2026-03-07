@@ -1,14 +1,14 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "ui/ui_core.h"
-#include "game/magic.h"
-#include "platform/platform.h"
-#include "world/world.h"
-#include "debug.h"
 #include "animation.h"
-#include "game_ui.h"
 #include "asset_table.h"
+#include "debug.h"
+#include "game/magic.h"
+#include "game_ui.h"
+#include "platform/platform.h"
+#include "ui/ui_core.h"
+#include "world/world.h"
 
 /*
   TODO:
@@ -16,9 +16,9 @@
   - Fix camera panning at start of game
  */
 
-#define GAME_MEMORY_SIZE MB(128)
+#define GAME_MEMORY_SIZE     MB(128)
 #define PERMANENT_ARENA_SIZE GAME_MEMORY_SIZE / 2
-#define FRAME_ARENA_SIZE GAME_MEMORY_SIZE / 2
+#define FRAME_ARENA_SIZE     GAME_MEMORY_SIZE / 2
 #define FREE_LIST_ARENA_SIZE PERMANENT_ARENA_SIZE / 4
 
 struct RenderBatchList;
@@ -42,8 +42,8 @@ typedef struct GameMemory {
     FreeListArena free_list_memory;
 } GameMemory;
 
-void game_update_and_render(Game *game_state, PlatformCode platform_code, struct RenderBatchList *rbs,
-    FrameData frame_data, GameMemory *game_memory);
+void game_update_and_render(Game *game_state, PlatformCode platform_code,
+    struct RenderBatchList *rbs, FrameData frame_data, GameMemory *game_memory);
 void game_initialize(Game *game_state, GameMemory *game_memory);
 
 #endif //GAME_H

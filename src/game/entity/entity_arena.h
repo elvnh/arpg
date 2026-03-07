@@ -29,7 +29,8 @@ typedef struct {
     void *ptr;
 } EntityArenaAllocation;
 
-EntityArenaAllocation entity_arena_allocate(EntityArena *arena, s32 byte_count, s32 alignment);
+EntityArenaAllocation entity_arena_allocate(
+    EntityArena *arena, s32 byte_count, s32 alignment);
 void *entity_arena_get(EntityArena *arena, EntityArenaIndex index);
 void entity_arena_reset(EntityArena *arena);
 ssize entity_arena_get_free_memory(EntityArena *arena);

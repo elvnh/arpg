@@ -1,18 +1,19 @@
 #include "stats.h"
+
 #include "base/utils.h"
 #include "components/component.h"
 #include "components/equipment.h"
-#include "status_effect.h"
 #include "damage.h"
 #include "entity/entity.h"
 #include "entity/entity_system.h"
+#include "status_effect.h"
 
 static StatValue initialize_stat_value(NumericModifierType mod_type)
 {
     StatValue result = 0;
 
     if (mod_type == NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE) {
-	result = 100;
+        result = 100;
     }
 
     return result;
@@ -28,23 +29,24 @@ StatValue modify_stat_by_percentage(StatValue lhs, StatValue percentage)
     return result;
 }
 
-static StatValue accumulate_modifier_value(StatValue lhs, StatValue rhs, NumericModifierType mod_type)
+static StatValue accumulate_modifier_value(
+    StatValue lhs, StatValue rhs, NumericModifierType mod_type)
 {
     StatValue result = lhs;
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (mod_type) {
-	case NUMERIC_MOD_FLAT_ADDITIVE:
-	case NUMERIC_MOD_ADDITIVE_PERCENTAGE: {
-	    result += rhs;
-	} break;
+        case NUMERIC_MOD_FLAT_ADDITIVE:
+        case NUMERIC_MOD_ADDITIVE_PERCENTAGE: {
+            result += rhs;
+        } break;
 
-	case NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE: {
-	    result = modify_stat_by_percentage(lhs, rhs);
-	} break;
+        case NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE: {
+            result = modify_stat_by_percentage(lhs, rhs);
+        } break;
 
-        INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
-	INVALID_DEFAULT_CASE;
+            INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
@@ -57,17 +59,17 @@ StatValue apply_modifier(StatValue base, StatValue modifier, NumericModifierType
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (mod_type) {
-	case NUMERIC_MOD_FLAT_ADDITIVE: {
-	    result += modifier;
-	} break;
+        case NUMERIC_MOD_FLAT_ADDITIVE: {
+            result += modifier;
+        } break;
 
-	case NUMERIC_MOD_ADDITIVE_PERCENTAGE:
-	case NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE: {
-	    result = modify_stat_by_percentage(base, modifier);
-	} break;
+        case NUMERIC_MOD_ADDITIVE_PERCENTAGE:
+        case NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE: {
+            result = modify_stat_by_percentage(base, modifier);
+        } break;
 
-        INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
-	INVALID_DEFAULT_CASE;
+            INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
@@ -87,32 +89,35 @@ typedef struct {
     StatValue result;
 } SumStatusEffectContext;
 
-static StatusEffectCallbackResult sum_status_effect_mods_callback(StatusEffectCallbackParams params,
-    void *user_data)
+static StatusEffectCallbackResult sum_status_effect_mods_callback(
+    StatusEffectCallbackParams params, void *user_data)
 {
     SumStatusEffectContext *context = user_data;
 
-    if (status_effect_modifies_stat(params.status_effect_id, context->stat, context->mod_type)) {
-	Modifier mod = get_status_effect_stat_modifier(params.status_effect_id);
+    if (status_effect_modifies_stat(
+            params.status_effect_id, context->stat, context->mod_type)) {
+        Modifier mod = get_status_effect_stat_modifier(params.status_effect_id);
 
-	context->result = accumulate_modifier_value(context->result, mod.value, context->mod_type);
+        context->result =
+            accumulate_modifier_value(context->result, mod.value, context->mod_type);
     }
 
     return STATUS_EFFECT_CALLBACK_PROCEED;
 }
 
-static StatValue sum_status_effect_modifiers_of_type(Entity *entity, Stat stat,
-    NumericModifierType mod_type)
+static StatValue sum_status_effect_modifiers_of_type(
+    Entity *entity, Stat stat, NumericModifierType mod_type)
 {
-    SumStatusEffectContext context = {
-	.stat = stat,
-	.mod_type = mod_type,
-	.result = initialize_stat_value(mod_type)
-    };
+    SumStatusEffectContext context = {0};
+    context.stat = stat;
+    context.mod_type = mod_type;
+    context.result = initialize_stat_value(mod_type);
 
-    StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
+    StatusEffectComponent *status_effects =
+        es_get_component(entity, StatusEffectComponent);
     if (status_effects) {
-	for_each_active_status_effect(status_effects, sum_status_effect_mods_callback, &context);
+        for_each_active_status_effect(
+            status_effects, sum_status_effect_mods_callback, &context);
     }
 
     return context.result;
@@ -125,36 +130,36 @@ static StatValue sum_modifiers_in_slot(Equipment *eq, Stat stat, EquipmentSlot s
     Entity *item = get_equipped_item_in_slot(es, eq, slot);
 
     if (item) {
-	ItemModifiers *mods = es_get_component(item, ItemModifiers);
+        ItemModifiers *mods = es_get_component(item, ItemModifiers);
 
-	if (mods) {
-	    for (s32 i = 0; i < mods->modifier_count; ++i) {
-		Modifier mod = mods->modifiers[i];
+        if (mods) {
+            for (s32 i = 0; i < mods->modifier_count; ++i) {
+                Modifier mod = mods->modifiers[i];
 
-		if (modifier_is_relevant(mod, stat, mod_type)) {
-		    result = accumulate_modifier_value(result, mod.value, mod_type);
-		}
-	    }
-	}
+                if (modifier_is_relevant(mod, stat, mod_type)) {
+                    result = accumulate_modifier_value(result, mod.value, mod_type);
+                }
+            }
+        }
     }
 
     return result;
 }
 
-static StatValue sum_equipment_modifiers_of_type(Entity *entity, Stat stat,
-    NumericModifierType mod_type, EntitySystem *es)
+static StatValue sum_equipment_modifiers_of_type(
+    Entity *entity, Stat stat, NumericModifierType mod_type, EntitySystem *es)
 {
     StatValue result = initialize_stat_value(mod_type);
 
     Equipment *equipment = es_get_component(entity, Equipment);
 
     if (equipment) {
-	for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-	    StatValue slot_mods = sum_modifiers_in_slot(equipment, stat, slot,
-		mod_type, es);
+        for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+            StatValue slot_mods =
+                sum_modifiers_in_slot(equipment, stat, slot, mod_type, es);
 
-	    result = accumulate_modifier_value(result, slot_mods, mod_type);
-	}
+            result = accumulate_modifier_value(result, slot_mods, mod_type);
+        }
     }
 
     return result;
@@ -163,16 +168,13 @@ static StatValue sum_equipment_modifiers_of_type(Entity *entity, Stat stat,
 static StatValue get_default_stat_value(Stat stat)
 {
     switch (stat) {
-	case STAT_CAST_SPEED:
-	case STAT_MOVEMENT_SPEED:
-	case STAT_ACTION_SPEED:
-	    return 100;
+        case STAT_CAST_SPEED:
+        case STAT_MOVEMENT_SPEED:
+        case STAT_ACTION_SPEED: return 100;
 
-	case STAT_HEALTH:
-	    return 1;
+        case STAT_HEALTH: return 1;
 
-	default:
-	    return 0;
+        default: return 0;
     }
 }
 
@@ -181,7 +183,7 @@ StatValues create_base_stats(void)
     StatValues result = {0};
 
     for (Stat stat = 0; stat < STAT_COUNT; ++stat) {
-	set_stat_value(&result, stat, get_default_stat_value(stat));
+        set_stat_value(&result, stat, get_default_stat_value(stat));
     }
 
     return result;
@@ -193,24 +195,27 @@ StatValue get_total_stat_value(struct EntitySystem *es, struct Entity *entity, S
     StatsComponent *stats = es_get_component(entity, StatsComponent);
 
     if (stats) {
-	result = get_base_stat_value(stats->stats, stat);
+        result = get_base_stat_value(stats->stats, stat);
     } else {
-	result = get_default_stat_value(stat);
+        result = get_default_stat_value(stat);
     }
 
-    for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT; ++mod_type) {
-	StatValue total_mods = get_total_stat_modifier_of_type(es, entity, stat, mod_type);
+    for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT;
+         ++mod_type) {
+        StatValue total_mods =
+            get_total_stat_modifier_of_type(es, entity, stat, mod_type);
 
-	result = apply_modifier(result, total_mods, mod_type);
+        result = apply_modifier(result, total_mods, mod_type);
     }
 
     return result;
 }
 
-StatValue get_total_stat_modifier_of_type(EntitySystem *es, Entity *entity,
-    Stat stat, NumericModifierType mod_type)
+StatValue get_total_stat_modifier_of_type(
+    EntitySystem *es, Entity *entity, Stat stat, NumericModifierType mod_type)
 {
-    StatValue equipment_mods = sum_equipment_modifiers_of_type(entity, stat, mod_type, es);
+    StatValue equipment_mods =
+        sum_equipment_modifiers_of_type(entity, stat, mod_type, es);
     StatValue status_mods = sum_status_effect_modifiers_of_type(entity, stat, mod_type);
 
     StatValue result = initialize_stat_value(mod_type);
@@ -219,9 +224,9 @@ StatValue get_total_stat_modifier_of_type(EntitySystem *es, Entity *entity,
     result = accumulate_modifier_value(result, status_mods, mod_type);
 
     if (mod_type == NUMERIC_MOD_ADDITIVE_PERCENTAGE) {
-	// Additive percentages need to get 100% added implicitly at the end so that
-	// increasing by 50% actually means a multiplier of 1.5
-	result += 100;
+        // Additive percentages need to get 100% added implicitly at the end so that
+        // increasing by 50% actually means a multiplier of 1.5
+        result += 100;
     }
 
     return result;
@@ -233,8 +238,8 @@ StatValue get_total_cast_speed(EntitySystem *es, Entity *entity)
     StatValue cast_speed = get_total_stat_value(es, entity, STAT_CAST_SPEED);
     StatValue action_speed = get_total_stat_value(es, entity, STAT_ACTION_SPEED);
 
-    StatValue result = apply_modifier(cast_speed, action_speed,
-	NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
+    StatValue result =
+        apply_modifier(cast_speed, action_speed, NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
 
     return result;
 }
@@ -244,7 +249,8 @@ StatValue get_total_movement_speed(struct EntitySystem *es, struct Entity *entit
     StatValue move_speed = get_total_stat_value(es, entity, STAT_MOVEMENT_SPEED);
     StatValue action_speed = get_total_stat_value(es, entity, STAT_ACTION_SPEED);
 
-    StatValue result = apply_modifier(move_speed, action_speed, NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
+    StatValue result =
+        apply_modifier(move_speed, action_speed, NUMERIC_MOD_MULTIPLICATIVE_PERCENTAGE);
 
     return result;
 }

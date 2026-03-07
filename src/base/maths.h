@@ -1,11 +1,11 @@
 #ifndef MATHS_H
 #define MATHS_H
 
-#include <math.h>
-
 #include "utils.h"
 
-#define PI 3.1415926535f
+#include <math.h>
+
+#define PI   3.1415926535f
 #define PI_2 (PI / 2.0f)
 
 static inline f32 abs_f32(f32 n)

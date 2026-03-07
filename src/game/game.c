@@ -1,4 +1,5 @@
 #include "game.h"
+
 #include "asset_table.h"
 #include "base/format.h"
 #include "base/matrix.h"
@@ -7,15 +8,15 @@
 #include "base/utils.h"
 #include "components/component.h"
 #include "components/inventory.h"
-#include "renderer/frontend/render_target.h"
-#include "renderer/backend/renderer_backend.h"
-#include "status_effect.h"
+#include "components/modifier.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
-#include "components/modifier.h"
-#include "renderer/frontend/render_batch.h"
 #include "platform/input.h"
+#include "renderer/backend/renderer_backend.h"
+#include "renderer/frontend/render_batch.h"
 #include "renderer/frontend/render_key.h"
+#include "renderer/frontend/render_target.h"
+#include "status_effect.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
 #include "world/world.h"
@@ -34,8 +35,8 @@ static void set_global_state(Game *game)
     anim_initialize();
 }
 
-static void update_player(World *world, const FrameData *frame_data,
-    GameUIState *game_ui, Camera active_camera)
+static void update_player(
+    World *world, const FrameData *frame_data, GameUIState *game_ui, Camera active_camera)
 {
     Entity *player = world_get_player_entity(world);
     ASSERT(player);
@@ -44,7 +45,8 @@ static void update_player(World *world, const FrameData *frame_data,
     Vector2 camera_target = rect_center(world_get_entity_bounding_box(player, physics));
     camera_set_target(&world->camera, camera_target);
 
-    Entity *hovered_entity = es_try_get_entity(&world->entity_system, game_ui->hovered_entity);
+    Entity *hovered_entity =
+        es_try_get_entity(&world->entity_system, game_ui->hovered_entity);
 
     if (hovered_entity && input_is_key_pressed(&frame_data->input, MOUSE_RIGHT)) {
         Inventory *inv = es_get_component(player, Inventory);
@@ -102,39 +104,41 @@ static void update_player(World *world, const FrameData *frame_data,
 	player->position = new_pos;
 	player->velocity = new_velocity;
 #else
-	Vector2 direction = {0};
+        Vector2 direction = {0};
 
-	if (input_is_key_down(&frame_data->input, KEY_W)) {
-	    direction.y = 1.0f;
-	} else if (input_is_key_down(&frame_data->input, KEY_S)) {
-	    direction.y = -1.0f;
-	}
+        if (input_is_key_down(&frame_data->input, KEY_W)) {
+            direction.y = 1.0f;
+        } else if (input_is_key_down(&frame_data->input, KEY_S)) {
+            direction.y = -1.0f;
+        }
 
-	if (input_is_key_down(&frame_data->input, KEY_A)) {
-	    direction.x = -1.0f;
-	} else if (input_is_key_down(&frame_data->input, KEY_D)) {
-	    direction.x = 1.0f;
-	}
+        if (input_is_key_down(&frame_data->input, KEY_A)) {
+            direction.x = -1.0f;
+        } else if (input_is_key_down(&frame_data->input, KEY_D)) {
+            direction.x = 1.0f;
+        }
 
-	direction = v2_norm(direction);
-	entity_try_transition_to_state(world, player, physics, state_walking(direction));
+        direction = v2_norm(direction);
+        entity_try_transition_to_state(world, player, physics, state_walking(direction));
 #endif
 
-	if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {
+        if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {
             Vector2 mouse_pos = frame_data->input.mouse_position;
-            mouse_pos = screen_to_world_coords(active_camera, mouse_pos, frame_data->window_size);
+            mouse_pos =
+                screen_to_world_coords(active_camera, mouse_pos, frame_data->window_size);
 
-	    SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
-	    SpellID selected_spell = get_spell_at_spellbook_index(
-		spellcaster, game_ui->selected_spellbook_index);
+            SpellCasterComponent *spellcaster =
+                es_get_component(player, SpellCasterComponent);
+            SpellID selected_spell = get_spell_at_spellbook_index(
+                spellcaster, game_ui->selected_spellbook_index);
 
-	    try_cast_spell(world, selected_spell, player, mouse_pos);
+            try_cast_spell(world, selected_spell, player, mouse_pos);
         }
     }
 }
 
-static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
-    const FrameData *frame_data, LinearArena *scratch)
+static RenderBatches create_render_batches(
+    Game *game, RenderBatchList *rbs, const FrameData *frame_data, LinearArena *scratch)
 {
     RenderBatches result = {0};
     Camera ui_camera = create_screenspace_camera(frame_data->window_size);
@@ -150,18 +154,18 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     }
 
     result.world_rb = push_new_render_batch(rbs, active_camera, frame_data->window_size,
-        Y_IS_UP, FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT,
-        BLEND_FUNCTION_MULTIPLICATIVE, scratch);
+        Y_IS_UP, FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT, BLEND_FUNCTION_MULTIPLICATIVE,
+        scratch);
 
-    result.lighting_rb = push_new_render_batch(rbs, active_camera, frame_data->window_size,
-        Y_IS_UP, FRAME_BUFFER_LIGHTING, ambient_light,
-        BLEND_FUNCTION_ADDITIVE, scratch);
+    result.lighting_rb =
+        push_new_render_batch(rbs, active_camera, frame_data->window_size, Y_IS_UP,
+            FRAME_BUFFER_LIGHTING, ambient_light, BLEND_FUNCTION_ADDITIVE, scratch);
 
-    result.lighting_stencil_rb = add_stencil_pass(result.lighting_rb,
-        STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, scratch);
+    result.lighting_stencil_rb = add_stencil_pass(
+        result.lighting_rb, STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, scratch);
 
-    result.worldspace_ui_rb = push_new_render_batch(rbs, active_camera, frame_data->window_size,
-        Y_IS_UP, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
+    result.worldspace_ui_rb = push_new_render_batch(rbs, active_camera,
+        frame_data->window_size, Y_IS_UP, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
         BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
     result.overlay_rb = push_new_render_batch(rbs, ui_camera, frame_data->window_size,
@@ -171,8 +175,8 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     return result;
 }
 
-static void render_ui(Game *game, RenderBatches rbs, FrameData *frame_data,
-    LinearArena *frame_arena)
+static void render_ui(
+    Game *game, RenderBatches rbs, FrameData *frame_data, LinearArena *frame_arena)
 {
     ui_core_render(&game->game_ui.backend_state, frame_data, rbs.overlay_rb);
 
@@ -181,12 +185,17 @@ static void render_ui(Game *game, RenderBatches rbs, FrameData *frame_data,
     }
 
     if (game->debug_state.quad_tree_overlay) {
-        debug_render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
+        debug_render_quad_tree(
+            &game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
     }
 
     if (game->debug_state.render_origin) {
-        draw_rectangle(rbs.worldspace_ui_rb, frame_arena, (Rectangle){{0, 0}, {8, 8}}, RGBA32_RED,
-	    shader_handle(SHAPE_SHADER), 3);
+        draw_rectangle(rbs.worldspace_ui_rb, frame_arena,
+            (Rectangle){
+                {0, 0},
+                {8, 8}
+        },
+            RGBA32_RED, shader_handle(SHAPE_SHADER), 3);
     }
 
     // TODO: move more debug rendering to debug file
@@ -195,8 +204,8 @@ static void render_ui(Game *game, RenderBatches rbs, FrameData *frame_data,
     }
 }
 
-static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, FrameData *frame_data,
-    LinearArena *scratch, PlatformCode platform_code)
+static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,
+    FrameData *frame_data, LinearArena *scratch, PlatformCode platform_code)
 {
     ui_core_begin_frame(ui);
 
@@ -210,11 +219,12 @@ static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
             debug_ui(ui, game, scratch, frame_data);
         } break;
 
-        INVALID_DEFAULT_CASE;
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
-    UIInteraction interaction = ui_core_end_layout(ui, frame_data, Y_IS_DOWN, platform_code);
+    UIInteraction interaction =
+        ui_core_end_layout(ui, frame_data, Y_IS_DOWN, platform_code);
 
     // TODO: shouldn't click_began_inside_ui be counted as receiving mouse input?
     if (interaction.received_mouse_input || interaction.click_began_inside_ui) {
@@ -222,18 +232,17 @@ static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay, Fr
     }
 }
 
-static void update_ui(Game *game, FrameData *frame_data,
-    LinearArena *frame_arena, PlatformCode platform_code)
+static void update_ui(Game *game, FrameData *frame_data, LinearArena *frame_arena,
+    PlatformCode platform_code)
 {
     Vector2 hovered_coords = screen_to_world_coords(
-        game->world.camera,
-        frame_data->input.mouse_position,
-        frame_data->window_size
-    );
+        game->world.camera, frame_data->input.mouse_position, frame_data->window_size);
 
-    Rectangle hovered_rect = {hovered_coords, {1, 1}};
-    EntityIDList hovered_entities = qt_get_entities_in_area(&game->world.quad_tree,
-	hovered_rect, frame_arena);
+    Rectangle hovered_rect = {
+        hovered_coords, {1, 1}
+    };
+    EntityIDList hovered_entities =
+        qt_get_entities_in_area(&game->world.quad_tree, hovered_rect, frame_arena);
 
     if (!list_is_empty(&hovered_entities)) {
         game->game_ui.hovered_entity = list_head(&hovered_entities)->id;
@@ -241,17 +250,17 @@ static void update_ui(Game *game, FrameData *frame_data,
         game->game_ui.hovered_entity = NULL_ENTITY_ID;
     }
 
-    update_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_data, frame_arena,
-        platform_code);
+    update_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_data,
+        frame_arena, platform_code);
 
     if (game->debug_state.debug_menu_active) {
-        update_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, frame_data, frame_arena,
-            platform_code);
+        update_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, frame_data,
+            frame_arena, platform_code);
     }
 }
 
-static void game_render(Game *game, RenderBatchList *rb_list, FrameData *frame_data,
-    LinearArena *frame_arena)
+static void game_render(
+    Game *game, RenderBatchList *rb_list, FrameData *frame_data, LinearArena *frame_arena)
 {
     RenderBatches rbs = create_render_batches(game, rb_list, frame_data, frame_arena);
 
@@ -264,7 +273,8 @@ static void game_render(Game *game, RenderBatchList *rb_list, FrameData *frame_d
     }
 }
 
-static void game_update(Game *game, FrameData *frame_data, PlatformCode platform_code, LinearArena *frame_arena)
+static void game_update(Game *game, FrameData *frame_data, PlatformCode platform_code,
+    LinearArena *frame_arena)
 {
     ASSERT(game->debug_state.timestep_modifier >= 0.0f);
 
@@ -318,9 +328,12 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
     // have had time to be used during the frame. This means that the stats have 1 frame delay
     // but that really doesn't matter
-    game->debug_state.scratch_arena_memory_usage = la_get_memory_usage(&game_memory->temporary_memory);
-    game->debug_state.permanent_arena_memory_usage = la_get_memory_usage(&game_memory->permanent_memory);
-    game->debug_state.world_arena_memory_usage = la_get_memory_usage(&game->world.world_arena);
+    game->debug_state.scratch_arena_memory_usage =
+        la_get_memory_usage(&game_memory->temporary_memory);
+    game->debug_state.permanent_arena_memory_usage =
+        la_get_memory_usage(&game_memory->permanent_memory);
+    game->debug_state.world_arena_memory_usage =
+        la_get_memory_usage(&game->world.world_arena);
 }
 
 void game_initialize(Game *game, GameMemory *game_memory)
@@ -341,6 +354,8 @@ void game_initialize(Game *game, GameMemory *game_memory)
     default_ui_style.font = font_handle(DEFAULT_FONT);
 
     // Debug UI
-    ui_core_initialize(&game->debug_state.debug_ui, default_ui_style, &game_memory->permanent_memory);
-    ui_core_initialize(&game->game_ui.backend_state, default_ui_style, &game_memory->permanent_memory);
+    ui_core_initialize(
+        &game->debug_state.debug_ui, default_ui_style, &game_memory->permanent_memory);
+    ui_core_initialize(
+        &game->game_ui.backend_state, default_ui_style, &game_memory->permanent_memory);
 }

@@ -1,47 +1,54 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <stdio.h>
-
 #include "typedefs.h"
 
+#include <stdio.h>
+
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
-#define INVALID_DEFAULT_CASE default: ASSERT(0); break;
-#define INVALID_CASE(c) case (c): ASSERT(0); break;
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define KB(n) (n * 1024)
-#define MB(n) (KB(n) * 1024)
-#define SIZEOF(t) ((ssize)(sizeof(t)))
-#define CLAMP(n, low, high) ((n) < (low) ? (low) : ((n) > (high) ? (high) : (n)))
-#define mem_zero(ptr, size) memset((ptr), 0, (usize)(size))
-#define zero_array(ptr, count) (mem_zero(ptr, count * SIZEOF(*ptr)))
-#define zero_struct(t) ((t){0})
-#define FLAG(e) ((u64)(1u << (u64)(e)))
-#define SQUARE(n) ((n) * (n))
-#define has_flag(flags, flag) (((flags) & (flag)) != 0)
+#define INVALID_DEFAULT_CASE                                                             \
+    default:                                                                             \
+        ASSERT(0);                                                                       \
+        break;
+#define INVALID_CASE(c)                                                                  \
+    case (c):                                                                            \
+        ASSERT(0);                                                                       \
+        break;
+#define MAX(a, b)               ((a) > (b) ? (a) : (b))
+#define MIN(a, b)               ((a) < (b) ? (a) : (b))
+#define KB(n)                   (n * 1024)
+#define MB(n)                   (KB(n) * 1024)
+#define SIZEOF(t)               ((ssize)(sizeof(t)))
+#define CLAMP(n, low, high)     ((n) < (low) ? (low) : ((n) > (high) ? (high) : (n)))
+#define mem_zero(ptr, size)     memset((ptr), 0, (usize)(size))
+#define zero_array(ptr, count)  (mem_zero(ptr, count * SIZEOF(*ptr)))
+#define zero_struct(t)          ((t){0})
+#define FLAG(e)                 ((u64)(1u << (u64)(e)))
+#define SQUARE(n)               ((n) * (n))
+#define has_flag(flags, flag)   (((flags) & (flag)) != 0)
 #define unset_flag(flags, flag) ((flags) &= ~(flag))
 
 // TODO: define everything for non-debug builds
-#define ASSERT(expr) if (!(expr)) ABORT_WITH_MSG("ASSERTION FAILURE", "Expression: '"#expr"'\n");
-#define ASSERT_FAIL DEBUG_BREAK
+#define ASSERT(expr)                                                                     \
+    if (!(expr))                                                                         \
+        ABORT_WITH_MSG("ASSERTION FAILURE", "Expression: '" #expr "'\n");
+#define ASSERT_FAIL   DEBUG_BREAK
 #define UNIMPLEMENTED ABORT_WITH_MSG("UNIMPLEMENTED", "")
-#define TODO(msg) ABORT_WITH_MSG("TODO", msg)
-#define ABORT_WITH_MSG(title, msg)                                         \
-    do {                                                                   \
-        fprintf(stderr, "\n*** "title" ***\n"msg"\nFunction: %s\n%s:%d:\n", \
-            __func__, FILE_NAME, LINE);                                    \
-        ASSERT_FAIL;                                                       \
+#define TODO(msg)     ABORT_WITH_MSG("TODO", msg)
+#define ABORT_WITH_MSG(title, msg)                                                       \
+    do {                                                                                 \
+        fprintf(stderr, "\n*** " title " ***\n" msg "\nFunction: %s\n%s:%d:\n",          \
+            __func__, FILE_NAME, LINE);                                                  \
+        ASSERT_FAIL;                                                                     \
     } while (0)
 
 #if defined(__GNUC__)
-#    define BEGIN_EXHAUSTIVE_SWITCH                     \
-     _Pragma("GCC diagnostic push")                      \
-     _Pragma("GCC diagnostic error \"-Wswitch-enum\"")
-#    define END_EXHAUSTIVE_SWITCH _Pragma("GCC diagnostic pop")
-#    define ALIGNOF(t)              (ssize)__alignof__(t)
-#    define ALIGNAS(n)              __attribute__ ((aligned ((n))))
-#    define ALIGNAS_T(t)            __attribute__ ((aligned ((ALIGNOF(t)))))
+#    define BEGIN_EXHAUSTIVE_SWITCH                                                      \
+        _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic error \"-Wswitch-enum\"")
+#    define END_EXHAUSTIVE_SWITCH   _Pragma("GCC diagnostic pop")
+#    define ALIGNOF(t)              (ssize) __alignof__(t)
+#    define ALIGNAS(n)              __attribute__((aligned((n))))
+#    define ALIGNAS_T(t)            __attribute__((aligned((ALIGNOF(t)))))
 #    define TYPEOF(e)               __typeof__(e)
 #    define TYPES_EQUAL(t, u)       __builtin_types_compatible_p(t, u)
 #    define STATIC_ASSERT(e)        ((e) ? 0 : static_assert_fail())

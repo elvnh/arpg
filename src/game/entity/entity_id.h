@@ -9,13 +9,13 @@ typedef s32 EntityIndex;
 typedef s32 EntityGeneration;
 
 typedef struct {
-    EntityIndex      index;
+    EntityIndex index;
     EntityGeneration generation;
 } EntityID;
 
 typedef struct {
-    EntityID   entity_a;
-    EntityID   entity_b;
+    EntityID entity_a;
+    EntityID entity_b;
 } EntityPair;
 
 typedef enum {
@@ -53,7 +53,7 @@ static inline u64 entity_id_hash(EntityID id)
 static inline b32 entity_pair_equal(EntityPair lhs, EntityPair rhs)
 {
     b32 result = entity_id_equal(lhs.entity_a, rhs.entity_a)
-        && entity_id_equal(lhs.entity_b, rhs.entity_b);
+                 && entity_id_equal(lhs.entity_b, rhs.entity_b);
 
     return result;
 }
@@ -66,10 +66,7 @@ static inline EntityPair unordered_entity_pair(EntityID a, EntityID b)
         b = tmp;
     }
 
-    EntityPair result = {
-	.entity_a = a,
-	.entity_b = b
-    };
+    EntityPair result = {.entity_a = a, .entity_b = b};
 
     return result;
 }

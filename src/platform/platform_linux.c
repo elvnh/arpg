@@ -1,34 +1,34 @@
 #define _GNU_SOURCE
 #define _DEFAULT_SOURCE
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <GLFW/glfw3.h>
-#include <time.h>
-#include <string.h>
-#include <dirent.h>
-#include <pthread.h>
-#include <fenv.h>
-
 #include "base/string8.h"
-
-#include "platform.h"
 #include "input.h"
+#include "platform.h"
+
+#include <GLFW/glfw3.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <fenv.h>
+#include <pthread.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 /* Window */
 struct WindowHandle {
     GLFWwindow *window;
 };
 
-static void framebuffer_size_callback(GLFWwindow* window, s32 width, s32 height)
+static void framebuffer_size_callback(GLFWwindow *window, s32 width, s32 height)
 {
     (void)window;
     glViewport(0, 0, width, height);
 }
 
-WindowHandle *platform_create_window(s32 width, s32 height, const char *title, u32 window_flags, Allocator allocator)
+WindowHandle *platform_create_window(
+    s32 width, s32 height, const char *title, u32 window_flags, Allocator allocator)
 {
     if (!glfwInit()) {
         return 0;
@@ -84,15 +84,17 @@ static s32 get_glfw_key_equivalent(Key key)
 {
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (key) {
-#define INPUT_KEY(key) case key: return GLFW_##key;
+#define INPUT_KEY(key)                                                                   \
+    case key: return GLFW_##key;
         INPUT_KEY_LIST
 #undef INPUT_KEY
 
-        case MOUSE_LEFT:  return GLFW_MOUSE_BUTTON_LEFT;
-        case MOUSE_RIGHT: return GLFW_MOUSE_BUTTON_RIGHT;
+        case MOUSE_LEFT: return GLFW_MOUSE_BUTTON_LEFT;
+        case MOUSE_RIGHT:
+            return GLFW_MOUSE_BUTTON_RIGHT;
 
-        INVALID_CASE(KEY_COUNT);
-        INVALID_DEFAULT_CASE;
+            INVALID_CASE(KEY_COUNT);
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
@@ -121,7 +123,7 @@ static Keystate get_current_keystate(Key key, WindowHandle *window)
 
 static f32 g_scroll_delta;
 
-static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
     (void)window;
     (void)xoffset;
@@ -130,7 +132,8 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void platform_update_input(Input *input, WindowHandle *window)
 {
-    memcpy(input->previous_keystates, input->keystates, KEY_COUNT * sizeof(*input->keystates));
+    memcpy(input->previous_keystates, input->keystates,
+        KEY_COUNT * sizeof(*input->keystates));
 
     input->scroll_delta = g_scroll_delta;
     g_scroll_delta = 0.0f;
@@ -145,9 +148,11 @@ void platform_update_input(Input *input, WindowHandle *window)
         Keystate previous = input->previous_keystates[key];
         Keystate result = current;
 
-        if ((current == KEYSTATE_PRESSED) && ((previous == KEYSTATE_PRESSED) || (previous == KEYSTATE_HELD))) {
+        if ((current == KEYSTATE_PRESSED)
+            && ((previous == KEYSTATE_PRESSED) || (previous == KEYSTATE_HELD))) {
             result = KEYSTATE_HELD;
-        } else if ((current == KEYSTATE_UP) && ((previous == KEYSTATE_PRESSED) || (previous == KEYSTATE_HELD))) {
+        } else if ((current == KEYSTATE_UP)
+                   && ((previous == KEYSTATE_PRESSED) || (previous == KEYSTATE_HELD))) {
             result = KEYSTATE_RELEASED;
         }
 
@@ -179,7 +184,8 @@ String platform_get_executable_path(Allocator allocator)
 
     ssize buffer_size = PATH_MAX;
     String result = str_allocate(buffer_size, allocator);
-    ssize bytes_written = readlink("/proc/self/exe", result.data, ssize_to_usize(result.length));
+    ssize bytes_written =
+        readlink("/proc/self/exe", result.data, ssize_to_usize(result.length));
 
     if (bytes_written == -1) {
         deallocate(allocator, result.data);
@@ -195,7 +201,8 @@ String platform_get_executable_path(Allocator allocator)
 String platform_get_executable_directory(Allocator allocator, LinearArena *scratch_arena)
 {
     String executable_path = platform_get_executable_path(allocator);
-    String directory_path = platform_get_parent_path(executable_path, allocator, scratch_arena);
+    String directory_path =
+        platform_get_parent_path(executable_path, allocator, scratch_arena);
 
     return directory_path;
 }
@@ -205,7 +212,8 @@ bool platform_path_is_absolute(String path)
     return str_starts_with(path, str_lit("/"));
 }
 
-String platform_get_absolute_path(String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_absolute_path(
+    String path, Allocator allocator, LinearArena *scratch_arena)
 {
     if (platform_path_is_absolute(path)) {
         return path;
@@ -213,13 +221,15 @@ String platform_get_absolute_path(String path, Allocator allocator, LinearArena 
 
     Allocator scratch = la_allocator(scratch_arena);
 
-    String working_dir = str_concat(platform_get_working_directory(scratch), str_lit("/"), scratch);
+    String working_dir =
+        str_concat(platform_get_working_directory(scratch), str_lit("/"), scratch);
     String result = str_concat(working_dir, path, allocator);
 
     return result;
 }
 
-String platform_get_canonical_path(String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_canonical_path(
+    String path, Allocator allocator, LinearArena *scratch_arena)
 {
     Allocator scratch = la_allocator(scratch_arena);
 
@@ -267,7 +277,8 @@ void platform_change_working_directory(String path)
     ASSERT(result == 0);
 }
 
-String platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_parent_path(
+    String path, Allocator allocator, LinearArena *scratch_arena)
 {
     String absolute = platform_get_absolute_path(path, allocator, scratch_arena);
     ssize last_slash_pos = str_find_last_occurence(absolute, str_lit("/"));
@@ -321,16 +332,17 @@ Span platform_read_entire_file(String path, Allocator allocator, LinearArena *sc
     result.data = file_data;
     result.size = file_size;
 
-  done:
+done:
     close(fd);
 
     return result;
 }
 
-String platform_read_entire_file_as_string(String path, Allocator allocator, LinearArena *scratch)
+String platform_read_entire_file_as_string(
+    String path, Allocator allocator, LinearArena *scratch)
 {
     Span file_contents = platform_read_entire_file(path, allocator, scratch);
-    String result = { (char *)file_contents.data, file_contents.size };
+    String result = {(char *)file_contents.data, file_contents.size};
 
     return result;
 }
@@ -364,9 +376,7 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
     }
 
     Timestamp mod_time = {
-        .seconds = st.st_mtim.tv_sec,
-        .nanoseconds = st.st_mtim.tv_nsec
-    };
+        .seconds = st.st_mtim.tv_sec, .nanoseconds = st.st_mtim.tv_nsec};
 
     FileType type = FILE_TYPE_OTHER;
 
@@ -383,16 +393,20 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
     return result;
 }
 
-void platform_for_each_file_in_dir(String directory, void (*callback)(String), LinearArena *scratch)
+void platform_for_each_file_in_dir(
+    String directory, void (*callback)(String), LinearArena *scratch)
 {
     String null_terminated = str_null_terminate(directory, la_allocator(scratch));
     DIR *dir = opendir(null_terminated.data);
     ASSERT(dir);
 
     for (struct dirent *entry = readdir(dir); entry; entry = readdir(dir)) {
-        String name = { entry->d_name, (ssize)strlen(entry->d_name) };
-        String full_path = str_concat(str_concat(directory, str_lit("/"), la_allocator(scratch)),
-            name, la_allocator(scratch));
+        String name = {entry->d_name, (ssize)strlen(entry->d_name)};
+
+        // TODO: use new format function for constructing paths
+        String full_path =
+            str_concat(str_concat(directory, str_lit("/"), la_allocator(scratch)), name,
+                la_allocator(scratch));
 
         if (entry->d_type == DT_DIR) {
             if (!str_equal(name, str_lit(".")) && !str_equal(name, str_lit(".."))) {
@@ -413,10 +427,7 @@ Timestamp platform_get_time(void)
     s32 gettime_result = clock_gettime(CLOCK_REALTIME, &ts);
     ASSERT(gettime_result == 0);
 
-    Timestamp result = {
-        .seconds = ts.tv_sec,
-        .nanoseconds = ts.tv_nsec
-    };
+    Timestamp result = {.seconds = ts.tv_sec, .nanoseconds = ts.tv_nsec};
 
     return result;
 }

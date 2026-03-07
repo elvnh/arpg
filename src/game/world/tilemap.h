@@ -1,14 +1,14 @@
 #ifndef TILEMAP_H
 #define TILEMAP_H
 
+#include "base/direction.h"
 #include "base/free_list_arena.h"
 #include "base/linear_arena.h"
-#include "base/vector.h"
 #include "base/rectangle.h"
-#include "base/direction.h"
+#include "base/vector.h"
 
-#define TILEMAP_MAX_TILES   2048
-#define TILE_SIZE           64
+#define TILEMAP_MAX_TILES 2048
+#define TILE_SIZE         64
 
 /*
   TODO:
@@ -45,9 +45,9 @@ typedef struct {
 } Tile;
 
 typedef struct TileNode {
-    Tile       tile;
-    Vector2i   coordinates;
-    struct TileNode  *next_in_hash;
+    Tile tile;
+    Vector2i coordinates;
+    struct TileNode *next_in_hash;
 } TileNode;
 
 typedef struct Tilemap {
@@ -58,9 +58,10 @@ typedef struct Tilemap {
     s32 max_y;
 } Tilemap;
 
-void   tilemap_initialize(Tilemap *tilemap);
-void   tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena);
-Tile  *tilemap_get_tile(Tilemap *tilemap, Vector2i coords);
+void tilemap_initialize(Tilemap *tilemap);
+void tilemap_insert_tile(
+    Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena);
+Tile *tilemap_get_tile(Tilemap *tilemap, Vector2i coords);
 Rectangle tilemap_get_bounding_box(const Tilemap *tilemap);
 EdgePool tilemap_get_edge_list(Tilemap *tilemap, Allocator alloc);
 

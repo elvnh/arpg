@@ -27,7 +27,8 @@ static inline void add_item_modifier(ItemModifiers *mods, Modifier mod)
     mods->modifiers[mods->modifier_count++] = mod;
 }
 
-static inline Modifier create_modifier(Stat stat, StatValue value, NumericModifierType mod_type)
+static inline Modifier create_modifier(
+    Stat stat, StatValue value, NumericModifierType mod_type)
 {
     Modifier result = {0};
 
@@ -56,14 +57,14 @@ static inline String modifier_to_string(Modifier modifier, LinearArena *arena)
             result = format(arena, "%.2fx", (f64)modifier.value / 100.0);
         } break;
 
-        INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
+            INVALID_CASE(NUMERIC_MOD_TYPE_COUNT);
 
-        INVALID_DEFAULT_CASE;
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
-    result = format(arena, FMT_STR" "FMT_STR,
-        FMT_STR_ARG(result), FMT_STR_ARG(stat_to_string(modifier.target_stat)));
+    result = format(arena, FMT_STR " " FMT_STR, FMT_STR_ARG(result),
+        FMT_STR_ARG(stat_to_string(modifier.target_stat)));
 
     return result;
 }

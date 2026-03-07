@@ -5,6 +5,7 @@
 
 struct Chunk;
 
+// clang-format off
 typedef enum {
     PS_FLAG_INFINITE                = FLAG(0),
     PS_FLAG_EMITS_LIGHT             = FLAG(1),
@@ -13,6 +14,7 @@ typedef enum {
     /* If not set, only the component will be removed */
     PS_FLAG_WHEN_DONE_REMOVE_ENTITY = FLAG(3),
 } ParticleSpawnerFlag;
+// clang-format on
 
 // TODO: particle velocity
 // TODO: reduce size of this
@@ -37,10 +39,12 @@ typedef struct {
     f32 particle_timer;
 } ParticleSpawner;
 
-void update_particle_spawner(struct World *world, struct Entity *entity, ParticleSpawner *ps,
-    struct PhysicsComponent *physics, f32 dt);
-b32  particle_spawner_is_finished(ParticleSpawner *ps);
-void initialize_particle_spawner(ParticleSpawner *ps, ParticleSpawnerConfig config, s32 particle_count);
-void spawn_particles_in_chunk(struct Chunk *chunk, Rectangle spawn_area, ParticleSpawnerConfig config, s32 particle_count);
+void update_particle_spawner(struct World *world, struct Entity *entity,
+    ParticleSpawner *ps, struct PhysicsComponent *physics, f32 dt);
+b32 particle_spawner_is_finished(ParticleSpawner *ps);
+void initialize_particle_spawner(
+    ParticleSpawner *ps, ParticleSpawnerConfig config, s32 particle_count);
+void spawn_particles_in_chunk(struct Chunk *chunk, Rectangle spawn_area,
+    ParticleSpawnerConfig config, s32 particle_count);
 
 #endif //PARTICLE_SPAWNER_H

@@ -1,6 +1,7 @@
 #include "tilemap.h"
-#include "base/line.h"
+
 #include "base/dynamic_array.h"
+#include "base/line.h"
 #include "base/vector.h"
 #include "world.h"
 
@@ -30,7 +31,8 @@ void tilemap_initialize(Tilemap *tilemap)
 }
 
 // TODO: allocating tiles from a freelist arena is kind of inefficient
-void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena)
+void tilemap_insert_tile(
+    Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena)
 {
     ASSERT(is_pow2(TILEMAP_MAX_TILES));
 
@@ -86,16 +88,18 @@ Tile *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
 
 Rectangle tilemap_get_bounding_box(const Tilemap *tilemap)
 {
-    Rectangle result = {
-	{(f32)(tilemap->min_x * TILE_SIZE), (f32)(tilemap->min_y * TILE_SIZE)},
-	{(f32)((tilemap->max_x - tilemap->min_x + 1) * TILE_SIZE),
-	 (f32)((tilemap->max_y - tilemap->min_y + 1) * TILE_SIZE)}
-    };
+    Rectangle result = {0};
+    result.position = {
+        (f32)(tilemap->min_x * TILE_SIZE), (f32)(tilemap->min_y * TILE_SIZE)};
+    result.size = {(f32)((tilemap->max_x - tilemap->min_x + 1) * TILE_SIZE),
+        (f32)((tilemap->max_y - tilemap->min_y + 1) * TILE_SIZE)};
+};
 
-    return result;
+return result;
 }
 
-static Tile *get_tile_neighbour(Tilemap *tilemap, Vector2i tile_coords, CardinalDirection dir)
+static Tile *get_tile_neighbour(
+    Tilemap *tilemap, Vector2i tile_coords, CardinalDirection dir)
 {
     Vector2 v = cardinal_direction_vector(dir);
     Vector2i neighbour_coords = v2i_add(tile_coords, v2_to_v2i(v));
@@ -104,24 +108,24 @@ static Tile *get_tile_neighbour(Tilemap *tilemap, Vector2i tile_coords, Cardinal
     return result;
 }
 
-static Vector2 get_wall_line_segment_begin(Vector2 tile_world_coords, CardinalDirection edge_dir)
+static Vector2 get_wall_line_segment_begin(
+    Vector2 tile_world_coords, CardinalDirection edge_dir)
 {
     Vector2 result = {0};
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_NORTH: {
-        case CARDINAL_DIR_WEST:
-            result = v2_add(tile_world_coords, v2(0, TILE_SIZE));
+            case CARDINAL_DIR_WEST: result = v2_add(tile_world_coords, v2(0, TILE_SIZE));
         } break;
 
         case CARDINAL_DIR_EAST: {
             result = v2_add(tile_world_coords, v2(TILE_SIZE, TILE_SIZE));
         } break;
 
-        INVALID_CASE(CARDINAL_DIR_SOUTH);
-        INVALID_CASE(CARDINAL_DIR_COUNT);
-        INVALID_DEFAULT_CASE;
+            INVALID_CASE(CARDINAL_DIR_SOUTH);
+            INVALID_CASE(CARDINAL_DIR_COUNT);
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
@@ -133,15 +137,14 @@ static Vector2 wall_line_direction_vector(CardinalDirection edge_dir)
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_NORTH:
-        case CARDINAL_DIR_SOUTH:
-            return (Vector2)  {1, 0};
+        case CARDINAL_DIR_SOUTH: return (Vector2){1, 0};
 
         case CARDINAL_DIR_EAST:
         case CARDINAL_DIR_WEST:
-            return (Vector2)  {0, -1};
+            return (Vector2){0, -1};
 
-        INVALID_CASE(CARDINAL_DIR_COUNT);
-        INVALID_DEFAULT_CASE;
+            INVALID_CASE(CARDINAL_DIR_COUNT);
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
@@ -163,19 +166,15 @@ static CardinalDirection get_connectible_neighbour_direction(CardinalDirection e
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (edge_dir) {
         case CARDINAL_DIR_WEST:
-        case CARDINAL_DIR_EAST:
-            return CARDINAL_DIR_NORTH;
+        case CARDINAL_DIR_EAST: return CARDINAL_DIR_NORTH;
 
-        case CARDINAL_DIR_NORTH:
-            return CARDINAL_DIR_WEST;
+        case CARDINAL_DIR_NORTH: return CARDINAL_DIR_WEST;
 
         case CARDINAL_DIR_SOUTH:
             ASSERT(0 && "Southern edges aren't created anymore");
             break;
 
-        case CARDINAL_DIR_COUNT:
-            ASSERT(0);
-            break;
+        case CARDINAL_DIR_COUNT: ASSERT(0); break;
     }
     END_EXHAUSTIVE_SWITCH;
 
@@ -193,8 +192,9 @@ static void set_wall_edge_id(Tile *tile, CardinalDirection edge_dir, WallEdgeID 
     tile->edges[edge_dir].exists = true;
 }
 
-static void try_create_wall_edge_on_side(Tilemap *tilemap, Tile *tile, Vector2i tile_coords,
-    CardinalDirection edge_dir, EdgePool *edge_pool, Allocator alloc)
+static void try_create_wall_edge_on_side(Tilemap *tilemap, Tile *tile,
+    Vector2i tile_coords, CardinalDirection edge_dir, EdgePool *edge_pool,
+    Allocator alloc)
 {
     ASSERT(tile);
     ASSERT(tile->type == TILE_WALL);
@@ -205,20 +205,22 @@ static void try_create_wall_edge_on_side(Tilemap *tilemap, Tile *tile, Vector2i 
 
     if (!edge_neighbour || (edge_neighbour->type != TILE_WALL)) {
         CardinalDirection neighbour_dir = get_connectible_neighbour_direction(edge_dir);
-        Tile *connected_neighbour = get_tile_neighbour(tilemap, tile_coords, neighbour_dir);
+        Tile *connected_neighbour =
+            get_tile_neighbour(tilemap, tile_coords, neighbour_dir);
 
-        Vector2 wall_line_begin = get_wall_line_segment_begin(tile_world_coords, edge_dir);
+        Vector2 wall_line_begin =
+            get_wall_line_segment_begin(tile_world_coords, edge_dir);
         Vector2 wall_line_end = get_wall_line_segment_end(wall_line_begin, edge_dir);
 
         WallEdgeID edge_id = -1;
 
-        b32 can_extend_neighbouring_edge = connected_neighbour
-            && connected_neighbour->edges[edge_dir].exists;
+        b32 can_extend_neighbouring_edge =
+            connected_neighbour && connected_neighbour->edges[edge_dir].exists;
 
         if (can_extend_neighbouring_edge) {
             // Our neighbour has already created an edge, extend it
             ASSERT((connected_neighbour->type == TILE_WALL)
-                && "If this isn't a wall, the edge shouldn't be marked as existing");
+                   && "If this isn't a wall, the edge shouldn't be marked as existing");
 
             edge_id = connected_neighbour->edges[edge_dir].id;
 
@@ -252,15 +254,16 @@ EdgePool tilemap_get_edge_list(Tilemap *tilemap, Allocator alloc)
 
             if (tile && (tile->type == TILE_WALL)) {
                 // TODO: instead cache results
-                memset(tile->edges, 0, (usize)ARRAY_COUNT(tile->edges) * sizeof(*tile->edges));
+                memset(tile->edges, 0,
+                    (usize)ARRAY_COUNT(tile->edges) * sizeof(*tile->edges));
 
                 // TODO: not needed
-                try_create_wall_edge_on_side(tilemap, tile, tile_coords,
-                    CARDINAL_DIR_NORTH, &edge_pool, alloc);
-                try_create_wall_edge_on_side(tilemap, tile, tile_coords,
-                    CARDINAL_DIR_WEST, &edge_pool, alloc);
-                try_create_wall_edge_on_side(tilemap, tile, tile_coords,
-                    CARDINAL_DIR_EAST, &edge_pool, alloc);
+                try_create_wall_edge_on_side(
+                    tilemap, tile, tile_coords, CARDINAL_DIR_NORTH, &edge_pool, alloc);
+                try_create_wall_edge_on_side(
+                    tilemap, tile, tile_coords, CARDINAL_DIR_WEST, &edge_pool, alloc);
+                try_create_wall_edge_on_side(
+                    tilemap, tile, tile_coords, CARDINAL_DIR_EAST, &edge_pool, alloc);
             }
         }
     }

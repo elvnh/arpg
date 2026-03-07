@@ -1,4 +1,5 @@
 #include "chain.h"
+
 #include "base/utils.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
@@ -10,36 +11,38 @@ static ChainComponent *get_next_link_in_chain(EntitySystem *es, ChainComponent *
 
     // TODO: allow calling es_get_component on null entities
     if (entity) {
-	result = es_get_component(entity, ChainComponent);
+        result = es_get_component(entity, ChainComponent);
     }
 
     return result;
 }
 
-static ChainComponent *get_previous_link_in_chain(EntitySystem *es, ChainComponent *current)
+static ChainComponent *get_previous_link_in_chain(
+    EntitySystem *es, ChainComponent *current)
 {
     Entity *entity = get_previous_entity_in_chain(es, current);
     ChainComponent *result = 0;
 
     // TODO: allow calling es_get_component on null entities
     if (entity) {
-	result = es_get_component(entity, ChainComponent);
+        result = es_get_component(entity, ChainComponent);
     }
 
     return result;
 }
 
-
-void push_link_to_front_of_chain(EntitySystem *es, ChainComponent *root, ChainComponent *link_to_push)
+void push_link_to_front_of_chain(
+    EntitySystem *es, ChainComponent *root, ChainComponent *link_to_push)
 {
     Entity *root_entity = es_get_component_owner(es, root, ChainComponent);
-    Entity *link_to_push_entity = es_get_component_owner(es, link_to_push, ChainComponent);
+    Entity *link_to_push_entity =
+        es_get_component_owner(es, link_to_push, ChainComponent);
     ASSERT(root_entity != link_to_push_entity);
 
     ChainComponent *next = get_next_link_in_chain(es, root);
 
     if (next) {
-	next->prev_link_entity_id = link_to_push_entity->id;
+        next->prev_link_entity_id = link_to_push_entity->id;
     }
 
     link_to_push->next_link_entity_id = root->next_link_entity_id;
@@ -85,11 +88,11 @@ void remove_link_from_chain(EntitySystem *es, ChainComponent *link)
     ChainComponent *next = get_next_link_in_chain(es, link);
 
     if (prev) {
-	prev->next_link_entity_id = link->next_link_entity_id;
+        prev->next_link_entity_id = link->next_link_entity_id;
     }
 
     if (next) {
-	next->prev_link_entity_id = link->prev_link_entity_id;
+        next->prev_link_entity_id = link->prev_link_entity_id;
     }
 
     link->next_link_entity_id = NULL_ENTITY_ID;

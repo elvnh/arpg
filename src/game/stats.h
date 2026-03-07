@@ -45,14 +45,14 @@ typedef struct {
     StatValue values[STAT_COUNT];
 } StatValues;
 
-StatValue  get_total_stat_value(struct EntitySystem *es, struct Entity *entity, Stat stat);
-StatValue  get_total_stat_modifier_of_type(struct EntitySystem *es, struct Entity *entity,
-					   Stat stat, NumericModifierType mod_type);
-StatValue  get_total_cast_speed(struct EntitySystem *es, struct Entity *entity);
-StatValue  get_total_movement_speed(struct EntitySystem *es, struct Entity *entity);
-f32        get_total_movement_speed_value(struct EntitySystem *es, struct Entity *entity);
-StatValue  apply_modifier(StatValue lhs, StatValue rhs, NumericModifierType mod_type);
-StatValue  modify_stat_by_percentage(StatValue lhs, StatValue percentage);
+StatValue get_total_stat_value(struct EntitySystem *es, struct Entity *entity, Stat stat);
+StatValue get_total_stat_modifier_of_type(struct EntitySystem *es, struct Entity *entity,
+    Stat stat, NumericModifierType mod_type);
+StatValue get_total_cast_speed(struct EntitySystem *es, struct Entity *entity);
+StatValue get_total_movement_speed(struct EntitySystem *es, struct Entity *entity);
+f32 get_total_movement_speed_value(struct EntitySystem *es, struct Entity *entity);
+StatValue apply_modifier(StatValue lhs, StatValue rhs, NumericModifierType mod_type);
+StatValue modify_stat_by_percentage(StatValue lhs, StatValue percentage);
 StatValues create_base_stats(void);
 
 static inline void set_stat_value(StatValues *stats, Stat stat, StatValue value)
@@ -81,21 +81,23 @@ static inline StatValue get_base_stat_value(StatValues stats, Stat stat)
 
 static inline String stat_to_string(Stat stat)
 {
+    // clang-format off
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (stat) {
-	case STAT_FIRE_DAMAGE:		  return str_lit("Fire damage");
-	case STAT_LIGHTNING_DAMAGE:	  return str_lit("Lightning damage");
-	case STAT_FIRE_RESISTANCE:	  return str_lit("Fire resistance");
-	case STAT_LIGHTNING_RESISTANCE:   return str_lit("Lightning resistance");
-	case STAT_CAST_SPEED:		  return str_lit("Cast speed");
-	case STAT_MOVEMENT_SPEED:	  return str_lit("Movement speed");
-	case STAT_ACTION_SPEED:		  return str_lit("Action speed");
-	case STAT_HEALTH:		  return str_lit("Health");
+        case STAT_FIRE_DAMAGE:          return str_lit("Fire damage");
+        case STAT_LIGHTNING_DAMAGE:     return str_lit("Lightning damage");
+        case STAT_FIRE_RESISTANCE:      return str_lit("Fire resistance");
+        case STAT_LIGHTNING_RESISTANCE: return str_lit("Lightning resistance");
+        case STAT_CAST_SPEED:           return str_lit("Cast speed");
+        case STAT_MOVEMENT_SPEED:       return str_lit("Movement speed");
+        case STAT_ACTION_SPEED:         return str_lit("Action speed");
+        case STAT_HEALTH:               return str_lit("Health");
 
-        INVALID_CASE(STAT_COUNT);
-        INVALID_DEFAULT_CASE;
+            INVALID_CASE(STAT_COUNT);
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
+    // clang-format on
 
     ASSERT(0);
     return str_lit("");

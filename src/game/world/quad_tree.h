@@ -7,7 +7,7 @@
 #include "entity/entity.h"
 
 #define QUAD_TREE_MAX_DEPTH 6
-#define QT_NULL_LOCATION (QuadTreeLocation){0}
+#define QT_NULL_LOCATION    zero_struct(QuadTreeLocation)
 
 /*
   TODO:
@@ -64,10 +64,10 @@ typedef struct {
 } EntityIDList;
 
 void qt_initialize(QuadTree *qt, Rectangle area);
-QuadTreeLocation qt_move_entity(QuadTree *qt, EntityID id,
-    QuadTreeLocation location, Vector2 new_position, LinearArena *arena);
-QuadTreeLocation qt_set_entity_area(QuadTree *qt, EntityID id,
-    QuadTreeLocation location, Rectangle area, LinearArena *arena);
+QuadTreeLocation qt_move_entity(QuadTree *qt, EntityID id, QuadTreeLocation location,
+    Vector2 new_position, LinearArena *arena);
+QuadTreeLocation qt_set_entity_area(QuadTree *qt, EntityID id, QuadTreeLocation location,
+    Rectangle area, LinearArena *arena);
 QuadTreeLocation qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation location);
 EntityIDList qt_get_entities_in_area(QuadTree *qt, Rectangle area, LinearArena *arena);
 ssize qt_get_node_count(const QuadTree *qt);

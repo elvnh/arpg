@@ -2,8 +2,8 @@
 #define ENTITY_H
 
 #include "base/linear_arena.h"
-#include "base/rgba.h"
 #include "base/rectangle.h"
+#include "base/rgba.h"
 #include "components/component.h"
 #include "entity/entity_arena.h"
 #include "entity_faction.h"
@@ -17,9 +17,9 @@ typedef struct Entity {
     EntityFaction faction;
     EntityState state;
 
-    #define COMPONENT(type) type ES_IMPL_COMP_FIELD_NAME(type);
-        COMPONENT_LIST
-    #undef COMPONENT
+#define COMPONENT(type) type ES_IMPL_COMP_FIELD_NAME(type);
+    COMPONENT_LIST
+#undef COMPONENT
 } Entity;
 
 typedef struct {

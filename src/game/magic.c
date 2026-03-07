@@ -1,4 +1,6 @@
 #include "magic.h"
+
+#include "asset_table.h"
 #include "base/maths.h"
 #include "callback_functions.h"
 #include "collision/trigger.h"
@@ -6,8 +8,8 @@
 #include "components/event_listener.h"
 #include "entity/entity_system.h"
 #include "world/world.h"
-#include "asset_table.h"
 
+// clang-format off
 typedef enum {
     SPELL_PROP_PROJECTILE                 = FLAG(0),
     SPELL_PROP_DAMAGE_FIELD               = FLAG(1),
@@ -29,6 +31,7 @@ typedef enum {
     SPELL_PROP_ARCING                     = FLAG(17),
     SPELL_PROP_FORKING                    = FLAG(18),
 } SpellProperties;
+// clang-format on
 
 typedef struct {
     SpellProperties properties;
@@ -38,52 +41,52 @@ typedef struct {
     Sprite sprite;
 
     struct {
-	// TODO: pack base_damage and penetration_values into struct
-	DamageRange base_damage;
-	Damage penetration_values;
-	RetriggerBehaviour retrigger_behaviour;
+        // TODO: pack base_damage and penetration_values into struct
+        DamageRange base_damage;
+        Damage penetration_values;
+        RetriggerBehaviour retrigger_behaviour;
     } damage_field;
 
     struct {
-	f32 projectile_speed;
-	Vector2 collider_size;
-	s32 extra_projectile_count;
-	f32 projectile_cone_in_radians;
+        f32 projectile_speed;
+        Vector2 collider_size;
+        s32 extra_projectile_count;
+        f32 projectile_cone_in_radians;
     } projectile;
 
     struct {
-	f32 base_radius;
+        f32 base_radius;
     } aoe;
 
     f32 lifetime;
 
-    ParticleSpawnerSetup  particle_spawner;
-    ParticleSpawnerSetup  on_death_particle_spawner;
+    ParticleSpawnerSetup particle_spawner;
+    ParticleSpawnerSetup on_death_particle_spawner;
 
     CallbackFunction hostile_collision_callback;
 
     struct {
-	StatusEffectID effect;
-	RetriggerBehaviour retrigger_behaviour;
+        StatusEffectID effect;
+        RetriggerBehaviour retrigger_behaviour;
     } applies_status_effects;
 
     LightSource light_emitter;
 
     struct {
-	s32 max_chains;
-	f32 chain_search_area_size;
+        s32 max_chains;
+        f32 chain_search_area_size;
     } chaining;
 
     struct {
-	s32 fork_count;
-	SpellID fork_spell;
-	f32 forking_angle;
+        s32 fork_count;
+        SpellID fork_spell;
+        f32 forking_angle;
     } forking;
 
     struct {
         f32 arcing_speed;
         DamageRange damage;
-	Damage penetration_values;
+        Damage penetration_values;
     } arcing;
 } Spell;
 
@@ -99,11 +102,12 @@ Spell g_spells[SPELL_COUNT];
 
 // TODO: move to callback file since this has nothing to do with spells
 
-static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *self_chain,
-    Vector2 position, Rectangle search_area, Entity *chained_off_entity, LinearArena *frame_arena)
+static Entity *try_get_chain_target(World *world, Entity *self,
+    ChainComponent *self_chain, Vector2 position, Rectangle search_area,
+    Entity *chained_off_entity, LinearArena *frame_arena)
 {
-    EntityIDList nearby_entities = qt_get_entities_in_area(&world->quad_tree,
-        search_area, frame_arena);
+    EntityIDList nearby_entities =
+        qt_get_entities_in_area(&world->quad_tree, search_area, frame_arena);
 
     // TODO: break out getting closest entity into function
     Entity *closest_entity = 0;
@@ -117,18 +121,21 @@ static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *
 
     for (EntityIDNode *curr = list_head(&nearby_entities); curr; curr = list_next(curr)) {
         Entity *curr_entity = es_get_entity(&world->entity_system, curr->id);
-        PhysicsComponent *curr_entity_physics = es_get_component(curr_entity, PhysicsComponent);
+        PhysicsComponent *curr_entity_physics =
+            es_get_component(curr_entity, PhysicsComponent);
         ASSERT(curr_entity_physics);
 
         // TODO: clean this up
-        if ((curr_entity->faction == hostile_faction) && (curr_entity != chained_off_entity)) {
-	    if (!has_chained_off_entity(&world->entity_system, self_chain, curr_entity->id)) {
-		f32 dist = v2_dist(curr_entity_physics->position, position);
+        if ((curr_entity->faction == hostile_faction)
+            && (curr_entity != chained_off_entity)) {
+            if (!has_chained_off_entity(
+                    &world->entity_system, self_chain, curr_entity->id)) {
+                f32 dist = v2_dist(curr_entity_physics->position, position);
 
-		if (dist < closest_entity_dist) {
-		    closest_entity = curr_entity;
-		    closest_entity_dist = dist;
-		}
+                if (dist < closest_entity_dist) {
+                    closest_entity = curr_entity;
+                    closest_entity_dist = dist;
+                }
             }
         }
     }
@@ -136,8 +143,8 @@ static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *
     return closest_entity;
 }
 
-static void chain_collision_callback(CallbackUserData user_data, EventData event_data,
-    LinearArena *frame_arena)
+static void chain_collision_callback(
+    CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)
 {
     SpellCallbackData *cb_data = &user_data.spell_data;
     ASSERT(cb_data->as.chain.chains_remaining >= 0);
@@ -145,7 +152,8 @@ static void chain_collision_callback(CallbackUserData user_data, EventData event
     EntitySystem *es = &event_data.world->entity_system;
     Entity *self = es_get_entity(es, event_data.receiver_id);
 
-    Entity *collide_target = es_get_entity(es, event_data.as.hostile_collision.collided_with);
+    Entity *collide_target =
+        es_get_entity(es, event_data.as.hostile_collision.collided_with);
     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
     ASSERT(self_physics);
 
@@ -157,42 +165,44 @@ static void chain_collision_callback(CallbackUserData user_data, EventData event
     // the entity due to no chains remaining, since we don't want to die on this one
     // if we've already chained off it, even if we happen to be out of chains
     if (has_chained_off_entity(es, chain, collide_target->id)) {
-	return;
+        return;
     }
 
     if (cb_data->as.chain.chains_remaining == 0) {
-	world_kill_entity(event_data.world, self, frame_arena);
-	return;
+        world_kill_entity(event_data.world, self, frame_arena);
+        return;
     }
 
     f32 search_area_size = cb_data->as.chain.search_area_size;
     Vector2 search_area_dims = {search_area_size, search_area_size};
     Rectangle search_area = {
         v2_sub(self_physics->position, v2_div_s(search_area_dims, 2.0f)),
-	search_area_dims,
+        search_area_dims,
     };
 
     // TODO: break out getting closest entity into function
     Entity *closest_entity = try_get_chain_target(event_data.world, self, chain,
-	self_physics->position, search_area, collide_target, frame_arena);
+        self_physics->position, search_area, collide_target, frame_arena);
 
     if (closest_entity) {
-        PhysicsComponent *closest_entity_physics = es_get_component(closest_entity, PhysicsComponent);
+        PhysicsComponent *closest_entity_physics =
+            es_get_component(closest_entity, PhysicsComponent);
         Vector2 target_pos = closest_entity_physics->position;
         Vector2 target_dir = v2_norm(v2_sub(target_pos, self_physics->position));
-	f32 current_speed = v2_mag(self_physics->velocity);
+        f32 current_speed = v2_mag(self_physics->velocity);
 
-	self_physics->velocity = v2_mul_s(target_dir, current_speed);
+        self_physics->velocity = v2_mul_s(target_dir, current_speed);
 
-	--cb_data->as.chain.chains_remaining;
+        --cb_data->as.chain.chains_remaining;
 
-	// TODO: remove entire chain of entities
-	EntityWithID chain_link_entity = world_spawn_entity(event_data.world,
-	    self_physics->position, self->faction);
-	ChainComponent *chain_link = es_add_component(chain_link_entity.entity, ChainComponent);
-	chain_link->chained_off_entity_id = collide_target->id;
+        // TODO: remove entire chain of entities
+        EntityWithID chain_link_entity =
+            world_spawn_entity(event_data.world, self_physics->position, self->faction);
+        ChainComponent *chain_link =
+            es_add_component(chain_link_entity.entity, ChainComponent);
+        chain_link->chained_off_entity_id = collide_target->id;
 
-	push_link_to_front_of_chain(es, chain, chain_link);
+        push_link_to_front_of_chain(es, chain, chain_link);
     }
 }
 
@@ -218,125 +228,133 @@ static const Spell *get_spell_by_id(SpellID id)
     return &g_spells[id];
 }
 
-static void fork_collision_callback(CallbackUserData user_data, EventData event_data,
-    LinearArena *frame_arena);
+static void fork_collision_callback(
+    CallbackUserData user_data, EventData event_data, LinearArena *frame_arena);
 
 static void spawn_spell_entity(World *world, const Spell *spell, Entity *caster,
     Vector2 spell_start_position, Vector2 dir, CastSpellParams params)
 {
-    EntityWithID spell_entity_with_id = world_spawn_non_spatial_entity(world, caster->faction);
+    EntityWithID spell_entity_with_id =
+        world_spawn_non_spatial_entity(world, caster->faction);
     Entity *spell_entity = spell_entity_with_id.entity;
 
-    ColliderComponent *spell_collider = es_get_or_add_component(spell_entity, ColliderComponent);
+    ColliderComponent *spell_collider =
+        es_get_or_add_component(spell_entity, ColliderComponent);
     spell_collider->collision_group = COLLISION_GROUP_PROJECTILES;
 
     PhysicsComponent *physics = es_get_or_add_component(spell_entity, PhysicsComponent);
 
     if (spell_has_prop(spell, SPELL_PROP_SPRITE)) {
-	SpriteComponent *sprite_comp = es_get_or_add_component(spell_entity, SpriteComponent);
+        SpriteComponent *sprite_comp =
+            es_get_or_add_component(spell_entity, SpriteComponent);
 
-	sprite_comp->sprite = spell->sprite;
+        sprite_comp->sprite = spell->sprite;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
-	ASSERT(!spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT));
-	spell_collider->size = spell->projectile.collider_size;
+        ASSERT(!spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT));
+        spell_collider->size = spell->projectile.collider_size;
 
-	physics->velocity = v2_mul_s(dir, spell->projectile.projectile_speed);
+        physics->velocity = v2_mul_s(dir, spell->projectile.projectile_speed);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
-	ASSERT(!spell_has_prop(spell, SPELL_PROP_PROJECTILE));
-	spell_collider->size = v2(spell->aoe.base_radius, spell->aoe.base_radius);
+        ASSERT(!spell_has_prop(spell, SPELL_PROP_PROJECTILE));
+        spell_collider->size = v2(spell->aoe.base_radius, spell->aoe.base_radius);
 
-	SpriteComponent *sprite_comp = es_get_component(spell_entity, SpriteComponent);
+        SpriteComponent *sprite_comp = es_get_component(spell_entity, SpriteComponent);
 
-	if (sprite_comp) {
-	    sprite_comp->sprite.size = spell_collider->size;
-	}
+        if (sprite_comp) {
+            sprite_comp->sprite.size = spell_collider->size;
+        }
     }
 
     if (spell_has_prop(spell, SPELL_PROP_BOUNCE_ON_TILES)) {
-	set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_BOUNCE);
+        set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_BOUNCE);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DAMAGE_FIELD)) {
-	Damage damage_roll = roll_damage_in_range(spell->damage_field.base_damage);
-        Damage damage_after_boosts = calculate_damage_dealt(&world->entity_system, caster, damage_roll);
+        Damage damage_roll = roll_damage_in_range(spell->damage_field.base_damage);
+        Damage damage_after_boosts =
+            calculate_damage_dealt(&world->entity_system, caster, damage_roll);
 
-	DamageFieldComponent *dmg_field = es_add_component(spell_entity, DamageFieldComponent);
+        DamageFieldComponent *dmg_field =
+            es_add_component(spell_entity, DamageFieldComponent);
 
-        DamageInstance damage = {damage_after_boosts, spell->damage_field.penetration_values};
-	dmg_field->damage = damage;
-	dmg_field->retrigger_behaviour = spell->damage_field.retrigger_behaviour;
+        DamageInstance damage = {
+            damage_after_boosts, spell->damage_field.penetration_values};
+        dmg_field->damage = damage;
+        dmg_field->retrigger_behaviour = spell->damage_field.retrigger_behaviour;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)) {
-	set_collision_policy_vs_hostile_faction(spell_collider, COLLISION_POLICY_DIE, caster->faction);
+        set_collision_policy_vs_hostile_faction(
+            spell_collider, COLLISION_POLICY_DIE, caster->faction);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_STOP_ON_ENTITY_COLLISION)) {
-	set_collision_policy_vs_hostile_faction(spell_collider, COLLISION_POLICY_STOP, caster->faction);
+        set_collision_policy_vs_hostile_faction(
+            spell_collider, COLLISION_POLICY_STOP, caster->faction);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_FREEZE_ON_ENTITY_COLLISION)) {
-	set_collision_policy_vs_hostile_faction(spell_collider, COLLISION_POLICY_FREEZE, caster->faction);
+        set_collision_policy_vs_hostile_faction(
+            spell_collider, COLLISION_POLICY_FREEZE, caster->faction);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_FREEZE_ON_WALL_COLLISION)) {
-	set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_FREEZE);
+        set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_FREEZE);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DIE_ON_WALL_COLLISION)) {
-	set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_DIE);
+        set_collision_policy_vs_tilemaps(spell_collider, COLLISION_POLICY_DIE);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_LIFETIME)) {
-	ASSERT(spell->lifetime > 0.0f);
+        ASSERT(spell->lifetime > 0.0f);
 
-	LifetimeComponent *lifetime = es_add_component(spell_entity, LifetimeComponent);
-	lifetime->time_to_live = spell->lifetime;
+        LifetimeComponent *lifetime = es_add_component(spell_entity, LifetimeComponent);
+        lifetime->time_to_live = spell->lifetime;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_PARTICLE_SPAWNER)) {
-	ParticleSpawner *ps = es_get_or_add_component(spell_entity, ParticleSpawner);
+        ParticleSpawner *ps = es_get_or_add_component(spell_entity, ParticleSpawner);
         initialize_particle_spawner(ps, spell->particle_spawner.config,
             spell->particle_spawner.total_particle_count);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_SPAWN_PARTICLES_ON_DEATH)) {
-	ASSERT(spell->on_death_particle_spawner.config.particle_size > 0.0f);
-	ASSERT(spell->on_death_particle_spawner.config.particle_speed > 0.0f);
-	ASSERT(spell->on_death_particle_spawner.config.particles_per_second > 0);
+        ASSERT(spell->on_death_particle_spawner.config.particle_size > 0.0f);
+        ASSERT(spell->on_death_particle_spawner.config.particle_speed > 0.0f);
+        ASSERT(spell->on_death_particle_spawner.config.particles_per_second > 0);
 
-	es_get_or_add_component(spell_entity, EventListenerComponent);
+        es_get_or_add_component(spell_entity, EventListenerComponent);
 
-	CallbackUserData user_data = {0};
-	user_data.particle_spawner_data = spell->on_death_particle_spawner;
-	add_event_callback(spell_entity, EVENT_ENTITY_DIED, callback_spawn_particles,
-	    &user_data);
+        CallbackUserData user_data = {0};
+        user_data.particle_spawner_data = spell->on_death_particle_spawner;
+        add_event_callback(
+            spell_entity, EVENT_ENTITY_DIED, callback_spawn_particles, &user_data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_HOSTILE_COLLISION_CALLBACK)) {
-	es_get_or_add_component(spell_entity, EventListenerComponent);
+        es_get_or_add_component(spell_entity, EventListenerComponent);
 
-	ASSERT(spell->hostile_collision_callback);
+        ASSERT(spell->hostile_collision_callback);
 
-	SpellCallbackData data = {0};
-	data.caster_id = es_get_id_of_entity(&world->entity_system, caster);
+        SpellCallbackData data = {0};
+        data.caster_id = es_get_id_of_entity(&world->entity_system, caster);
 
-	CallbackUserData user_data = {
-	    .spell_data = data
-	};
+        CallbackUserData user_data = {.spell_data = data};
 
-	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION,
-	    spell->hostile_collision_callback, &user_data);
+        add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION,
+            spell->hostile_collision_callback, &user_data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_APPLIES_STATUS_EFFECT)) {
-	EffectApplierComponent *ea = es_get_or_add_component(spell_entity, EffectApplierComponent);
-	ea->effect = spell->applies_status_effects.effect;
-	ea->retrigger_behaviour = spell->applies_status_effects.retrigger_behaviour;
+        EffectApplierComponent *ea =
+            es_get_or_add_component(spell_entity, EffectApplierComponent);
+        ea->effect = spell->applies_status_effects.effect;
+        ea->retrigger_behaviour = spell->applies_status_effects.retrigger_behaviour;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_LIGHT_EMITTER)) {
@@ -355,51 +373,55 @@ static void spawn_spell_entity(World *world, const Spell *spell, Entity *caster,
         arc->travel_speed = spell->arcing.arcing_speed;
         arc->last_known_target_position = params.target_position;
 
-	Damage damage_roll = roll_damage_in_range(spell->damage_field.base_damage);
-        Damage damage_after_boosts = calculate_damage_dealt(&world->entity_system, caster, damage_roll);
-        DamageInstance damage = {damage_after_boosts, spell->damage_field.penetration_values};
+        Damage damage_roll = roll_damage_in_range(spell->damage_field.base_damage);
+        Damage damage_after_boosts =
+            calculate_damage_dealt(&world->entity_system, caster, damage_roll);
+        DamageInstance damage = {
+            damage_after_boosts, spell->damage_field.penetration_values};
 
         arc->damage_on_target_reached = damage;
     }
 
     if (spell_has_prop(spell, SPELL_PROP_CHAINING)) {
-	ASSERT(!spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION) &&
-	    "A spell can't chain if it dies on collisions");
-	es_get_or_add_component(spell_entity, EventListenerComponent);
-	es_add_component(spell_entity, ChainComponent);
+        ASSERT(!spell_has_prop(spell, SPELL_PROP_DIE_ON_ENTITY_COLLISION)
+               && "A spell can't chain if it dies on collisions");
+        es_get_or_add_component(spell_entity, EventListenerComponent);
+        es_add_component(spell_entity, ChainComponent);
 
-	ASSERT(spell->chaining.chain_search_area_size > 0.0f);
-	ASSERT(spell->chaining.max_chains > 0);
+        ASSERT(spell->chaining.chain_search_area_size > 0.0f);
+        ASSERT(spell->chaining.max_chains > 0);
 
-	SpellCallbackData data = {0};
-	data.caster_id = caster->id;
-	data.as.chain.search_area_size = spell->chaining.chain_search_area_size;
-	data.as.chain.chains_remaining = spell->chaining.max_chains;
+        SpellCallbackData data = {0};
+        data.caster_id = caster->id;
+        data.as.chain.search_area_size = spell->chaining.chain_search_area_size;
+        data.as.chain.chains_remaining = spell->chaining.max_chains;
 
-	CallbackUserData user_data = {0};
-	user_data.spell_data = data;
+        CallbackUserData user_data = {0};
+        user_data.spell_data = data;
 
-	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, chain_collision_callback, &user_data);
+        add_event_callback(
+            spell_entity, EVENT_HOSTILE_COLLISION, chain_collision_callback, &user_data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_FORKING)) {
-	es_get_or_add_component(spell_entity, EventListenerComponent);
+        es_get_or_add_component(spell_entity, EventListenerComponent);
 
-	SpellCallbackData data = {0};
-	data.caster_id = caster->id;
-	data.as.fork.fork_count = spell->forking.fork_count;
-	data.as.fork.fork_spell = spell->forking.fork_spell;
+        SpellCallbackData data = {0};
+        data.caster_id = caster->id;
+        data.as.fork.fork_count = spell->forking.fork_count;
+        data.as.fork.fork_spell = spell->forking.fork_spell;
 
-	CallbackUserData user_data = {0};
-	user_data.spell_data = data;
+        CallbackUserData user_data = {0};
+        user_data.spell_data = data;
 
-	add_event_callback(spell_entity, EVENT_HOSTILE_COLLISION, fork_collision_callback, &user_data);
+        add_event_callback(
+            spell_entity, EVENT_HOSTILE_COLLISION, fork_collision_callback, &user_data);
     }
 
     if (spell_has_prop(spell, SPELL_PROP_AREA_OF_EFFECT)) {
-	physics->position = params.target_position;
+        physics->position = params.target_position;
     } else {
-	physics->position = spell_start_position;
+        physics->position = spell_start_position;
     }
 
     // Offset so that spells center is centered on the target position
@@ -410,15 +432,15 @@ static void spawn_spell_entity(World *world, const Spell *spell, Entity *caster,
     // likely the entity just collided with for forking spells so that the child spells
     // don't immediately collide with that entity
     if (params.start_with_cooldown_against_entity) {
-	EntityID spell_entity_id = spell_entity_with_id.id;
-	EntityID target_id = es_get_id_of_entity(&world->entity_system,
-	    params.start_with_cooldown_against_entity);
+        EntityID spell_entity_id = spell_entity_with_id.id;
+        EntityID target_id = es_get_id_of_entity(
+            &world->entity_system, params.start_with_cooldown_against_entity);
 
-	// TODO: allow customizing which components are on cooldown, and setting multiple at once
-	// For now, only add the collider so that nothing else can be
-	// triggered until it's off cooldown
-	world_add_trigger_cooldown(world, spell_entity_id, target_id,
-	    component_id(ColliderComponent), params.cooldown_retrigger_behaviour);
+        // TODO: allow customizing which components are on cooldown, and setting multiple at once
+        // For now, only add the collider so that nothing else can be
+        // triggered until it's off cooldown
+        world_add_trigger_cooldown(world, spell_entity_id, target_id,
+            component_id(ColliderComponent), params.cooldown_retrigger_behaviour);
     }
 }
 
@@ -428,36 +450,37 @@ static void spawn_spell_entities_impl(World *world, const Spell *spell, Entity *
     ASSERT(projectile_count > 0);
 
     if (projectile_count == 0) {
-	return;
+        return;
     }
 
     f32 current_angle = atan2f(dir.y, dir.x);
     f32 angle_step_size = 0.0f;
 
     if (projectile_count >= 2) {
-	f32 cone = params.spell_cone_angle_in_radians;
+        f32 cone = params.spell_cone_angle_in_radians;
 
-	if (cone == 0.0f) {
-	    cone = deg_to_rad(180);
-	}
+        if (cone == 0.0f) {
+            cone = deg_to_rad(180);
+        }
 
-	current_angle -= cone / 2.0f;
-	angle_step_size = cone / (f32)projectile_count;
+        current_angle -= cone / 2.0f;
+        angle_step_size = cone / (f32)projectile_count;
     }
 
     for (s32 i = 0; i < projectile_count; ++i) {
-	Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
+        Vector2 current_dir = v2(cos_f32(current_angle), sin_f32(current_angle));
 
-	spawn_spell_entity(world, spell, caster, spell_origin, current_dir, params);
+        spawn_spell_entity(world, spell, caster, spell_origin, current_dir, params);
 
-	current_angle += angle_step_size;
+        current_angle += angle_step_size;
     }
 }
 
 void spawn_spell_entities(World *world, SpellID id, Entity *caster, Vector2 target_pos)
 {
     PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
-    ASSERT(physics && "It probably doesn't make sense for a non-spatial entity to cast a spell");
+    ASSERT(physics
+           && "It probably doesn't make sense for a non-spatial entity to cast a spell");
 
     const Spell *spell = get_spell_by_id(id);
 
@@ -467,45 +490,50 @@ void spawn_spell_entities(World *world, SpellID id, Entity *caster, Vector2 targ
     s32 projectile_count = 1;
 
     if (spell_has_prop(spell, SPELL_PROP_PROJECTILE)) {
-	projectile_count += spell->projectile.extra_projectile_count;
-	params.spell_cone_angle_in_radians = spell->projectile.projectile_cone_in_radians;
+        projectile_count += spell->projectile.extra_projectile_count;
+        params.spell_cone_angle_in_radians = spell->projectile.projectile_cone_in_radians;
     }
 
     Vector2 spell_origin = rect_center(world_get_entity_bounding_box(caster, physics));
     Vector2 dir = v2_sub(target_pos, spell_origin);
 
-    spawn_spell_entities_impl(world, spell, caster, spell_origin, dir, projectile_count, params);
+    spawn_spell_entities_impl(
+        world, spell, caster, spell_origin, dir, projectile_count, params);
 }
 
-void try_cast_spell(World *world, SpellID spell, struct Entity *caster, Vector2 target_pos)
+void try_cast_spell(
+    World *world, SpellID spell, struct Entity *caster, Vector2 target_pos)
 {
     PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
     ASSERT(physics);
     StatValue total_cast_speed = get_total_cast_speed(&world->entity_system, caster);
 
-    entity_try_transition_to_state(world, caster, physics,
-	state_attacking(spell, target_pos, total_cast_speed));
+    entity_try_transition_to_state(
+        world, caster, physics, state_attacking(spell, target_pos, total_cast_speed));
 }
 
-static void fork_collision_callback(CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)
+static void fork_collision_callback(
+    CallbackUserData user_data, EventData event_data, LinearArena *frame_arena)
 {
     (void)frame_arena;
     SpellCallbackData *cb_data = &user_data.spell_data;
 
-    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
+    Entity *self =
+        es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
     Entity *caster = es_get_entity(&event_data.world->entity_system, cb_data->caster_id);
-    ASSERT(caster && "Entity died before impact collision callback was called. "
-        "This should probably never happen?");
+    ASSERT(caster
+           && "Entity died before impact collision callback was called. "
+              "This should probably never happen?");
 
-    Entity *collide_target = es_get_entity(&event_data.world->entity_system,
-	event_data.as.hostile_collision.collided_with);
+    Entity *collide_target = es_get_entity(
+        &event_data.world->entity_system, event_data.as.hostile_collision.collided_with);
 
     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
     ASSERT(self_physics && "Physics component should have been added when casting spell");
 
     const Spell *fork_spell = get_spell_by_id(cb_data->as.fork.fork_spell);
     ASSERT(!spell_has_prop(fork_spell, SPELL_PROP_FORKING)
-	&& "A forking spell casting a forking spell would infinitely loop");
+           && "A forking spell casting a forking spell would infinitely loop");
 
     CastSpellParams params = {0};
     params.start_with_cooldown_against_entity = collide_target;
@@ -515,24 +543,22 @@ static void fork_collision_callback(CallbackUserData user_data, EventData event_
     s32 fork_count = cb_data->as.fork.fork_count;
     Vector2 dir = v2_norm(self_physics->velocity);
 
-    spawn_spell_entities_impl(event_data.world, fork_spell, caster, self_physics->position, dir,
-	fork_count, params);
+    spawn_spell_entities_impl(event_data.world, fork_spell, caster,
+        self_physics->position, dir, fork_count, params);
 }
 
 static Spell spell_fireball(void)
 {
     Spell spell = {0};
 
-    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGE_FIELD
-	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	| SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_SPAWN_PARTICLES_ON_DEATH | SPELL_PROP_LIGHT_EMITTER;
+    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGE_FIELD | SPELL_PROP_SPRITE
+                       | SPELL_PROP_DIE_ON_WALL_COLLISION
+                       | SPELL_PROP_DIE_ON_ENTITY_COLLISION | SPELL_PROP_PARTICLE_SPAWNER
+                       | SPELL_PROP_SPAWN_PARTICLES_ON_DEATH | SPELL_PROP_LIGHT_EMITTER;
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
-	texture_handle(FIREBALL_TEXTURE),
-	v2(32, 32),
-	SPRITE_ROTATE_BASED_ON_DIR
-    );
+        texture_handle(FIREBALL_TEXTURE), v2(32, 32), SPRITE_ROTATE_BASED_ON_DIR);
 
     spell.projectile.projectile_speed = 300.0f;
     spell.projectile.collider_size = v2(32, 32);
@@ -549,13 +575,13 @@ static Spell spell_fireball(void)
     spell.light_emitter.kind = LIGHT_RAYCASTED;
     spell.light_emitter.fade_duration = 1.0f;
 
-    spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.particle_color = rgba32(1, 0.1f, 0.0f, 1.5f),
-	.particle_size = 2.5f,
-	.particle_lifetime = 1.0f,
-	.particle_speed = 30.0f,
+    spell.particle_spawner.config = (ParticleSpawnerConfig){
+        .particle_color = rgba32(1, 0.1f, 0.0f, 1.5f),
+        .particle_size = 2.5f,
+        .particle_lifetime = 1.0f,
+        .particle_speed = 30.0f,
         .flags = PS_FLAG_INFINITE | PS_FLAG_EMITS_LIGHT,
-	.particles_per_second = 40,
+        .particles_per_second = 40,
     };
 
     spell.on_death_particle_spawner.config = spell.particle_spawner.config;
@@ -571,14 +597,12 @@ static Spell spell_spark(void)
     // TODO: erratic movement
 
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGE_FIELD
-	| SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER;
+                       | SPELL_PROP_BOUNCE_ON_TILES | SPELL_PROP_LIFETIME
+                       | SPELL_PROP_PARTICLE_SPAWNER;
     spell.cast_duration = 0.3f;
 
-    spell.sprite = sprite_create(
-	texture_handle(SPARK_TEXTURE),
-	v2(32, 32),
-	SPRITE_ROTATE_NONE
-    );
+    spell.sprite =
+        sprite_create(texture_handle(SPARK_TEXTURE), v2(32, 32), SPRITE_ROTATE_NONE);
 
     spell.projectile.projectile_speed = 500.0f;
     spell.projectile.collider_size = v2(32, 32);
@@ -587,17 +611,18 @@ static Spell spell_spark(void)
 
     spell.lifetime = 5.0f;
 
-    set_damage_range_for_type(&spell.damage_field.base_damage, DMG_TYPE_Lightning, 1, 100);
+    set_damage_range_for_type(
+        &spell.damage_field.base_damage, DMG_TYPE_Lightning, 1, 100);
     set_damage_value(&spell.damage_field.penetration_values, DMG_TYPE_Lightning, 20);
     spell.damage_field.retrigger_behaviour = retrigger_after_non_contact();
 
-    spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.particle_color = {1.0f, 1.0f, 0, 0.15f},
-	.particle_size = 3.0f,
-	.particle_lifetime = 0.25f,
-	.particle_speed = 150.0f,
+    spell.particle_spawner.config = (ParticleSpawnerConfig){
+        .particle_color = {1.0f, 1.0f, 0, 0.15f},
+        .particle_size = 3.0f,
+        .particle_lifetime = 0.25f,
+        .particle_speed = 150.0f,
         .flags = PS_FLAG_INFINITE,
-	.particles_per_second = 40
+        .particles_per_second = 40
     };
 
     return spell;
@@ -607,32 +632,31 @@ static Spell spell_blizzard(void)
 {
     Spell spell = {0};
 
-    spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE | SPELL_PROP_DAMAGE_FIELD
-	| SPELL_PROP_LIFETIME | SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_APPLIES_STATUS_EFFECT;
+    spell.properties = SPELL_PROP_AREA_OF_EFFECT | SPELL_PROP_SPRITE
+                       | SPELL_PROP_DAMAGE_FIELD | SPELL_PROP_LIFETIME
+                       | SPELL_PROP_PARTICLE_SPAWNER | SPELL_PROP_APPLIES_STATUS_EFFECT;
     spell.cast_duration = 0.5f;
 
     spell.aoe.base_radius = 128.0f;
 
-    spell.sprite = sprite_create_colored(
-	texture_handle(BLIZZARD_TEXTURE),
-	V2_ZERO, // Sprite size is set equal to radius later on
-	SPRITE_ROTATE_NONE,
-	rgba32(1, 1, 1, 0.5f)
-    );
+    spell.sprite = sprite_create_colored(texture_handle(BLIZZARD_TEXTURE),
+        V2_ZERO, // Sprite size is set equal to radius later on
+        SPRITE_ROTATE_NONE, rgba32(1, 1, 1, 0.5f));
 
     spell.lifetime = 15.0f;
 
-    set_damage_range_for_type(&spell.damage_field.base_damage, DMG_TYPE_Lightning, 1, 100);
+    set_damage_range_for_type(
+        &spell.damage_field.base_damage, DMG_TYPE_Lightning, 1, 100);
     set_damage_value(&spell.damage_field.penetration_values, DMG_TYPE_Lightning, 20);
     spell.damage_field.retrigger_behaviour = retrigger_after_duration(1.0f);
 
-    spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.particle_color = {0.15f, 0.5f, 1.0f, 0.25f},
-	.particle_size = 3.0f,
-	.particle_lifetime = 0.25f,
-	.particle_speed = 150.0f,
+    spell.particle_spawner.config = (ParticleSpawnerConfig){
+        .particle_color = {0.15f, 0.5f, 1.0f, 0.25f},
+        .particle_size = 3.0f,
+        .particle_lifetime = 0.25f,
+        .particle_speed = 150.0f,
         .flags = PS_FLAG_INFINITE,
-	.particles_per_second = 300
+        .particles_per_second = 300
     };
 
     spell.applies_status_effects.effect = STATUS_EFFECT_CHILLED;
@@ -645,19 +669,16 @@ static Spell spell_ice_shard(void)
 {
     Spell spell = {0};
 
-    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGE_FIELD
-	| SPELL_PROP_SPRITE | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_DIE_ON_ENTITY_COLLISION
-	| SPELL_PROP_FORKING
-	| SPELL_PROP_PARTICLE_SPAWNER
-	| SPELL_PROP_SPAWN_PARTICLES_ON_DEATH;
+    spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGE_FIELD | SPELL_PROP_SPRITE
+                       | SPELL_PROP_DIE_ON_WALL_COLLISION
+                       | SPELL_PROP_DIE_ON_ENTITY_COLLISION | SPELL_PROP_FORKING
+                       | SPELL_PROP_PARTICLE_SPAWNER
+                       | SPELL_PROP_SPAWN_PARTICLES_ON_DEATH;
 
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
-	texture_handle(ICE_SHARD_TEXTURE),
-	v2(16, 16),
-	SPRITE_ROTATE_BASED_ON_DIR
-    );
+        texture_handle(ICE_SHARD_TEXTURE), v2(16, 16), SPRITE_ROTATE_BASED_ON_DIR);
 
     spell.projectile.projectile_speed = 300.0f;
     spell.projectile.collider_size = spell.sprite.size;
@@ -669,13 +690,13 @@ static Spell spell_ice_shard(void)
     spell.damage_field.base_damage = damage_range;
     spell.damage_field.retrigger_behaviour = retrigger_never(); // TODO: unnecessary
 
-    spell.particle_spawner.config = (ParticleSpawnerConfig) {
-	.particle_color = {0.0f, 0.3f, 1.0f, 0.5f},
-	.particle_size = 3.0f,
-	.particle_lifetime = 0.5f,
-	.particle_speed = 50.0f,
+    spell.particle_spawner.config = (ParticleSpawnerConfig){
+        .particle_color = {0.0f, 0.3f, 1.0f, 0.5f},
+        .particle_size = 3.0f,
+        .particle_lifetime = 0.5f,
+        .particle_speed = 50.0f,
         .flags = PS_FLAG_INFINITE | PS_FLAG_EMITS_LIGHT,
-	.particles_per_second = 40
+        .particles_per_second = 40
     };
 
     spell.on_death_particle_spawner.config = spell.particle_spawner.config;
@@ -704,15 +725,12 @@ static Spell spell_chain(void)
 {
     Spell spell = {0};
     spell.properties = SPELL_PROP_PROJECTILE | SPELL_PROP_DAMAGE_FIELD | SPELL_PROP_SPRITE
-	| SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_CHAINING;
+                       | SPELL_PROP_DIE_ON_WALL_COLLISION | SPELL_PROP_CHAINING;
 
     spell.cast_duration = 0.3f;
 
     spell.sprite = sprite_create(
-	texture_handle(ICE_SHARD_TEXTURE),
-	v2(16, 16),
-	SPRITE_ROTATE_BASED_ON_DIR
-    );
+        texture_handle(ICE_SHARD_TEXTURE), v2(16, 16), SPRITE_ROTATE_BASED_ON_DIR);
 
     spell.projectile.projectile_speed = 500.0f;
     spell.projectile.collider_size = spell.sprite.size;
@@ -744,9 +762,9 @@ void magic_add_to_spellbook(SpellCasterComponent *spellcaster, SpellID id)
 
 #if 1 // TODO: only in debug builds
     for (ssize i = 0; i < spellcaster->spell_count; ++i) {
-	if (spellcaster->spellbook[i] == id) {
-	    ASSERT(0);
-	}
+        if (spellcaster->spellbook[i] == id) {
+            ASSERT(0);
+        }
     }
 #endif
 
@@ -758,15 +776,16 @@ String spell_type_to_string(SpellID id)
 {
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (id) {
-	case SPELL_FIREBALL:          return str_lit("Fireball");
-	case SPELL_SPARK:             return str_lit("Spark");
-	case SPELL_ICE_SHARD:         return str_lit("Ice shard");
-	case SPELL_ICE_SHARD_TRIGGER: return str_lit("Ice shard trigger");
-	case SPELL_BLIZZARD:          return str_lit("Blizzard");
-	case SPELL_CHAIN:             return str_lit("Chain");
+        case SPELL_FIREBALL: return str_lit("Fireball");
+        case SPELL_SPARK: return str_lit("Spark");
+        case SPELL_ICE_SHARD: return str_lit("Ice shard");
+        case SPELL_ICE_SHARD_TRIGGER: return str_lit("Ice shard trigger");
+        case SPELL_BLIZZARD: return str_lit("Blizzard");
+        case SPELL_CHAIN:
+            return str_lit("Chain");
 
-        INVALID_CASE(SPELL_COUNT);
-	INVALID_DEFAULT_CASE;
+            INVALID_CASE(SPELL_COUNT);
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 

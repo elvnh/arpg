@@ -12,30 +12,30 @@ typedef enum {
     KEYSTATE_RELEASED,
 } Keystate;
 
-#define INPUT_KEY_LIST                          \
-    INPUT_KEY(KEY_W)                            \
-    INPUT_KEY(KEY_A)                            \
-    INPUT_KEY(KEY_S)                            \
-    INPUT_KEY(KEY_D)                            \
-    INPUT_KEY(KEY_K)                            \
-    INPUT_KEY(KEY_LEFT)                         \
-    INPUT_KEY(KEY_UP)                           \
-    INPUT_KEY(KEY_RIGHT)                        \
-    INPUT_KEY(KEY_DOWN)                         \
-    INPUT_KEY(KEY_ESCAPE)                       \
-    INPUT_KEY(KEY_LEFT_SHIFT)                   \
-    INPUT_KEY(KEY_G)                            \
-    INPUT_KEY(KEY_T)                            \
-    INPUT_KEY(KEY_I)                            \
-    INPUT_KEY(KEY_O)                            \
-    INPUT_KEY(KEY_L)                            \
-    INPUT_KEY(KEY_Y)                            \
+#define INPUT_KEY_LIST                                                                   \
+    INPUT_KEY(KEY_W)                                                                     \
+    INPUT_KEY(KEY_A)                                                                     \
+    INPUT_KEY(KEY_S)                                                                     \
+    INPUT_KEY(KEY_D)                                                                     \
+    INPUT_KEY(KEY_K)                                                                     \
+    INPUT_KEY(KEY_LEFT)                                                                  \
+    INPUT_KEY(KEY_UP)                                                                    \
+    INPUT_KEY(KEY_RIGHT)                                                                 \
+    INPUT_KEY(KEY_DOWN)                                                                  \
+    INPUT_KEY(KEY_ESCAPE)                                                                \
+    INPUT_KEY(KEY_LEFT_SHIFT)                                                            \
+    INPUT_KEY(KEY_G)                                                                     \
+    INPUT_KEY(KEY_T)                                                                     \
+    INPUT_KEY(KEY_I)                                                                     \
+    INPUT_KEY(KEY_O)                                                                     \
+    INPUT_KEY(KEY_L)                                                                     \
+    INPUT_KEY(KEY_Y)
 
 #define INPUT_KEY(key) key,
 typedef enum {
     INPUT_KEY_LIST
 
-    MOUSE_LEFT,
+        MOUSE_LEFT,
     MOUSE_RIGHT,
 
     KEY_COUNT
@@ -97,28 +97,32 @@ static inline b32 input_is_key_down(const Input *input, Key key)
     return result;
 }
 
-static inline Vector2 input_mouse_pos_in_y_direction(Vector2 position,
-    YDirection y_dir, Vector2i window_size)
+static inline Vector2 input_mouse_pos_in_y_direction(
+    Vector2 position, YDirection y_dir, Vector2i window_size)
 {
     Vector2 result = position;
 
     if (y_dir == Y_IS_UP) {
-	result.y = (f32)window_size.y - result.y;
+        result.y = (f32)window_size.y - result.y;
     }
 
     return result;
 }
 
-static inline Vector2 input_get_mouse_pos(const Input *input, YDirection y_dir, Vector2i window_size)
+static inline Vector2 input_get_mouse_pos(
+    const Input *input, YDirection y_dir, Vector2i window_size)
 {
-    Vector2 result = input_mouse_pos_in_y_direction(input->mouse_position, y_dir, window_size);
+    Vector2 result =
+        input_mouse_pos_in_y_direction(input->mouse_position, y_dir, window_size);
 
     return result;
 }
 
-static inline Vector2 input_get_mouse_click_pos(const Input *input, YDirection y_dir, Vector2i window_size)
+static inline Vector2 input_get_mouse_click_pos(
+    const Input *input, YDirection y_dir, Vector2i window_size)
 {
-    Vector2 result = input_mouse_pos_in_y_direction(input->mouse_click_position, y_dir, window_size);
+    Vector2 result =
+        input_mouse_pos_in_y_direction(input->mouse_click_position, y_dir, window_size);
 
     return result;
 }

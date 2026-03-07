@@ -2,15 +2,15 @@
 #define WORLD_H
 
 #include "base/free_list_arena.h"
+#include "camera.h"
+#include "collision/collision.h"
+#include "collision/collision_event.h"
 #include "components/component_id.h"
 #include "entity/entity_system.h"
+#include "hitsplat.h"
 #include "quad_tree.h"
 #include "renderer/frontend/render_target.h"
 #include "tilemap.h"
-#include "camera.h"
-#include "collision/collision.h"
-#include "hitsplat.h"
-#include "collision/collision_event.h"
 #include "world/chunk.h"
 
 /*
@@ -37,34 +37,35 @@ typedef struct World {
 
     TriggerCooldownTable trigger_cooldowns;
 
-    CollisionEventTable  previous_frame_collisions;
-    CollisionEventTable  current_frame_collisions;
+    CollisionEventTable previous_frame_collisions;
+    CollisionEventTable current_frame_collisions;
 
-    HitsplatBuffer       active_hitsplats;
+    HitsplatBuffer active_hitsplats;
 
-    EntityID             player_entity;
+    EntityID player_entity;
 
-    Chunks               map_chunks;
+    Chunks map_chunks;
 
-    EntitySystem         entity_system;
-    EntityID             alive_entity_ids[MAX_ENTITIES];
-    EntityIndex          alive_entity_count;
-    QuadTreeLocation     alive_entity_quad_tree_locations[MAX_ENTITIES];
-    QuadTree             quad_tree;
+    EntitySystem entity_system;
+    EntityID alive_entity_ids[MAX_ENTITIES];
+    EntityIndex alive_entity_count;
+    QuadTreeLocation alive_entity_quad_tree_locations[MAX_ENTITIES];
+    QuadTree quad_tree;
 } World;
 
 void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);
-void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena);
+void world_update(
+    World *world, const struct FrameData *frame_data, LinearArena *frame_arena);
 void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
-                  LinearArena *frame_arena, struct DebugState *debug_state);
+    LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction);
 EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction);
 Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physics);
 void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena);
-void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentID component,
-                                RetriggerBehaviour retrigger_behaviour);
-void    world_set_player_entity(World *world, EntityID id);
+void world_add_trigger_cooldown(World *world, EntityID a, EntityID b,
+    ComponentID component, RetriggerBehaviour retrigger_behaviour);
+void world_set_player_entity(World *world, EntityID id);
 Entity *world_get_player_entity(World *world);
 Vector2i world_to_tile_coords(Vector2 world_coords);
 Vector2 tile_to_world_coords(Vector2i tile_coords);

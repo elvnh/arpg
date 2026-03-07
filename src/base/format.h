@@ -1,30 +1,29 @@
 #ifndef FORMAT_H
 #define FORMAT_H
 
-#include <stdio.h>
-#include <inttypes.h>
-#include <math.h>
-#include <stdarg.h>
-
 #include "base/linear_arena.h"
 #include "base/string8.h"
 #include "base/vector.h"
 
+#include <inttypes.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
+
 #define FORMAT_MAX_STRING_LENGTH 1024
 
 #ifdef __GNUC__
-#    define FORMAT_ATTRIBUTE(fmt_arg_nr, var_arg_nr)            \
-        __attribute__((format (printf, fmt_arg_nr, var_arg_nr)))
+#    define FORMAT_ATTRIBUTE(fmt_arg_nr, var_arg_nr)                                     \
+        __attribute__((format(printf, fmt_arg_nr, var_arg_nr)))
 #else
 #    error
 #endif
 
 #define FMT_STR "%.*s"
+#define FMT_V2  "(%.2f, %.2f)"
+
 #define FMT_STR_ARG(str) ssize_to_s32((str).length), (str).data
-
-#define FMT_V2 "(%.2f, %.2f)"
-#define FMT_V2_ARG(v2) (f64)(v2).x, (f64)(v2).y
-
+#define FMT_V2_ARG(v2)   (f64)(v2).x, (f64)(v2).y
 
 static inline ssize digit_count_s64(s64 n)
 {
@@ -49,7 +48,7 @@ static inline String s64_to_string(s64 number, Allocator allocator)
 
     ssize alloc_size = num_chars + 1;
     String result = str_allocate(alloc_size, allocator);
-    s32 chars_written = snprintf(result.data, (usize)alloc_size, "%"PRId64, number);
+    s32 chars_written = snprintf(result.data, (usize)alloc_size, "%" PRId64, number);
     ASSERT(chars_written <= num_chars);
 
     result.length = chars_written;
@@ -73,11 +72,13 @@ static inline String f32_to_string(f32 number, s32 precision, Allocator allocato
 {
     s64 as_int = (s64)number;
     b32 is_negative = number < 0.0f;
-    ssize num_chars = digit_count_s64(as_int) + (precision != 0) + precision + is_negative;
+    ssize num_chars =
+        digit_count_s64(as_int) + (precision != 0) + precision + is_negative;
 
     ssize alloc_size = num_chars + 1;
     String result = str_allocate(alloc_size, allocator);
-    s32 chars_written = snprintf(result.data, (usize)alloc_size, "%.*f", precision, (f64)number);
+    s32 chars_written =
+        snprintf(result.data, (usize)alloc_size, "%.*f", precision, (f64)number);
     ASSERT(chars_written <= num_chars);
 
     result.length = chars_written;

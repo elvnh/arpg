@@ -23,14 +23,14 @@ typedef struct {
     SpriteRotationBehaviour rotation_behaviour;
 } Sprite;
 
-static inline Sprite sprite_create(TextureHandle texture, Vector2 size, SpriteRotationBehaviour rot_behaviour)
+static inline Sprite sprite_create(
+    TextureHandle texture, Vector2 size, SpriteRotationBehaviour rot_behaviour)
 {
-    Sprite result = (Sprite) {
-	.texture = texture,
-	.size = size,
-	.rotation_behaviour = rot_behaviour,
-	.color = RGBA32_WHITE
-    };
+    Sprite result = {0};
+    result.texture = texture;
+    result.size = size;
+    result.rotation_behaviour = rot_behaviour;
+    result.color = RGBA32_WHITE;
 
     return result;
 }
@@ -44,9 +44,8 @@ static inline Sprite sprite_create_colored(TextureHandle texture, Vector2 size,
     return result;
 }
 
-
-static inline SpriteModifiers
-sprite_get_modifiers(Vector2 direction, SpriteRotationBehaviour rotation_behaviour)
+static inline SpriteModifiers sprite_get_modifiers(
+    Vector2 direction, SpriteRotationBehaviour rotation_behaviour)
 {
     f32 rotation = 0.0f;
     f32 dir_angle = (f32)atan2f(direction.y, direction.x);
@@ -54,19 +53,16 @@ sprite_get_modifiers(Vector2 direction, SpriteRotationBehaviour rotation_behavio
     RectangleFlip flip = RECT_FLIP_NONE;
 
     if (rotation_behaviour == SPRITE_ROTATE_BASED_ON_DIR) {
-	rotation = dir_angle;
+        rotation = dir_angle;
     } else if (rotation_behaviour == SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR) {
-	b32 should_flip = (dir_angle > PI_2) || (dir_angle < -PI_2);
+        b32 should_flip = (dir_angle > PI_2) || (dir_angle < -PI_2);
 
-	if (should_flip) {
-	    flip = RECT_FLIP_HORIZONTALLY;
-	}
+        if (should_flip) {
+            flip = RECT_FLIP_HORIZONTALLY;
+        }
     }
 
-    SpriteModifiers result = {
-	.flip = flip,
-	.rotation = rotation
-    };
+    SpriteModifiers result = {.flip = flip, .rotation = rotation};
 
     return result;
 }

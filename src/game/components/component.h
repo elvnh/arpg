@@ -1,62 +1,60 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+#include "ai.h"
+#include "animation.h"
 #include "base/rgba.h"
 #include "base/utils.h"
-#include "component_id.h"
+#include "collision/collider.h"
 #include "collision/collision_policy.h"
+#include "component_id.h"
 #include "components/chain.h"
 #include "damage.h"
+#include "entity/entity_state.h"
+#include "equipment.h"
+#include "event_listener.h"
+#include "health.h"
+#include "inventory.h"
 #include "light.h"
+#include "magic.h"
+#include "name.h"
 #include "particle_spawner.h"
 #include "platform/asset.h"
-#include "collision/collider.h"
 #include "stats.h"
 #include "status_effect.h"
-#include "equipment.h"
-#include "inventory.h"
-#include "animation.h"
-#include "entity/entity_state.h"
-#include "magic.h"
-#include "event_listener.h"
-#include "ai.h"
-#include "health.h"
-#include "name.h"
-#include "ai.h"
 
-#define COMPONENT_LIST                          \
-    COMPONENT(PhysicsComponent)                 \
-    COMPONENT(ColliderComponent)                \
-    COMPONENT(ParticleSpawner)                  \
-    COMPONENT(SpriteComponent)                  \
-    COMPONENT(LifetimeComponent)                \
-    COMPONENT(StatsComponent)                   \
-    COMPONENT(StatusEffectComponent)            \
-    COMPONENT(ItemModifiers)			\
-    COMPONENT(AnimationComponent)               \
-    COMPONENT(SpellCasterComponent)		\
-    COMPONENT(EventListenerComponent)		\
-    COMPONENT(DamageFieldComponent)		\
-    COMPONENT(AIComponent)			\
-    COMPONENT(EffectApplierComponent)		\
-    COMPONENT(HealthComponent)			\
-    COMPONENT(LightEmitter)			\
-    COMPONENT(InventoryStorable)                \
-    COMPONENT(Inventory)			\
-    COMPONENT(Equippable)                       \
-    COMPONENT(Equipment)			\
-    COMPONENT(NameComponent)			\
-    COMPONENT(ArcingComponent)			\
-    COMPONENT(ChainComponent)			\
+#define COMPONENT_LIST                                                                   \
+    COMPONENT(PhysicsComponent)                                                          \
+    COMPONENT(ColliderComponent)                                                         \
+    COMPONENT(ParticleSpawner)                                                           \
+    COMPONENT(SpriteComponent)                                                           \
+    COMPONENT(LifetimeComponent)                                                         \
+    COMPONENT(StatsComponent)                                                            \
+    COMPONENT(StatusEffectComponent)                                                     \
+    COMPONENT(ItemModifiers)                                                             \
+    COMPONENT(AnimationComponent)                                                        \
+    COMPONENT(SpellCasterComponent)                                                      \
+    COMPONENT(EventListenerComponent)                                                    \
+    COMPONENT(DamageFieldComponent)                                                      \
+    COMPONENT(AIComponent)                                                               \
+    COMPONENT(EffectApplierComponent)                                                    \
+    COMPONENT(HealthComponent)                                                           \
+    COMPONENT(LightEmitter)                                                              \
+    COMPONENT(InventoryStorable)                                                         \
+    COMPONENT(Inventory)                                                                 \
+    COMPONENT(Equippable)                                                                \
+    COMPONENT(Equipment)                                                                 \
+    COMPONENT(NameComponent)                                                             \
+    COMPONENT(ArcingComponent)                                                           \
+    COMPONENT(ChainComponent)
 
-#define ES_IMPL_COMP_ENUM_NAME(type) COMP_##type
+#define ES_IMPL_COMP_ENUM_NAME(type)  COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
 
 typedef enum {
-    #define COMPONENT(type) ES_IMPL_COMP_ENUM_NAME(type),
-        COMPONENT_LIST
-        COMPONENT_COUNT,
-    #undef COMPONENT
+#define COMPONENT(type) ES_IMPL_COMP_ENUM_NAME(type),
+    COMPONENT_LIST COMPONENT_COUNT,
+#undef COMPONENT
 } ComponentType;
 
 typedef struct PhysicsComponent {
@@ -98,7 +96,6 @@ typedef struct {
     RetriggerBehaviour retrigger_behaviour;
 } EffectApplierComponent;
 
-
 typedef struct {
     Health health;
 } HealthComponent;
@@ -124,7 +121,8 @@ typedef struct {
 static inline String component_id_to_string(ComponentID id)
 {
     switch (id) {
-#define COMPONENT(name) case component_id(name): return str_lit(#name);
+#define COMPONENT(name)                                                                  \
+    case component_id(name): return str_lit(#name);
         COMPONENT_LIST
 #undef COMPONENT
     }

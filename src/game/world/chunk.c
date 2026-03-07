@@ -1,4 +1,5 @@
 #include "chunk.h"
+
 #include "base/linear_arena.h"
 #include "base/ring_buffer.h"
 #include "base/utils.h"
@@ -13,10 +14,10 @@ static void initialize_chunk(Chunk *chunk)
 
 Chunks create_chunks_for_tilemap(Tilemap *tilemap, LinearArena *arena)
 {
-    s32 tilemap_width  = tilemap->max_x - tilemap->min_x + 1;
+    s32 tilemap_width = tilemap->max_x - tilemap->min_x + 1;
     s32 tilemap_height = tilemap->max_y - tilemap->min_y + 1;
 
-    s32 chunk_map_width  = (s32)ceilf((f32)tilemap_width  / (f32)CHUNK_SIZE_IN_TILES);
+    s32 chunk_map_width = (s32)ceilf((f32)tilemap_width / (f32)CHUNK_SIZE_IN_TILES);
     s32 chunk_map_height = (s32)ceilf((f32)tilemap_height / (f32)CHUNK_SIZE_IN_TILES);
     s32 chunk_count = chunk_map_width * chunk_map_height;
 
@@ -37,16 +38,19 @@ Chunk *get_chunk_at_position(Chunks *chunks, Vector2 position)
 {
     f32 chunk_world_size = (f32)(CHUNK_SIZE_IN_TILES * TILE_SIZE);
 
-    Vector2 chunks_base_world_coords = tile_to_world_coords(chunks->chunk_grid_base_tile_coords);
+    Vector2 chunks_base_world_coords =
+        tile_to_world_coords(chunks->chunk_grid_base_tile_coords);
 
-    s32 chunk_x = (s32)floorf((position.x - chunks_base_world_coords.x) / chunk_world_size);
-    s32 chunk_y = (s32)floorf((position.y - chunks_base_world_coords.y) / chunk_world_size);
+    s32 chunk_x =
+        (s32)floorf((position.x - chunks_base_world_coords.x) / chunk_world_size);
+    s32 chunk_y =
+        (s32)floorf((position.y - chunks_base_world_coords.y) / chunk_world_size);
 
     Chunk *result = 0;
 
     b32 in_bounds = (chunk_x >= 0) && (chunk_y >= 0)
-        && (chunk_x < chunks->chunk_grid_dims.x)
-        && (chunk_y < chunks->chunk_grid_dims.y);
+                    && (chunk_x < chunks->chunk_grid_dims.x)
+                    && (chunk_y < chunks->chunk_grid_dims.y);
 
     if (in_bounds) {
         ssize index = chunk_x + chunk_y * chunks->chunk_grid_dims.x;
@@ -77,10 +81,8 @@ ChunkPtrArray get_chunks_in_area(Chunks *chunks, Rectangle area, LinearArena *ar
 
     for (ssize x = 0; x < horizontal_chunk_count; ++x) {
         for (ssize y = 0; y < vertical_chunk_count; ++y) {
-            Vector2 coords = {
-                area.position.x + (f32)x * chunk_world_size,
-                area.position.y + (f32)y * chunk_world_size
-            };
+            Vector2 coords = {area.position.x + (f32)x * chunk_world_size,
+                area.position.y + (f32)y * chunk_world_size};
 
             ASSERT(result.count < total_chunk_count);
 
@@ -90,7 +92,6 @@ ChunkPtrArray get_chunks_in_area(Chunks *chunks, Rectangle area, LinearArena *ar
             }
         }
     }
-
 
     return result;
 }

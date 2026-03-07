@@ -1,9 +1,9 @@
 #ifndef HITSPLAT_H
 #define HITSPLAT_H
 
+#include "base/ring_buffer.h"
 #include "base/typedefs.h"
 #include "base/vector.h"
-#include "base/ring_buffer.h"
 #include "damage.h"
 
 struct World;
@@ -23,7 +23,8 @@ typedef struct {
 DEFINE_STATIC_RING_BUFFER(Hitsplat, HitsplatBuffer, 128);
 
 void hitsplats_update(struct World *world, const struct FrameData *frame_data);
-void hitsplats_render(struct World *world, struct RenderBatch *rb, struct LinearArena *frame_arena);
+void hitsplats_render(
+    struct World *world, struct RenderBatch *rb, struct LinearArena *frame_arena);
 void hitsplats_create(struct World *world, Vector2 position, Damage damage);
 
 #endif //HITSPLAT_H

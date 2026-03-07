@@ -1,11 +1,12 @@
 #include "hitsplat.h"
+
+#include "asset_table.h"
 #include "base/format.h"
 #include "base/ring_buffer.h"
 #include "damage.h"
-#include "world/world.h"
-#include "renderer/frontend/render_batch.h"
-#include "asset_table.h"
 #include "platform/input.h"
+#include "renderer/frontend/render_batch.h"
+#include "world/world.h"
 
 void hitsplats_update(World *world, const FrameData *frame_data)
 {
@@ -20,7 +21,8 @@ void hitsplats_update(World *world, const FrameData *frame_data)
             }
         }
 
-        hitsplat->position = v2_add(hitsplat->position, v2_mul_s(hitsplat->velocity, frame_data->dt));
+        hitsplat->position =
+            v2_add(hitsplat->position, v2_mul_s(hitsplat->velocity, frame_data->dt));
         hitsplat->timer += frame_data->dt;
     }
 }
@@ -30,33 +32,32 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
     for (s32 i = 0; i < ring_length(&world->active_hitsplats); ++i) {
         Hitsplat *hitsplat = ring_at(&world->active_hitsplats, i);
 
-	ASSERT(hitsplat->damage.value > 0);
+        ASSERT(hitsplat->damage.value > 0);
 
         String damage_str = format(frame_arena, "%ld", hitsplat->damage.value);
 
-	f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
-	RGBA32 color = get_damage_type_color(hitsplat->damage.type);
+        f32 alpha = 1.0f - hitsplat->timer / hitsplat->lifetime;
+        RGBA32 color = get_damage_type_color(hitsplat->damage.type);
 
         BEGIN_EXHAUSTIVE_SWITCH;
-	switch (hitsplat->damage.type) {
-	    case DMG_TYPE_Fire: {
-		color = RGBA32_RED;
-	    } break;
+        switch (hitsplat->damage.type) {
+            case DMG_TYPE_Fire: {
+                color = RGBA32_RED;
+            } break;
 
-	    case DMG_TYPE_Lightning: {
-		color = RGBA32_YELLOW;
-	    } break;
+            case DMG_TYPE_Lightning: {
+                color = RGBA32_YELLOW;
+            } break;
 
-            INVALID_CASE(DMG_TYPE_COUNT);
-	    INVALID_DEFAULT_CASE;
-	}
+                INVALID_CASE(DMG_TYPE_COUNT);
+                INVALID_DEFAULT_CASE;
+        }
         END_EXHAUSTIVE_SWITCH;
 
-	color.a = alpha;
+        color.a = alpha;
 
-	draw_text(
-	    rb, frame_arena, damage_str, hitsplat->position, color, 28,
-	    shader_handle(TEXTURE_SHADER), font_handle(DEFAULT_FONT), 5);
+        draw_text(rb, frame_arena, damage_str, hitsplat->position, color, 28,
+            shader_handle(TEXTURE_SHADER), font_handle(DEFAULT_FONT), 5);
     }
 }
 
@@ -65,22 +66,22 @@ void hitsplats_create(World *world, Vector2 position, Damage damage)
     // NOTE: a single instance of damage can result in multiple hitsplats
     // if the instance contains multiple damage types
     for (DamageType type = 0; type < DMG_TYPE_COUNT; ++type) {
-	StatValue value = damage.type_values[type];
+        StatValue value = damage.type_values[type];
 
-	if (value > 0) {
-	    // TODO: randomize size and position
-	    // TODO: use function for updating position instead
-	    Vector2 velocity = rng_direction(PI * 2);
-	    velocity = v2_mul_s(velocity, 20.0f);
+        if (value > 0) {
+            // TODO: randomize size and position
+            // TODO: use function for updating position instead
+            Vector2 velocity = rng_direction(PI * 2);
+            velocity = v2_mul_s(velocity, 20.0f);
 
-	    Hitsplat hitsplat = {
-		.damage = {value, type},
-		.position = position,
-		.velocity = velocity,
-		.lifetime = 2.0f,
-	    };
+            Hitsplat hitsplat = {
+                .damage = {value, type},
+                .position = position,
+                .velocity = velocity,
+                .lifetime = 2.0f,
+            };
 
             ring_push_overwrite(&world->active_hitsplats, &hitsplat);
-	}
+        }
     }
 }

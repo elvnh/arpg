@@ -1,8 +1,8 @@
 #ifndef MAGIC_H
 #define MAGIC_H
 
-#include "base/vector.h"
 #include "base/string8.h"
+#include "base/vector.h"
 #include "entity/entity_id.h"
 
 struct SpellCasterComponent;
@@ -35,12 +35,15 @@ typedef enum {
     SPELL_COUNT,
 } SpellID;
 
-void    magic_initialize(void);
-void    try_cast_spell(struct World *world, SpellID spell, struct Entity *caster, Vector2 target_pos);
-void    spawn_spell_entities(struct World *world, SpellID id, struct Entity *caster, Vector2 target_pos);
-void    magic_add_to_spellbook(struct SpellCasterComponent *spellcaster, SpellID id);
-String  spell_type_to_string(SpellID id);
-SpellID get_spell_at_spellbook_index(struct SpellCasterComponent *spellcaster, ssize index);
-f32     get_spell_cast_duration(SpellID id);
+void magic_initialize(void);
+void try_cast_spell(
+    struct World *world, SpellID spell, struct Entity *caster, Vector2 target_pos);
+void spawn_spell_entities(
+    struct World *world, SpellID id, struct Entity *caster, Vector2 target_pos);
+void magic_add_to_spellbook(struct SpellCasterComponent *spellcaster, SpellID id);
+String spell_type_to_string(SpellID id);
+SpellID get_spell_at_spellbook_index(
+    struct SpellCasterComponent *spellcaster, ssize index);
+f32 get_spell_cast_duration(SpellID id);
 
 #endif //MAGIC_H

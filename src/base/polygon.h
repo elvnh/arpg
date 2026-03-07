@@ -1,8 +1,8 @@
 #ifndef POLYGON_H
 #define POLYGON_H
 
-#include "vector.h"
 #include "triangle.h"
+#include "vector.h"
 
 struct LinearArena;
 
@@ -34,7 +34,8 @@ typedef struct {
     PolygonTriangle *tail;
 } TriangulatedPolygon;
 
-TriangulatedPolygon triangulate_polygon(Polygon *polygon, Vector2 center, struct LinearArena *arena);
+TriangulatedPolygon triangulate_polygon(
+    Polygon *polygon, Vector2 center, struct LinearArena *arena);
 PolygonWindingOrder polygon_winding_order(Polygon polygon);
 Vector2 polygon_center(Polygon polygon);
 

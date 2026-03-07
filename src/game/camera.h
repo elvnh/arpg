@@ -5,11 +5,11 @@
 #include "base/matrix.h"
 #include "base/rectangle.h"
 
-#define ZOOM_MIN_VALUE          -0.9f
-#define ZOOM_MAX_VALUE           10.0f
-#define ZOOM_SPEED               0.15f
-#define ZOOM_INTERPOLATE_SPEED   7.0f
-#define CAMERA_FOLLOW_SPEED      10.0f
+#define ZOOM_MIN_VALUE         -0.9f
+#define ZOOM_MAX_VALUE         10.0f
+#define ZOOM_SPEED             0.15f
+#define ZOOM_INTERPOLATE_SPEED 7.0f
+#define CAMERA_FOLLOW_SPEED    10.0f
 
 typedef struct {
     Vector2 position;
@@ -26,7 +26,8 @@ static inline Camera create_screenspace_camera(Vector2i window_size)
     return result;
 }
 
-static inline Matrix4 camera_get_matrix(Camera cam, Vector2i window_dims, YDirection y_dir)
+static inline Matrix4 camera_get_matrix(
+    Camera cam, Vector2i window_dims, YDirection y_dir)
 {
     Matrix4 result = mat4_orthographic(window_dims, y_dir);
 
@@ -42,10 +43,12 @@ static inline Matrix4 camera_get_matrix(Camera cam, Vector2i window_dims, YDirec
 
 static inline void camera_update(Camera *cam, f32 dt)
 {
-    f32 new_zoom = interpolate_sin(cam->zoom, cam->target_zoom, MIN(dt * ZOOM_INTERPOLATE_SPEED, 1.0f));
+    f32 new_zoom = interpolate_sin(
+        cam->zoom, cam->target_zoom, MIN(dt * ZOOM_INTERPOLATE_SPEED, 1.0f));
     cam->zoom = CLAMP(new_zoom, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
 
-    cam->position = v2_interpolate(cam->position, cam->target_position, MIN(dt * CAMERA_FOLLOW_SPEED, 1.0f));
+    cam->position = v2_interpolate(
+        cam->position, cam->target_position, MIN(dt * CAMERA_FOLLOW_SPEED, 1.0f));
 }
 
 static inline void camera_set_target(Camera *cam, Vector2 target)

@@ -1,21 +1,22 @@
 #include "entity_system.h"
-#include "components/component_id.h"
-#include "entity/entity_id.h"
-#include "entity_arena.h"
+
 #include "base/linear_arena.h"
 #include "base/ring_buffer.h"
 #include "base/sl_list.h"
 #include "base/utils.h"
 #include "components/component.h"
+#include "components/component_id.h"
+#include "entity/entity_id.h"
+#include "entity_arena.h"
 #include "world/quad_tree.h"
 
 #define FIRST_ENTITY_GENERATION 1
 #define LAST_ENTITY_GENERATION  S32_MAX
 
 static ssize component_offsets[] = {
-    #define COMPONENT(type) offsetof(Entity, ES_IMPL_COMP_FIELD_NAME(type)),
-        COMPONENT_LIST
-    #undef COMPONENT
+#define COMPONENT(type) offsetof(Entity, ES_IMPL_COMP_FIELD_NAME(type)),
+    COMPONENT_LIST
+#undef COMPONENT
 };
 
 static ssize get_component_offset(ComponentType type)
@@ -29,11 +30,12 @@ static ssize get_component_offset(ComponentType type)
 static ssize get_component_size(ComponentType type)
 {
     switch (type) {
-#define COMPONENT(type) case ES_IMPL_COMP_ENUM_NAME(type): return SIZEOF(type);
+#define COMPONENT(type)                                                                  \
+    case ES_IMPL_COMP_ENUM_NAME(type): return SIZEOF(type);
         COMPONENT_LIST
 #undef COMPONENT
 
-       INVALID_DEFAULT_CASE;
+        INVALID_DEFAULT_CASE;
     }
 
     ASSERT(0);
@@ -55,17 +57,17 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
 {
     EntityIDSlot *id_slot = get_id_slot_at_index(es, id.index);
 
-    b32 result = id_slot
-        && id_slot->is_active
+    b32 result =
+        id_slot && id_slot->is_active
         && (id.generation >= FIRST_ENTITY_GENERATION)
         // TODO: conditionally activate this if LAST_ENTITY_GENERATION isn't max of it's type
         //&& (id.generation <= LAST_ENTITY_GENERATION)
         && (id_slot->generation == id.generation);
 
-    ASSERT((!result || ((id_slot->next_free_id_index == -1)
-                && (id_slot->prev_free_id_index == -1)
-                && (id_slot->is_active)))
-        && "If entity is alive, it's ID slot should be set to the correct state");
+    ASSERT((!result
+               || ((id_slot->next_free_id_index == -1)
+                   && (id_slot->prev_free_id_index == -1) && (id_slot->is_active)))
+           && "If entity is alive, it's ID slot should be set to the correct state");
 
     return result;
 }
@@ -233,7 +235,7 @@ void *es_impl_get_or_add_component(Entity *entity, ComponentType type)
     void *component = es_impl_get_component(entity, type);
 
     if (!component) {
-	component = es_impl_add_component(entity, type);
+        component = es_impl_add_component(entity, type);
     }
 
     return component;
@@ -252,8 +254,10 @@ Entity *es_impl_get_component_owner(EntitySystem *es, void *component, Component
     ssize offset = get_component_offset(type);
     Entity *result = byte_offset(component, -offset);
 
-    ASSERT(((Entity *)component >= es->entities) && ((Entity *)component < (es->entities + MAX_ENTITIES))
-	  && "A pointer that doesn't point to an actual component in an entity was passed");
+    ASSERT(
+        ((Entity *)component >= es->entities)
+        && ((Entity *)component < (es->entities + MAX_ENTITIES))
+        && "A pointer that doesn't point to an actual component in an entity was passed");
     ASSERT(entity_id_is_valid(es, result->id));
     ASSERT(es_has_components(result, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
 
@@ -277,10 +281,11 @@ EntityWithID es_clone_entity(EntitySystem *destination_es, Entity *entity)
     return result;
 }
 
-EntityWithID es_clone_entity_into_other_es_and_keep_id(EntitySystem *destination_es, Entity *entity)
+EntityWithID es_clone_entity_into_other_es_and_keep_id(
+    EntitySystem *destination_es, Entity *entity)
 {
     ASSERT(!es_entity_exists(destination_es, entity->id)
-        && "Did you try to move the entity into the same entity system?");
+           && "Did you try to move the entity into the same entity system?");
 
     // Allocate the entity ID in the new system
     EntityIDSlot *slot = get_id_slot_at_index(destination_es, entity->id.index);

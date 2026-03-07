@@ -1,4 +1,5 @@
 #include "asset_table.h"
+
 #include "platform/asset.h"
 #include "platform/asset_system.h"
 

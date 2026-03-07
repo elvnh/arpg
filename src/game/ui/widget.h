@@ -1,14 +1,15 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
-#include "base/vector.h"
+#include "base/rectangle.h"
 #include "base/sl_list.h"
 #include "base/string8.h"
-#include "base/rectangle.h"
+#include "base/vector.h"
 #include "platform/asset.h"
 
 typedef u64 WidgetID;
 
+// clang-format off
 typedef enum {
     WIDGET_CLICKABLE    = FLAG(0),
     WIDGET_COLORED      = FLAG(1),
@@ -19,6 +20,7 @@ typedef enum {
     WIDGET_HOT_COLOR    = FLAG(6),
     WIDGET_ACTIVE_COLOR = FLAG(7),
 } WidgetFlag;
+// clang-format on
 
 typedef enum {
     UI_LAYOUT_VERTICAL,
@@ -33,7 +35,7 @@ typedef enum {
 
 typedef struct {
     UISizeKind kind;
-    f32        value;
+    f32 value;
 } WidgetSize;
 
 typedef struct {
@@ -53,18 +55,18 @@ typedef struct Widget {
     WidgetFlag flags;
 
     WidgetSize semantic_size[AXIS_COUNT];
-    Vector2    offset_from_parent;
+    Vector2 offset_from_parent;
 
     // NOTE: these are always absolute
-    Vector2    final_size;
-    Vector2    final_position;
+    Vector2 final_size;
+    Vector2 final_position;
 
-    UILayoutKind     layout_direction;
+    UILayoutKind layout_direction;
 
-    f32              child_padding;
-    WidgetList       children;
-    struct Widget   *next_in_hash;
-    struct Widget   *next_sibling;
+    f32 child_padding;
+    WidgetList children;
+    struct Widget *next_in_hash;
+    struct Widget *next_sibling;
 
     /* Flag specific members */
     struct {
@@ -106,7 +108,7 @@ static inline void widget_add_to_children(Widget *widget, Widget *child)
 static inline void widget_set_semantic_sizes(Widget *widget, UISizeKind kind)
 {
     for (Axis axis = 0; axis < AXIS_COUNT; ++axis) {
-	widget->semantic_size[axis].kind = kind;
+        widget->semantic_size[axis].kind = kind;
     }
 }
 

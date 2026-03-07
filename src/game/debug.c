@@ -1,4 +1,5 @@
 #include "debug.h"
+
 #include "base/direction.h"
 #include "base/format.h"
 #include "base/linear_arena.h"
@@ -7,36 +8,38 @@
 #include "entity/entity_faction.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
-#include "platform/input.h"
-#include "status_effect.h"
 #include "game.h"
+#include "platform/input.h"
 #include "renderer/frontend/render_batch.h"
+#include "status_effect.h"
 #include "world/chunk.h"
 #include "world/world.h"
 
-void debug_render_quad_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, ssize depth)
+void debug_render_quad_tree(
+    QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, ssize depth)
 {
     if (tree) {
-	debug_render_quad_tree(tree->top_left, rb, arena, depth + 1);
-	debug_render_quad_tree(tree->top_right, rb, arena, depth + 1);
-	debug_render_quad_tree(tree->bottom_right, rb, arena, depth + 1);
-	debug_render_quad_tree(tree->bottom_left, rb, arena, depth + 1);
+        debug_render_quad_tree(tree->top_left, rb, arena, depth + 1);
+        debug_render_quad_tree(tree->top_right, rb, arena, depth + 1);
+        debug_render_quad_tree(tree->bottom_right, rb, arena, depth + 1);
+        debug_render_quad_tree(tree->bottom_left, rb, arena, depth + 1);
 
-	static const RGBA32 colors[] = {
-	    {1.0f, 0.0f, 0.0f, 0.5f},
-	    {0.0f, 1.0f, 0.0f, 0.5f},
-	    {0.0f, 0.0f, 1.0f, 0.5f},
-	    {1.0f, 0.0f, 1.0f, 0.5f},
-	    {0.2f, 0.3f, 0.8f, 0.5f},
-	    {1.0f, 0.1f, 0.5f, 0.5f},
-	    {0.5f, 0.5f, 0.5f, 0.5f},
-	    {0.5f, 1.0f, 0.5f, 0.5f},
-	};
+        static const RGBA32 colors[] = {
+            {1.0f, 0.0f, 0.0f, 0.5f},
+            {0.0f, 1.0f, 0.0f, 0.5f},
+            {0.0f, 0.0f, 1.0f, 0.5f},
+            {1.0f, 0.0f, 1.0f, 0.5f},
+            {0.2f, 0.3f, 0.8f, 0.5f},
+            {1.0f, 0.1f, 0.5f, 0.5f},
+            {0.5f, 0.5f, 0.5f, 0.5f},
+            {0.5f, 1.0f, 0.5f, 0.5f},
+        };
 
-	ASSERT(depth < ARRAY_COUNT(colors));
+        ASSERT(depth < ARRAY_COUNT(colors));
 
-	RGBA32 color = colors[depth];
-	draw_outlined_rectangle(rb, arena, tree->area, color, 4.0f, shader_handle(SHAPE_SHADER), 0);
+        RGBA32 color = colors[depth];
+        draw_outlined_rectangle(
+            rb, arena, tree->area, color, 4.0f, shader_handle(SHAPE_SHADER), 0);
     }
 }
 
@@ -45,17 +48,15 @@ typedef struct {
     UIState *ui;
 } EffectListContext;
 
-static StatusEffectCallbackResult status_effect_list_callback(StatusEffectCallbackParams params,
-    void *user_data)
+static StatusEffectCallbackResult status_effect_list_callback(
+    StatusEffectCallbackParams params, void *user_data)
 {
     EffectListContext context = *(EffectListContext *)user_data;
 
     String status_effect_name = status_effect_to_string(params.status_effect_id);
-    String str = format(context.arena,
-        FMT_STR" (%.2f)##%p",
-        FMT_STR_ARG(status_effect_name),
-        (f64)params.instance->time_remaining,
-        (void *)params.instance);
+    String str =
+        format(context.arena, FMT_STR " (%.2f)##%p", FMT_STR_ARG(status_effect_name),
+            (f64)params.instance->time_remaining, (void *)params.instance);
 
     ui_selectable(context.ui, str);
 
@@ -69,7 +70,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     Entity *entity = es_try_get_entity(&game->world.entity_system, inspected_entity_id);
 
     if (!entity) {
-	return;
+        return;
     }
 
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
@@ -81,44 +82,54 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     }
 
     // TODO: don't require name for containers
-    ui_begin_container(ui, str_lit("inspect"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
-	// TODO: inventory and equipment
+    ui_begin_container(ui, str_lit("inspect"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
+        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    {
+        // TODO: inventory and equipment
         String faction = entity_faction_to_string(entity->faction);
 
-        String entity_str = format(scratch, "Hovered entity: %d", game->game_ui.hovered_entity.index);
-        String entity_pos_str = format(scratch, "Position: "FMT_V2, FMT_V2_ARG(physics->position));
-        String entity_faction_str = format(scratch, "Faction: "FMT_STR,
-            FMT_STR_ARG(faction));
+        String entity_str =
+            format(scratch, "Hovered entity: %d", game->game_ui.hovered_entity.index);
+        String entity_pos_str =
+            format(scratch, "Position: " FMT_V2, FMT_V2_ARG(physics->position));
+        String entity_faction_str =
+            format(scratch, "Faction: " FMT_STR, FMT_STR_ARG(faction));
 
-	ui_text(ui, entity_str);
-	ui_text(ui, entity_pos_str);
-	ui_text(ui, entity_faction_str);
+        ui_text(ui, entity_str);
+        ui_text(ui, entity_pos_str);
+        ui_text(ui, entity_faction_str);
 
-	HealthComponent *hp = es_get_component(entity, HealthComponent);
+        HealthComponent *hp = es_get_component(entity, HealthComponent);
 
-	if (hp) {
-            String hp_str = format(scratch, "HP: %zu/%zu",
-                hp->health.current_hitpoints, hp->health.max_hitpoints);
+        if (hp) {
+            String hp_str = format(scratch, "HP: %zu/%zu", hp->health.current_hitpoints,
+                hp->health.max_hitpoints);
 
-	    ui_text(ui, hp_str);
-	}
+            ui_text(ui, hp_str);
+        }
 
-	StatusEffectComponent *effects = es_get_component(entity, StatusEffectComponent);
+        StatusEffectComponent *effects = es_get_component(entity, StatusEffectComponent);
 
-	if (effects) {
-	    ui_begin_list(ui, str_lit("status_effects")); {
-		EffectListContext context = {0};
-		context.arena = scratch;
-		context.ui = ui;
+        if (effects) {
+            ui_begin_list(ui, str_lit("status_effects"));
+            {
+                EffectListContext context = {0};
+                context.arena = scratch;
+                context.ui = ui;
 
-		for_each_active_status_effect(effects, status_effect_list_callback, &context);
-	    } ui_end_list(ui);
-	}
-    } ui_pop_container(ui);
+                for_each_active_status_effect(
+                    effects, status_effect_list_callback, &context);
+            }
+            ui_end_list(ui);
+        }
+    }
+    ui_pop_container(ui);
 
     ui_core_same_line(ui);
 
-    ui_begin_container(ui, str_lit("components"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+    ui_begin_container(ui, str_lit("components"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
+        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    {
         for (ComponentType c = 0; c < COMPONENT_COUNT; ++c) {
             ComponentID id = FLAG(c);
 
@@ -126,19 +137,22 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
                 ui_text(ui, component_id_to_string(id));
             }
         }
-    } ui_pop_container(ui);
+    }
+    ui_pop_container(ui);
 }
 
 static String dbg_arena_usage_string(String name, ssize usage, LinearArena *arena)
 {
-    String result = format(arena, FMT_STR": %.2f KBs", FMT_STR_ARG(name), (f64)usage / 1024.0);
+    String result =
+        format(arena, FMT_STR ": %.2f KBs", FMT_STR_ARG(name), (f64)usage / 1024.0);
 
     return result;
 }
 
 void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *frame_data)
 {
-    ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT,
+        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     ssize temp_arena_memory_usage = game->debug_state.scratch_arena_memory_usage;
     ssize perm_arena_memory_usage = game->debug_state.permanent_arena_memory_usage;
@@ -147,14 +161,18 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     String frame_time_str = format(scratch, "Frame time: %.5f", (f64)frame_data->dt);
     String fps_str = format(scratch, "FPS: %.2f", (f64)game->debug_state.average_fps);
 
-    String temp_arena_str = dbg_arena_usage_string(str_lit("Frame arena"), temp_arena_memory_usage, scratch);
-    String perm_arena_str = dbg_arena_usage_string(str_lit("Permanent arena"), perm_arena_memory_usage, scratch);
-    String world_arena_str = dbg_arena_usage_string(str_lit("World arena"), world_arena_memory_usage, scratch);
+    String temp_arena_str =
+        dbg_arena_usage_string(str_lit("Frame arena"), temp_arena_memory_usage, scratch);
+    String perm_arena_str = dbg_arena_usage_string(
+        str_lit("Permanent arena"), perm_arena_memory_usage, scratch);
+    String world_arena_str =
+        dbg_arena_usage_string(str_lit("World arena"), world_arena_memory_usage, scratch);
 
     ssize qt_nodes = qt_get_node_count(&game->world.quad_tree);
     String node_string = format(scratch, "Quad tree nodes: %ld", qt_nodes);
 
-    String entity_string = format(scratch, "Alive entity count: %d", game->world.alive_entity_count);
+    String entity_string =
+        format(scratch, "Alive entity count: %d", game->world.alive_entity_count);
 
     f32 timestep = game->debug_state.timestep_modifier;
     String timestep_value_str = {0};
@@ -165,8 +183,8 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
         timestep_value_str = format(scratch, "%.2f", (f64)timestep);
     }
 
-    String timestep_str = format(scratch, "Timestep modifier: "FMT_STR,
-        FMT_STR_ARG(timestep_value_str));
+    String timestep_str =
+        format(scratch, "Timestep modifier: " FMT_STR, FMT_STR_ARG(timestep_value_str));
 
     ui_text(ui, frame_time_str);
     ui_text(ui, fps_str);
@@ -182,25 +200,28 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
 
     ui_spacing(ui, 8);
 
-    ui_checkbox(ui, str_lit("Render quad tree"),         &game->debug_state.quad_tree_overlay);
-    ui_checkbox(ui, str_lit("Render colliders"),         &game->debug_state.render_colliders);
-    ui_checkbox(ui, str_lit("Render origin"),            &game->debug_state.render_origin);
-    ui_checkbox(ui, str_lit("Render entity bounds"),     &game->debug_state.render_entity_bounds);
-    ui_checkbox(ui, str_lit("Render entity velocity"),   &game->debug_state.render_entity_velocity);
-    ui_checkbox(ui, str_lit("Render edge list"),         &game->debug_state.render_edge_list);
-    ui_checkbox(ui, str_lit("Render camera bounds"),     &game->debug_state.render_camera_bounds);
-    ui_checkbox(ui, str_lit("Render chunks"),            &game->debug_state.render_chunks);
-    ui_checkbox(ui, str_lit("Render chain links"),       &game->debug_state.render_chain_links);
+    ui_checkbox(ui, str_lit("Render quad tree"), &game->debug_state.quad_tree_overlay);
+    ui_checkbox(ui, str_lit("Render colliders"), &game->debug_state.render_colliders);
+    ui_checkbox(ui, str_lit("Render origin"), &game->debug_state.render_origin);
+    ui_checkbox(
+        ui, str_lit("Render entity bounds"), &game->debug_state.render_entity_bounds);
+    ui_checkbox(
+        ui, str_lit("Render entity velocity"), &game->debug_state.render_entity_velocity);
+    ui_checkbox(ui, str_lit("Render edge list"), &game->debug_state.render_edge_list);
+    ui_checkbox(
+        ui, str_lit("Render camera bounds"), &game->debug_state.render_camera_bounds);
+    ui_checkbox(ui, str_lit("Render chunks"), &game->debug_state.render_chunks);
+    ui_checkbox(ui, str_lit("Render chain links"), &game->debug_state.render_chain_links);
 
     ui_spacing(ui, 8);
 
     {
         String camera_str = game->debug_state.debug_camera_active
-            ? str_lit("DEBUG CAMERA ACTIVE")
-            : str_lit("NORMAL CAMERA ACTIVE");
+                                ? str_lit("DEBUG CAMERA ACTIVE")
+                                : str_lit("NORMAL CAMERA ACTIVE");
 
-        String camera_pos_str = format(scratch, "Camera position: "FMT_V2,
-            FMT_V2_ARG(game->world.camera.position));
+        String camera_pos_str = format(
+            scratch, "Camera position: " FMT_V2, FMT_V2_ARG(game->world.camera.position));
         String zoom_str = format(scratch, "Zoom: %.2f", (f64)game->world.camera.zoom);
 
         ui_text(ui, camera_str);
@@ -219,7 +240,8 @@ void debug_update(Game *game, const FrameData *frame_data)
     f32 curr_fps = 1.0f / frame_data->dt;
     f32 avg_fps = game->debug_state.average_fps;
 
-    Vector2 mouse_pos = input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+    Vector2 mouse_pos =
+        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
     Camera active_camera = game->world.camera;
 
     if (game->debug_state.debug_menu_active) {
@@ -230,9 +252,11 @@ void debug_update(Game *game, const FrameData *frame_data)
     /*     printf("%ld\n", ring_length(&game->debug_state.hovered_chunk->particles)); */
     /* } */
 
-    Vector2 mouse_world_pos = screen_to_world_coords(active_camera, mouse_pos, frame_data->window_size);
+    Vector2 mouse_world_pos =
+        screen_to_world_coords(active_camera, mouse_pos, frame_data->window_size);
 
-    game->debug_state.hovered_chunk = get_chunk_at_position(&game->world.map_chunks, mouse_world_pos);
+    game->debug_state.hovered_chunk =
+        get_chunk_at_position(&game->world.map_chunks, mouse_world_pos);
 
     // NOTE: lower alpha value means more smoothing
     game->debug_state.average_fps = exponential_moving_avg(avg_fps, curr_fps, 0.9f);
@@ -250,7 +274,8 @@ void debug_update(Game *game, const FrameData *frame_data)
             game->debug_state.debug_camera = game->world.camera;
         } else {
             // Otherwise, just toggle between debug camera and normal camera
-            game->debug_state.debug_camera_active = !game->debug_state.debug_camera_active;
+            game->debug_state.debug_camera_active =
+                !game->debug_state.debug_camera_active;
         }
     }
 
@@ -273,9 +298,9 @@ void debug_update(Game *game, const FrameData *frame_data)
 
         f32 camera_speed = 10.0f;
 
-        game->debug_state.debug_camera.target_position = v2_add(
-            game->debug_state.debug_camera.target_position, v2_mul_s(debug_camera_delta, camera_speed));
-
+        game->debug_state.debug_camera.target_position =
+            v2_add(game->debug_state.debug_camera.target_position,
+                v2_mul_s(debug_camera_delta, camera_speed));
     }
 
     if (input_is_key_pressed(&frame_data->input, KEY_O)) {
@@ -305,7 +330,8 @@ void debug_update(Game *game, const FrameData *frame_data)
     game->debug_state.timestep_modifier = CLAMP(speed_modifier, 0.0f, 5.0f);
 }
 
-void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct LinearArena *arena)
+void debug_render_chunks(
+    struct Game *game, struct RenderBatch *rb, struct LinearArena *arena)
 {
 #if 1
     Chunks *chunks = &game->world.map_chunks;
@@ -336,20 +362,22 @@ void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct Linea
             /*     layer = 1; */
             /* } */
 
-            draw_outlined_rectangle(rb, arena, rect, color, 4.0f,
-                shader_handle(SHAPE_SHADER), layer);
+            draw_outlined_rectangle(
+                rb, arena, rect, color, 4.0f, shader_handle(SHAPE_SHADER), layer);
         }
     }
 #else
     // NOTE: debugging code, can be removed
-    Vector2 mouse_pos = input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
-    mouse_pos = screen_to_world_coords(game->world.camera, mouse_pos, frame_data->window_size);
+    Vector2 mouse_pos =
+        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+    mouse_pos =
+        screen_to_world_coords(game->world.camera, mouse_pos, frame_data->window_size);
 
     Vector2 dims = {256, 256};
     Rectangle area = {v2_sub(mouse_pos, dims), v2_mul_s(dims, 2.0f)};
 
-    draw_rectangle(rb, arena, area, rgba32(0, 0.5f, 1.0f, 0.4f),
-        shader_handle(SHAPE_SHADER), 0);
+    draw_rectangle(
+        rb, arena, area, rgba32(0, 0.5f, 1.0f, 0.4f), shader_handle(SHAPE_SHADER), 0);
 
     Chunks *chunks = &game->world.map_chunks;
     ChunkPtrArray chunks_in_area = get_chunks_in_area(chunks, area, arena);
@@ -382,7 +410,6 @@ void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct Linea
                     found = true;
                     break;
                 }
-
             }
             if (found) {
                 draw_outlined_rectangle(rb, arena, rect, RGBA32_BLUE, 4.0f,

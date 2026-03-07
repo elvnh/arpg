@@ -28,13 +28,13 @@ typedef struct {
     struct World *world;
 
     union {
-	struct {
-	    EntityID collided_with;
-	} hostile_collision;
+        struct {
+            EntityID collided_with;
+        } hostile_collision;
 
-	struct {
-	    Vector2i tile_coords;
-	} tile_collision;
+        struct {
+            Vector2i tile_coords;
+        } tile_collision;
     } as;
 } EventData;
 
@@ -42,20 +42,20 @@ typedef struct {
     EntityID caster_id;
 
     union {
-	struct {
-	    s32 chains_remaining;
-	    f32 search_area_size;
-	} chain;
+        struct {
+            s32 chains_remaining;
+            f32 search_area_size;
+        } chain;
 
-	struct {
-	    s32 fork_count;
-	    SpellID fork_spell;
-	} fork;
+        struct {
+            s32 fork_count;
+            SpellID fork_spell;
+        } fork;
     } as;
 } SpellCallbackData;
 
 typedef union {
-    SpellCallbackData    spell_data;
+    SpellCallbackData spell_data;
     ParticleSpawnerSetup particle_spawner_data;
 } CallbackUserData;
 

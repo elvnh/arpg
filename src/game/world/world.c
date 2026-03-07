@@ -1,16 +1,17 @@
 #include "world.h"
+
+#include "asset_table.h"
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "collision/collider.h"
 #include "collision/collision.h"
 #include "collision/collision_event.h"
-#include "collision/collider.h"
 #include "components/chain.h"
 #include "components/component.h"
 #include "components/particle_spawner.h"
 #include "entity/entity_system.h"
 #include "game.h"
 #include "renderer/frontend/render_batch.h"
-#include "asset_table.h"
 #include "world/chunk.h"
 
 #define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
@@ -39,7 +40,7 @@ Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physic
 
     if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
-	Sprite *sprite = &sprite_comp->sprite;
+        Sprite *sprite = &sprite_comp->sprite;
 
         size.x = MAX(size.x, sprite->size.x);
         size.y = MAX(size.y, sprite->size.y);
@@ -47,8 +48,8 @@ Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physic
 
     if (es_has_component(entity, AnimationComponent)) {
         AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
-	AnimationInstance *current_anim = &anim_comp->current_animation;
-	AnimationFrame current_frame = anim_get_current_frame(current_anim);
+        AnimationInstance *current_anim = &anim_comp->current_animation;
+        AnimationFrame current_frame = anim_get_current_frame(current_anim);
 
         size.x = MAX(size.x, current_frame.sprite.size.x);
         size.y = MAX(size.y, current_frame.sprite.size.y);
@@ -62,8 +63,8 @@ Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physic
 static Rectangle get_tile_rectangle_in_world_space(Vector2i tile_coords)
 {
     Rectangle result = {
-	tile_to_world_coords(tile_coords),
-	{(f32)TILE_SIZE, (f32)TILE_SIZE },
+        tile_to_world_coords(tile_coords),
+        {(f32)TILE_SIZE, (f32)TILE_SIZE},
     };
 
     return result;
@@ -83,7 +84,8 @@ static void world_update_entity_quad_tree_location(World *world, ssize alive_ent
     if (physics) {
         Rectangle entity_area = world_get_entity_bounding_box(entity, physics);
 
-        *loc = qt_set_entity_area(&world->quad_tree, id, *loc, entity_area, &world->world_arena);
+        *loc = qt_set_entity_area(
+            &world->quad_tree, id, *loc, entity_area, &world->world_arena);
     } else if (!qt_location_is_null(*loc)) {
         // Entity doesn't have PhysicsComponent but still exists in quad tree, remove it
         *loc = qt_remove_entity(&world->quad_tree, id, *loc);
@@ -116,21 +118,25 @@ EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction fa
 // Handles anything that needs to be handled before removing an entity,
 // such as transferring components that need to stay alive a little longer
 // over to a new entity.
-static void handle_entity_removal_side_effects(World *world, EntityID id, LinearArena *frame_arena)
+static void handle_entity_removal_side_effects(
+    World *world, EntityID id, LinearArena *frame_arena)
 {
     Entity *dying_entity = es_get_entity(&world->entity_system, id);
-    PhysicsComponent *dying_entity_physics = es_get_component(dying_entity, PhysicsComponent);
+    PhysicsComponent *dying_entity_physics =
+        es_get_component(dying_entity, PhysicsComponent);
 
     // If the entity is non-spatial, there is (currently) nothing for us to do here
     if (dying_entity_physics) {
-        Rectangle dying_entity_bounds = world_get_entity_bounding_box(dying_entity, dying_entity_physics);
+        Rectangle dying_entity_bounds =
+            world_get_entity_bounding_box(dying_entity, dying_entity_physics);
 
         if (es_has_component(dying_entity, LightEmitter)) {
             // If an entity dies while it has a light, the light is transferred
             // to a new entity and the light starts fading out
             LightEmitter *old_light = es_get_component(dying_entity, LightEmitter);
 
-            b32 should_transfer_light = !old_light->light.fading_out
+            b32 should_transfer_light =
+                !old_light->light.fading_out
                 || (old_light->light.time_elapsed < old_light->light.fade_duration);
 
             if (should_transfer_light) {
@@ -141,15 +147,17 @@ static void handle_entity_removal_side_effects(World *world, EntityID id, Linear
                 if (!tile || (tile->type == TILE_WALL)) {
                     // If the light origin lands inside a wall, displace it to closest floor tile
                     Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
-                    RectanglePoint closest_point = rect_bounds_point_closest_to_point(
-                        tile_rect, new_entity_pos);
+                    RectanglePoint closest_point =
+                        rect_bounds_point_closest_to_point(tile_rect, new_entity_pos);
 
                     // The entity will be placed on the perimeter of the tile it was spawned in,
                     // which means it will be considered to be inside it, so we offset it slightly
-                    new_entity_pos = v2_sub(closest_point.point, v2_norm(dying_entity_physics->velocity));
+                    new_entity_pos = v2_sub(
+                        closest_point.point, v2_norm(dying_entity_physics->velocity));
                 }
 
-                Entity *new_entity = world_spawn_entity(world, new_entity_pos, FACTION_NEUTRAL).entity;
+                Entity *new_entity =
+                    world_spawn_entity(world, new_entity_pos, FACTION_NEUTRAL).entity;
                 LightEmitter *new_light = es_add_component(new_entity, LightEmitter);
                 *new_light = *old_light;
 
@@ -170,39 +178,40 @@ static void handle_entity_removal_side_effects(World *world, EntityID id, Linear
     }
 
     if (es_has_component(dying_entity, ChainComponent)) {
-	// If an entity is part of a chain, we kill all next and previous entities in the chain too
-	// NOTE: The next and previous entities will only be marked for removal and therefore there
-	// is no guarantee that they will be removed this frame, so don't depend on that
-	Entity *curr = 0;
-	ChainComponent *chain = es_get_component(dying_entity, ChainComponent);
+        // If an entity is part of a chain, we kill all next and previous entities in the chain too
+        // NOTE: The next and previous entities will only be marked for removal and therefore there
+        // is no guarantee that they will be removed this frame, so don't depend on that
+        Entity *curr = 0;
+        ChainComponent *chain = es_get_component(dying_entity, ChainComponent);
 
-	// Remove entities before us in chain
-	curr = get_previous_entity_in_chain(&world->entity_system, chain);
-	while (curr) {
-	    ChainComponent *curr_link = es_get_component(curr, ChainComponent);
-	    Entity *prev = get_previous_entity_in_chain(&world->entity_system, curr_link);
+        // Remove entities before us in chain
+        curr = get_previous_entity_in_chain(&world->entity_system, chain);
+        while (curr) {
+            ChainComponent *curr_link = es_get_component(curr, ChainComponent);
+            Entity *prev = get_previous_entity_in_chain(&world->entity_system, curr_link);
 
-	    remove_link_from_chain(&world->entity_system, curr_link);
-	    world_kill_entity(world, curr, frame_arena);
+            remove_link_from_chain(&world->entity_system, curr_link);
+            world_kill_entity(world, curr, frame_arena);
 
-	    curr = prev;
-	}
+            curr = prev;
+        }
 
         // Remove entities after us in chain
-	curr = get_next_entity_in_chain(&world->entity_system, chain);
-	while (curr) {
-	    ChainComponent *curr_link = es_get_component(curr, ChainComponent);
-	    Entity *next = get_next_entity_in_chain(&world->entity_system, curr_link);
+        curr = get_next_entity_in_chain(&world->entity_system, chain);
+        while (curr) {
+            ChainComponent *curr_link = es_get_component(curr, ChainComponent);
+            Entity *next = get_next_entity_in_chain(&world->entity_system, curr_link);
 
-	    remove_link_from_chain(&world->entity_system, curr_link);
-	    world_kill_entity(world, curr, frame_arena);
+            remove_link_from_chain(&world->entity_system, curr_link);
+            world_kill_entity(world, curr, frame_arena);
 
-	    curr = next;
-	}
+            curr = next;
+        }
     }
 }
 
-static void world_remove_entity(World *world, ssize alive_entity_index, LinearArena *frame_arena)
+static void world_remove_entity(
+    World *world, ssize alive_entity_index, LinearArena *frame_arena)
 {
     ASSERT(alive_entity_index < world->alive_entity_count);
 
@@ -212,7 +221,8 @@ static void world_remove_entity(World *world, ssize alive_entity_index, LinearAr
 
     es_remove_entity(&world->entity_system, *id);
 
-    QuadTreeLocation *qt_location = &world->alive_entity_quad_tree_locations[alive_entity_index];
+    QuadTreeLocation *qt_location =
+        &world->alive_entity_quad_tree_locations[alive_entity_index];
 
     if (!qt_location_is_null(*qt_location)) {
         qt_remove_entity(&world->quad_tree, *id, *qt_location);
@@ -236,27 +246,24 @@ void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena)
 
 Vector2i world_to_tile_coords(Vector2 world_coords)
 {
-    Vector2i result = {
-        (s32)((f32)world_coords.x / (f32)TILE_SIZE),
-        (s32)((f32)world_coords.y / (f32)TILE_SIZE)
-    };
+    Vector2i result = {(s32)((f32)world_coords.x / (f32)TILE_SIZE),
+        (s32)((f32)world_coords.y / (f32)TILE_SIZE)};
 
     return result;
 }
 
 Vector2 tile_to_world_coords(Vector2i tile_coords)
 {
-    Vector2 result = {
-        (f32)tile_coords.x * TILE_SIZE,
-        (f32)tile_coords.y * TILE_SIZE
-    };
+    Vector2 result = {(f32)tile_coords.x * TILE_SIZE, (f32)tile_coords.y * TILE_SIZE};
 
     return result;
 }
 
-static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
+static void deal_damage_to_entity(
+    World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
 {
-    Damage damage_taken = calculate_damage_received(&world->entity_system, entity, damage);
+    Damage damage_taken =
+        calculate_damage_received(&world->entity_system, entity, damage);
     StatValue dmg_sum = calculate_damage_sum(damage_taken);
     ASSERT(dmg_sum >= 0);
 
@@ -271,7 +278,8 @@ static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent 
     }
 }
 
-static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender, DamageInstance damage)
+static void try_deal_damage_to_entity(
+    World *world, Entity *receiver, Entity *sender, DamageInstance damage)
 {
     (void)sender;
 
@@ -285,12 +293,12 @@ static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *se
 static b32 entity_should_die(Entity *entity)
 {
     if (es_has_component(entity, HealthComponent)) {
-	HealthComponent *hp = es_get_component(entity, HealthComponent);
+        HealthComponent *hp = es_get_component(entity, HealthComponent);
 
-	ASSERT(hp->health.current_hitpoints >= 0);
-	if (hp->health.current_hitpoints == 0) {
-	    return true;
-	}
+        ASSERT(hp->health.current_hitpoints >= 0);
+        if (hp->health.current_hitpoints == 0) {
+            return true;
+        }
     }
 
     if (es_has_component(entity, ParticleSpawner)) {
@@ -313,15 +321,18 @@ static b32 entity_should_die(Entity *entity)
     return false;
 }
 
-static void entity_update(World *world, ssize alive_entity_index, f32 dt, LinearArena *frame_arena)
+static void entity_update(
+    World *world, ssize alive_entity_index, f32 dt, LinearArena *frame_arena)
 {
     EntityID id = world->alive_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
 
-    if (es_has_components(entity, component_id(ArcingComponent) | component_id(PhysicsComponent))) {
+    if (es_has_components(
+            entity, component_id(ArcingComponent) | component_id(PhysicsComponent))) {
         ArcingComponent *arcing = es_get_component(entity, ArcingComponent);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-        Vector2 entity_center = rect_center(world_get_entity_bounding_box(entity, physics));
+        Vector2 entity_center =
+            rect_center(world_get_entity_bounding_box(entity, physics));
 
         Entity *target = es_try_get_entity(&world->entity_system, arcing->target_entity);
         Vector2 target_pos = {0};
@@ -333,7 +344,8 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt, Linear
 
             // TODO: make it possible to call get_component on null entity
             if (target_physics) {
-                target_pos = rect_center(world_get_entity_bounding_box(target, target_physics));
+                target_pos =
+                    rect_center(world_get_entity_bounding_box(target, target_physics));
                 arcing->last_known_target_position = target_pos;
 
                 found = true;
@@ -354,7 +366,8 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt, Linear
             physics->velocity = V2_ZERO;
 
             if (target) {
-                try_deal_damage_to_entity(world, target, entity, arcing->damage_on_target_reached);
+                try_deal_damage_to_entity(
+                    world, target, entity, arcing->damage_on_target_reached);
             }
 
             es_remove_component(entity, ArcingComponent);
@@ -367,17 +380,19 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt, Linear
     }
 
     if (es_has_component(entity, HealthComponent)) {
-	HealthComponent *hp = es_get_component(entity, HealthComponent);
-	StatValue max_hp = get_total_stat_value(&world->entity_system, entity, STAT_HEALTH);
-	set_max_health(&hp->health, max_hp);
+        HealthComponent *hp = es_get_component(entity, HealthComponent);
+        StatValue max_hp =
+            get_total_stat_value(&world->entity_system, entity, STAT_HEALTH);
+        set_max_health(&hp->health, max_hp);
     }
 
     if (es_has_component(entity, AIComponent)) {
-	AIComponent *ai = es_get_component(entity, AIComponent);
-	entity_update_ai(world, entity, ai);
+        AIComponent *ai = es_get_component(entity, AIComponent);
+        entity_update_ai(world, entity, ai);
     }
 
-    if (es_has_components(entity, component_id(ParticleSpawner) | component_id(PhysicsComponent))) {
+    if (es_has_components(
+            entity, component_id(ParticleSpawner) | component_id(PhysicsComponent))) {
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
@@ -390,35 +405,38 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt, Linear
     }
 
     if (es_has_component(entity, StatusEffectComponent)) {
-        StatusEffectComponent *status_effects = es_get_component(entity, StatusEffectComponent);
+        StatusEffectComponent *status_effects =
+            es_get_component(entity, StatusEffectComponent);
         update_status_effects(status_effects, dt);
     }
 
-    if (es_has_components(entity, component_id(AnimationComponent) | component_id(PhysicsComponent))) {
+    if (es_has_components(
+            entity, component_id(AnimationComponent) | component_id(PhysicsComponent))) {
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-	ASSERT(anim_component->current_animation.animation_id != ANIM_NULL);
+        ASSERT(anim_component->current_animation.animation_id != ANIM_NULL);
 
-	anim_update_instance(world, entity, physics, &anim_component->current_animation, dt);
+        anim_update_instance(
+            world, entity, physics, &anim_component->current_animation, dt);
     }
 
     if (es_has_component(entity, LightEmitter)) {
         LightEmitter *light = es_get_component(entity, LightEmitter);
 
         if (light->light.fading_out) {
-	    ASSERT(light->light.fade_duration > 0.0f);
+            ASSERT(light->light.fade_duration > 0.0f);
             light->light.time_elapsed += dt;
         }
     }
 
     if (entity_should_die(entity)) {
         // NOTE: won't be removed until after this frame
-	world_kill_entity(world, entity, frame_arena);
+        world_kill_entity(world, entity, frame_arena);
     }
 }
 
-static void entity_render(Entity *entity, RenderBatches rbs,
-    LinearArena *scratch, struct DebugState *debug_state, World *world)
+static void entity_render(Entity *entity, RenderBatches rbs, LinearArena *scratch,
+    struct DebugState *debug_state, World *world)
 {
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
@@ -431,16 +449,18 @@ static void entity_render(Entity *entity, RenderBatches rbs,
         AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
         AnimationInstance *anim_instance = &anim_component->current_animation;
 
-	anim_render_instance(anim_instance, physics, rbs.world_rb, scratch);
+        anim_render_instance(anim_instance, physics, rbs.world_rb, scratch);
     } else if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
-	Sprite *sprite = &sprite_comp->sprite;
+        Sprite *sprite = &sprite_comp->sprite;
         // TODO: how to handle if entity has both sprite and animation component?
-	SpriteModifiers sprite_mods = sprite_get_modifiers(physics->direction, sprite->rotation_behaviour);
+        SpriteModifiers sprite_mods =
+            sprite_get_modifiers(physics->direction, sprite->rotation_behaviour);
 
-        Rectangle sprite_rect = { physics->position, sprite->size };
-        draw_colored_sprite(rbs.world_rb, scratch, sprite->texture, sprite_rect, sprite_mods,
-	    sprite->color, shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
+        Rectangle sprite_rect = {physics->position, sprite->size};
+        draw_colored_sprite(rbs.world_rb, scratch, sprite->texture, sprite_rect,
+            sprite_mods, sprite->color, shader_handle(TEXTURE_SHADER),
+            RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, ChainComponent) && debug_state->render_chain_links) {
@@ -449,11 +469,13 @@ static void entity_render(Entity *entity, RenderBatches rbs,
         Entity *next_link = get_next_entity_in_chain(&world->entity_system, chain);
 
         if (next_link) {
-            PhysicsComponent *next_link_physics = es_get_component(next_link, PhysicsComponent);
+            PhysicsComponent *next_link_physics =
+                es_get_component(next_link, PhysicsComponent);
 
             if (next_link_physics) {
-                draw_line(rbs.worldspace_ui_rb, scratch, physics->position, next_link_physics->position,
-                    RGBA32_WHITE, 4.0f, shader_handle(SHAPE_SHADER), 0);
+                draw_line(rbs.worldspace_ui_rb, scratch, physics->position,
+                    next_link_physics->position, RGBA32_WHITE, 4.0f,
+                    shader_handle(SHAPE_SHADER), 0);
             }
         }
     }
@@ -461,13 +483,10 @@ static void entity_render(Entity *entity, RenderBatches rbs,
     if (es_has_component(entity, ColliderComponent) && debug_state->render_colliders) {
         ColliderComponent *collider = es_get_component(entity, ColliderComponent);
 
-        Rectangle collider_rect = {
-            .position = physics->position,
-            .size = collider->size
-        };
+        Rectangle collider_rect = {.position = physics->position, .size = collider->size};
 
-        draw_rectangle(rbs.worldspace_ui_rb, scratch, collider_rect, (RGBA32){0, 1, 0, 0.5f},
-	    shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
+        draw_rectangle(rbs.worldspace_ui_rb, scratch, collider_rect,
+            (RGBA32){0, 1, 0, 0.5f}, shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
     if (es_has_component(entity, LightEmitter)) {
@@ -477,7 +496,8 @@ static void entity_render(Entity *entity, RenderBatches rbs,
         Vector2 light_origin = get_light_origin_position(entity_bounds);
 
         // TODO: this might look better if the origin is center of entity
-        render_light_source(world, rbs.lighting_rb, light_origin, light->light, 1.0f, scratch);
+        render_light_source(
+            world, rbs.lighting_rb, light_origin, light->light, 1.0f, scratch);
     }
 
     if (debug_state->render_entity_bounds) {
@@ -487,16 +507,16 @@ static void entity_render(Entity *entity, RenderBatches rbs,
         entity_rect.size.x = MAX(entity_rect.size.x, minimum_bounds_rect_size);
         entity_rect.size.y = MAX(entity_rect.size.y, minimum_bounds_rect_size);
 
-        draw_rectangle(rbs.worldspace_ui_rb, scratch, entity_rect, (RGBA32){1, 0, 1, 0.4f},
-	    shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
+        draw_rectangle(rbs.worldspace_ui_rb, scratch, entity_rect,
+            (RGBA32){1, 0, 1, 0.4f}, shader_handle(SHAPE_SHADER), RENDER_LAYER_ENTITIES);
     }
 
     if (debug_state->render_entity_velocity) {
-	Vector2 dir = v2_norm(physics->velocity);
+        Vector2 dir = v2_norm(physics->velocity);
 
-	draw_line(rbs.worldspace_ui_rb, scratch, physics->position,
-	    v2_add(physics->position, v2_mul_s(dir, 20.0f)),
-            RGBA32_GREEN, 2.0f, shader_handle(SHAPE_SHADER), 0);
+        draw_line(rbs.worldspace_ui_rb, scratch, physics->position,
+            v2_add(physics->position, v2_mul_s(dir, 20.0f)), RGBA32_GREEN, 2.0f,
+            shader_handle(SHAPE_SHADER), 0);
     }
 }
 
@@ -515,26 +535,24 @@ static void swap_and_reset_collision_tables(World *world)
     }
 }
 
-void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentBitset component,
-    RetriggerBehaviour retrigger_behaviour)
+void world_add_trigger_cooldown(World *world, EntityID a, EntityID b,
+    ComponentBitset component, RetriggerBehaviour retrigger_behaviour)
 {
-    add_trigger_cooldown(&world->trigger_cooldowns, a, b, component,
-	retrigger_behaviour, &world->world_arena);
+    add_trigger_cooldown(&world->trigger_cooldowns, a, b, component, retrigger_behaviour,
+        &world->world_arena);
 }
 
-
-static Rectangle get_entity_collider_rectangle(ColliderComponent *collider, PhysicsComponent *physics)
+static Rectangle get_entity_collider_rectangle(
+    ColliderComponent *collider, PhysicsComponent *physics)
 {
-    Rectangle result = {
-        physics->position,
-        collider->size
-    };
+    Rectangle result = {physics->position, collider->size};
 
     return result;
 }
 
 // TODO: move to trigger file?
-static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *self, Entity *other)
+static void invoke_entity_vs_entity_collision_triggers(
+    World *world, Entity *self, Entity *other)
 {
     EntityID self_id = es_get_id_of_entity(&world->entity_system, self);
     EntityID other_id = es_get_id_of_entity(&world->entity_system, other);
@@ -544,28 +562,29 @@ static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *sel
 
     // Hostile triggers
     if (!same_faction) {
-	if (should_invoke_trigger(world, self, other, DamageFieldComponent)) {
-	    DamageFieldComponent *dmg_field = es_get_component(self, DamageFieldComponent);
+        if (should_invoke_trigger(world, self, other, DamageFieldComponent)) {
+            DamageFieldComponent *dmg_field =
+                es_get_component(self, DamageFieldComponent);
 
-	    try_deal_damage_to_entity(world, other, self, dmg_field->damage);
+            try_deal_damage_to_entity(world, other, self, dmg_field->damage);
 
-	    world_add_trigger_cooldown(world, self_id, other_id,
-		component_id(DamageFieldComponent), dmg_field->retrigger_behaviour);
-	}
+            world_add_trigger_cooldown(world, self_id, other_id,
+                component_id(DamageFieldComponent), dmg_field->retrigger_behaviour);
+        }
 
-	if (should_invoke_trigger(world, self, other, EffectApplierComponent)) {
-	    EffectApplierComponent *ea = es_get_component(self, EffectApplierComponent);
+        if (should_invoke_trigger(world, self, other, EffectApplierComponent)) {
+            EffectApplierComponent *ea = es_get_component(self, EffectApplierComponent);
 
-	    world_add_trigger_cooldown(world, self_id, other_id,
-		component_id(EffectApplierComponent), ea->retrigger_behaviour);
-	}
+            world_add_trigger_cooldown(world, self_id, other_id,
+                component_id(EffectApplierComponent), ea->retrigger_behaviour);
+        }
     }
 }
 
 // TODO: reduce number of parameters
-static f32 entity_vs_entity_collision(World *world,
-    Entity *a, ColliderComponent *collider_a, PhysicsComponent *physics_a,
-    Entity *b, ColliderComponent *collider_b, PhysicsComponent *physics_b,
+static f32 entity_vs_entity_collision(World *world, Entity *a,
+    ColliderComponent *collider_a, PhysicsComponent *physics_a, Entity *b,
+    ColliderComponent *collider_b, PhysicsComponent *physics_b,
     f32 movement_fraction_left, f32 dt, LinearArena *frame_arena)
 {
     ASSERT(a);
@@ -577,47 +596,49 @@ static f32 entity_vs_entity_collision(World *world,
     Rectangle rect_a = get_entity_collider_rectangle(collider_a, physics_a);
     Rectangle rect_b = get_entity_collider_rectangle(collider_b, physics_b);
 
-    CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
-	physics_a->velocity, physics_b->velocity, dt);
+    CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a,
+        rect_b, physics_a->velocity, physics_b->velocity, dt);
 
-    b32 same_collision_group = (collider_a->collision_group == collider_b->collision_group)
-	&& (collider_a->collision_group != COLLISION_GROUP_NONE);
+    b32 same_collision_group =
+        (collider_a->collision_group == collider_b->collision_group)
+        && (collider_a->collision_group != COLLISION_GROUP_NONE);
 
     if ((collision.collision_status != COLLISION_STATUS_NOT_COLLIDING)
-	&& !same_collision_group && !entities_intersected_this_frame(world, id_a, id_b)) {
-	b32 neither_collider_on_cooldown =
-	    !trigger_is_on_cooldown(&world->trigger_cooldowns, id_a, id_b,
-		component_id(ColliderComponent))
-	    && !trigger_is_on_cooldown(&world->trigger_cooldowns, id_b, id_a,
-		component_id(ColliderComponent));
+        && !same_collision_group && !entities_intersected_this_frame(world, id_a, id_b)) {
+        b32 neither_collider_on_cooldown =
+            !trigger_is_on_cooldown(
+                &world->trigger_cooldowns, id_a, id_b, component_id(ColliderComponent))
+            && !trigger_is_on_cooldown(
+                &world->trigger_cooldowns, id_b, id_a, component_id(ColliderComponent));
 
-	if (neither_collider_on_cooldown) {
-	    execute_entity_vs_entity_collision_policy(world, a, physics_a, collider_a,
-                b, collider_b, collision, ENTITY_PAIR_INDEX_FIRST, frame_arena);
-	    execute_entity_vs_entity_collision_policy(world, b, physics_b, collider_b,
-                a, collider_a, collision, ENTITY_PAIR_INDEX_SECOND, frame_arena);
+        if (neither_collider_on_cooldown) {
+            execute_entity_vs_entity_collision_policy(world, a, physics_a, collider_a, b,
+                collider_b, collision, ENTITY_PAIR_INDEX_FIRST, frame_arena);
+            execute_entity_vs_entity_collision_policy(world, b, physics_b, collider_b, a,
+                collider_a, collision, ENTITY_PAIR_INDEX_SECOND, frame_arena);
 
-	    invoke_entity_vs_entity_collision_triggers(world, a, b);
-	    invoke_entity_vs_entity_collision_triggers(world, b, a);
+            invoke_entity_vs_entity_collision_triggers(world, a, b);
+            invoke_entity_vs_entity_collision_triggers(world, b, a);
 
-	    movement_fraction_left = collision.movement_fraction_left;
-	}
+            movement_fraction_left = collision.movement_fraction_left;
+        }
 
-	// Only send collision events on first contact
-	if (!entities_intersected_previous_frame(world, id_a, id_b)) {
-	    if (a->faction != b->faction) {
-		EventData event_data = event_data_hostile_collision(id_b);
-		send_event_to_entity(a, event_data, world, frame_arena);
-	    }
-	}
+        // Only send collision events on first contact
+        if (!entities_intersected_previous_frame(world, id_a, id_b)) {
+            if (a->faction != b->faction) {
+                EventData event_data = event_data_hostile_collision(id_b);
+                send_event_to_entity(a, event_data, world, frame_arena);
+            }
+        }
 
-	collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);
+        collision_event_table_insert(&world->current_frame_collisions, id_a, id_b);
     }
 
     return movement_fraction_left;
 }
 
-static Rectangle get_entity_collision_area(ColliderComponent *collider, PhysicsComponent *physics, f32 dt)
+static Rectangle get_entity_collision_area(
+    ColliderComponent *collider, PhysicsComponent *physics, f32 dt)
 {
     Vector2 next_pos = v2_add(physics->position, v2_mul_s(physics->velocity, dt));
 
@@ -629,13 +650,17 @@ static Rectangle get_entity_collision_area(ColliderComponent *collider, PhysicsC
     f32 width = max_x - min_x;
     f32 height = max_y - min_y;
 
-    Rectangle result = {{min_x, min_y}, {width, height}};
+    Rectangle result = {
+        {min_x, min_y },
+        {width, height}
+    };
 
     return result;
 }
 
 static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collider,
-    PhysicsComponent *physics, World *world, f32 movement_fraction_left, f32 dt, LinearArena *frame_arena)
+    PhysicsComponent *physics, World *world, f32 movement_fraction_left, f32 dt,
+    LinearArena *frame_arena)
 {
     Rectangle collision_area = get_entity_collision_area(collider, physics, dt);
 
@@ -665,17 +690,17 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
                 Rectangle entity_rect = get_entity_collider_rectangle(collider, physics);
                 Rectangle tile_rect = get_tile_rectangle_in_world_space(tile_coords);
 
-                CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, entity_rect,
-		    tile_rect, physics->velocity, V2_ZERO, dt);
+                CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left,
+                    entity_rect, tile_rect, physics->velocity, V2_ZERO, dt);
 
                 if (collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) {
-		    movement_fraction_left = collision.movement_fraction_left;
+                    movement_fraction_left = collision.movement_fraction_left;
 
-		    execute_entity_vs_tilemap_collision_policy(world, entity, physics, collider,
-                        collision, frame_arena);
+                    execute_entity_vs_tilemap_collision_policy(
+                        world, entity, physics, collider, collision, frame_arena);
 
-		    EventData event_data = event_data_tilemap_collision(collision_coords);
-		    send_event_to_entity(entity, event_data, world, frame_arena);
+                    EventData event_data = event_data_tilemap_collision(collision_coords);
+                    send_event_to_entity(entity, event_data, world, frame_arena);
                 }
             }
         }
@@ -702,25 +727,28 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
         f32 movement_fraction_left = 1.0f;
 
         if (collider_a && physics_a) {
-            movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, physics_a, world,
-		movement_fraction_left, dt, frame_arena);
-	    ASSERT(movement_fraction_left >= 0.0f);
+            movement_fraction_left = entity_vs_tilemap_collision(
+                a, collider_a, physics_a, world, movement_fraction_left, dt, frame_arena);
+            ASSERT(movement_fraction_left >= 0.0f);
 
-            Rectangle collision_area = get_entity_collision_area(collider_a, physics_a, dt);
+            Rectangle collision_area =
+                get_entity_collision_area(collider_a, physics_a, dt);
             EntityIDList entities_in_area =
-		qt_get_entities_in_area(&world->quad_tree, collision_area, frame_arena);
+                qt_get_entities_in_area(&world->quad_tree, collision_area, frame_arena);
 
-            for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
+            for (EntityIDNode *node = list_head(&entities_in_area); node;
+                 node = list_next(node)) {
                 if (!entity_id_equal(node->id, id_a)) {
                     Entity *b = es_get_entity(&world->entity_system, node->id);
 
-                    ColliderComponent *collider_b = es_get_component(b, ColliderComponent);
+                    ColliderComponent *collider_b =
+                        es_get_component(b, ColliderComponent);
                     PhysicsComponent *physics_b = es_get_component(b, PhysicsComponent);
 
                     if (collider_b && physics_b) {
-                        movement_fraction_left = entity_vs_entity_collision(world, a, collider_a,
-                            physics_a, b, collider_b, physics_b, movement_fraction_left,
-                            dt, frame_arena);
+                        movement_fraction_left = entity_vs_entity_collision(world, a,
+                            collider_a, physics_a, b, collider_b, physics_b,
+                            movement_fraction_left, dt, frame_arena);
                     }
                 }
             }
@@ -728,16 +756,17 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
             ASSERT(movement_fraction_left >= 0.0f);
             ASSERT(movement_fraction_left <= 1.0f);
 
-            Vector2 to_move_this_frame = v2_mul_s(v2_mul_s(physics_a->velocity, movement_fraction_left), dt);
+            Vector2 to_move_this_frame =
+                v2_mul_s(v2_mul_s(physics_a->velocity, movement_fraction_left), dt);
             physics_a->position = v2_add(physics_a->position, to_move_this_frame);
 
-	    f32 mag = v2_mag(physics_a->velocity);
+            f32 mag = v2_mag(physics_a->velocity);
 
             if (mag > 0.5f) {
                 physics_a->direction = v2_norm(physics_a->velocity);
             } else if (mag < 0.01f) {
-		//a->velocity = V2_ZERO;
-	    }
+                //a->velocity = V2_ZERO;
+            }
         }
     }
 }
@@ -806,13 +835,13 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
 
     // Remove inactive entities on end of frame
     for (ssize i = 0; i < world->alive_entity_count; ++i) {
-	EntityID *id = &world->alive_entity_ids[i];
-	Entity *entity = es_get_entity(&world->entity_system, *id);
+        EntityID *id = &world->alive_entity_ids[i];
+        Entity *entity = es_get_entity(&world->entity_system, *id);
 
-	if (es_entity_is_inactive(entity)) {
-	    world_remove_entity(world, i, frame_arena);
-	    --i;
-	}
+        if (es_entity_is_inactive(entity)) {
+            world_remove_entity(world, i, frame_arena);
+            --i;
+        }
     }
 
     /* Make an extra pass over all entities alive at end of frame and update their
@@ -825,12 +854,14 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     }
 }
 
-static void render_tilemap(World *world, RenderBatches rb_list, const FrameData *frame_data,
-    LinearArena *frame_arena)
+static void render_tilemap(World *world, RenderBatches rb_list,
+    const FrameData *frame_data, LinearArena *frame_arena)
 {
     Rectangle tilemap_render_area = get_area_visible_to_player(world, frame_data);
-    tilemap_render_area.position = v2_sub(tilemap_render_area.position, v2(TILE_SIZE, TILE_SIZE));
-    tilemap_render_area.size = v2_add(tilemap_render_area.size, v2(TILE_SIZE * 2, TILE_SIZE * 2));
+    tilemap_render_area.position =
+        v2_sub(tilemap_render_area.position, v2(TILE_SIZE, TILE_SIZE));
+    tilemap_render_area.size =
+        v2_add(tilemap_render_area.size, v2(TILE_SIZE * 2, TILE_SIZE * 2));
 
     Vector2i min_tile = world_to_tile_coords(rect_bottom_left(tilemap_render_area));
     Vector2i max_tile = world_to_tile_coords(rect_top_right(tilemap_render_area));
@@ -862,7 +893,7 @@ static void render_tilemap(World *world, RenderBatches rb_list, const FrameData 
 
                 Rectangle tile_rect = {
                     .position = tile_to_world_coords(tile_coords),
-                    .size = { (f32)TILE_SIZE, (f32)TILE_SIZE }
+                    .size = {(f32)TILE_SIZE, (f32)TILE_SIZE}
                 };
 
                 RenderLayer layer = RENDER_LAYER_FLOORS;
@@ -873,45 +904,49 @@ static void render_tilemap(World *world, RenderBatches rb_list, const FrameData 
                 }
 
                 if (tile->type == TILE_FLOOR) {
-                    draw_sprite(rb_list.world_rb, frame_arena, texture, tile_rect, (SpriteModifiers){0},
-                        shader_handle(TEXTURE_SHADER), layer);
+                    draw_sprite(rb_list.world_rb, frame_arena, texture, tile_rect,
+                        (SpriteModifiers){0}, shader_handle(TEXTURE_SHADER), layer);
                 } else if (tile->type == TILE_WALL) {
-                    Tile *tile_above = tilemap_get_tile(&world->tilemap,
-                        (Vector2i){tile_coords.x, tile_coords.y + 1});
-                    b32 can_walk_behind_tile = tile_above && (tile_above->type == TILE_FLOOR);
+                    Tile *tile_above = tilemap_get_tile(
+                        &world->tilemap, (Vector2i){tile_coords.x, tile_coords.y + 1});
+                    b32 can_walk_behind_tile =
+                        tile_above && (tile_above->type == TILE_FLOOR);
 
                     Rectangle bottom_segment = {
-                        tile_rect.position,
-                        {tile_rect.size.x, tile_rect.size.y / 2}
+                        tile_rect.position, {tile_rect.size.x, tile_rect.size.y / 2}
                     };
 
                     Rectangle top_segment = {
                         v2_add(bottom_segment.position, v2(0, bottom_segment.size.y)),
-                        bottom_segment.size
-                    };
+                        bottom_segment.size};
 
-                    EntityIDList entities_near_tile =
-			qt_get_entities_in_area(&world->quad_tree, top_segment, frame_arena);
+                    EntityIDList entities_near_tile = qt_get_entities_in_area(
+                        &world->quad_tree, top_segment, frame_arena);
 
                     b32 make_wall_transparent = false;
 
-                    for (EntityIDNode *node = list_head(&entities_near_tile); node; node = list_next(node)) {
+                    for (EntityIDNode *node = list_head(&entities_near_tile); node;
+                         node = list_next(node)) {
                         Entity *entity = es_get_entity(&world->entity_system, node->id);
-                        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+                        PhysicsComponent *physics =
+                            es_get_component(entity, PhysicsComponent);
 
                         // Entity could technically exist (I think) in quad tree despite not having
                         // a physics component if it was removed mid-frame and we haven't updated all
                         // quad tree locations yet, so we probably just ignore it
                         ASSERT(physics);
                         if (physics) {
-                            Rectangle entity_bounds = world_get_entity_bounding_box(entity, physics);
-                            b32 entity_intersects_wall = rect_intersects(entity_bounds, top_segment);
+                            Rectangle entity_bounds =
+                                world_get_entity_bounding_box(entity, physics);
+                            b32 entity_intersects_wall =
+                                rect_intersects(entity_bounds, top_segment);
 
-                            b32 entity_is_behind_wall = can_walk_behind_tile
-                                && entity_intersects_wall
+                            b32 entity_is_behind_wall =
+                                can_walk_behind_tile && entity_intersects_wall
                                 && (physics->position.y > tile_rect.position.y);
 
-                            b32 entity_is_visible = es_has_component(entity, AnimationComponent)
+                            b32 entity_is_visible =
+                                es_has_component(entity, AnimationComponent)
                                 || es_has_component(entity, SpriteComponent);
 
                             if (entity_is_behind_wall && entity_is_visible) {
@@ -923,9 +958,9 @@ static void render_tilemap(World *world, RenderBatches rb_list, const FrameData 
                         // TODO: get sprite rect instead of all component bounds?
                     }
 
-                    draw_clipped_sprite(rb_list.world_rb, frame_arena, texture,
-                        tile_rect, bottom_segment, RGBA32_WHITE, shader_handle(TEXTURE_SHADER),
-			RENDER_LAYER_FLOORS);
+                    draw_clipped_sprite(rb_list.world_rb, frame_arena, texture, tile_rect,
+                        bottom_segment, RGBA32_WHITE, shader_handle(TEXTURE_SHADER),
+                        RENDER_LAYER_FLOORS);
 
                     RGBA32 top_segment_color = RGBA32_WHITE;
 
@@ -934,15 +969,16 @@ static void render_tilemap(World *world, RenderBatches rb_list, const FrameData 
                         top_segment_color.a = 0.5f;
                     }
 
-                    draw_clipped_sprite(rb_list.world_rb, frame_arena, texture,
-                        tile_rect, top_segment, top_segment_color, shader_handle(TEXTURE_SHADER),
-			RENDER_LAYER_WALLS);
+                    draw_clipped_sprite(rb_list.world_rb, frame_arena, texture, tile_rect,
+                        top_segment, top_segment_color, shader_handle(TEXTURE_SHADER),
+                        RENDER_LAYER_WALLS);
 
                     if (!make_wall_transparent) {
                         // Render top segment to lighting stencil buffer so that wall top sides are never lit,
                         // unless the wall is transparent
-                        draw_rectangle(rb_list.lighting_stencil_rb, frame_arena, top_segment, RGBA32_BLACK,
-                            shader_handle(SHAPE_SHADER), RENDER_LAYER_WALLS);
+                        draw_rectangle(rb_list.lighting_stencil_rb, frame_arena,
+                            top_segment, RGBA32_BLACK, shader_handle(SHAPE_SHADER),
+                            RENDER_LAYER_WALLS);
                     }
 
                 } else {
@@ -951,7 +987,6 @@ static void render_tilemap(World *world, RenderBatches rb_list, const FrameData 
             }
         }
     }
-
 }
 
 void world_render(World *world, RenderBatches rb_list, const FrameData *frame_data,
@@ -964,24 +999,29 @@ void world_render(World *world, RenderBatches rb_list, const FrameData *frame_da
         Rectangle visible_area = get_area_visible_to_player(world, frame_data);
 
         draw_outlined_rectangle(rb_list.worldspace_ui_rb, frame_arena, visible_area,
-            RGBA32_GREEN, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER), 0);
+            RGBA32_GREEN, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER),
+            0);
 
         draw_outlined_rectangle(rb_list.worldspace_ui_rb, frame_arena, render_area,
-            RGBA32_RED, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER), 0);
+            RGBA32_RED, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER),
+            0);
     }
 
     render_tilemap(world, rb_list, frame_data, frame_arena);
 
-    ChunkPtrArray visible_chunks = get_chunks_in_area(&world->map_chunks, render_area, frame_arena);
+    ChunkPtrArray visible_chunks =
+        get_chunks_in_area(&world->map_chunks, render_area, frame_arena);
     for (ssize i = 0; i < visible_chunks.count; ++i) {
         Chunk *chunk = visible_chunks.chunks[i];
 
         render_particle_buffers(&chunk->particle_buffers, rb_list, frame_arena);
     }
 
-    EntityIDList entities_in_area = qt_get_entities_in_area(&world->quad_tree, render_area, frame_arena);
+    EntityIDList entities_in_area =
+        qt_get_entities_in_area(&world->quad_tree, render_area, frame_arena);
 
-    for (EntityIDNode *node = list_head(&entities_in_area); node; node = list_next(node)) {
+    for (EntityIDNode *node = list_head(&entities_in_area); node;
+         node = list_next(node)) {
         Entity *entity = es_get_entity(&world->entity_system, node->id);
 
         entity_render(entity, rb_list, frame_arena, debug_state, world);
@@ -999,12 +1039,11 @@ void world_render(World *world, RenderBatches rb_list, const FrameData *frame_da
             Vector2 origin = line_center(edge.line);
             Vector2 end = v2_add(origin, v2_mul_s(vec, 10.0f));
 
-            draw_line(rb_list.worldspace_ui_rb, frame_arena, origin, end, RGBA32_GREEN, 4.0f,
-                shader_handle(SHAPE_SHADER), 0);
+            draw_line(rb_list.worldspace_ui_rb, frame_arena, origin, end, RGBA32_GREEN,
+                4.0f, shader_handle(SHAPE_SHADER), 0);
 
-            draw_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start, edge.line.end,
-		RGBA32_BLUE, 4.0f,
-                shader_handle(SHAPE_SHADER), 0);
+            draw_line(rb_list.worldspace_ui_rb, frame_arena, edge.line.start,
+                edge.line.end, RGBA32_BLUE, 4.0f, shader_handle(SHAPE_SHADER), 0);
         }
     }
 }
@@ -1027,32 +1066,35 @@ void world_initialize(World *world, FreeListArena *parent_arena)
     s32 world_height = 16;
 
     {
-	for (s32 x = 0; x < world_width; ++x) {
-	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, 0}, TILE_WALL,
-		&world->world_arena);
+        for (s32 x = 0; x < world_width; ++x) {
+            tilemap_insert_tile(
+                &world->tilemap, (Vector2i){x, 0}, TILE_WALL, &world->world_arena);
 
-	    tilemap_insert_tile(&world->tilemap, (Vector2i){x, world_height - 1}, TILE_WALL,
-		&world->world_arena);
-	}
+            tilemap_insert_tile(&world->tilemap, (Vector2i){x, world_height - 1},
+                TILE_WALL, &world->world_arena);
+        }
 
-	for (s32 y = 1; y < world_height - 1; ++y) {
-	    tilemap_insert_tile(&world->tilemap, (Vector2i){0, y}, TILE_WALL,
-		&world->world_arena);
+        for (s32 y = 1; y < world_height - 1; ++y) {
+            tilemap_insert_tile(
+                &world->tilemap, (Vector2i){0, y}, TILE_WALL, &world->world_arena);
 
-	    tilemap_insert_tile(&world->tilemap, (Vector2i){world_width - 1, y}, TILE_WALL,
-		&world->world_arena);
-	}
+            tilemap_insert_tile(&world->tilemap, (Vector2i){world_width - 1, y},
+                TILE_WALL, &world->world_arena);
+        }
 
-	for (s32 y = 1; y < world_height - 1; ++y) {
-	    for (s32 x = 1; x < world_width - 1; ++x) {
-		tilemap_insert_tile(&world->tilemap, (Vector2i){x, y}, TILE_FLOOR,
-		    &world->world_arena);
-	    }
-	}
+        for (s32 y = 1; y < world_height - 1; ++y) {
+            for (s32 x = 1; x < world_width - 1; ++x) {
+                tilemap_insert_tile(
+                    &world->tilemap, (Vector2i){x, y}, TILE_FLOOR, &world->world_arena);
+            }
+        }
     }
 
-    tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})->type = TILE_WALL;
-    tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2 - 2, world_height / 2 - 2})->type = TILE_WALL;
+    tilemap_get_tile(&world->tilemap, (Vector2i){world_width / 2, world_height / 2})
+        ->type = TILE_WALL;
+    tilemap_get_tile(
+        &world->tilemap, (Vector2i){world_width / 2 - 2, world_height / 2 - 2})
+        ->type = TILE_WALL;
 
     Rectangle tilemap_area = tilemap_get_bounding_box(&world->tilemap);
 
@@ -1060,8 +1102,9 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     for (s32 i = 0; i < 2; ++i) {
 #if 1
-        EntityWithID entity_with_id = world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),
-	    i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
+        EntityWithID entity_with_id =
+            world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),
+                i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
 
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
@@ -1072,25 +1115,26 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
         ASSERT(!es_has_component(entity, ColliderComponent));
 
-	if (i == 1) {
-	    AIComponent *ai = es_add_component(entity, AIComponent);
+        if (i == 1) {
+            AIComponent *ai = es_add_component(entity, AIComponent);
 
-	    ai->current_state.kind = AI_STATE_IDLE;
-	}
+            ai->current_state.kind = AI_STATE_IDLE;
+        }
 
         ColliderComponent *collider = es_add_component(entity, ColliderComponent);
         collider->size = v2(16.0f, 16.0f);
-	set_collision_policy_vs_entities(collider, COLLISION_POLICY_STOP);
-	set_collision_policy_vs_tilemaps(collider, COLLISION_POLICY_STOP);
+        set_collision_policy_vs_entities(collider, COLLISION_POLICY_STOP);
+        set_collision_policy_vs_tilemaps(collider, COLLISION_POLICY_STOP);
 
         ASSERT(es_has_component(entity, ColliderComponent));
 
-	SpellCasterComponent *spellcaster = es_add_component(entity, SpellCasterComponent);
-	for (SpellID spell = 0; spell < SPELL_COUNT; ++spell) {
-	    magic_add_to_spellbook(spellcaster, spell);
-	}
+        SpellCasterComponent *spellcaster =
+            es_add_component(entity, SpellCasterComponent);
+        for (SpellID spell = 0; spell < SPELL_COUNT; ++spell) {
+            magic_add_to_spellbook(spellcaster, spell);
+        }
 
-#if 0
+#    if 0
         SpriteComponent *sprite_comp = es_add_component(entity, SpriteComponent);
 	Sprite *sprite = &sprite_comp->sprite;
 
@@ -1098,24 +1142,24 @@ void world_initialize(World *world, FreeListArena *parent_arena)
         sprite->size = v2(32, 32);
 	sprite->rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
 
-#else
+#    else
 
         AnimationComponent *anim = es_add_component(entity, AnimationComponent);
         anim->state_animations[ENTITY_STATE_IDLE] = ANIM_PLAYER_IDLE;
         anim->state_animations[ENTITY_STATE_WALKING] = ANIM_PLAYER_WALKING;
         anim->state_animations[ENTITY_STATE_ATTACKING] = ANIM_PLAYER_ATTACKING;
 
-	entity_try_transition_to_state(world, entity, physics, state_idle());
-#endif
+        entity_try_transition_to_state(world, entity, physics, state_idle());
+#    endif
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
-	stats->stats = create_base_stats();
-	set_stat_value(&stats->stats, STAT_HEALTH, 10000000);
+        stats->stats = create_base_stats();
+        set_stat_value(&stats->stats, STAT_HEALTH, 10000000);
 
-	HealthComponent *hp = es_add_component(entity, HealthComponent);
-	hp->health = create_health_instance(world, entity);
+        HealthComponent *hp = es_add_component(entity, HealthComponent);
+        hp->health = create_health_instance(world, entity);
 
-#if 1
+#    if 1
         LightEmitter *light = es_add_component(entity, LightEmitter);
         light->light.radius = 500.0f;
         light->light.kind = LIGHT_RAYCASTED;
@@ -1125,9 +1169,9 @@ void world_initialize(World *world, FreeListArena *parent_arena)
         } else {
             light->light.color = RGBA32_BLUE;
         }
-#endif
+#    endif
 
-#if 0
+#    if 0
         if (i == 0) {
             ParticleSpawnerNew *ps = es_get_or_add_component(entity, ParticleSpawnerNew);
             ps->config = (ParticleSpawnerConfig) {
@@ -1158,22 +1202,24 @@ void world_initialize(World *world, FreeListArena *parent_arena)
             particle_spawner_initialize(ps, config);
         }
 
-#endif
+#    endif
         {
-            /*Inventory *inv = */es_add_component(entity, Inventory);
+            /*Inventory *inv = */ es_add_component(entity, Inventory);
             if (i != 0) {
-                /*Inventory *inv_storable = */es_add_component(entity, InventoryStorable);
+                /*Inventory *inv_storable = */ es_add_component(
+                    entity, InventoryStorable);
                 Equippable *equippable = es_add_component(entity, Equippable);
                 equippable->equippable_in_slot = EQUIP_SLOT_WEAPON;
 
-		ItemModifiers *mods = es_add_component(entity, ItemModifiers);
-		add_item_modifier(mods, create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE));
+                ItemModifiers *mods = es_add_component(entity, ItemModifiers);
+                add_item_modifier(mods,
+                    create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE));
 
-		NameComponent *name = es_add_component(entity, NameComponent);
-		*name = name_component(str_lit("Item name"));
+                NameComponent *name = es_add_component(entity, NameComponent);
+                *name = name_component(str_lit("Item name"));
             }
 
-            /*Equipment *eq =*/ es_add_component(entity, Equipment);
+            /*Equipment *eq =*/es_add_component(entity, Equipment);
         }
 #endif
     }

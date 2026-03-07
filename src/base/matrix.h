@@ -1,9 +1,9 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include "direction.h"
 #include "typedefs.h"
 #include "vector.h"
-#include "direction.h"
 
 typedef struct {
     f32 data[4][4];
@@ -21,14 +21,15 @@ inline static Matrix4 mat4_identity(void)
     return m;
 }
 
-inline static Matrix4 mat4_orthographic_base(f32 left, f32 right, f32 bottom, f32 top, f32 z_near, f32 z_far)
+inline static Matrix4 mat4_orthographic_base(
+    f32 left, f32 right, f32 bottom, f32 top, f32 z_near, f32 z_far)
 {
     Matrix4 m = {0};
 
-    m.data[0][0] =  2.0f / (right - left);
-    m.data[1][1] =  2.0f / (top - bottom);
+    m.data[0][0] = 2.0f / (right - left);
+    m.data[1][1] = 2.0f / (top - bottom);
     m.data[2][2] = -2.0f / (z_far - z_near);
-    m.data[3][3] =  1.0f;
+    m.data[3][3] = 1.0f;
 
     m.data[3][0] = -((right + left) / (right - left));
     m.data[3][1] = -((top + bottom) / (top - bottom));
@@ -42,9 +43,11 @@ inline static Matrix4 mat4_orthographic(Vector2i window_size, YDirection y_direc
     Matrix4 result = {0};
 
     if (y_direction == Y_IS_UP) {
-        result = mat4_orthographic_base(0.0f, (f32)window_size.x, 0.0f, (f32)window_size.y, 0.1f, 100.0f);
+        result = mat4_orthographic_base(
+            0.0f, (f32)window_size.x, 0.0f, (f32)window_size.y, 0.1f, 100.0f);
     } else {
-        result = mat4_orthographic_base(0.0f, (f32)window_size.x, (f32)window_size.y, 0.0f, 0.1f, 100.0f);
+        result = mat4_orthographic_base(
+            0.0f, (f32)window_size.x, (f32)window_size.y, 0.0f, 0.1f, 100.0f);
     }
 
     return result;

@@ -1,21 +1,19 @@
 #ifndef TRIGGER_H
 #define TRIGGER_H
 
-#include "entity/entity_id.h"
 #include "components/component_id.h"
+#include "entity/entity_id.h"
 
 // TODO: something like trigger_cooldown would be a better name
 
 // A trigger is any interaction between two entities. If this trigger needs a cooldown
 // before it can be retriggered, a cooldown can be inserted into a table.
 
-#define should_invoke_trigger(world, entity, other, component)	\
-    es_has_component(entity, component)				\
-    && !trigger_is_on_cooldown(					\
-	&world->trigger_cooldowns,				\
-	es_get_id_of_entity(&world->entity_system, entity),	\
-	es_get_id_of_entity(&world->entity_system, other),	\
-	component_id(component))
+#define should_invoke_trigger(world, entity, other, component)                           \
+    es_has_component(entity, component)                                                  \
+        && !trigger_is_on_cooldown(&world->trigger_cooldowns,                            \
+            es_get_id_of_entity(&world->entity_system, entity),                          \
+            es_get_id_of_entity(&world->entity_system, other), component_id(component))
 
 struct LinearArena;
 struct EntitySystem;
@@ -33,7 +31,7 @@ typedef struct {
     RetriggerBehaviourKind kind;
 
     union {
-	f32 duration_in_seconds;
+        f32 duration_in_seconds;
     } as;
 } RetriggerBehaviour;
 
@@ -54,14 +52,16 @@ typedef struct {
 } TriggerCooldownList;
 
 typedef struct {
-    TriggerCooldownList  table[512]; // TODO: dynamically sized
-    TriggerCooldownList  free_node_list;
+    TriggerCooldownList table[512]; // TODO: dynamically sized
+    TriggerCooldownList free_node_list;
 } TriggerCooldownTable;
 
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentID component, RetriggerBehaviour retrigger_behaviour, struct LinearArena *arena);
+    ComponentID component, RetriggerBehaviour retrigger_behaviour,
+    struct LinearArena *arena);
 void update_trigger_cooldowns(struct World *world, f32 dt);
-b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b, ComponentID component);
+b32 trigger_is_on_cooldown(
+    TriggerCooldownTable *table, EntityID a, EntityID b, ComponentID component);
 
 static inline RetriggerBehaviour retrigger_whenever(void)
 {

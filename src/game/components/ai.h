@@ -19,9 +19,9 @@ typedef struct {
     AIStateKind kind;
 
     union {
-	struct {
-	    EntityID target;
-	} chasing;
+        struct {
+            EntityID target;
+        } chasing;
     } as;
 } AIState;
 

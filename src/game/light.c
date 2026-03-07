@@ -1,21 +1,22 @@
 #define _GNU_SOURCE
-#include <stdlib.h>
-
 #include "light.h"
-#include "base/linear_arena.h"
+
+#include "asset_table.h"
 #include "base/line.h"
+#include "base/linear_arena.h"
 #include "base/list.h"
 #include "base/polygon.h"
-#include "base/vector.h"
-#include "world/tilemap.h"
-#include "world/line_of_sight.h"
-#include "world/world.h"
 #include "base/utils.h"
+#include "base/vector.h"
 #include "renderer/frontend/render_batch.h"
-#include "asset_table.h"
-#include <math.h>
+#include "world/line_of_sight.h"
+#include "world/tilemap.h"
+#include "world/world.h"
 
-#define RAYS_PER_CORNER 3
+#include <math.h>
+#include <stdlib.h>
+
+#define RAYS_PER_CORNER        3
 #define RAY_OFFSET_FROM_CORNER 0.00001f
 
 #define LIGHT_SHADER_ORIGIN_UNIFORM_NAME str_lit("u_light_origin")
@@ -51,16 +52,17 @@ int sort_points_cmp(const void *a, const void *b, void *data)
     return 0;
 }
 
-static void cast_rays_towards_corner(RayHits *hit_array, Vector2 origin, Vector2 target, EdgePool *edges)
+static void cast_rays_towards_corner(
+    RayHits *hit_array, Vector2 origin, Vector2 target, EdgePool *edges)
 {
     Vector2 target_direction = v2_norm(v2_sub(target, origin));
     f32 target_angle = atan2f(target_direction.y, target_direction.x);
 
     for (ssize i = 0; i < RAYS_PER_CORNER; ++i) {
-	f32 angle_offset = -RAY_OFFSET_FROM_CORNER + RAY_OFFSET_FROM_CORNER * (f32)i;
-	f32 ray_angle = target_angle + angle_offset;
+        f32 angle_offset = -RAY_OFFSET_FROM_CORNER + RAY_OFFSET_FROM_CORNER * (f32)i;
+        f32 ray_angle = target_angle + angle_offset;
 
-	Vector2 ray_direction = {cosf(ray_angle), sinf(ray_angle)};
+        Vector2 ray_direction = {cosf(ray_angle), sinf(ray_angle)};
 
         Vector2 closest_hit = {0};
         f32 closest_hit_dist_sq = INFINITY;
@@ -73,14 +75,17 @@ static void cast_rays_towards_corner(RayHits *hit_array, Vector2 origin, Vector2
             // For vertical wall edges, we want them to be lit if we're visually in front of them
             if (edge.direction == CARDINAL_DIR_WEST) {
                 // Raycast against west wall if either above it, or in front of it and to the right
-                should_raycast = (origin.y >= edge.line.end.y) || (origin.x >= edge.line.end.x);
+                should_raycast =
+                    (origin.y >= edge.line.end.y) || (origin.x >= edge.line.end.x);
             } else if (edge.direction == CARDINAL_DIR_EAST) {
                 // Raycast against east wall if either above it, or in front of it and to the left
-                should_raycast = (origin.y >= edge.line.end.y) || (origin.x <= edge.line.end.x);
+                should_raycast =
+                    (origin.y >= edge.line.end.y) || (origin.x <= edge.line.end.x);
             }
 
             if (should_raycast) {
-                LineIntersection intersection = ray_vs_line_intersection(origin, ray_direction, edge.line);
+                LineIntersection intersection =
+                    ray_vs_line_intersection(origin, ray_direction, edge.line);
 
                 if (intersection.are_intersecting) {
                     f32 dist_sq = v2_dist_sq(origin, intersection.intersection_point);
@@ -106,35 +111,37 @@ TriangleFan get_visibility_polygon(Vector2 origin, Tilemap *tilemap, LinearArena
     EdgePool edge_pool = tilemap_get_edge_list(tilemap, alloc);
 
     RayHits ray_hits = {0};
-    ray_hits.items = la_allocate_array(arena, RayHit, edge_pool.count * 2 * RAYS_PER_CORNER);
+    ray_hits.items =
+        la_allocate_array(arena, RayHit, edge_pool.count * 2 * RAYS_PER_CORNER);
 
     for (ssize i = 0; i < edge_pool.count; ++i) {
-	 EdgeLine edge = edge_pool.items[i];
+        EdgeLine edge = edge_pool.items[i];
 
-	cast_rays_towards_corner(&ray_hits, origin, edge.line.start, &edge_pool);
-	cast_rays_towards_corner(&ray_hits, origin, edge.line.end, &edge_pool);
+        cast_rays_towards_corner(&ray_hits, origin, edge.line.start, &edge_pool);
+        cast_rays_towards_corner(&ray_hits, origin, edge.line.end, &edge_pool);
     }
 
     // Sort the ray hits in clockwise order around player to allow connecting them in triangle fan
-    qsort_r(ray_hits.items, (usize)ray_hits.count, sizeof(*ray_hits.items), sort_points_cmp, 0);
+    qsort_r(ray_hits.items, (usize)ray_hits.count, sizeof(*ray_hits.items),
+        sort_points_cmp, 0);
 
     TriangleFan result = {0};
     result.center = origin;
     result.items = la_allocate_array(arena, TriangleFanElement, ray_hits.count);
 
     for (ssize i = 0; i < ray_hits.count; ++i) {
-	RayHit curr = ray_hits.items[i];
-	RayHit next = ray_hits.items[(i + 1) % ray_hits.count];
+        RayHit curr = ray_hits.items[i];
+        RayHit next = ray_hits.items[(i + 1) % ray_hits.count];
 
         TriangleFanElement elem = {curr.intersection_point, next.intersection_point};
-	result.items[result.count++] = elem;
+        result.items[result.count++] = elem;
     }
 
     return result;
 }
 
-void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 origin, LightSource light,
-    f32 intensity, struct LinearArena *arena)
+void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 origin,
+    LightSource light, f32 intensity, struct LinearArena *arena)
 {
     RenderEntry *entry = 0;
 
@@ -144,11 +151,12 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
     color.a *= intensity;
 
     if (light.fading_out) {
-	if (light.fade_duration == 0.0f) {
-	    color.a = 0.0f;
-	} else {
-	    color.a = light.color.a * (1.0f - MIN(light.time_elapsed / light.fade_duration, 1.0f));
-	}
+        if (light.fade_duration == 0.0f) {
+            color.a = 0.0f;
+        } else {
+            color.a = light.color.a
+                      * (1.0f - MIN(light.time_elapsed / light.fade_duration, 1.0f));
+        }
     }
 
     color.a = MAX(0.0f, color.a);
@@ -156,17 +164,17 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (light.kind) {
         case LIGHT_REGULAR: {
-            entry = draw_circle(rb, arena, origin, color, light.radius,
-                shader_handle(LIGHT_SHADER), 0);
+            entry = draw_circle(
+                rb, arena, origin, color, light.radius, shader_handle(LIGHT_SHADER), 0);
         } break;
 
         case LIGHT_RAYCASTED: {
             TriangleFan fan = get_visibility_polygon(origin, &world->tilemap, arena);
-            entry = draw_triangle_fan(rb, arena, fan, color,
-                shader_handle(LIGHT_SHADER), 0);
+            entry =
+                draw_triangle_fan(rb, arena, fan, color, shader_handle(LIGHT_SHADER), 0);
         } break;
 
-        INVALID_DEFAULT_CASE;
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 

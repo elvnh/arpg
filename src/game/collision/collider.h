@@ -2,9 +2,9 @@
 #define COLLIDER_H
 
 #include "base/vector.h"
-#include "entity/entity_faction.h"
 #include "collision/collision_policy.h"
 #include "collision/trigger.h"
+#include "entity/entity_faction.h"
 
 // Entities that are in the same collision group won't collide with eachother
 typedef enum {
@@ -20,13 +20,14 @@ typedef struct ColliderComponent {
     CollisionGroup collision_group;
 } ColliderComponent;
 
-static inline void set_collision_policy_vs_tilemaps(ColliderComponent *collider, CollisionPolicy policy)
+static inline void set_collision_policy_vs_tilemaps(
+    ColliderComponent *collider, CollisionPolicy policy)
 {
     collider->tilemap_collision_policy = policy;
 }
 
-static inline void set_collision_policy_vs_faction(ColliderComponent *collider,
-    CollisionPolicy policy, EntityFaction faction)
+static inline void set_collision_policy_vs_faction(
+    ColliderComponent *collider, CollisionPolicy policy, EntityFaction faction)
 {
     ASSERT(faction >= 0);
     ASSERT(faction < FACTION_COUNT);
@@ -34,15 +35,16 @@ static inline void set_collision_policy_vs_faction(ColliderComponent *collider,
     collider->per_faction_collision_policies[faction] = policy;
 }
 
-static inline void set_collision_policy_vs_entities(ColliderComponent *collider, CollisionPolicy policy)
+static inline void set_collision_policy_vs_entities(
+    ColliderComponent *collider, CollisionPolicy policy)
 {
     for (EntityFaction faction = 0; faction < FACTION_COUNT; ++faction) {
-	set_collision_policy_vs_faction(collider, policy, faction);
+        set_collision_policy_vs_faction(collider, policy, faction);
     }
 }
 
-static inline void set_collision_policy_vs_hostile_faction(ColliderComponent *collider,
-    CollisionPolicy policy, EntityFaction our_faction)
+static inline void set_collision_policy_vs_hostile_faction(
+    ColliderComponent *collider, CollisionPolicy policy, EntityFaction our_faction)
 {
     ASSERT(our_faction != FACTION_NEUTRAL);
     ASSERT(our_faction != FACTION_COUNT);

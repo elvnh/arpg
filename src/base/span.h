@@ -4,8 +4,8 @@
 #include "typedefs.h"
 
 typedef struct {
-    void  *data;
-    ssize  size;
+    void *data;
+    ssize size;
 } Span;
 
 #endif //SPAN_H

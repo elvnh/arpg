@@ -34,32 +34,35 @@ typedef struct {
     EquipmentSlot equippable_in_slot;
 } Equippable;
 
-struct Entity *get_equipped_item_in_slot(struct EntitySystem *es, Equipment *equipment, EquipmentSlot slot);
+struct Entity *get_equipped_item_in_slot(
+    struct EntitySystem *es, Equipment *equipment, EquipmentSlot slot);
 b32 try_equip_item_from_inventory(struct EntitySystem *es, Equipment *equipment,
-				  Inventory *inventory, InventoryStorable *item);
+    Inventory *inventory, InventoryStorable *item);
 void unequip_item_and_put_in_inventory(struct EntitySystem *es, Equipment *equipment,
-                                       Inventory *inventory, EquipmentSlot slot);
+    Inventory *inventory, EquipmentSlot slot);
 
 static inline String equipment_slot_to_string(EquipmentSlot slot)
 {
+    // clang-format off
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (slot) {
-	case EQUIP_SLOT_HEAD:         return str_lit("Head");
-	case EQUIP_SLOT_NECK:         return str_lit("Neck");
-	case EQUIP_SLOT_LEFT_FINGER:  return str_lit("Left ring");
-	case EQUIP_SLOT_RIGHT_FINGER: return str_lit("Right ring");
-	case EQUIP_SLOT_GLOVES:       return str_lit("Hands");
-	case EQUIP_SLOT_BODY:         return str_lit("Body");
-	case EQUIP_SLOT_LEGS:         return str_lit("Legs");
-	case EQUIP_SLOT_FEET:         return str_lit("Feet");
-	case EQUIP_SLOT_WEAPON:       return str_lit("Weapon");
+        case EQUIP_SLOT_HEAD:         return str_lit("Head");
+        case EQUIP_SLOT_NECK:         return str_lit("Neck");
+        case EQUIP_SLOT_LEFT_FINGER:  return str_lit("Left ring");
+        case EQUIP_SLOT_RIGHT_FINGER: return str_lit("Right ring");
+        case EQUIP_SLOT_GLOVES:       return str_lit("Hands");
+        case EQUIP_SLOT_BODY:         return str_lit("Body");
+        case EQUIP_SLOT_LEGS:         return str_lit("Legs");
+        case EQUIP_SLOT_FEET:         return str_lit("Feet");
+        case EQUIP_SLOT_WEAPON:       return str_lit("Weapon");
 
         INVALID_CASE(EQUIP_SLOT_COUNT);
         INVALID_CASE(EQUIPPABLE_IN_FINGER_SLOT);
-	INVALID_DEFAULT_CASE;
+        INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
+    // clang-format on
     ASSERT(0);
     return (String){0};
 }

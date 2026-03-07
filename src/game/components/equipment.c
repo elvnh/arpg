@@ -1,4 +1,5 @@
 #include "equipment.h"
+
 #include "components/component.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
@@ -27,7 +28,8 @@ Entity *get_equipped_item_in_slot(EntitySystem *es, Equipment *eq, EquipmentSlot
     return result;
 }
 
-static EquipResult try_equip_item(EntitySystem *es, Equipment *equipment, Equippable *equippable)
+static EquipResult try_equip_item(
+    EntitySystem *es, Equipment *equipment, Equippable *equippable)
 {
     EquipResult result = {0};
     EquipmentSlot slot = equippable->equippable_in_slot;
@@ -42,8 +44,8 @@ static EquipResult try_equip_item(EntitySystem *es, Equipment *equipment, Equipp
     return result;
 }
 
-b32 try_equip_item_from_inventory(EntitySystem *es, Equipment *equipment, Inventory *inventory,
-    InventoryStorable *item)
+b32 try_equip_item_from_inventory(
+    EntitySystem *es, Equipment *equipment, Inventory *inventory, InventoryStorable *item)
 {
     b32 result = false;
 
@@ -55,8 +57,10 @@ b32 try_equip_item_from_inventory(EntitySystem *es, Equipment *equipment, Invent
 
         if (equip_result.success) {
             if (!entity_id_is_null(equip_result.replaced_item)) {
-                Entity *replaced_item_entity = es_get_entity(es, equip_result.replaced_item);
-                InventoryStorable *replaced_item = es_get_component(replaced_item_entity, InventoryStorable);
+                Entity *replaced_item_entity =
+                    es_get_entity(es, equip_result.replaced_item);
+                InventoryStorable *replaced_item =
+                    es_get_component(replaced_item_entity, InventoryStorable);
 
                 insert_item_in_inventory(es, inventory, replaced_item, item);
             }
@@ -68,8 +72,8 @@ b32 try_equip_item_from_inventory(EntitySystem *es, Equipment *equipment, Invent
     return result;
 }
 
-void unequip_item_and_put_in_inventory(EntitySystem *es, Equipment *equipment,
-    Inventory *inventory, EquipmentSlot slot)
+void unequip_item_and_put_in_inventory(
+    EntitySystem *es, Equipment *equipment, Inventory *inventory, EquipmentSlot slot)
 {
     EntityID *equipped_id = get_equipped_entity_id_in_slot(equipment, slot);
     Entity *equipped = es_get_entity(es, *equipped_id);

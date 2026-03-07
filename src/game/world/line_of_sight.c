@@ -1,4 +1,5 @@
 #include "line_of_sight.h"
+
 #include "base/line.h"
 #include "base/maths.h"
 #include "base/rectangle.h"
@@ -41,38 +42,38 @@ Vector2 find_first_wall_in_direction(Tilemap *tilemap, Vector2 origin, Vector2 d
     f64 side_dist_y = 0.0;
 
     if (dir.x < 0.0f) {
-	step_x = -1;
-	side_dist_x = (pos_x - map_x) * delta_dist_x;
+        step_x = -1;
+        side_dist_x = (pos_x - map_x) * delta_dist_x;
     } else {
-	step_x = 1;
-	side_dist_x = (map_x + 1.0 - pos_x) * delta_dist_x;
+        step_x = 1;
+        side_dist_x = (map_x + 1.0 - pos_x) * delta_dist_x;
     }
 
     if (dir.y < 0) {
-	step_y = -1;
-	side_dist_y = (pos_y - map_y) * delta_dist_y;
+        step_y = -1;
+        side_dist_y = (pos_y - map_y) * delta_dist_y;
     } else {
-	step_y = 1;
-	side_dist_y = (map_y + 1.0 - pos_y) * delta_dist_y;
+        step_y = 1;
+        side_dist_y = (map_y + 1.0 - pos_y) * delta_dist_y;
     }
 
     while (!wall_hit) {
-	if (side_dist_x < side_dist_y) {
-	    side_dist_x += delta_dist_x;
-	    map_x += step_x;
-	    side = SIDE_WEST_EAST;
-	} else {
-	    side_dist_y += delta_dist_y;
-	    map_y += step_y;
-	    side = SIDE_NORTH_SOUTH;
-	}
+        if (side_dist_x < side_dist_y) {
+            side_dist_x += delta_dist_x;
+            map_x += step_x;
+            side = SIDE_WEST_EAST;
+        } else {
+            side_dist_y += delta_dist_y;
+            map_y += step_y;
+            side = SIDE_NORTH_SOUTH;
+        }
 
-	Vector2i map_coords = world_to_tile_coords(v2((f32)map_x, (f32)map_y));
-	Tile *tile = tilemap_get_tile(tilemap, map_coords);
+        Vector2i map_coords = world_to_tile_coords(v2((f32)map_x, (f32)map_y));
+        Tile *tile = tilemap_get_tile(tilemap, map_coords);
 
-	if (!tile || (tile->type == TILE_WALL)) {
-	    wall_hit = true;
-	}
+        if (!tile || (tile->type == TILE_WALL)) {
+            wall_hit = true;
+        }
     }
 
     f32 fraction_x = 0.0f;
@@ -81,14 +82,14 @@ Vector2 find_first_wall_in_direction(Tilemap *tilemap, Vector2 origin, Vector2 d
     // If we hit a vertical line there will be no x fraction, and if we hit a horizontal
     // line there will be no y fraction
     if ((side == SIDE_NORTH_SOUTH) && (dir.x != 0.0f)) {
-	fraction_x = fraction((f32)side_dist_x);
+        fraction_x = fraction((f32)side_dist_x);
     } else if (dir.y != 0.0f) {
-	fraction_y = fraction((f32)side_dist_y);
+        fraction_y = fraction((f32)side_dist_y);
     }
 
     Vector2 result = {
-	(f32)map_x + fraction_x,
-	(f32)map_y + fraction_y,
+        (f32)map_x + fraction_x,
+        (f32)map_y + fraction_y,
     };
 
     return result;
@@ -121,11 +122,12 @@ static b32 has_line_of_sight_to_point(Vector2 origin, Vector2 point, Tilemap *ti
     f32 dist_to_point = v2_dist_sq(origin, point);
     f32 dist_to_intersection = v2_dist_sq(origin, intersection);
 
-    b32 result = (dist_to_point <= dist_to_intersection) ;
+    b32 result = (dist_to_point <= dist_to_intersection);
     return result;
 }
 
-b32 has_line_of_sight_to_entity(PhysicsComponent *self_physics, Entity *other, Tilemap *tilemap)
+b32 has_line_of_sight_to_entity(
+    PhysicsComponent *self_physics, Entity *other, Tilemap *tilemap)
 {
     b32 result = false;
 
@@ -154,7 +156,6 @@ b32 has_line_of_sight_to_entity(PhysicsComponent *self_physics, Entity *other, T
             }
         }
     }
-
 
     return result;
 }

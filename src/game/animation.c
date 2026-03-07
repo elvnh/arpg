@@ -1,10 +1,11 @@
 #include "animation.h"
+
+#include "asset_table.h"
 #include "base/utils.h"
 #include "components/component.h"
 #include "entity/entity.h"
 #include "entity/entity_system.h"
 #include "renderer/frontend/render_batch.h"
-#include "asset_table.h"
 #include "world/world.h"
 
 typedef struct AnimationTable {
@@ -20,8 +21,10 @@ static Animation animation_player_idle(void)
     SpriteRotationBehaviour rotate_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
     Vector2 size = v2(32, 64);
 
-    AnimationFrame frame_1 = {sprite_create(texture_handle(PLAYER_IDLE1), size, rotate_behaviour), 0.75f};
-    AnimationFrame frame_2 = {sprite_create(texture_handle(PLAYER_IDLE2), size, rotate_behaviour), 0.75f};
+    AnimationFrame frame_1 = {
+        sprite_create(texture_handle(PLAYER_IDLE1), size, rotate_behaviour), 0.75f};
+    AnimationFrame frame_2 = {
+        sprite_create(texture_handle(PLAYER_IDLE2), size, rotate_behaviour), 0.75f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -37,8 +40,10 @@ static Animation animation_player_walking(void)
     SpriteRotationBehaviour rotate_behaviour = SPRITE_MIRROR_HORIZONTALLY_BASED_ON_DIR;
     Vector2 size = v2(32, 64);
 
-    AnimationFrame frame_1 = {sprite_create(texture_handle(PLAYER_WALKING1), size, rotate_behaviour), 0.5f};
-    AnimationFrame frame_2 = {sprite_create(texture_handle(PLAYER_WALKING2), size, rotate_behaviour), 0.5f};
+    AnimationFrame frame_1 = {
+        sprite_create(texture_handle(PLAYER_WALKING1), size, rotate_behaviour), 0.5f};
+    AnimationFrame frame_2 = {
+        sprite_create(texture_handle(PLAYER_WALKING2), size, rotate_behaviour), 0.5f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -55,16 +60,13 @@ static Animation animation_player_attack(void)
     Vector2 size = v2(32, 64);
 
     AnimationFrame frame_1 = {
-	sprite_create(texture_handle(PLAYER_ATTACK1), size, rotate_behaviour), 0.125f
-    };
+        sprite_create(texture_handle(PLAYER_ATTACK1), size, rotate_behaviour), 0.125f};
 
     AnimationFrame frame_2 = {
-	sprite_create(texture_handle(PLAYER_ATTACK2), size, rotate_behaviour), 0.125f
-    };
+        sprite_create(texture_handle(PLAYER_ATTACK2), size, rotate_behaviour), 0.125f};
 
     AnimationFrame frame_3 = {
-	sprite_create(texture_handle(PLAYER_ATTACK3), size, rotate_behaviour), 0.1f
-    };
+        sprite_create(texture_handle(PLAYER_ATTACK3), size, rotate_behaviour), 0.1f};
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
@@ -101,47 +103,49 @@ void anim_update_instance(World *world, Entity *entity, PhysicsComponent *physic
 
     AnimationFrame curr_frame = anim->frames[anim_instance->current_frame];
 
-    anim_instance->current_frame_elapsed_time += dt * anim_instance->animation_speed_factor;
+    anim_instance->current_frame_elapsed_time +=
+        dt * anim_instance->animation_speed_factor;
 
     if (anim_instance->current_frame_elapsed_time >= curr_frame.duration) {
         anim_instance->current_frame_elapsed_time = 0.0f;
 
         anim_instance->current_frame += 1;
 
-	ASSERT(anim_instance->current_frame <= anim->frame_count);
+        ASSERT(anim_instance->current_frame <= anim->frame_count);
 
         if (anim_instance->current_frame == anim->frame_count) {
-	    // Animations without special behaviour on animation end should stay on the last frame
-	    anim_instance->current_frame = MIN(anim_instance->current_frame, anim->frame_count - 1);
+            // Animations without special behaviour on animation end should stay on the last frame
+            anim_instance->current_frame =
+                MIN(anim_instance->current_frame, anim->frame_count - 1);
 
-	    switch (anim->on_end_behaviour) {
-		case ANIM_ON_END_REPEAT: {
-		    anim_instance->current_frame = 0;
-		} break;
+            switch (anim->on_end_behaviour) {
+                case ANIM_ON_END_REPEAT: {
+                    anim_instance->current_frame = 0;
+                } break;
 
-		case ANIM_ON_END_TRANSITION_TO_STATE: {
-		    entity_force_transition_to_state(world, entity, physics,
-			anim->state_transition_when_done);
-		} break;
+                case ANIM_ON_END_TRANSITION_TO_STATE: {
+                    entity_force_transition_to_state(
+                        world, entity, physics, anim->state_transition_when_done);
+                } break;
 
-		default: {
-		} break;
-	    }
+                default: {
+                } break;
+            }
         }
     }
 }
 
-void anim_render_instance(AnimationInstance *anim_instance, PhysicsComponent *owner_physics,
-    RenderBatch *rb, LinearArena *scratch)
+void anim_render_instance(AnimationInstance *anim_instance,
+    PhysicsComponent *owner_physics, RenderBatch *rb, LinearArena *scratch)
 {
     AnimationFrame current_frame = anim_get_current_frame(anim_instance);
 
-    SpriteModifiers sprite_mods = sprite_get_modifiers(owner_physics->direction,
-	current_frame.sprite.rotation_behaviour);
+    SpriteModifiers sprite_mods = sprite_get_modifiers(
+        owner_physics->direction, current_frame.sprite.rotation_behaviour);
 
-    Rectangle sprite_rect = { owner_physics->position, current_frame.sprite.size };
+    Rectangle sprite_rect = {owner_physics->position, current_frame.sprite.size};
     draw_sprite(rb, scratch, current_frame.sprite.texture, sprite_rect, sprite_mods,
-	shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
+        shader_handle(TEXTURE_SHADER), RENDER_LAYER_ENTITIES);
 }
 
 AnimationInstance anim_begin_animation(AnimationID next_anim, f32 speed_factor)
@@ -165,13 +169,14 @@ f32 get_animation_duration(AnimationID anim)
     f32 result = 0.0f;
 
     for (ssize i = 0; i < a->frame_count; ++i) {
-	result += a->frames[i].duration;
+        result += a->frames[i].duration;
     }
 
     return result;
 }
 
-AnimationInstance anim_begin_animation_with_duration(AnimationID anim, f32 duration, f32 speed_factor)
+AnimationInstance anim_begin_animation_with_duration(
+    AnimationID anim, f32 duration, f32 speed_factor)
 {
     f32 anim_duration = get_animation_duration(anim);
     f32 total_speed_factor = (anim_duration / duration) * speed_factor;

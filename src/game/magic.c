@@ -122,7 +122,6 @@ static Entity *try_get_chain_target(World *world, Entity *self,
         Entity *curr_entity = es_get_entity(&world->entity_system, curr->id);
         PhysicsComponent *curr_entity_physics =
             es_get_component(curr_entity, PhysicsComponent);
-        ASSERT(curr_entity_physics);
 
         // TODO: clean this up
         if ((curr_entity->faction == hostile_faction)
@@ -154,11 +153,9 @@ static void chain_collision_callback(
     Entity *collide_target =
         es_get_entity(es, event_data.as.hostile_collision.collided_with);
     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
-    ASSERT(self_physics);
 
     // NOTE: the spell must be the root of the chain
     ChainComponent *chain = es_get_component(self, ChainComponent);
-    ASSERT(chain);
 
     // NOTE: We check if we have already chained off this entity BEFORE we kill
     // the entity due to no chains remaining, since we don't want to die on this one
@@ -194,7 +191,6 @@ static void chain_collision_callback(
 
         --cb_data->as.chain.chains_remaining;
 
-        // TODO: remove entire chain of entities
         EntityWithID chain_link_entity =
             world_spawn_entity(event_data.world, self_physics->position, self->faction);
         ChainComponent *chain_link =
@@ -261,7 +257,8 @@ static void spawn_spell_entity(World *world, const Spell *spell, Entity *caster,
         ASSERT(!spell_has_prop(spell, SPELL_PROP_PROJECTILE));
         spell_collider->size = v2(spell->aoe.base_radius, spell->aoe.base_radius);
 
-        SpriteComponent *sprite_comp = es_get_component(spell_entity, SpriteComponent);
+        SpriteComponent *sprite_comp =
+            es_try_get_component(spell_entity, SpriteComponent);
 
         if (sprite_comp) {
             sprite_comp->sprite.size = spell_collider->size;
@@ -472,9 +469,6 @@ static void spawn_spell_entities_impl(World *world, const Spell *spell, Entity *
 void spawn_spell_entities(World *world, SpellID id, Entity *caster, Vector2 target_pos)
 {
     PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
-    ASSERT(physics
-           && "It probably doesn't make sense for a non-spatial entity to cast a spell");
-
     const Spell *spell = get_spell_by_id(id);
 
     CastSpellParams params = {0};
@@ -498,7 +492,6 @@ void try_cast_spell(
     World *world, SpellID spell, struct Entity *caster, Vector2 target_pos)
 {
     PhysicsComponent *physics = es_get_component(caster, PhysicsComponent);
-    ASSERT(physics);
     StatValue total_cast_speed = get_total_cast_speed(&world->entity_system, caster);
 
     entity_try_transition_to_state(
@@ -522,7 +515,6 @@ static void fork_collision_callback(
         &event_data.world->entity_system, event_data.as.hostile_collision.collided_with);
 
     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
-    ASSERT(self_physics && "Physics component should have been added when casting spell");
 
     const Spell *fork_spell = get_spell_by_id(cb_data->as.fork.fork_spell);
     ASSERT(!spell_has_prop(fork_spell, SPELL_PROP_FORKING)

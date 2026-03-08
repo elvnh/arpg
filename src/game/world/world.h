@@ -16,9 +16,6 @@
 /*
   TODO:
   - Copying over entities and items when switching world
-  - Keep a list of items that exist in this world to avoid having to iterate
-    all items when destroying world
-  - Maybe eg. item system and entity system should keep pointers to world arena
  */
 
 struct FrameData;
@@ -47,9 +44,9 @@ typedef struct World {
     Chunks map_chunks;
 
     EntitySystem entity_system;
-    EntityID alive_entity_ids[MAX_ENTITIES];
-    EntityIndex alive_entity_count;
-    QuadTreeLocation alive_entity_quad_tree_locations[MAX_ENTITIES];
+    EntityID active_entity_ids[MAX_ENTITIES];
+    EntityIndex active_entity_count;
+    QuadTreeLocation active_entity_quad_tree_locations[MAX_ENTITIES];
     QuadTree quad_tree;
 } World;
 

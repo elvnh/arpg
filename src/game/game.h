@@ -39,6 +39,7 @@ typedef struct GameMemory {
     LinearArena temporary_memory;
 
     // For allocations that will need to be allocated and freed randomly, is a subarena of permanent_memory
+    // TODO: this is only used for creating multiple World isntances, instead create a World pool
     FreeListArena free_list_memory;
 } GameMemory;
 

@@ -50,7 +50,7 @@ b32 try_equip_item_from_inventory(
     b32 result = false;
 
     Entity *item_entity = es_get_component_owner(es, item, InventoryStorable);
-    Equippable *equippable = es_get_component(item_entity, Equippable);
+    Equippable *equippable = es_try_get_component(item_entity, Equippable);
 
     if (equippable) {
         EquipResult equip_result = try_equip_item(es, equipment, equippable);

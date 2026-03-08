@@ -37,7 +37,6 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
             Entity *player = world_get_player_entity(&game->world);
             SpellCasterComponent *spellcaster =
                 es_get_component(player, SpellCasterComponent);
-            ASSERT(spellcaster);
 
             for (ssize i = 0; i < spellcaster->spell_count; ++i) {
                 String spell_name = spell_type_to_string(spellcaster->spellbook[i]);
@@ -58,7 +57,7 @@ static String get_item_widget_text(Entity *item_entity, LinearArena *arena)
 {
     String result = {0};
 
-    NameComponent *name = es_get_component(item_entity, NameComponent);
+    NameComponent *name = es_try_get_component(item_entity, NameComponent);
 
     if (name) {
         // Append the item ID to ensure that there are no widget ID collisions
@@ -82,7 +81,7 @@ static void item_hover_menu(
 
         ui_spacing(ui, 12);
 
-        ItemModifiers *mods = es_get_component(item, ItemModifiers);
+        ItemModifiers *mods = es_try_get_component(item, ItemModifiers);
 
         if (mods) {
             for (ssize i = 0; i < mods->modifier_count; ++i) {
@@ -135,8 +134,6 @@ static void equipment_menu(
 
         Equipment *eq = es_get_component(player, Equipment);
         Inventory *inv = es_get_component(player, Inventory);
-        ASSERT(eq);
-        ASSERT(inv);
 
         for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
             equipment_slot_widget(
@@ -152,7 +149,6 @@ static void inventory_menu(
     UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game->world);
     PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
-    ASSERT(player_physics);
 
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
@@ -167,8 +163,6 @@ static void inventory_menu(
         {
             Inventory *inv = es_get_component(player, Inventory);
             Equipment *eq = es_get_component(player, Equipment);
-            ASSERT(inv);
-            ASSERT(eq);
 
             EntityID curr_item_id = inv->first_item_in_inventory;
 
@@ -179,12 +173,10 @@ static void inventory_menu(
 
                 InventoryStorable *inv_storable =
                     es_get_component(curr_item, InventoryStorable);
-                ASSERT(inv_storable);
 
                 EntityID next_item_id = inv_storable->next_item_in_inventory;
 
                 Equippable *equippable = es_get_component(curr_item, Equippable);
-                ASSERT(equippable);
 
                 String label_string = get_item_widget_text(curr_item, scratch);
 

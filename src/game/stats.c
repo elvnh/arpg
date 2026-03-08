@@ -114,7 +114,8 @@ static StatValue sum_status_effect_modifiers_of_type(
     context.result = initialize_stat_value(mod_type);
 
     StatusEffectComponent *status_effects =
-        es_get_component(entity, StatusEffectComponent);
+        es_try_get_component(entity, StatusEffectComponent);
+
     if (status_effects) {
         for_each_active_status_effect(
             status_effects, sum_status_effect_mods_callback, &context);
@@ -130,7 +131,7 @@ static StatValue sum_modifiers_in_slot(Equipment *eq, Stat stat, EquipmentSlot s
     Entity *item = get_equipped_item_in_slot(es, eq, slot);
 
     if (item) {
-        ItemModifiers *mods = es_get_component(item, ItemModifiers);
+        ItemModifiers *mods = es_try_get_component(item, ItemModifiers);
 
         if (mods) {
             for (s32 i = 0; i < mods->modifier_count; ++i) {
@@ -151,7 +152,7 @@ static StatValue sum_equipment_modifiers_of_type(
 {
     StatValue result = initialize_stat_value(mod_type);
 
-    Equipment *equipment = es_get_component(entity, Equipment);
+    Equipment *equipment = es_try_get_component(entity, Equipment);
 
     if (equipment) {
         for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
@@ -170,11 +171,14 @@ static StatValue get_default_stat_value(Stat stat)
     switch (stat) {
         case STAT_CAST_SPEED:
         case STAT_MOVEMENT_SPEED:
-        case STAT_ACTION_SPEED: return 100;
+        case STAT_ACTION_SPEED:
+            return 100;
 
-        case STAT_HEALTH: return 1;
+        case STAT_HEALTH:
+            return 1;
 
-        default: return 0;
+        default:
+            return 0;
     }
 }
 
@@ -192,7 +196,7 @@ StatValues create_base_stats(void)
 StatValue get_total_stat_value(struct EntitySystem *es, struct Entity *entity, Stat stat)
 {
     StatValue result = 0;
-    StatsComponent *stats = es_get_component(entity, StatsComponent);
+    StatsComponent *stats = es_try_get_component(entity, StatsComponent);
 
     if (stats) {
         result = get_base_stat_value(stats->stats, stat);

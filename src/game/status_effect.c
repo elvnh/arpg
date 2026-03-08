@@ -84,7 +84,7 @@ void apply_status_effect(StatusEffectComponent *comp, StatusEffectID effect_id)
 
 void try_apply_status_effect_to_entity(Entity *entity, StatusEffectID effect_id)
 {
-    StatusEffectComponent *comp = es_get_component(entity, StatusEffectComponent);
+    StatusEffectComponent *comp = es_try_get_component(entity, StatusEffectComponent);
 
     if (!comp) {
         return;

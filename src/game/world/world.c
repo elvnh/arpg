@@ -74,14 +74,14 @@ static Rectangle get_tile_rectangle_in_world_space(Vector2i tile_coords)
 
 static void world_update_entity_quad_tree_location(World *world, ssize alive_entity_index)
 {
-    ASSERT(alive_entity_index < world->alive_entity_count);
+    ASSERT(alive_entity_index < world->active_entity_count);
 
-    EntityID id = world->alive_entity_ids[alive_entity_index];
+    EntityID id = world->active_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
     ASSERT(entity);
 
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-    QuadTreeLocation *loc = &world->alive_entity_quad_tree_locations[alive_entity_index];
+    PhysicsComponent *physics = es_try_get_component(entity, PhysicsComponent);
+    QuadTreeLocation *loc = &world->active_entity_quad_tree_locations[alive_entity_index];
 
     if (physics) {
         Rectangle entity_area = world_get_entity_bounding_box(entity, physics);
@@ -98,13 +98,13 @@ EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction)
 {
     ASSERT(faction >= 0);
     ASSERT(faction < FACTION_COUNT);
-    ASSERT(world->alive_entity_count < MAX_ENTITIES);
+    ASSERT(world->active_entity_count < MAX_ENTITIES);
 
     EntityWithID result = es_create_entity(&world->entity_system, faction);
 
-    ssize alive_index = world->alive_entity_count++;
-    world->alive_entity_ids[alive_index] = result.id;
-    world->alive_entity_quad_tree_locations[alive_index] = QT_NULL_LOCATION;
+    ssize alive_index = world->active_entity_count++;
+    world->active_entity_ids[alive_index] = result.id;
+    world->active_entity_quad_tree_locations[alive_index] = QT_NULL_LOCATION;
 
     return result;
 }
@@ -125,7 +125,7 @@ static void handle_entity_removal_side_effects(
 {
     Entity *dying_entity = es_get_entity(&world->entity_system, id);
     PhysicsComponent *dying_entity_physics =
-        es_get_component(dying_entity, PhysicsComponent);
+        es_try_get_component(dying_entity, PhysicsComponent);
 
     // If the entity is non-spatial, there is (currently) nothing for us to do here
     if (dying_entity_physics) {
@@ -215,27 +215,27 @@ static void handle_entity_removal_side_effects(
 static void world_remove_entity(
     World *world, ssize alive_entity_index, LinearArena *frame_arena)
 {
-    ASSERT(alive_entity_index < world->alive_entity_count);
+    ASSERT(alive_entity_index < world->active_entity_count);
 
-    EntityID *id = &world->alive_entity_ids[alive_entity_index];
+    EntityID *id = &world->active_entity_ids[alive_entity_index];
 
     handle_entity_removal_side_effects(world, *id, frame_arena);
 
     es_remove_entity(&world->entity_system, *id);
 
     QuadTreeLocation *qt_location =
-        &world->alive_entity_quad_tree_locations[alive_entity_index];
+        &world->active_entity_quad_tree_locations[alive_entity_index];
 
     if (!qt_location_is_null(*qt_location)) {
         qt_remove_entity(&world->quad_tree, *id, *qt_location);
     }
 
-    ssize last_index = world->alive_entity_count - 1;
-    *qt_location = world->alive_entity_quad_tree_locations[last_index];
+    ssize last_index = world->active_entity_count - 1;
+    *qt_location = world->active_entity_quad_tree_locations[last_index];
 
-    *id = world->alive_entity_ids[last_index];
+    *id = world->active_entity_ids[last_index];
 
-    --world->alive_entity_count;
+    --world->active_entity_count;
 }
 
 void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena)
@@ -272,7 +272,7 @@ static void deal_damage_to_entity(
     StatValue new_hp = hp->health.current_hitpoints - dmg_sum;
     set_current_health(&hp->health, new_hp);
 
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    PhysicsComponent *physics = es_try_get_component(entity, PhysicsComponent);
     ASSERT(physics && "I guess a non-spatial entity could take damage?");
 
     if (physics) {
@@ -285,7 +285,7 @@ static void try_deal_damage_to_entity(
 {
     (void)sender;
 
-    HealthComponent *hp = es_get_component(receiver, HealthComponent);
+    HealthComponent *hp = es_try_get_component(receiver, HealthComponent);
 
     if (hp) {
         deal_damage_to_entity(world, receiver, hp, damage);
@@ -326,7 +326,7 @@ static b32 entity_should_die(Entity *entity)
 static void entity_update(
     World *world, ssize alive_entity_index, f32 dt, LinearArena *frame_arena)
 {
-    EntityID id = world->alive_entity_ids[alive_entity_index];
+    EntityID id = world->active_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
 
     if (es_has_components(
@@ -342,7 +342,8 @@ static void entity_update(
         b32 found = false;
 
         if (target) {
-            PhysicsComponent *target_physics = es_get_component(target, PhysicsComponent);
+            PhysicsComponent *target_physics =
+                es_try_get_component(target, PhysicsComponent);
 
             // TODO: make it possible to call get_component on null entity
             if (target_physics) {
@@ -448,7 +449,7 @@ static void entity_update(
 static void entity_render(Entity *entity, RenderBatches rbs, LinearArena *scratch,
     struct DebugState *debug_state, World *world)
 {
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    PhysicsComponent *physics = es_try_get_component(entity, PhysicsComponent);
 
     if (!physics) {
         // Can't render a non-spatial entity
@@ -484,11 +485,9 @@ static void entity_render(Entity *entity, RenderBatches rbs, LinearArena *scratc
             PhysicsComponent *next_link_physics =
                 es_get_component(next_link, PhysicsComponent);
 
-            if (next_link_physics) {
-                draw_line(rbs.worldspace_ui_rb, scratch, physics->position,
-                    next_link_physics->position, RGBA32_WHITE, 4.0f,
-                    shader_handle(SHAPE_SHADER), 0);
-            }
+            draw_line(rbs.worldspace_ui_rb, scratch, physics->position,
+                next_link_physics->position, RGBA32_WHITE, 4.0f,
+                shader_handle(SHAPE_SHADER), 0);
         }
     }
 
@@ -726,15 +725,15 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
 static void handle_collision_and_movement(World *world, f32 dt, LinearArena *frame_arena)
 {
     // TODO: don't access alive entity array directly
-    for (EntityIndex i = 0; i < world->alive_entity_count; ++i) {
+    for (EntityIndex i = 0; i < world->active_entity_count; ++i) {
         // TODO: this seems bug prone
 
-        EntityID id_a = world->alive_entity_ids[i];
+        EntityID id_a = world->active_entity_ids[i];
         Entity *a = es_get_entity(&world->entity_system, id_a);
         ASSERT(a);
 
-        ColliderComponent *collider_a = es_get_component(a, ColliderComponent);
-        PhysicsComponent *physics_a = es_get_component(a, PhysicsComponent);
+        ColliderComponent *collider_a = es_try_get_component(a, ColliderComponent);
+        PhysicsComponent *physics_a = es_try_get_component(a, PhysicsComponent);
 
         f32 movement_fraction_left = 1.0f;
 
@@ -754,8 +753,9 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
                     Entity *b = es_get_entity(&world->entity_system, node->id);
 
                     ColliderComponent *collider_b =
-                        es_get_component(b, ColliderComponent);
-                    PhysicsComponent *physics_b = es_get_component(b, PhysicsComponent);
+                        es_try_get_component(b, ColliderComponent);
+                    PhysicsComponent *physics_b =
+                        es_try_get_component(b, PhysicsComponent);
 
                     if (collider_b && physics_b) {
                         movement_fraction_left = entity_vs_entity_collision(world, a,
@@ -816,7 +816,7 @@ static Rectangle get_area_to_update_and_render(World *world, const FrameData *fr
 
 void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena)
 {
-    if (world->alive_entity_count < 1) {
+    if (world->active_entity_count < 1) {
         return;
     }
 
@@ -824,7 +824,7 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     handle_collision_and_movement(world, frame_data->dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
-    EntityIndex entity_count = world->alive_entity_count;
+    EntityIndex entity_count = world->active_entity_count;
 
     for (EntityIndex i = 0; i < entity_count; ++i) {
         entity_update(world, i, frame_data->dt, frame_arena);
@@ -846,8 +846,8 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     swap_and_reset_collision_tables(world);
 
     // Remove inactive entities on end of frame
-    for (ssize i = 0; i < world->alive_entity_count; ++i) {
-        EntityID *id = &world->alive_entity_ids[i];
+    for (ssize i = 0; i < world->active_entity_count; ++i) {
+        EntityID *id = &world->active_entity_ids[i];
         Entity *entity = es_get_entity(&world->entity_system, *id);
 
         if (es_entity_is_inactive(entity)) {
@@ -861,7 +861,7 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
        that were spawned during the frame have the correct quad tree location and are therefore
        rendered if they are on screen.
     */
-    for (ssize i = 0; i < world->alive_entity_count; ++i) {
+    for (ssize i = 0; i < world->active_entity_count; ++i) {
         world_update_entity_quad_tree_location(world, i);
     }
 }
@@ -941,12 +941,14 @@ static void render_tilemap(World *world, RenderBatches rb_list,
                          node = list_next(node)) {
                         Entity *entity = es_get_entity(&world->entity_system, node->id);
                         PhysicsComponent *physics =
-                            es_get_component(entity, PhysicsComponent);
+                            es_try_get_component(entity, PhysicsComponent);
 
                         // Entity could technically exist (I think) in quad tree despite not having
                         // a physics component if it was removed mid-frame and we haven't updated all
                         // quad tree locations yet, so we probably just ignore it
-                        ASSERT(physics);
+                        ASSERT(physics
+                               && "Sanity check to see if this can happen, "
+                                  "probably just ignore in release");
                         if (physics) {
                             Rectangle entity_bounds =
                                 world_get_entity_bounding_box(entity, physics);

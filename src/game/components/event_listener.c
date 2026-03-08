@@ -14,7 +14,6 @@ void add_event_callback(Entity *entity, EventType event_type, CallbackFunction f
     ASSERT(event_type < EVENT_COUNT);
 
     EventListenerComponent *comp = es_get_component(entity, EventListenerComponent);
-    ASSERT(comp);
 
     PerEventTypeCallbacks *cb_list = &comp->per_event_callbacks[event_type];
     ASSERT(cb_list->count < ARRAY_COUNT(cb_list->callbacks));
@@ -33,7 +32,7 @@ void send_event_to_entity(
     ASSERT(event_data.event_type >= 0);
     ASSERT(event_data.event_type < EVENT_COUNT);
 
-    EventListenerComponent *comp = es_get_component(entity, EventListenerComponent);
+    EventListenerComponent *comp = es_try_get_component(entity, EventListenerComponent);
 
     if (comp) {
         event_data.receiver_id = es_get_id_of_entity(&world->entity_system, entity);

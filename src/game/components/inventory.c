@@ -15,7 +15,6 @@ static InventoryStorable *get_inventory_item(EntitySystem *es, EntityID id)
 
     if (entity) {
         result = es_get_component(entity, InventoryStorable);
-        ASSERT(result);
     }
 
     return result;

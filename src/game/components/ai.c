@@ -61,10 +61,10 @@ static void update_ai_state_idle(
 {
     // TODO: get entities in area around ourselves instead of checking everyone
 
-    for (ssize i = 0; i < world->alive_entity_count; ++i) {
-        EntityID other_id = world->alive_entity_ids[i];
+    for (ssize i = 0; i < world->active_entity_count; ++i) {
+        EntityID other_id = world->active_entity_ids[i];
         Entity *other = es_get_entity(&world->entity_system, other_id);
-        PhysicsComponent *other_physics = es_get_component(other, PhysicsComponent);
+        PhysicsComponent *other_physics = es_try_get_component(other, PhysicsComponent);
 
         if (other_physics && is_valid_attack_target(entity, other)) {
             f32 distance = v2_dist(other_physics->position, self_physics->position);
@@ -85,7 +85,7 @@ static void update_ai_state_chasing(
 
     Entity *target =
         es_try_get_entity(&world->entity_system, ai->current_state.as.chasing.target);
-    PhysicsComponent *target_physics = es_get_component(target, PhysicsComponent);
+    PhysicsComponent *target_physics = es_try_get_component(target, PhysicsComponent);
     ASSERT(target != entity);
 
     if (!target || !target_physics) {
@@ -95,7 +95,6 @@ static void update_ai_state_chasing(
 
         if (distance < AI_ATTACK_DISTANCE) {
             SpellCasterComponent *caster = es_get_component(entity, SpellCasterComponent);
-            ASSERT(caster);
             ASSERT(caster->spell_count > 0);
 
             // TODO: don't always cast first spell
@@ -132,7 +131,7 @@ static void ai_behaviour_normal_enemy(
 
 void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
 {
-    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+    PhysicsComponent *physics = es_try_get_component(entity, PhysicsComponent);
 
     if (!physics) {
         // Can't really do much if non-spatial, at least for now

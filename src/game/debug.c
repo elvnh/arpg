@@ -75,12 +75,6 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
-    ASSERT(physics && "How did you inspect a non-spatial entity?");
-
-    if (!physics) {
-        return;
-    }
-
     // TODO: don't require name for containers
     ui_begin_container(ui, str_lit("inspect"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
         UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
@@ -99,7 +93,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
         ui_text(ui, entity_pos_str);
         ui_text(ui, entity_faction_str);
 
-        HealthComponent *hp = es_get_component(entity, HealthComponent);
+        HealthComponent *hp = es_try_get_component(entity, HealthComponent);
 
         if (hp) {
             String hp_str = format(scratch, "HP: %zu/%zu", hp->health.current_hitpoints,
@@ -108,7 +102,8 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
             ui_text(ui, hp_str);
         }
 
-        StatusEffectComponent *effects = es_get_component(entity, StatusEffectComponent);
+        StatusEffectComponent *effects =
+            es_try_get_component(entity, StatusEffectComponent);
 
         if (effects) {
             ui_begin_list(ui, str_lit("status_effects"));
@@ -172,7 +167,7 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     String node_string = format(scratch, "Quad tree nodes: %ld", qt_nodes);
 
     String entity_string =
-        format(scratch, "Alive entity count: %d", game->world.alive_entity_count);
+        format(scratch, "Alive entity count: %d", game->world.active_entity_count);
 
     f32 timestep = game->debug_state.timestep_modifier;
     String timestep_value_str = {0};

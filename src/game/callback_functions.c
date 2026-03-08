@@ -12,17 +12,20 @@ void callback_spawn_particles(
 
     Entity *self =
         es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
-    PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
+
+    PhysicsComponent *self_physics = es_try_get_component(self, PhysicsComponent);
     ASSERT(self_physics
            && "Physics was removed inbetween death and callback getting called, "
               "probably shouldn't happen?");
 
-    Rectangle self_bounds = world_get_entity_bounding_box(self, self_physics);
+    if (self_physics) {
+        Rectangle self_bounds = world_get_entity_bounding_box(self, self_physics);
 
-    Chunk *chunk =
-        get_chunk_at_position(&event_data.world->map_chunks, self_physics->position);
-    ASSERT(chunk);
+        Chunk *chunk =
+            get_chunk_at_position(&event_data.world->map_chunks, self_physics->position);
+        ASSERT(chunk);
 
-    spawn_particles_in_chunk(
-        chunk, self_bounds, setup->config, setup->total_particle_count);
+        spawn_particles_in_chunk(
+            chunk, self_bounds, setup->config, setup->total_particle_count);
+    }
 }

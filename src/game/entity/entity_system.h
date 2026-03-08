@@ -22,8 +22,8 @@
   - Better checks to es_get_component_owner ensure someone doesn't pass an invalid pointer,
     would require passing in es
   - Reduce the size of Entity struct
-    - Reduce the size of the arena by reducing how much it's used
     - Reduce the size of other components
+  - Parent entities
  */
 
 #define es_add_component(entity, type)                                                   \
@@ -32,6 +32,8 @@
     es_impl_remove_component(entity, ES_IMPL_COMP_ENUM_NAME(type))
 #define es_get_component(entity, type)                                                   \
     ((type *)es_impl_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
+#define es_try_get_component(entity, type)                                               \
+    ((type *)es_impl_try_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_has_component(entity, type) es_has_components((entity), component_id(type))
 #define es_has_components(entity, flags)                                                 \
     (((entity)->active_components & (flags)) == (flags))
@@ -74,6 +76,7 @@ Entity *es_impl_get_component_owner(
     EntitySystem *es, void *component, ComponentType type);
 void *es_impl_add_component(Entity *entity, ComponentType type);
 void *es_impl_get_component(Entity *entity, ComponentType type);
+void *es_impl_try_get_component(Entity *entity, ComponentType type);
 void *es_impl_get_or_add_component(Entity *entity, ComponentType type);
 void es_impl_remove_component(Entity *entity, ComponentType type);
 

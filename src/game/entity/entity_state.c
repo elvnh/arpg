@@ -30,14 +30,12 @@ static void transition_out_of_current_state(World *world, Entity *entity)
 
 static void play_state_animation(Entity *entity, EntityState state)
 {
-    FlipbookComponent *anim_comp = es_get_component(entity, FlipbookComponent);
+    FlipbookComponent *anim_comp = es_try_get_component(entity, FlipbookComponent);
 
     // TODO: make state transitions work without animation
 
     if (anim_comp) {
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-        ASSERT(physics && "Shouldn't have animation component and no physics");
-
         FlipbookID next_anim = anim_comp->state_animations[state.kind];
 
         // Don't restart the animation if we're currently already playing it

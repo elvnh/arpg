@@ -51,8 +51,6 @@ static void update_player(
     if (hovered_entity && input_is_key_pressed(&frame_data->input, MOUSE_RIGHT)) {
         Inventory *inv = es_get_component(player, Inventory);
         InventoryStorable *storable = es_get_component(hovered_entity, InventoryStorable);
-        ASSERT(inv);
-        ASSERT(storable);
 
         append_item_to_inventory(&world->entity_system, inv, storable);
     }

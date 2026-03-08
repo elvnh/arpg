@@ -221,19 +221,26 @@ void *es_impl_add_component(Entity *entity, ComponentType type)
 
 void *es_impl_get_component(Entity *entity, ComponentType type)
 {
-    if (!es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type))) {
-        return 0;
-    }
+    void *result = es_impl_try_get_component(entity, type);
+    ASSERT(result && "es_get_component called but entity didn't have component");
 
-    ssize component_offset = get_component_offset(type);
-    void *result = byte_offset(entity, component_offset);
+    return result;
+}
+void *es_impl_try_get_component(Entity *entity, ComponentType type)
+{
+    void *result = 0;
+
+    if (es_has_components(entity, ES_IMPL_COMP_ENUM_BIT_VALUE(type))) {
+        ssize component_offset = get_component_offset(type);
+        result = byte_offset(entity, component_offset);
+    }
 
     return result;
 }
 
 void *es_impl_get_or_add_component(Entity *entity, ComponentType type)
 {
-    void *component = es_impl_get_component(entity, type);
+    void *component = es_impl_try_get_component(entity, type);
 
     if (!component) {
         component = es_impl_add_component(entity, type);

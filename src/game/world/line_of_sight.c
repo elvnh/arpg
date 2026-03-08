@@ -131,7 +131,7 @@ b32 has_line_of_sight_to_entity(
 {
     b32 result = false;
 
-    PhysicsComponent *other_physics = es_get_component(other, PhysicsComponent);
+    PhysicsComponent *other_physics = es_try_get_component(other, PhysicsComponent);
 
     if (other_physics) {
         // TODO: maybe origin should be center of entity bounds or something

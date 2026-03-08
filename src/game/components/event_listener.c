@@ -45,7 +45,7 @@ void send_event_to_entity(
             EventCallback *current_cb = &cb_list->callbacks[i];
             ASSERT(current_cb->function);
 
-            current_cb->function(current_cb->user_data, event_data, frame_arena);
+            current_cb->function(&current_cb->user_data, event_data, frame_arena);
         }
     }
 }

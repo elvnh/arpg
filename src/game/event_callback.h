@@ -59,7 +59,7 @@ typedef union {
     ParticleSpawnerSetup particle_spawner_data;
 } CallbackUserData;
 
-typedef void (*CallbackFunction)(CallbackUserData, EventData, struct LinearArena *);
+typedef void (*CallbackFunction)(CallbackUserData *, EventData, struct LinearArena *);
 
 typedef struct {
     CallbackFunction function;

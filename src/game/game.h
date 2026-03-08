@@ -1,9 +1,9 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "animation.h"
 #include "asset_table.h"
 #include "debug.h"
+#include "flipbook_animation.h"
 #include "game/magic.h"
 #include "game_ui.h"
 #include "platform/platform.h"

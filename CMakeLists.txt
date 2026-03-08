@@ -37,6 +37,8 @@ set(
 
 set(
   GAME_SOURCES
+  src/game/flipbook_animation.c
+  src/game/procedural_animation.c
   src/game/game.c
   src/game/health.c
   src/game/callback_functions.c
@@ -44,7 +46,6 @@ set(
   src/game/collision/collision.c
   src/game/collision/collision_event.c
   src/game/collision/collision_policy.c
-  src/game/animation.c
   src/game/debug.c
   src/game/hitsplat.c
   src/game/asset_table.c

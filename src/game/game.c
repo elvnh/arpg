@@ -32,7 +32,7 @@ static void set_global_state(Game *game)
     set_global_asset_table(&game->asset_table);
 
     magic_initialize();
-    anim_initialize();
+    initialize_flipbook_animations();
 }
 
 static void update_player(
@@ -341,7 +341,7 @@ void game_initialize(Game *game, GameMemory *game_memory)
     set_global_state(game);
 
     magic_initialize();
-    anim_initialize();
+    initialize_flipbook_animations();
     initialize_status_effect_system();
 
     world_initialize(&game->world, &game_memory->free_list_memory);

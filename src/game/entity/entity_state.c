@@ -30,18 +30,20 @@ static void transition_out_of_current_state(World *world, Entity *entity)
 
 static void play_state_animation(Entity *entity, EntityState state)
 {
-    AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
+    FlipbookComponent *anim_comp = es_get_component(entity, FlipbookComponent);
+
+    // TODO: make state transitions work without animation
 
     if (anim_comp) {
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
         ASSERT(physics && "Shouldn't have animation component and no physics");
 
-        AnimationID next_anim = anim_comp->state_animations[state.kind];
+        FlipbookID next_anim = anim_comp->state_animations[state.kind];
 
         // Don't restart the animation if we're currently already playing it
         if (next_anim != anim_comp->current_animation.animation_id) {
             // TODO: instead check if there is an animation for this state?
-            ASSERT(next_anim != ANIM_NULL);
+            ASSERT(next_anim != FLIPBOOK_NULL);
 
             if (state.kind == ENTITY_STATE_ATTACKING) {
                 f32 cast_speed =
@@ -49,10 +51,10 @@ static void play_state_animation(Entity *entity, EntityState state)
                 f32 spell_cast_duration =
                     get_spell_cast_duration(state.as.attacking.spell_being_cast);
 
-                anim_comp->current_animation = anim_begin_animation_with_duration(
+                anim_comp->current_animation = begin_flipbook_animation_with_duration(
                     next_anim, spell_cast_duration, cast_speed);
             } else {
-                anim_comp->current_animation = anim_begin_animation(next_anim, 1.0f);
+                anim_comp->current_animation = begin_flipbook_animation(next_anim, 1.0f);
             }
 
             BEGIN_EXHAUSTIVE_SWITCH;

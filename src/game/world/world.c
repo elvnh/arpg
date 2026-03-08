@@ -11,6 +11,7 @@
 #include "components/particle_spawner.h"
 #include "entity/entity_system.h"
 #include "game.h"
+#include "procedural_animation.h"
 #include "renderer/frontend/render_batch.h"
 #include "world/chunk.h"
 
@@ -46,10 +47,10 @@ Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physic
         size.y = MAX(size.y, sprite->size.y);
     }
 
-    if (es_has_component(entity, AnimationComponent)) {
-        AnimationComponent *anim_comp = es_get_component(entity, AnimationComponent);
-        AnimationInstance *current_anim = &anim_comp->current_animation;
-        AnimationFrame current_frame = anim_get_current_frame(current_anim);
+    if (es_has_component(entity, FlipbookComponent)) {
+        FlipbookComponent *anim_comp = es_get_component(entity, FlipbookComponent);
+        FlipbookInstance *current_anim = &anim_comp->current_animation;
+        FlipbookFrame current_frame = get_current_flipbook_frame(current_anim);
 
         size.x = MAX(size.x, current_frame.sprite.size.x);
         size.y = MAX(size.y, current_frame.sprite.size.y);
@@ -412,11 +413,19 @@ static void entity_update(
 
     if (es_has_components(
             entity, component_id(AnimationComponent) | component_id(PhysicsComponent))) {
-        AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
+        AnimationComponent *anim = es_get_component(entity, AnimationComponent);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
-        ASSERT(anim_component->current_animation.animation_id != ANIM_NULL);
 
-        anim_update_instance(
+        update_procedural_animation(&anim->animation, physics, dt);
+    }
+
+    if (es_has_components(
+            entity, component_id(FlipbookComponent) | component_id(PhysicsComponent))) {
+        FlipbookComponent *anim_component = es_get_component(entity, FlipbookComponent);
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+        ASSERT(anim_component->current_animation.animation_id != FLIPBOOK_NULL);
+
+        update_flipbook_animation(
             world, entity, physics, &anim_component->current_animation, dt);
     }
 
@@ -445,19 +454,21 @@ static void entity_render(Entity *entity, RenderBatches rbs, LinearArena *scratc
         return;
     }
 
-    if (es_has_component(entity, AnimationComponent)) {
-        AnimationComponent *anim_component = es_get_component(entity, AnimationComponent);
-        AnimationInstance *anim_instance = &anim_component->current_animation;
+    Vector2 visual_pos = v2_add(physics->position, physics->visual_position_offset);
+    f32 rotation = physics->visual_rotation;
 
-        anim_render_instance(anim_instance, physics, rbs.world_rb, scratch);
-    } else if (es_has_component(entity, SpriteComponent)) {
+    if (es_has_component(entity, SpriteComponent)) {
         SpriteComponent *sprite_comp = es_get_component(entity, SpriteComponent);
         Sprite *sprite = &sprite_comp->sprite;
-        // TODO: how to handle if entity has both sprite and animation component?
+
         SpriteModifiers sprite_mods =
             sprite_get_modifiers(physics->direction, sprite->rotation_behaviour);
 
-        Rectangle sprite_rect = {physics->position, sprite->size};
+        // TODO: don't store rotation here
+        sprite_mods.rotation += rotation;
+
+        Rectangle sprite_rect = {visual_pos, sprite->size};
+
         draw_colored_sprite(rbs.world_rb, scratch, sprite->texture, sprite_rect,
             sprite_mods, sprite->color, shader_handle(TEXTURE_SHADER),
             RENDER_LAYER_ENTITIES);
@@ -946,7 +957,7 @@ static void render_tilemap(World *world, RenderBatches rb_list,
                                 && (physics->position.y > tile_rect.position.y);
 
                             b32 entity_is_visible =
-                                es_has_component(entity, AnimationComponent)
+                                es_has_component(entity, FlipbookComponent)
                                 || es_has_component(entity, SpriteComponent);
 
                             if (entity_is_behind_wall && entity_is_visible) {
@@ -1100,7 +1111,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 1; ++i) {
 #if 1
         EntityWithID entity_with_id =
             world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),
@@ -1135,19 +1146,37 @@ void world_initialize(World *world, FreeListArena *parent_arena)
         }
 
 #    if 0
-        SpriteComponent *sprite_comp = es_add_component(entity, SpriteComponent);
-	Sprite *sprite = &sprite_comp->sprite;
+        AnimationComponent *anim2 = es_add_component(entity, AnimationComponent);
+        anim2->animation.position_function = POSITION_ANIMATION_ORBIT;
+        anim2->animation.position_args.orbit.radius = 100.0f;
+        anim2->animation.position_args.orbit.rotations_in_radians = PI * 2 * 1;
 
-        sprite->texture = asset_list->player_idle1;
-        sprite->size = v2(32, 32);
-	sprite->rotation_behaviour = SPRITE_ROTATE_BASED_ON_DIR;
+        anim2->animation.rotation_animation = ROTATION_ANIMATION_LERP;
+        anim2->animation.rotation_args.lerp.rotations_in_radians = -PI * 2 * 3;
+
+        /* Vector2 end) anim2->position.end = v2(0, 0); */
+        /* anim2->position.middle = v2(0, 100); */
+        /* anim2->rotation.rotations_in_radians = PI * 4.0f; */
+        anim2->animation.is_looping = true;
+
+        anim2->animation.duration = 1.0f;
+
+#    endif
+
+#    if 0
+        SpriteComponent *sprite_comp = es_add_component(entity, SpriteComponent);
+        Sprite *sprite = &sprite_comp->sprite;
+
+        sprite->texture = texture_handle(PLAYER_IDLE1);
+        sprite->size = v2(32, 64);
+        sprite->color = RGBA32_WHITE;
 
 #    else
 
-        AnimationComponent *anim = es_add_component(entity, AnimationComponent);
-        anim->state_animations[ENTITY_STATE_IDLE] = ANIM_PLAYER_IDLE;
-        anim->state_animations[ENTITY_STATE_WALKING] = ANIM_PLAYER_WALKING;
-        anim->state_animations[ENTITY_STATE_ATTACKING] = ANIM_PLAYER_ATTACKING;
+        FlipbookComponent *anim = es_add_component(entity, FlipbookComponent);
+        anim->state_animations[ENTITY_STATE_IDLE] = FLIPBOOK_PLAYER_IDLE;
+        anim->state_animations[ENTITY_STATE_WALKING] = FLIPBOOK_PLAYER_WALKING;
+        anim->state_animations[ENTITY_STATE_ATTACKING] = FLIPBOOK_PLAYER_ATTACKING;
 
         entity_try_transition_to_state(world, entity, physics, state_idle());
 #    endif

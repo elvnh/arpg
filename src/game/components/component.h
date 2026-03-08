@@ -2,7 +2,6 @@
 #define COMPONENT_H
 
 #include "ai.h"
-#include "animation.h"
 #include "base/rgba.h"
 #include "base/utils.h"
 #include "collision/collider.h"
@@ -13,6 +12,7 @@
 #include "entity/entity_state.h"
 #include "equipment.h"
 #include "event_listener.h"
+#include "flipbook_animation.h"
 #include "health.h"
 #include "inventory.h"
 #include "light.h"
@@ -20,6 +20,7 @@
 #include "name.h"
 #include "particle_spawner.h"
 #include "platform/asset.h"
+#include "procedural_animation.h"
 #include "stats.h"
 #include "status_effect.h"
 
@@ -32,6 +33,7 @@
     COMPONENT(StatsComponent)                                                            \
     COMPONENT(StatusEffectComponent)                                                     \
     COMPONENT(ItemModifiers)                                                             \
+    COMPONENT(FlipbookComponent)                                                         \
     COMPONENT(AnimationComponent)                                                        \
     COMPONENT(SpellCasterComponent)                                                      \
     COMPONENT(EventListenerComponent)                                                    \
@@ -61,6 +63,9 @@ typedef struct PhysicsComponent {
     Vector2 position;
     Vector2 velocity;
     Vector2 direction;
+
+    Vector2 visual_position_offset;
+    f32 visual_rotation;
 } PhysicsComponent;
 
 typedef struct {
@@ -75,11 +80,11 @@ typedef struct {
     StatValues stats;
 } StatsComponent;
 
-typedef struct AnimationComponent {
+typedef struct {
     // TODO: don't store the animations per component
-    AnimationID state_animations[ENTITY_STATE_COUNT];
-    AnimationInstance current_animation;
-} AnimationComponent;
+    FlipbookID state_animations[ENTITY_STATE_COUNT];
+    FlipbookInstance current_animation;
+} FlipbookComponent;
 
 typedef struct SpellCasterComponent {
     SpellID spellbook[SPELL_COUNT];
@@ -117,6 +122,10 @@ typedef struct {
     f32 travel_speed;
     DamageInstance damage_on_target_reached;
 } ArcingComponent;
+
+typedef struct {
+    ProceduralAnimation animation;
+} AnimationComponent;
 
 static inline String component_id_to_string(ComponentID id)
 {

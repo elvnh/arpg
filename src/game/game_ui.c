@@ -15,11 +15,9 @@
 #include "ui/widget.h"
 #include "world/world.h"
 
-#define GAME_UI_COLOR                                                                    \
-    (RGBA32)                                                                             \
-    {                                                                                    \
-        0, 1, 0, 0.5f                                                                    \
-    }
+// clang-format off
+#define GAME_UI_COLOR (RGBA32) { 0, 1, 0, 0.5f }
+// clang-format on
 
 // TODO: clean up this file
 
@@ -27,12 +25,12 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
 {
     UIState *ui = &ui_state->backend_state;
 
-    ui_begin_container(ui, str_lit("spellbook"), V2_ZERO, GAME_UI_COLOR,
-        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(
+        ui, str("spellbook"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
-        ui_text(ui, str_lit("Spellbook"));
+        ui_text(ui, str("Spellbook"));
 
-        ui_begin_list(ui, str_lit("spells"));
+        ui_begin_list(ui, str("spells"));
         {
             Entity *player = world_get_player_entity(&game->world);
             SpellCasterComponent *spellcaster =
@@ -64,7 +62,7 @@ static String get_item_widget_text(Entity *item_entity, LinearArena *arena)
         result = format(arena, "%.*s##%d,%d", name->length, name->data,
             item_entity->id.index, item_entity->id.generation);
     } else {
-        result = str_lit("(unnamed item)");
+        result = str("(unnamed item)");
     }
 
     return result;
@@ -117,7 +115,7 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
             item_hover_menu(ui, item, input->mouse_position, scratch);
         }
     } else {
-        ui_non_interactible_button(ui, str_lit("(empty)"));
+        ui_non_interactible_button(ui, str("(empty)"));
     }
 }
 
@@ -127,10 +125,10 @@ static void equipment_menu(
     UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game->world);
 
-    ui_begin_container(ui, str_lit("equipment"), V2_ZERO, GAME_UI_COLOR,
-        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(
+        ui, str("equipment"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
-        ui_text(ui, str_lit("Equipment"));
+        ui_text(ui, str("Equipment"));
 
         Equipment *eq = es_get_component(player, Equipment);
         Inventory *inv = es_get_component(player, Inventory);
@@ -153,13 +151,13 @@ static void inventory_menu(
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
-    ui_begin_container(ui, str_lit("inventory"), V2_ZERO, GAME_UI_COLOR,
-        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(
+        ui, str("inventory"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
-        ui_text(ui, str_lit("Inventory"));
+        ui_text(ui, str("Inventory"));
 
         // TODO: allow setting min/max size of list
-        ui_begin_list(ui, str_lit("player_inventory"));
+        ui_begin_list(ui, str("player_inventory"));
         {
             Inventory *inv = es_get_component(player, Inventory);
             Equipment *eq = es_get_component(player, Equipment);
@@ -211,8 +209,8 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
         return;
     }
 
-    ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT,
-        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(
+        ui, str("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     inventory_menu(&game->game_ui, game, scratch, frame_data);
 

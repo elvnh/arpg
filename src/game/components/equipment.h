@@ -46,15 +46,15 @@ static inline String equipment_slot_to_string(EquipmentSlot slot)
     // clang-format off
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (slot) {
-        case EQUIP_SLOT_HEAD:         return str_lit("Head");
-        case EQUIP_SLOT_NECK:         return str_lit("Neck");
-        case EQUIP_SLOT_LEFT_FINGER:  return str_lit("Left ring");
-        case EQUIP_SLOT_RIGHT_FINGER: return str_lit("Right ring");
-        case EQUIP_SLOT_GLOVES:       return str_lit("Hands");
-        case EQUIP_SLOT_BODY:         return str_lit("Body");
-        case EQUIP_SLOT_LEGS:         return str_lit("Legs");
-        case EQUIP_SLOT_FEET:         return str_lit("Feet");
-        case EQUIP_SLOT_WEAPON:       return str_lit("Weapon");
+        case EQUIP_SLOT_HEAD:         return str("Head");
+        case EQUIP_SLOT_NECK:         return str("Neck");
+        case EQUIP_SLOT_LEFT_FINGER:  return str("Left ring");
+        case EQUIP_SLOT_RIGHT_FINGER: return str("Right ring");
+        case EQUIP_SLOT_GLOVES:       return str("Hands");
+        case EQUIP_SLOT_BODY:         return str("Body");
+        case EQUIP_SLOT_LEGS:         return str("Legs");
+        case EQUIP_SLOT_FEET:         return str("Feet");
+        case EQUIP_SLOT_WEAPON:       return str("Weapon");
 
         INVALID_CASE(EQUIP_SLOT_COUNT);
         INVALID_CASE(EQUIPPABLE_IN_FINGER_SLOT);

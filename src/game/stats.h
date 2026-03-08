@@ -84,14 +84,14 @@ static inline String stat_to_string(Stat stat)
     // clang-format off
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (stat) {
-        case STAT_FIRE_DAMAGE:          return str_lit("Fire damage");
-        case STAT_LIGHTNING_DAMAGE:     return str_lit("Lightning damage");
-        case STAT_FIRE_RESISTANCE:      return str_lit("Fire resistance");
-        case STAT_LIGHTNING_RESISTANCE: return str_lit("Lightning resistance");
-        case STAT_CAST_SPEED:           return str_lit("Cast speed");
-        case STAT_MOVEMENT_SPEED:       return str_lit("Movement speed");
-        case STAT_ACTION_SPEED:         return str_lit("Action speed");
-        case STAT_HEALTH:               return str_lit("Health");
+        case STAT_FIRE_DAMAGE:          return str("Fire damage");
+        case STAT_LIGHTNING_DAMAGE:     return str("Lightning damage");
+        case STAT_FIRE_RESISTANCE:      return str("Fire resistance");
+        case STAT_LIGHTNING_RESISTANCE: return str("Lightning resistance");
+        case STAT_CAST_SPEED:           return str("Cast speed");
+        case STAT_MOVEMENT_SPEED:       return str("Movement speed");
+        case STAT_ACTION_SPEED:         return str("Action speed");
+        case STAT_HEALTH:               return str("Health");
 
             INVALID_CASE(STAT_COUNT);
             INVALID_DEFAULT_CASE;
@@ -100,7 +100,7 @@ static inline String stat_to_string(Stat stat)
     // clang-format on
 
     ASSERT(0);
-    return str_lit("");
+    return str("");
 }
 
 static inline f32 stat_value_percentage_as_factor(StatValue value)

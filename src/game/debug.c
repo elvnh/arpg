@@ -76,7 +76,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
     // TODO: don't require name for containers
-    ui_begin_container(ui, str_lit("inspect"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
+    ui_begin_container(ui, str("inspect"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
         UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         // TODO: inventory and equipment
@@ -106,7 +106,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
             es_try_get_component(entity, StatusEffectComponent);
 
         if (effects) {
-            ui_begin_list(ui, str_lit("status_effects"));
+            ui_begin_list(ui, str("status_effects"));
             {
                 EffectListContext context = {0};
                 context.arena = scratch;
@@ -122,7 +122,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 
     ui_core_same_line(ui);
 
-    ui_begin_container(ui, str_lit("components"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
+    ui_begin_container(ui, str("components"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
         UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         for (ComponentType c = 0; c < COMPONENT_COUNT; ++c) {
@@ -146,8 +146,8 @@ static String dbg_arena_usage_string(String name, ssize usage, LinearArena *aren
 
 void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *frame_data)
 {
-    ui_begin_container(ui, str_lit("root"), V2_ZERO, RGBA32_TRANSPARENT,
-        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(
+        ui, str("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     ssize temp_arena_memory_usage = game->debug_state.scratch_arena_memory_usage;
     ssize perm_arena_memory_usage = game->debug_state.permanent_arena_memory_usage;
@@ -157,11 +157,11 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     String fps_str = format(scratch, "FPS: %.2f", (f64)game->debug_state.average_fps);
 
     String temp_arena_str =
-        dbg_arena_usage_string(str_lit("Frame arena"), temp_arena_memory_usage, scratch);
-    String perm_arena_str = dbg_arena_usage_string(
-        str_lit("Permanent arena"), perm_arena_memory_usage, scratch);
+        dbg_arena_usage_string(str("Frame arena"), temp_arena_memory_usage, scratch);
+    String perm_arena_str =
+        dbg_arena_usage_string(str("Permanent arena"), perm_arena_memory_usage, scratch);
     String world_arena_str =
-        dbg_arena_usage_string(str_lit("World arena"), world_arena_memory_usage, scratch);
+        dbg_arena_usage_string(str("World arena"), world_arena_memory_usage, scratch);
 
     ssize qt_nodes = qt_get_node_count(&game->world.quad_tree);
     String node_string = format(scratch, "Quad tree nodes: %ld", qt_nodes);
@@ -173,7 +173,7 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     String timestep_value_str = {0};
 
     if (timestep == 0.0f) {
-        timestep_value_str = str_lit("SINGLE STEP");
+        timestep_value_str = str("SINGLE STEP");
     } else {
         timestep_value_str = format(scratch, "%.2f", (f64)timestep);
     }
@@ -195,27 +195,25 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
 
     ui_spacing(ui, 8);
 
-    ui_checkbox(ui, str_lit("Render quad tree"), &game->debug_state.quad_tree_overlay);
-    ui_checkbox(ui, str_lit("Render colliders"), &game->debug_state.render_colliders);
-    ui_checkbox(ui, str_lit("Render origin"), &game->debug_state.render_origin);
+    ui_checkbox(ui, str("Render quad tree"), &game->debug_state.quad_tree_overlay);
+    ui_checkbox(ui, str("Render colliders"), &game->debug_state.render_colliders);
+    ui_checkbox(ui, str("Render origin"), &game->debug_state.render_origin);
+    ui_checkbox(ui, str("Render entity bounds"), &game->debug_state.render_entity_bounds);
     ui_checkbox(
-        ui, str_lit("Render entity bounds"), &game->debug_state.render_entity_bounds);
+        ui, str("Render entity velocity"), &game->debug_state.render_entity_velocity);
+    ui_checkbox(ui, str("Render edge list"), &game->debug_state.render_edge_list);
+    ui_checkbox(ui, str("Render camera bounds"), &game->debug_state.render_camera_bounds);
+    ui_checkbox(ui, str("Render chunks"), &game->debug_state.render_chunks);
+    ui_checkbox(ui, str("Render chain links"), &game->debug_state.render_chain_links);
     ui_checkbox(
-        ui, str_lit("Render entity velocity"), &game->debug_state.render_entity_velocity);
-    ui_checkbox(ui, str_lit("Render edge list"), &game->debug_state.render_edge_list);
-    ui_checkbox(
-        ui, str_lit("Render camera bounds"), &game->debug_state.render_camera_bounds);
-    ui_checkbox(ui, str_lit("Render chunks"), &game->debug_state.render_chunks);
-    ui_checkbox(ui, str_lit("Render chain links"), &game->debug_state.render_chain_links);
-    ui_checkbox(
-        ui, str_lit("Render chaining spells"), &game->debug_state.render_chaining_spells);
+        ui, str("Render chaining spells"), &game->debug_state.render_chaining_spells);
 
     ui_spacing(ui, 8);
 
     {
         String camera_str = game->debug_state.debug_camera_active
-                                ? str_lit("DEBUG CAMERA ACTIVE")
-                                : str_lit("NORMAL CAMERA ACTIVE");
+                                ? str("DEBUG CAMERA ACTIVE")
+                                : str("NORMAL CAMERA ACTIVE");
 
         String camera_pos_str = format(
             scratch, "Camera position: " FMT_V2, FMT_V2_ARG(game->world.camera.position));

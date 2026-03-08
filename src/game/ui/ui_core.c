@@ -156,7 +156,7 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
 
 static String get_visible_widget_text(String string)
 {
-    String result = str_substring_before_pattern(string, str_lit("##"));
+    String result = str_substring_before_pattern(string, str("##"));
 
     return result;
 }
@@ -320,9 +320,8 @@ static CalculateInteractionResult calculate_widget_interactions(UIState *ui,
         // TODO: proper text input
         if (widget_has_flag(widget, WIDGET_TEXT_INPUT)) {
             if (input_is_key_pressed(&frame_data->input, KEY_A)) {
-                if (str_builder_has_capacity_for(
-                        widget->text_input_buffer, str_lit("A"))) {
-                    str_builder_append(widget->text_input_buffer, str_lit("A"));
+                if (str_builder_has_capacity_for(widget->text_input_buffer, str("A"))) {
+                    str_builder_append(widget->text_input_buffer, str("A"));
                 }
             }
         }

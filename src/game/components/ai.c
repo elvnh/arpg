@@ -131,6 +131,8 @@ static void ai_behaviour_normal_enemy(
 
 void entity_update_ai(World *world, Entity *entity, AIComponent *ai)
 {
+    return;
+
     PhysicsComponent *physics = es_try_get_component(entity, PhysicsComponent);
 
     if (!physics) {

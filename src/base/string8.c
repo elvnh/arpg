@@ -42,7 +42,7 @@ String str_null_terminate(String str, Allocator alloc)
         return null_string;
     }
 
-    String result = str_concat(str, str_lit("\0"), alloc);
+    String result = str_concat(str, str("\0"), alloc);
     --result.length;
 
     return result;
@@ -134,7 +134,7 @@ String str_allocate(ssize length, Allocator allocator)
 
 ssize str_get_null_terminated_length(String str)
 {
-    return str_find_first_occurence(str, str_lit("\0"));
+    return str_find_first_occurence(str, str("\0"));
 }
 
 String str_create_span(String str, ssize start_index, ssize length)

@@ -85,11 +85,13 @@ static s32 get_glfw_key_equivalent(Key key)
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (key) {
 #define INPUT_KEY(key)                                                                   \
-    case key: return GLFW_##key;
+    case key:                                                                            \
+        return GLFW_##key;
         INPUT_KEY_LIST
 #undef INPUT_KEY
 
-        case MOUSE_LEFT: return GLFW_MOUSE_BUTTON_LEFT;
+        case MOUSE_LEFT:
+            return GLFW_MOUSE_BUTTON_LEFT;
         case MOUSE_RIGHT:
             return GLFW_MOUSE_BUTTON_RIGHT;
 
@@ -209,7 +211,7 @@ String platform_get_executable_directory(Allocator allocator, LinearArena *scrat
 
 bool platform_path_is_absolute(String path)
 {
-    return str_starts_with(path, str_lit("/"));
+    return str_starts_with(path, str("/"));
 }
 
 String platform_get_absolute_path(
@@ -222,7 +224,7 @@ String platform_get_absolute_path(
     Allocator scratch = la_allocator(scratch_arena);
 
     String working_dir =
-        str_concat(platform_get_working_directory(scratch), str_lit("/"), scratch);
+        str_concat(platform_get_working_directory(scratch), str("/"), scratch);
     String result = str_concat(working_dir, path, allocator);
 
     return result;
@@ -281,7 +283,7 @@ String platform_get_parent_path(
     String path, Allocator allocator, LinearArena *scratch_arena)
 {
     String absolute = platform_get_absolute_path(path, allocator, scratch_arena);
-    ssize last_slash_pos = str_find_last_occurence(absolute, str_lit("/"));
+    ssize last_slash_pos = str_find_last_occurence(absolute, str("/"));
     ASSERT(last_slash_pos != -1);
 
     String result = {
@@ -294,7 +296,7 @@ String platform_get_parent_path(
 
 String platform_get_filename(String path)
 {
-    ssize slash_index = str_find_last_occurence(path, str_lit("/"));
+    ssize slash_index = str_find_last_occurence(path, str("/"));
 
     if (slash_index == -1) {
         return path;
@@ -405,11 +407,11 @@ void platform_for_each_file_in_dir(
 
         // TODO: use new format function for constructing paths
         String full_path =
-            str_concat(str_concat(directory, str_lit("/"), la_allocator(scratch)), name,
+            str_concat(str_concat(directory, str("/"), la_allocator(scratch)), name,
                 la_allocator(scratch));
 
         if (entry->d_type == DT_DIR) {
-            if (!str_equal(name, str_lit(".")) && !str_equal(name, str_lit(".."))) {
+            if (!str_equal(name, str(".")) && !str_equal(name, str(".."))) {
                 platform_for_each_file_in_dir(full_path, callback, scratch);
             }
         } else {

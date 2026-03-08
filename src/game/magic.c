@@ -661,17 +661,17 @@ String spell_type_to_string(SpellID id)
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (id) {
         case SPELL_FIREBALL:
-            return str_lit("Fireball");
+            return str("Fireball");
         case SPELL_SPARK:
-            return str_lit("Spark");
+            return str("Spark");
         case SPELL_ICE_SHARD:
-            return str_lit("Ice shard");
+            return str("Ice shard");
         case SPELL_ICE_SHARD_TRIGGER:
-            return str_lit("Ice shard trigger");
+            return str("Ice shard trigger");
         case SPELL_BLIZZARD:
-            return str_lit("Blizzard");
+            return str("Blizzard");
         case SPELL_CHAIN:
-            return str_lit("Chain");
+            return str("Chain");
 
             INVALID_CASE(SPELL_COUNT);
             INVALID_DEFAULT_CASE;

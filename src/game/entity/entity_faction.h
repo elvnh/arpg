@@ -18,11 +18,11 @@ static inline String entity_faction_to_string(EntityFaction faction)
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (faction) {
         case FACTION_NEUTRAL:
-            return str_lit("Neutral");
+            return str("Neutral");
         case FACTION_PLAYER:
-            return str_lit("Player");
+            return str("Player");
         case FACTION_ENEMY:
-            return str_lit("Enemy");
+            return str("Enemy");
         case FACTION_COUNT:
             break;
     }

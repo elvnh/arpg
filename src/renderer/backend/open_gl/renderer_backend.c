@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include "renderer/backend/renderer_backend.h"
 
 #include "base/allocator.h"
 #include "base/rectangle.h"
@@ -6,33 +6,33 @@
 #include "base/string8.h"
 #include "base/utils.h"
 #include "base/vector.h"
-#include "camera.h"
-#include "renderer/frontend/render_target.h"
-#include "renderer/backend/renderer_backend.h"
 #include "base/vertex.h"
+#include "camera.h"
 #include "renderer/backend/vertex_buffer.h"
+#include "renderer/frontend/render_target.h"
 
-#define POSITION_ATTRIBUTE    0
-#define UV_ATTRIBUTE          1
-#define COLOR_ATTRIBUTE       2
+#include <GL/glew.h>
 
-#define VERTEX_SHADER_DIRECTIVE    str_lit("#vertex")
-#define FRAGMENT_SHADER_DIRECTIVE  str_lit("#fragment")
+#define POSITION_ATTRIBUTE 0
+#define UV_ATTRIBUTE       1
+#define COLOR_ATTRIBUTE    2
+
+#define VERTEX_SHADER_DIRECTIVE   str("#vertex")
+#define FRAGMENT_SHADER_DIRECTIVE str("#fragment")
 
 #define GLOBAL_UNIFORMS_BINDING_POINT 0
 #define GLOBAL_UNIFORMS_NAME          "GlobalUniforms"
 
 #define GLSL_VERSION_STRING "#version 330\n"
-#define GLOBAL_UNIFORMS_SOURCE "layout (std140) uniform "GLOBAL_UNIFORMS_NAME" { " \
-    "    uniform mat4 u_proj; "                                                    \
+#define GLOBAL_UNIFORMS_SOURCE                                                           \
+    "layout (std140) uniform " GLOBAL_UNIFORMS_NAME " { "                                \
+    "    uniform mat4 u_proj; "                                                          \
     "}; "
 
-static const char base_vertex_shader_source[] =
-    GLSL_VERSION_STRING
+static const char base_vertex_shader_source[] = GLSL_VERSION_STRING
     "layout (location = 0) in vec2 a_world_pos; "
     "layout (location = 1) in vec2 a_uv; "
-    "layout (location = 2) in vec4 a_color; "
-    GLOBAL_UNIFORMS_SOURCE
+    "layout (location = 2) in vec4 a_color; " GLOBAL_UNIFORMS_SOURCE
     "void set_position() "
     "{ "
     "    gl_Position.xy = (u_proj * vec4(a_world_pos.xy, 0.0f, 1.0f)).xy;"
@@ -40,8 +40,7 @@ static const char base_vertex_shader_source[] =
     "} ";
 
 static const char base_fragment_shader_source[] =
-    GLSL_VERSION_STRING
-    GLOBAL_UNIFORMS_SOURCE;
+    GLSL_VERSION_STRING GLOBAL_UNIFORMS_SOURCE;
 
 typedef struct {
     Matrix4 projection;
@@ -72,8 +71,8 @@ struct TextureAsset {
     GLuint native_handle;
 };
 
-static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
-    GLsizei length, const GLchar* message, const void* user_param)
+static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id,
+    GLenum severity, GLsizei length, const GLchar *message, const void *user_param)
 {
     (void)source;
     (void)id;
@@ -81,12 +80,13 @@ static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, 
     (void)user_param;
 
     if (type == GL_DEBUG_TYPE_ERROR) {
-        fprintf(stderr, "%s\nSeverity: 0x%x\nMessage: %s\n",
-            "** OpenGL ERROR **", severity, message);
+        fprintf(stderr, "%s\nSeverity: 0x%x\nMessage: %s\n", "** OpenGL ERROR **",
+            severity, message);
     }
 }
 
-static BackendFramebuffer *get_framebuffer(RendererBackend *backend, FrameBuffer render_target)
+static BackendFramebuffer *get_framebuffer(
+    RendererBackend *backend, FrameBuffer render_target)
 {
     ASSERT(render_target >= 0);
     ASSERT(render_target < FRAME_BUFFER_COUNT);
@@ -103,7 +103,8 @@ static GLuint get_framebuffer_object(RendererBackend *backend, FrameBuffer rende
     return result;
 }
 
-static GLuint get_render_target_texture(RendererBackend *backend, FrameBuffer render_target)
+static GLuint get_render_target_texture(
+    RendererBackend *backend, FrameBuffer render_target)
 {
     BackendFramebuffer *fb = get_framebuffer(backend, render_target);
     GLuint result = fb->color_buffer;
@@ -111,7 +112,8 @@ static GLuint get_render_target_texture(RendererBackend *backend, FrameBuffer re
     return result;
 }
 
-static void create_framebuffer(RendererBackend *backend, FrameBuffer render_target, Vector2i window_dims)
+static void create_framebuffer(
+    RendererBackend *backend, FrameBuffer render_target, Vector2i window_dims)
 {
     BackendFramebuffer *fb = get_framebuffer(backend, render_target);
 
@@ -130,13 +132,16 @@ static void create_framebuffer(RendererBackend *backend, FrameBuffer render_targ
     // Renderbuffer (stencil) attachment
     glGenRenderbuffers(1, &fb->renderbuffer_object);
     glBindRenderbuffer(GL_RENDERBUFFER, fb->renderbuffer_object);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_dims.x, window_dims.y);
+    glRenderbufferStorage(
+        GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_dims.x, window_dims.y);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fb->framebuffer_object);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->color_buffer, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb->renderbuffer_object);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->color_buffer, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+        GL_RENDERBUFFER, fb->renderbuffer_object);
 
     ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
@@ -165,30 +170,37 @@ RendererBackend *renderer_backend_initialize(Vector2i window_dims, Allocator all
 
     glGenBuffers(1, &state->vbo);
     glBindBuffer(GL_ARRAY_BUFFER, state->vbo);
-    glBufferData(GL_ARRAY_BUFFER, ARRAY_COUNT(state->vertex_buffer.vertices)
-        * sizeof(*state->vertex_buffer.vertices), 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,
+        ARRAY_COUNT(state->vertex_buffer.vertices)
+            * sizeof(*state->vertex_buffer.vertices),
+        0, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &state->ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ARRAY_COUNT(state->vertex_buffer.indices)
-        * sizeof(*state->vertex_buffer.indices), 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+        ARRAY_COUNT(state->vertex_buffer.indices) * sizeof(*state->vertex_buffer.indices),
+        0, GL_DYNAMIC_DRAW);
 
     s32 stride = (s32)sizeof(*state->vertex_buffer.vertices);
 
-    glVertexAttribPointer(POSITION_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, position));
+    glVertexAttribPointer(POSITION_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride,
+        (void *)offsetof(Vertex, position));
     glEnableVertexAttribArray(POSITION_ATTRIBUTE);
 
-    glVertexAttribPointer(UV_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, uv));
+    glVertexAttribPointer(
+        UV_ATTRIBUTE, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, uv));
     glEnableVertexAttribArray(UV_ATTRIBUTE);
 
-    glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, color));
+    glVertexAttribPointer(
+        COLOR_ATTRIBUTE, 4, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(Vertex, color));
     glEnableVertexAttribArray(COLOR_ATTRIBUTE);
 
     /* UBO */
     glGenBuffers(1, &state->ubo);
     glBindBuffer(GL_UNIFORM_BUFFER, state->ubo);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(GlobalShaderUniforms), 0, GL_DYNAMIC_DRAW);
-    glBindBufferRange(GL_UNIFORM_BUFFER, GLOBAL_UNIFORMS_BINDING_POINT, state->ubo, 0, sizeof(GlobalShaderUniforms));
+    glBindBufferRange(GL_UNIFORM_BUFFER, GLOBAL_UNIFORMS_BINDING_POINT, state->ubo, 0,
+        sizeof(GlobalShaderUniforms));
 
     glBindVertexArray(0);
 
@@ -203,7 +215,7 @@ RendererBackend *renderer_backend_initialize(Vector2i window_dims, Allocator all
 typedef struct {
     String vertex_shader;
     String fragment_shader;
-    bool   ok;
+    bool ok;
 } SplitShaderSource;
 
 static bool assert_shader_compilation_successful(GLuint shader)
@@ -258,7 +270,8 @@ static SplitShaderSource split_shader_source(String source)
     fragment_index += FRAGMENT_SHADER_DIRECTIVE.length;
 
     String vertex_src = str_create_span(source, vertex_index, vertex_end - vertex_index);
-    String fragment_src = str_create_span(source, fragment_index, fragment_end - fragment_index);
+    String fragment_src =
+        str_create_span(source, fragment_index, fragment_end - fragment_index);
 
     result.vertex_shader = vertex_src;
     result.fragment_shader = fragment_src;
@@ -266,7 +279,6 @@ static SplitShaderSource split_shader_source(String source)
 
     return result;
 }
-
 
 ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allocator)
 {
@@ -279,17 +291,15 @@ ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allo
     GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
     GLuint frag_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
 
-    const char *vertex_srcs[] = { base_vertex_shader_source, split_result.vertex_shader.data };
-    const s32 vertex_srcs_lengths[] = {
-        ARRAY_COUNT(base_vertex_shader_source) - 1,
-        ssize_to_s32(split_result.vertex_shader.length)
-    };
+    const char *vertex_srcs[] = {
+        base_vertex_shader_source, split_result.vertex_shader.data};
+    const s32 vertex_srcs_lengths[] = {ARRAY_COUNT(base_vertex_shader_source) - 1,
+        ssize_to_s32(split_result.vertex_shader.length)};
 
-    const char *frag_srcs[] = { base_fragment_shader_source, split_result.fragment_shader.data };
-    const s32 frag_srcs_lengths[] = {
-        ARRAY_COUNT(base_fragment_shader_source) - 1,
-        ssize_to_s32(split_result.fragment_shader.length)
-    };
+    const char *frag_srcs[] = {
+        base_fragment_shader_source, split_result.fragment_shader.data};
+    const s32 frag_srcs_lengths[] = {ARRAY_COUNT(base_fragment_shader_source) - 1,
+        ssize_to_s32(split_result.fragment_shader.length)};
 
     glShaderSource(vertex_shader_id, 2, vertex_srcs, vertex_srcs_lengths);
     glCompileShader(vertex_shader_id);
@@ -298,7 +308,7 @@ ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allo
     glCompileShader(frag_shader_id);
 
     if (!assert_shader_compilation_successful(vertex_shader_id)
-     || !assert_shader_compilation_successful(frag_shader_id)) {
+        || !assert_shader_compilation_successful(frag_shader_id)) {
         // TODO: does anything need to be deleted here?
         return 0;
     }
@@ -313,7 +323,8 @@ ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allo
     glDetachShader(program_id, frag_shader_id);
 
     u32 global_uniforms_index = glGetUniformBlockIndex(program_id, GLOBAL_UNIFORMS_NAME);
-    glUniformBlockBinding(program_id, global_uniforms_index, GLOBAL_UNIFORMS_BINDING_POINT);
+    glUniformBlockBinding(
+        program_id, global_uniforms_index, GLOBAL_UNIFORMS_BINDING_POINT);
 
     ShaderAsset *handle = allocate_item(allocator, ShaderAsset);
     handle->native_handle = program_id;
@@ -353,20 +364,11 @@ TextureAsset *renderer_backend_create_texture(Image image, Allocator allocator)
             channel = GL_RED; // TODO: is this correct?
         } break;
 
-        INVALID_DEFAULT_CASE;
+            INVALID_DEFAULT_CASE;
     }
 
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        image.channels,
-        image.width,
-        image.height,
-        0,
-        channel,
-        GL_UNSIGNED_BYTE,
-        image.data
-    );
+    glTexImage2D(GL_TEXTURE_2D, 0, image.channels, image.width, image.height, 0, channel,
+        GL_UNSIGNED_BYTE, image.data);
 
     glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -394,7 +396,8 @@ void renderer_backend_bind_texture(TextureAsset *texture)
     glBindTexture(GL_TEXTURE_2D, texture->native_handle);
 }
 
-static GLint get_uniform_location(ShaderAsset *shader, String uniform_name, LinearArena *scratch)
+static GLint get_uniform_location(
+    ShaderAsset *shader, String uniform_name, LinearArena *scratch)
 {
     String terminated = str_null_terminate(uniform_name, la_allocator(scratch));
 
@@ -407,31 +410,35 @@ static GLint get_uniform_location(ShaderAsset *shader, String uniform_name, Line
 void renderer_backend_set_global_projection(RendererBackend *backend, Matrix4 matrix)
 {
     glBindBuffer(GL_UNIFORM_BUFFER, backend->ubo);
-    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(GlobalShaderUniforms, projection), sizeof(Matrix4), matrix.data);
+    glBufferSubData(GL_UNIFORM_BUFFER, offsetof(GlobalShaderUniforms, projection),
+        sizeof(Matrix4), matrix.data);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec, LinearArena *scratch)
+void renderer_backend_set_uniform_vec4(
+    ShaderAsset *shader, String uniform_name, Vector4 vec, LinearArena *scratch)
 {
     GLint location = get_uniform_location(shader, uniform_name, scratch);
 
     glUniform4fv(location, 1, &vec.x);
 }
 
-void renderer_backend_set_uniform_float(ShaderAsset *shader, String uniform_name, f32 value, LinearArena *scratch)
+void renderer_backend_set_uniform_float(
+    ShaderAsset *shader, String uniform_name, f32 value, LinearArena *scratch)
 {
     GLint location = get_uniform_location(shader, uniform_name, scratch);
 
     glUniform1f(location, value);
 }
 
-static void flush_if_needed(RendererBackend *backend, s32 vertices_to_draw, ssize indices_to_draw)
+static void flush_if_needed(
+    RendererBackend *backend, s32 vertices_to_draw, ssize indices_to_draw)
 {
-    if (vertex_buffer_flush_needed(&backend->vertex_buffer, vertices_to_draw, indices_to_draw)) {
+    if (vertex_buffer_flush_needed(
+            &backend->vertex_buffer, vertices_to_draw, indices_to_draw)) {
         renderer_backend_flush(backend);
     }
 }
-
 
 void renderer_backend_clear_color_buffer(RGBA32 color)
 {
@@ -442,12 +449,16 @@ void renderer_backend_clear_color_buffer(RGBA32 color)
 void renderer_backend_flush(RendererBackend *backend)
 {
     glBindBuffer(GL_ARRAY_BUFFER, backend->vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, (usize)backend->vertex_buffer.vertex_count
-        * sizeof(*backend->vertex_buffer.vertices), backend->vertex_buffer.vertices);
+    glBufferSubData(GL_ARRAY_BUFFER, 0,
+        (usize)backend->vertex_buffer.vertex_count
+            * sizeof(*backend->vertex_buffer.vertices),
+        backend->vertex_buffer.vertices);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, backend->ebo);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, (usize)backend->vertex_buffer.index_count
-        * sizeof(*backend->vertex_buffer.indices), backend->vertex_buffer.indices);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
+        (usize)backend->vertex_buffer.index_count
+            * sizeof(*backend->vertex_buffer.indices),
+        backend->vertex_buffer.indices);
 
     glBindVertexArray(backend->vao);
     glDrawElements(GL_TRIANGLES, backend->vertex_buffer.index_count, GL_UNSIGNED_INT, 0);
@@ -456,21 +467,24 @@ void renderer_backend_flush(RendererBackend *backend)
     vertex_buffer_reset(&backend->vertex_buffer);
 }
 
-void renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b, Vertex c)
+void renderer_backend_draw_triangle(
+    RendererBackend *backend, Vertex a, Vertex b, Vertex c)
 {
     flush_if_needed(backend, 3, 3);
 
     vertex_buffer_push_triangle(&backend->vertex_buffer, a, b, c);
 }
 
-void renderer_backend_draw_quad(RendererBackend *backend, Vertex a, Vertex b, Vertex c, Vertex d)
+void renderer_backend_draw_quad(
+    RendererBackend *backend, Vertex a, Vertex b, Vertex c, Vertex d)
 {
     flush_if_needed(backend, 4, 6);
 
     vertex_buffer_push_quad(&backend->vertex_buffer, a, b, c, d);
 }
 
-void renderer_backend_change_framebuffer(RendererBackend *backend, FrameBuffer render_target)
+void renderer_backend_change_framebuffer(
+    RendererBackend *backend, FrameBuffer render_target)
 {
     GLuint fbo = get_framebuffer_object(backend, render_target);
 
@@ -484,8 +498,8 @@ void renderer_backend_change_to_main_framebuffer(RendererBackend *backend)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void renderer_backend_blend_framebuffers(RendererBackend *backend, FrameBuffer a,
-    FrameBuffer b, ShaderAsset *shader)
+void renderer_backend_blend_framebuffers(
+    RendererBackend *backend, FrameBuffer a, FrameBuffer b, ShaderAsset *shader)
 {
     // Bind main framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -494,11 +508,14 @@ void renderer_backend_blend_framebuffers(RendererBackend *backend, FrameBuffer a
     renderer_backend_set_blend_function(BLEND_FUNCTION_MULTIPLICATIVE);
 
     // Render a rectangle in screen space covering the entire screen
-    Rectangle rect = {{-1, -1}, {2, 2}};
+    Rectangle rect = {
+        {-1, -1},
+        {2,  2 }
+    };
     RectangleVertices verts = rect_get_vertices(rect, RGBA32_WHITE, Y_IS_DOWN);
 
-    renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
-        verts.bottom_right, verts.bottom_left);
+    renderer_backend_draw_quad(
+        backend, verts.top_left, verts.top_right, verts.bottom_right, verts.bottom_left);
 
     GLuint texture_a = get_render_target_texture(backend, a);
     GLuint texture_b = get_render_target_texture(backend, b);
@@ -528,8 +545,8 @@ void renderer_backend_blend_framebuffers(RendererBackend *backend, FrameBuffer a
     renderer_backend_flush(backend);
 }
 
-void renderer_backend_draw_framebuffer_as_texture(RendererBackend *backend, FrameBuffer render_target,
-    ShaderAsset *shader)
+void renderer_backend_draw_framebuffer_as_texture(
+    RendererBackend *backend, FrameBuffer render_target, ShaderAsset *shader)
 {
     renderer_backend_change_to_main_framebuffer(backend);
     renderer_backend_use_shader(shader);
@@ -539,11 +556,14 @@ void renderer_backend_draw_framebuffer_as_texture(RendererBackend *backend, Fram
     GLuint texture = get_render_target_texture(backend, render_target);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    Rectangle rect = {{-1, -1}, {2, 2}};
+    Rectangle rect = {
+        {-1, -1},
+        {2,  2 }
+    };
     RectangleVertices verts = rect_get_vertices(rect, RGBA32_WHITE, Y_IS_DOWN);
 
-    renderer_backend_draw_quad(backend, verts.top_left, verts.top_right,
-        verts.bottom_right, verts.bottom_left);
+    renderer_backend_draw_quad(
+        backend, verts.top_left, verts.top_right, verts.bottom_right, verts.bottom_left);
 
     renderer_backend_flush(backend);
 
@@ -586,7 +606,7 @@ void renderer_backend_set_blend_function(BlendFunction function)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         } break;
 
-        INVALID_DEFAULT_CASE;
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 }
@@ -601,7 +621,8 @@ void renderer_backend_disable_stencil_writes(void)
     glStencilMask(0x00);
 }
 
-void renderer_backend_set_stencil_pass_operation(RendererBackend *backend, StencilOperation op)
+void renderer_backend_set_stencil_pass_operation(
+    RendererBackend *backend, StencilOperation op)
 {
     (void)backend;
 
@@ -617,13 +638,14 @@ void renderer_backend_set_stencil_pass_operation(RendererBackend *backend, Stenc
             gl_enum = GL_KEEP;
         } break;
 
-        INVALID_DEFAULT_CASE;
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
     glStencilOp(gl_enum, gl_enum, gl_enum);
 }
-void renderer_backend_set_stencil_function(RendererBackend *backend, StencilFunction function, s32 arg)
+void renderer_backend_set_stencil_function(
+    RendererBackend *backend, StencilFunction function, s32 arg)
 {
     (void)backend;
 
@@ -643,7 +665,7 @@ void renderer_backend_set_stencil_function(RendererBackend *backend, StencilFunc
             gl_enum = GL_NOTEQUAL;
         } break;
 
-        INVALID_DEFAULT_CASE;
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 

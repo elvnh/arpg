@@ -132,7 +132,7 @@ static inline String component_id_to_string(ComponentID id)
     switch (id) {
 #define COMPONENT(name)                                                                  \
     case component_id(name):                                                             \
-        return str_lit(#name);
+        return str(#name);
         COMPONENT_LIST
 #undef COMPONENT
     }

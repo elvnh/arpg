@@ -73,7 +73,7 @@ static inline String damage_type_to_string(DamageType type)
     switch (type) {
 #define DAMAGE_TYPE(name, dmg_stat, res_stat, color)                                     \
     case DMG_TYPE_##name:                                                                \
-        return str_lit(#name);
+        return str(#name);
 
         DAMAGE_TYPE_LIST
 #undef DAMAGE_TYPE

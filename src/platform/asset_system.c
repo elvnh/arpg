@@ -100,9 +100,13 @@ static void *get_asset_data(AssetID id, AssetKind kind)
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (kind) {
-        case ASSET_KIND_SHADER: return asset->as.shader_asset;
-        case ASSET_KIND_TEXTURE: return asset->as.texture_asset;
-        case ASSET_KIND_FONT: return asset->as.font_asset; INVALID_DEFAULT_CASE;
+        case ASSET_KIND_SHADER:
+            return asset->as.shader_asset;
+        case ASSET_KIND_TEXTURE:
+            return asset->as.texture_asset;
+        case ASSET_KIND_FONT:
+            return asset->as.font_asset;
+            INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
@@ -139,22 +143,22 @@ static String get_canonical_asset_path(
     // NOTE: path is copied later which is why we allocate in scratch arena while building string
     // TODO: replace with format
     String path = str_concat(platform_get_executable_directory(scratch, scratch_arena),
-        str_lit("/../" ASSET_DIRECTORY), scratch);
+        str("/../" ASSET_DIRECTORY), scratch);
 
     path = platform_get_canonical_path(path, scratch, scratch_arena);
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (kind) {
         case ASSET_KIND_SHADER: {
-            path = str_concat(path, str_lit("/" SHADER_DIRECTORY), scratch);
+            path = str_concat(path, str("/" SHADER_DIRECTORY), scratch);
         } break;
 
         case ASSET_KIND_TEXTURE: {
-            path = str_concat(path, str_lit("/" SPRITE_DIRECTORY), scratch);
+            path = str_concat(path, str("/" SPRITE_DIRECTORY), scratch);
         } break;
 
         case ASSET_KIND_FONT: {
-            path = str_concat(path, str_lit("/" FONT_DIRECTORY), scratch);
+            path = str_concat(path, str("/" FONT_DIRECTORY), scratch);
         } break;
 
             INVALID_DEFAULT_CASE;
@@ -327,8 +331,10 @@ b32 assets_reload_asset_with_path(String path, LinearArena *scratch)
     if (slot) {
         BEGIN_EXHAUSTIVE_SWITCH;
         switch (slot->kind) {
-            case ASSET_KIND_SHADER: return assets_reload_shader(slot, scratch);
-            case ASSET_KIND_TEXTURE: return assets_reload_texture(slot, scratch);
+            case ASSET_KIND_SHADER:
+                return assets_reload_shader(slot, scratch);
+            case ASSET_KIND_TEXTURE:
+                return assets_reload_texture(slot, scratch);
             case ASSET_KIND_FONT:
                 return assets_reload_font(slot, scratch);
 
@@ -384,15 +390,15 @@ AssetTable load_game_assets(LinearArena *scratch)
     switch (get_game_asset_kind(ASSET_NAME_TO_ENUM(name))) {                             \
         case ASSET_KIND_TEXTURE: {                                                       \
             result.textures[ASSET_NAME_TO_ENUM(name)] =                                  \
-                assets_register_texture(str_lit(path), scratch);                         \
+                assets_register_texture(str(path), scratch);                             \
         } break;                                                                         \
         case ASSET_KIND_SHADER: {                                                        \
             result.shaders[ASSET_NAME_TO_ENUM(name)] =                                   \
-                assets_register_shader(str_lit(path), scratch);                          \
+                assets_register_shader(str(path), scratch);                              \
         } break;                                                                         \
         case ASSET_KIND_FONT: {                                                          \
             result.fonts[ASSET_NAME_TO_ENUM(name)] =                                     \
-                assets_register_font(str_lit(path), scratch);                            \
+                assets_register_font(str(path), scratch);                                \
         } break;                                                                         \
     }
 

@@ -32,8 +32,7 @@ static String get_assets_directory(LinearArena *arena)
 static String get_shader_directory(LinearArena *arena)
 {
     String assets_dir = get_assets_directory(arena);
-    String result =
-        str_concat(assets_dir, str_lit(SHADER_DIRECTORY), la_allocator(arena));
+    String result = str_concat(assets_dir, str(SHADER_DIRECTORY), la_allocator(arena));
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;
@@ -42,8 +41,7 @@ static String get_shader_directory(LinearArena *arena)
 static String get_sprite_directory(LinearArena *arena)
 {
     String assets_dir = get_assets_directory(arena);
-    String result =
-        str_concat(assets_dir, str_lit(SPRITE_DIRECTORY), la_allocator(arena));
+    String result = str_concat(assets_dir, str(SPRITE_DIRECTORY), la_allocator(arena));
 
     result = str_null_terminate(result, la_allocator(arena));
 
@@ -53,7 +51,7 @@ static String get_sprite_directory(LinearArena *arena)
 static String get_font_directory(LinearArena *arena)
 {
     String assets_dir = get_assets_directory(arena);
-    String result = str_concat(assets_dir, str_lit(FONT_DIRECTORY), la_allocator(arena));
+    String result = str_concat(assets_dir, str(FONT_DIRECTORY), la_allocator(arena));
 
     result = str_null_terminate(result, la_allocator(arena));
 

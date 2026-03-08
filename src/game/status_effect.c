@@ -151,7 +151,7 @@ String status_effect_to_string(StatusEffectID effect_id)
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (effect_id) {
         case STATUS_EFFECT_CHILLED:
-            return str_lit("Chilled");
+            return str("Chilled");
 
             INVALID_CASE(STATUS_EFFECT_COUNT);
             INVALID_DEFAULT_CASE;

@@ -19,8 +19,8 @@
 #define RAYS_PER_CORNER        3
 #define RAY_OFFSET_FROM_CORNER 0.00001f
 
-#define LIGHT_SHADER_ORIGIN_UNIFORM_NAME str_lit("u_light_origin")
-#define LIGHT_SHADER_RADIUS_UNIFORM_NAME str_lit("u_light_radius")
+#define LIGHT_SHADER_ORIGIN_UNIFORM_NAME str("u_light_origin")
+#define LIGHT_SHADER_RADIUS_UNIFORM_NAME str("u_light_radius")
 
 typedef struct {
     Vector2 intersection_point;

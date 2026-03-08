@@ -12,10 +12,12 @@ static Stat get_resistance_stat_for_damage_type(DamageType dmg_type)
 {
     switch (dmg_type) {
 #define DAMAGE_TYPE(name, dmg_stat, res_stat, color)                                     \
-    case DMG_TYPE_##name: return res_stat;
+    case DMG_TYPE_##name:                                                                \
+        return res_stat;
         DAMAGE_TYPE_LIST
 #undef DAMAGE_TYPE
-        case DMG_TYPE_COUNT: ASSERT(0);
+        case DMG_TYPE_COUNT:
+            ASSERT(0);
     }
 
     ASSERT(0);
@@ -27,7 +29,8 @@ static Stat get_stat_affecting_damage_type(DamageType dmg_type)
 {
     switch (dmg_type) {
 #define DAMAGE_TYPE(name, dmg_stat, res_stat, color)                                     \
-    case DMG_TYPE_##name: return dmg_stat;
+    case DMG_TYPE_##name:                                                                \
+        return dmg_stat;
         DAMAGE_TYPE_LIST
 #undef DAMAGE_TYPE
 
@@ -131,6 +134,32 @@ Damage calculate_damage_received(
 
         set_damage_value(&result, type, final_value);
     }
+
+    return result;
+}
+
+DamagePreset make_damage_preset(struct EntitySystem *es, struct Entity *damage_dealer,
+    DamageRange range, Damage penetration)
+{
+    DamagePreset result = {0};
+
+    result.caster_modified_damage_range.low_roll =
+        calculate_damage_dealt(es, damage_dealer, range.low_roll);
+    result.caster_modified_damage_range.high_roll =
+        calculate_damage_dealt(es, damage_dealer, range.high_roll);
+
+    result.caster_modified_penetration = penetration;
+
+    return result;
+}
+
+DamageInstance roll_damage_from_preset(DamagePreset damage)
+{
+    Damage damage_roll = roll_damage_in_range(damage.caster_modified_damage_range);
+
+    DamageInstance result = {0};
+    result.damage = damage_roll;
+    result.penetration = damage.caster_modified_penetration;
 
     return result;
 }

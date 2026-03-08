@@ -13,6 +13,7 @@
 #include "game.h"
 #include "procedural_animation.h"
 #include "renderer/frontend/render_batch.h"
+#include "stats.h"
 #include "world/chunk.h"
 
 #define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
@@ -573,14 +574,14 @@ static void invoke_entity_vs_entity_collision_triggers(
 
     // Hostile triggers
     if (!same_faction) {
-        if (should_invoke_trigger(world, self, other, DamageFieldComponent)) {
-            DamageFieldComponent *dmg_field =
-                es_get_component(self, DamageFieldComponent);
+        if (should_invoke_trigger(world, self, other, DamageBox)) {
+            DamageBox *dmg_field = es_get_component(self, DamageBox);
 
-            try_deal_damage_to_entity(world, other, self, dmg_field->damage);
+            DamageInstance damage = roll_damage_from_preset(dmg_field->damage_preset);
+            try_deal_damage_to_entity(world, other, self, damage);
 
-            world_add_trigger_cooldown(world, self_id, other_id,
-                component_id(DamageFieldComponent), dmg_field->retrigger_behaviour);
+            world_add_trigger_cooldown(world, self_id, other_id, component_id(DamageBox),
+                dmg_field->retrigger_behaviour);
         }
 
         if (should_invoke_trigger(world, self, other, EffectApplierComponent)) {
@@ -1111,7 +1112,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 1; ++i) {
+    for (s32 i = 0; i < 2; ++i) {
 #if 1
         EntityWithID entity_with_id =
             world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),

@@ -37,7 +37,7 @@
     COMPONENT(AnimationComponent)                                                        \
     COMPONENT(SpellCasterComponent)                                                      \
     COMPONENT(EventListenerComponent)                                                    \
-    COMPONENT(DamageFieldComponent)                                                      \
+    COMPONENT(DamageBox)                                                                 \
     COMPONENT(AIComponent)                                                               \
     COMPONENT(EffectApplierComponent)                                                    \
     COMPONENT(HealthComponent)                                                           \
@@ -92,9 +92,9 @@ typedef struct SpellCasterComponent {
 } SpellCasterComponent;
 
 typedef struct {
-    DamageInstance damage;
+    DamagePreset damage_preset;
     RetriggerBehaviour retrigger_behaviour;
-} DamageFieldComponent;
+} DamageBox;
 
 typedef struct {
     StatusEffectID effect;

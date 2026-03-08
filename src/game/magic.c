@@ -41,7 +41,6 @@ typedef struct {
     Sprite sprite;
 
     struct {
-        // TODO: pack base_damage and penetration_values into struct
         DamageRange base_damage;
         Damage penetration_values;
         RetriggerBehaviour retrigger_behaviour;
@@ -274,16 +273,10 @@ static void spawn_spell_entity(World *world, const Spell *spell, Entity *caster,
     }
 
     if (spell_has_prop(spell, SPELL_PROP_DAMAGE_FIELD)) {
-        Damage damage_roll = roll_damage_in_range(spell->damage_field.base_damage);
-        Damage damage_after_boosts =
-            calculate_damage_dealt(&world->entity_system, caster, damage_roll);
+        DamageBox *dmg_field = es_add_component(spell_entity, DamageBox);
 
-        DamageFieldComponent *dmg_field =
-            es_add_component(spell_entity, DamageFieldComponent);
-
-        DamageInstance damage = {
-            damage_after_boosts, spell->damage_field.penetration_values};
-        dmg_field->damage = damage;
+        dmg_field->damage_preset = make_damage_preset(&world->entity_system, caster,
+            spell->damage_field.base_damage, spell->damage_field.penetration_values);
         dmg_field->retrigger_behaviour = spell->damage_field.retrigger_behaviour;
     }
 
@@ -776,11 +769,16 @@ String spell_type_to_string(SpellID id)
 {
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (id) {
-        case SPELL_FIREBALL: return str_lit("Fireball");
-        case SPELL_SPARK: return str_lit("Spark");
-        case SPELL_ICE_SHARD: return str_lit("Ice shard");
-        case SPELL_ICE_SHARD_TRIGGER: return str_lit("Ice shard trigger");
-        case SPELL_BLIZZARD: return str_lit("Blizzard");
+        case SPELL_FIREBALL:
+            return str_lit("Fireball");
+        case SPELL_SPARK:
+            return str_lit("Spark");
+        case SPELL_ICE_SHARD:
+            return str_lit("Ice shard");
+        case SPELL_ICE_SHARD_TRIGGER:
+            return str_lit("Ice shard trigger");
+        case SPELL_BLIZZARD:
+            return str_lit("Blizzard");
         case SPELL_CHAIN:
             return str_lit("Chain");
 

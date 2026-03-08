@@ -36,6 +36,18 @@ typedef struct {
     Damage high_roll;
 } DamageRange;
 
+/* Represents a snapshotted damage range from which damage can be rolled.
+ * These are created eg. when casting a spell, and if that spell hits
+ * multiple enemies the damage will be rerolled each hit.
+ *
+ * TODO: better name
+ */
+typedef struct {
+    DamageRange caster_modified_damage_range;
+    Damage caster_modified_penetration;
+} DamagePreset;
+
+/* Represents an instance of damage that has been rolled and is ready to be dealt */
 typedef struct {
     Damage damage;
     Damage penetration;
@@ -48,6 +60,9 @@ Damage calculate_damage_received(
 
 StatValue calculate_damage_sum(Damage damage);
 Damage roll_damage_in_range(DamageRange damage_range);
+DamagePreset make_damage_preset(struct EntitySystem *es, struct Entity *damage_dealer,
+    DamageRange range, Damage penetration);
+DamageInstance roll_damage_from_preset(DamagePreset damage);
 void set_damage_value(Damage *damage, DamageType type, StatValue new_value);
 void set_damage_range_for_type(
     DamageRange *range, DamageType type, StatValue low, StatValue high);

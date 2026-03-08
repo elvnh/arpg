@@ -16,6 +16,12 @@ typedef struct String {
     ssize length;
 } String;
 
+typedef struct {
+    String head;
+    String tail;
+    b32 ok;
+} Cut;
+
 typedef struct StringNode {
     LIST_LINKS(StringNode);
 
@@ -43,7 +49,7 @@ String str_allocate(ssize length, Allocator allocator);
 ssize str_get_null_terminated_length(String str);
 String str_create_span(String str, ssize start_index, ssize length);
 ssize str_get_common_prefix_length(String a, String b);
-String str_substring_before_pattern(String str, String substr);
+Cut str_cut(String str, String pattern);
 void str_print(String str);
 b32 str_is_empty(String str);
 

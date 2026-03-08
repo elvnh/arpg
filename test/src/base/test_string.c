@@ -211,17 +211,51 @@ TEST_CASE(string_common_prefix_length)
     REQUIRE(str_get_common_prefix_length(str("abcdef"), str("f")) == 0);
 }
 
-TEST_CASE(string_substring_before_pattern)
+TEST_CASE(string_cut_single_char)
 {
-    // TODO: replace this with str_cut()
-    REQUIRE(
-        str_equal(str_substring_before_pattern(str("abc!def"), str("!")), str("abc")));
-    REQUIRE(str_equal(
-        str_substring_before_pattern(str("abc!def"), str("!!")), str("abc!def")));
-    REQUIRE(
-        str_equal(str_substring_before_pattern(str("abc!!def"), str("!!")), str("abc")));
-    REQUIRE(str_equal(str_substring_before_pattern(str("!!abc"), str("!!")), str("")));
-    REQUIRE(str_equal(str_substring_before_pattern(str("abc"), str("!!")), str("abc")));
+    Cut cut = str_cut(str("abc!def"), str("!"));
+    REQUIRE(cut.ok);
+    REQUIRE(str_equal(cut.head, str("abc")));
+    REQUIRE(str_equal(cut.tail, str("def")));
+}
+
+TEST_CASE(string_cut_multi_char)
+{
+    Cut cut = str_cut(str("abc!!def"), str("!!"));
+    REQUIRE(cut.ok);
+    REQUIRE(str_equal(cut.head, str("abc")));
+    REQUIRE(str_equal(cut.tail, str("def")));
+}
+
+TEST_CASE(string_cut_separator_not_present)
+{
+    Cut cut = str_cut(str("abcdef"), str("!!"));
+    REQUIRE(!cut.ok);
+    REQUIRE(str_equal(cut.head, str("abcdef")));
+}
+
+TEST_CASE(string_cut_separator_at_start)
+{
+    Cut cut = str_cut(str("!!abcdef"), str("!!"));
+    REQUIRE(cut.ok);
+    REQUIRE(str_is_empty(cut.head));
+    REQUIRE(str_equal(cut.tail, str("abcdef")));
+}
+
+TEST_CASE(string_cut_separator_at_end)
+{
+    Cut cut = str_cut(str("abcdef!!"), str("!!"));
+    REQUIRE(cut.ok);
+    REQUIRE(str_equal(cut.head, str("abcdef")));
+    REQUIRE(str_is_empty(cut.tail));
+}
+
+TEST_CASE(string_cut_empty_string)
+{
+    Cut cut = str_cut(null_string, str("!"));
+    REQUIRE(!cut.ok);
+    REQUIRE(str_is_empty(cut.head));
+    REQUIRE(str_is_empty(cut.tail));
 }
 
 TEST_CASE(string_is_empty)

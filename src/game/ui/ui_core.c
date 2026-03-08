@@ -156,7 +156,8 @@ static void calculate_layout_of_children(Widget *widget, PlatformCode platform_c
 
 static String get_visible_widget_text(String string)
 {
-    String result = str_substring_before_pattern(string, str("##"));
+    Cut cut = str_cut(string, str("##"));
+    String result = cut.head;
 
     return result;
 }

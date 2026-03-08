@@ -201,6 +201,26 @@ String str_substring_before_pattern(String str, String substr)
     return result;
 }
 
+Cut str_cut(String str, String pattern)
+{
+    Cut result = {0};
+
+    ssize index = str_find_first_occurence(str, pattern);
+
+    if (index >= 0) {
+        result.ok = true;
+        result.head = str_create_span(str, 0, index);
+
+        ssize tail_index = index + pattern.length;
+        ssize tail_length = str.length - tail_index;
+        result.tail = str_create_span(str, tail_index, tail_length);
+    } else {
+        result.head = str;
+    }
+
+    return result;
+}
+
 void str_print(String str)
 {
     printf("%.*s\n", (s32)str.length, str.data);

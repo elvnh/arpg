@@ -41,6 +41,13 @@ static inline Vector2 v2(f32 x, f32 y)
     return result;
 }
 
+static inline Vector2 v2_from_scalar(f32 scalar)
+{
+    Vector2 result = {scalar, scalar};
+
+    return result;
+}
+
 static inline Vector2i v2i(s32 x, s32 y)
 {
     Vector2i result = {x, y};

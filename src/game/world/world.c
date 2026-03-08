@@ -3,12 +3,11 @@
 #include "asset_table.h"
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "callback_functions.h"
 #include "collision/collider.h"
 #include "collision/collision.h"
 #include "collision/collision_event.h"
-#include "components/chain.h"
 #include "components/component.h"
-#include "components/particle_spawner.h"
 #include "entity/entity_system.h"
 #include "game.h"
 #include "procedural_animation.h"
@@ -509,6 +508,40 @@ static void entity_render(Entity *entity, RenderBatches rbs, LinearArena *scratc
         // TODO: this might look better if the origin is center of entity
         render_light_source(
             world, rbs.lighting_rb, light_origin, light->light, 1.0f, scratch);
+    }
+
+    // TODO: disable these in debug builds
+    if (debug_state->render_chaining_spells
+        && es_has_component(entity, EventListenerComponent)) {
+        EventListenerComponent *listener =
+            es_get_component(entity, EventListenerComponent);
+
+        for (EventType event = 0; event < EVENT_COUNT; ++event) {
+            PerEventTypeCallbacks *cb_list = &listener->per_event_callbacks[event];
+
+            for (ssize i = 0; i < cb_list->count; ++i) {
+                EventCallback *cb = &cb_list->callbacks[i];
+
+                if (cb->function == chain_collision_callback) {
+                    SpellCallbackData *data = &cb->user_data.spell_data;
+
+                    Vector2 rect_size = v2_from_scalar(data->as.chain.search_area_size);
+                    Vector2 rect_pos = v2_sub(physics->position, v2_div_s(rect_size, 2));
+
+                    Rectangle rect = {rect_pos, rect_size};
+
+                    draw_rectangle(rbs.worldspace_ui_rb, scratch, rect,
+                        rgba32(0, 1, 0, 0.5f), shader_handle(SHAPE_SHADER), 0);
+
+                    String chain_text =
+                        format(scratch, "%d", data->as.chain.chains_remaining);
+
+                    draw_text(rbs.worldspace_ui_rb, scratch, chain_text,
+                        rect_center(rect), RGBA32_WHITE, 32,
+                        shader_handle(TEXTURE_SHADER), font_handle(DEFAULT_FONT), 1);
+                }
+            }
+        }
     }
 
     if (debug_state->render_entity_bounds) {

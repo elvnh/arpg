@@ -5,7 +5,6 @@
 #include "platform/platform.h"
 
 #include <linux/limits.h>
-#include <pthread.h>
 #include <string.h>
 #include <sys/inotify.h>
 #include <sys/poll.h>

@@ -3,6 +3,7 @@
 
 #include "platform.h"
 
+#include <pthread.h>
 /*
   TODO:
   - Don't print shader compilation errors over and over
@@ -17,7 +18,7 @@ typedef struct {
 
 typedef struct {
     Allocator allocator;
-    pthread_t thread;
+    pthread_t thread; // TODO: Make into platform-independent handle
     Mutex lock;
     ModifiedAssetQueue asset_reload_queue;
     b32 should_terminate;

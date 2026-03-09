@@ -1281,7 +1281,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
                     create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE));
 
                 NameComponent *name = es_add_component(entity, NameComponent);
-                *name = name_component(str_lit("Item name"));
+                *name = name_component(str("Item name"));
             }
 
             /*Equipment *eq =*/es_add_component(entity, Equipment);

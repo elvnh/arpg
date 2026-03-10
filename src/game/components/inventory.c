@@ -20,8 +20,7 @@ static InventoryStorable *get_inventory_item(EntitySystem *es, EntityID id)
     return result;
 }
 
-void append_item_to_inventory(
-    EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add)
+void append_item_to_inventory(EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add)
 {
     ASSERT(!inventory_contains_item(es, inv, item_to_add));
     ASSERT(entity_id_is_null(item_to_add->next_item_in_inventory));
@@ -40,8 +39,7 @@ void append_item_to_inventory(
         inv->first_item_in_inventory = item_entity->id;
         inv->last_item_in_inventory = item_entity->id;
     } else {
-        InventoryStorable *last_item =
-            get_inventory_item(es, inv->last_item_in_inventory);
+        InventoryStorable *last_item = get_inventory_item(es, inv->last_item_in_inventory);
 
         insert_item_in_inventory(es, inv, item_to_add, last_item);
     }
@@ -50,8 +48,8 @@ void append_item_to_inventory(
     es_remove_component(item_entity, PhysicsComponent);
 }
 
-void insert_item_in_inventory(EntitySystem *es, Inventory *inv,
-    InventoryStorable *item_to_add, InventoryStorable *insert_after)
+void insert_item_in_inventory(EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add,
+    InventoryStorable *insert_after)
 {
     ASSERT(insert_after && "Should never be called on empty inventory");
     ASSERT(!inventory_contains_item(es, inv, item_to_add));
@@ -61,10 +59,8 @@ void insert_item_in_inventory(EntitySystem *es, Inventory *inv,
     ASSERT(entity_id_is_null(item_to_add->prev_item_in_inventory));
     ASSERT(item_to_add != insert_after);
 
-    Entity *item_to_add_entity =
-        es_get_component_owner(es, item_to_add, InventoryStorable);
-    Entity *insert_after_entity =
-        es_get_component_owner(es, insert_after, InventoryStorable);
+    Entity *item_to_add_entity = es_get_component_owner(es, item_to_add, InventoryStorable);
+    Entity *insert_after_entity = es_get_component_owner(es, insert_after, InventoryStorable);
 
     InventoryStorable *next_item =
         get_inventory_item(es, insert_after->next_item_in_inventory);
@@ -78,8 +74,7 @@ void insert_item_in_inventory(EntitySystem *es, Inventory *inv,
 
     insert_after->next_item_in_inventory = item_to_add_entity->id;
 
-    b32 inserted_last =
-        entity_id_equal(inv->last_item_in_inventory, insert_after_entity->id);
+    b32 inserted_last = entity_id_equal(inv->last_item_in_inventory, insert_after_entity->id);
 
     if (inserted_last) {
         inv->last_item_in_inventory = item_to_add_entity->id;
@@ -120,22 +115,22 @@ void remove_item_from_inventory(
     *item_to_remove = zero_struct(InventoryStorable);
 }
 
-void drop_item_on_ground(
-    EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2 pos)
+void drop_item_from_inventory_on_ground(
+    EntitySystem *es, Inventory *inv, InventoryStorable *item)
 {
     ASSERT(inventory_contains_item(es, inv, item));
+    Entity *owner = es_get_component_owner(es, inv, Inventory);
+    PhysicsComponent *owner_physics = es_get_component(owner, PhysicsComponent);
 
     Entity *item_entity = es_get_component_owner(es, item, InventoryStorable);
     ASSERT(!es_has_component(item_entity, PhysicsComponent));
 
-    PhysicsComponent *physics = es_add_component(item_entity, PhysicsComponent);
-    physics->position = pos;
-
     remove_item_from_inventory(es, inv, item);
+
+    world_drop_item_from_position(owner_physics->position, item_entity);
 }
 
-b32 inventory_contains_item(
-    EntitySystem *es, Inventory *inventory, InventoryStorable *item)
+b32 inventory_contains_item(EntitySystem *es, Inventory *inventory, InventoryStorable *item)
 {
     // TODO: keep a ID from item to inventory, or in general from entity to it's parent
     b32 result = false;

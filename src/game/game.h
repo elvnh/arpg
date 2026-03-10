@@ -1,12 +1,12 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "animation/flipbook_animation.h"
 #include "asset_table.h"
 #include "debug.h"
-#include "flipbook_animation.h"
 #include "game/magic.h"
-#include "game_ui.h"
 #include "platform/platform.h"
+#include "ui/game_ui.h"
 #include "ui/ui_core.h"
 #include "world/world.h"
 

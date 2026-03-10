@@ -4,6 +4,7 @@
 #include "base/string8.h"
 #include "components/component.h"
 #include "components/equipment.h"
+#include "components/inventory.h"
 #include "components/modifier.h"
 #include "components/name.h"
 #include "entity/entity_id.h"
@@ -33,8 +34,7 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
         ui_begin_list(ui, str("spells"));
         {
             Entity *player = world_get_player_entity(&game->world);
-            SpellCasterComponent *spellcaster =
-                es_get_component(player, SpellCasterComponent);
+            SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
 
             for (ssize i = 0; i < spellcaster->spell_count; ++i) {
                 String spell_name = spell_type_to_string(spellcaster->spellbook[i]);
@@ -59,8 +59,8 @@ static String get_item_widget_text(Entity *item_entity, LinearArena *arena)
 
     if (name) {
         // Append the item ID to ensure that there are no widget ID collisions
-        result = format(arena, "%.*s##%d,%d", name->length, name->data,
-            item_entity->id.index, item_entity->id.generation);
+        result = format(arena, "%.*s##%d,%d", name->length, name->data, item_entity->id.index,
+            item_entity->id.generation);
     } else {
         result = str("(unnamed item)");
     }
@@ -134,8 +134,7 @@ static void equipment_menu(
         Inventory *inv = es_get_component(player, Inventory);
 
         for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-            equipment_slot_widget(
-                ui_state, game, eq, inv, slot, scratch, &frame_data->input);
+            equipment_slot_widget(ui_state, game, eq, inv, slot, scratch, &frame_data->input);
         }
     }
     ui_pop_container(ui);
@@ -165,8 +164,7 @@ static void inventory_menu(
             EntityID curr_item_id = inv->first_item_in_inventory;
 
             while (!entity_id_is_null(curr_item_id)) {
-                Entity *curr_item =
-                    es_get_entity(&game->world.entity_system, curr_item_id);
+                Entity *curr_item = es_get_entity(&game->world.entity_system, curr_item_id);
                 ASSERT(curr_item);
 
                 InventoryStorable *inv_storable =
@@ -181,8 +179,13 @@ static void inventory_menu(
                 WidgetInteraction interaction = ui_selectable(ui, label_string);
 
                 if (interaction.clicked) {
+#if 0
                     try_equip_item_from_inventory(
                         &game->world.entity_system, eq, inv, inv_storable);
+#else
+                    drop_item_from_inventory_on_ground(
+                        &game->world.entity_system, inv, inv_storable);
+#endif
                 } else if (interaction.hovered) {
                     item_hover_menu(ui, curr_item, mouse_pos, scratch);
                 }

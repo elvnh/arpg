@@ -2,6 +2,8 @@
 #define COMPONENT_H
 
 #include "ai.h"
+#include "animation/flipbook_animation.h"
+#include "animation/procedural_animation.h"
 #include "base/rgba.h"
 #include "base/utils.h"
 #include "collision/collider.h"
@@ -12,7 +14,6 @@
 #include "entity/entity_state.h"
 #include "equipment.h"
 #include "event_listener.h"
-#include "flipbook_animation.h"
 #include "health.h"
 #include "inventory.h"
 #include "light.h"
@@ -20,7 +21,6 @@
 #include "name.h"
 #include "particle_spawner.h"
 #include "platform/asset.h"
-#include "procedural_animation.h"
 #include "stats.h"
 #include "status_effect.h"
 

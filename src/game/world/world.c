@@ -1,5 +1,6 @@
 #include "world.h"
 
+#include "animation/procedural_animation.h"
 #include "asset_table.h"
 #include "base/maths.h"
 #include "base/rgba.h"
@@ -11,7 +12,6 @@
 #include "components/component.h"
 #include "entity/entity_system.h"
 #include "game.h"
-#include "procedural_animation.h"
 #include "renderer/frontend/render_batch.h"
 #include "stats.h"
 #include "world/chunk.h"
@@ -798,7 +798,7 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
                 qt_get_entities_in_area(&world->quad_tree, collision_area, frame_arena);
 
             for (EntityIDNode *node = list_head(&entities_in_area); node;
-                 node = list_next(node)) {
+                node = list_next(node)) {
                 if (!entity_id_equal(node->id, id_a)) {
                     Entity *b = es_get_entity(&world->entity_system, node->id);
 
@@ -985,7 +985,7 @@ static void render_tilemap(
                     b32 make_wall_transparent = false;
 
                     for (EntityIDNode *node = list_head(&entities_near_tile); node;
-                         node = list_next(node)) {
+                        node = list_next(node)) {
                         Entity *entity = es_get_entity(&world->entity_system, node->id);
                         PhysicsComponent *physics =
                             es_try_get_component(entity, PhysicsComponent);

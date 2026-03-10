@@ -37,8 +37,8 @@ set(
 
 set(
   GAME_SOURCES
-  src/game/flipbook_animation.c
-  src/game/procedural_animation.c
+  src/game/animation/flipbook_animation.c
+  src/game/animation/procedural_animation.c
   src/game/game.c
   src/game/health.c
   src/game/callback_functions.c
@@ -49,7 +49,6 @@ set(
   src/game/debug.c
   src/game/hitsplat.c
   src/game/asset_table.c
-  src/game/game_ui.c
   src/game/damage.c
   src/game/entity/entity_system.c
   src/game/entity/entity_state.c
@@ -59,6 +58,7 @@ set(
   src/game/light.c
   src/game/particle.c
   src/base/polygon.c
+  src/game/ui/game_ui.c
   src/game/ui/ui_core.c
   src/game/ui/ui_builder.c
   src/game/status_effect.c

@@ -85,7 +85,7 @@ void initialize_flipbook_animations(void)
     g_animation_table.animations[FLIPBOOK_PLAYER_ATTACKING] = animation_player_attack();
 }
 
-static Flipbook *anim_get_by_id(FlipbookID id)
+static Flipbook *get_flipbook_by_id(FlipbookID id)
 {
     ASSERT(id != FLIPBOOK_NULL);
     ASSERT(id >= 0);
@@ -98,7 +98,7 @@ static Flipbook *anim_get_by_id(FlipbookID id)
 void update_flipbook_animation(World *world, Entity *entity, PhysicsComponent *physics,
     FlipbookInstance *instance, f32 dt)
 {
-    Flipbook *anim = anim_get_by_id(instance->animation_id);
+    Flipbook *anim = get_flipbook_by_id(instance->animation_id);
 
     ASSERT(instance->current_frame < anim->frame_count);
     FlipbookFrame curr_frame = anim->frames[instance->current_frame];
@@ -160,7 +160,7 @@ FlipbookInstance begin_flipbook_animation(FlipbookID next_anim, f32 speed_factor
 
 f32 get_animation_duration(FlipbookID anim)
 {
-    Flipbook *a = anim_get_by_id(anim);
+    Flipbook *a = get_flipbook_by_id(anim);
 
     f32 result = 0.0f;
 
@@ -184,7 +184,7 @@ FlipbookInstance begin_flipbook_animation_with_duration(
 
 FlipbookFrame get_current_flipbook_frame(FlipbookInstance *instance)
 {
-    Flipbook *anim = anim_get_by_id(instance->animation_id);
+    Flipbook *anim = get_flipbook_by_id(instance->animation_id);
     ASSERT(instance->current_frame < anim->frame_count);
     FlipbookFrame frame = anim->frames[instance->current_frame];
 

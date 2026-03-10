@@ -52,16 +52,16 @@ typedef struct World {
 
 void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);
-void world_update(
-    World *world, const struct FrameData *frame_data, LinearArena *frame_arena);
+void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena);
 void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction);
 EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction);
+void world_drop_item_from_position(Vector2 position, Entity *item_entity);
 Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physics);
 void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena);
-void world_add_trigger_cooldown(World *world, EntityID a, EntityID b,
-    ComponentID component, RetriggerBehaviour retrigger_behaviour);
+void world_add_trigger_cooldown(World *world, EntityID a, EntityID b, ComponentID component,
+    RetriggerBehaviour retrigger_behaviour);
 void world_set_player_entity(World *world, EntityID id);
 Entity *world_get_player_entity(World *world);
 Vector2i world_to_tile_coords(Vector2 world_coords);

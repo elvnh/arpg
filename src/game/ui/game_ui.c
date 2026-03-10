@@ -145,7 +145,6 @@ static void inventory_menu(
 {
     UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game->world);
-    PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
 
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
@@ -160,6 +159,7 @@ static void inventory_menu(
         {
             Inventory *inv = es_get_component(player, Inventory);
             Equipment *eq = es_get_component(player, Equipment);
+            (void)eq;
 
             EntityID curr_item_id = inv->first_item_in_inventory;
 
@@ -171,8 +171,6 @@ static void inventory_menu(
                     es_get_component(curr_item, InventoryStorable);
 
                 EntityID next_item_id = inv_storable->next_item_in_inventory;
-
-                Equippable *equippable = es_get_component(curr_item, Equippable);
 
                 String label_string = get_item_widget_text(curr_item, scratch);
 

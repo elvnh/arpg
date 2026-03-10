@@ -47,7 +47,6 @@ set(
   src/game/collision/collision_event.c
   src/game/collision/collision_policy.c
   src/game/debug.c
-  src/game/hitsplat.c
   src/game/asset_table.c
   src/game/damage.c
   src/game/entity/entity_system.c
@@ -68,6 +67,7 @@ set(
   src/game/components/equipment.c
   src/game/world/world.c
   src/game/world/chunk.c
+  src/game/world/hitsplat.c
   src/game/world/light.c
   src/game/world/particle.c
   src/game/world/tilemap.c

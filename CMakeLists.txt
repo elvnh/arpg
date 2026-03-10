@@ -55,8 +55,6 @@ set(
   src/game/entity/entity_arena.c
   src/game/magic.c
   src/game/stats.c
-  src/game/light.c
-  src/game/particle.c
   src/base/polygon.c
   src/game/ui/game_ui.c
   src/game/ui/ui_core.c
@@ -70,6 +68,8 @@ set(
   src/game/components/equipment.c
   src/game/world/world.c
   src/game/world/chunk.c
+  src/game/world/light.c
+  src/game/world/particle.c
   src/game/world/tilemap.c
   src/game/world/quad_tree.c
   src/game/world/line_of_sight.c

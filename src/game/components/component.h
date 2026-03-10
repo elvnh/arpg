@@ -16,13 +16,13 @@
 #include "event_listener.h"
 #include "health.h"
 #include "inventory.h"
-#include "light.h"
 #include "magic.h"
 #include "name.h"
 #include "particle_spawner.h"
 #include "platform/asset.h"
 #include "stats.h"
 #include "status_effect.h"
+#include "world/light.h"
 
 #define COMPONENT_LIST                                                                   \
     COMPONENT(PhysicsComponent)                                                          \

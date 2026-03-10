@@ -5,9 +5,9 @@
 #include "base/ring_buffer.h"
 #include "base/typedefs.h"
 #include "base/vector.h"
-#include "light.h"
 #include "platform/asset.h"
 #include "renderer/frontend/render_target.h"
+#include "world/light.h"
 
 struct Entity;
 struct LinearArena;

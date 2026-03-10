@@ -4,7 +4,7 @@
 #include "base/rgba.h"
 #include "base/triangle.h"
 #include "base/vector.h"
-#include "game/particle.h"
+#include "game/world/particle.h"
 #include "platform/asset_system.h"
 #include "platform/font.h"
 #include "renderer/backend/renderer_backend.h"
@@ -120,7 +120,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
     }
 
     for (SetupCmdHeader *setup_cmd = header->first_setup_command; setup_cmd;
-         setup_cmd = setup_cmd->next) {
+        setup_cmd = setup_cmd->next) {
         BEGIN_EXHAUSTIVE_SWITCH;
         switch (setup_cmd->kind) {
             case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformVec4): {
@@ -303,8 +303,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
         case RENDER_COMMAND_ENUM_NAME(TextCmd): {
             TextCmd *cmd = (TextCmd *)entry->data;
 
-            FontHandle font_handle =
-                (FontHandle){(u32)render_key_extract_font(entry->key)};
+            FontHandle font_handle = (FontHandle){(u32)render_key_extract_font(entry->key)};
             FontAsset *font_asset = assets_get_font(font_handle);
 
             RGBA32 color = cmd->color;
@@ -383,8 +382,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
             PolygonCmd *cmd = (PolygonCmd *)entry->data;
             RGBA32 color = cmd->color;
 
-            for (PolygonTriangle *tri = list_head(&cmd->polygon); tri;
-                 tri = list_next(tri)) {
+            for (PolygonTriangle *tri = list_head(&cmd->polygon); tri; tri = list_next(tri)) {
                 TriangleVertices verts = triangle_get_vertices(tri->triangle, color);
 
                 renderer_backend_draw_triangle(backend, verts.a, verts.b, verts.c);
@@ -419,8 +417,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
     }
 }
 
-void execute_render_commands(
-    RenderBatch *rb, RendererBackend *backend, LinearArena *scratch)
+void execute_render_commands(RenderBatch *rb, RendererBackend *backend, LinearArena *scratch)
 {
     // NOTE: The color buffer should always be cleared, even if there is nothing to draw
     // as some batches may always need the background color to be drawn

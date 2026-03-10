@@ -7,7 +7,7 @@
 #include "base/sl_list.h"
 #include "base/utils.h"
 #include "game/camera.h"
-#include "game/particle.h"
+#include "game/world/particle.h"
 #include "render_command.h"
 #include "renderer/frontend/render_key.h"
 
@@ -76,12 +76,11 @@ static RenderBatch rb_create(Camera camera, Vector2i viewport_size, YDirection y
 }
 
 RenderBatch *push_new_render_batch(RenderBatchList *list, Camera camera,
-    Vector2i viewport_size, YDirection y_dir, FrameBuffer render_target,
-    RGBA32 clear_color, BlendFunction blend_func, LinearArena *arena)
+    Vector2i viewport_size, YDirection y_dir, FrameBuffer render_target, RGBA32 clear_color,
+    BlendFunction blend_func, LinearArena *arena)
 {
     RenderBatch *batch = la_allocate_item(arena, RenderBatch);
-    *batch =
-        rb_create(camera, viewport_size, y_dir, render_target, clear_color, blend_func);
+    *batch = rb_create(camera, viewport_size, y_dir, render_target, clear_color, blend_func);
 
     sl_list_push_back(list, batch);
 
@@ -108,8 +107,8 @@ RenderBatch *add_stencil_pass(RenderBatch *rb, StencilFunction stencil_func,
     return stencil_batch;
 }
 
-static void merge_render_entry_arrays(RenderEntry *dst, RenderEntry *left,
-    ssize left_count, RenderEntry *right, ssize right_count)
+static void merge_render_entry_arrays(RenderEntry *dst, RenderEntry *left, ssize left_count,
+    RenderEntry *right, ssize right_count)
 {
     ssize end = left_count + right_count;
 
@@ -136,8 +135,7 @@ static void merge_render_entry_arrays(RenderEntry *dst, RenderEntry *left,
     }
 }
 
-static void merge_sort_render_entries(
-    RenderEntry *entries, ssize count, LinearArena *scratch)
+static void merge_sort_render_entries(RenderEntry *entries, ssize count, LinearArena *scratch)
 {
     if (count <= 1) {
     } else if (count == 2) {
@@ -212,9 +210,9 @@ static RenderEntry *push_render_entry(RenderBatch *rb, RenderKey key, void *data
     return entry;
 }
 
-RenderEntry *draw_colored_sprite(RenderBatch *rb, LinearArena *arena,
-    TextureHandle texture, Rectangle rectangle, SpriteModifiers mods, RGBA32 color,
-    ShaderHandle shader, RenderLayer layer)
+RenderEntry *draw_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Rectangle rectangle, SpriteModifiers mods, RGBA32 color, ShaderHandle shader,
+    RenderLayer layer)
 {
     ASSERT(rect_is_valid(rectangle));
 
@@ -239,8 +237,8 @@ RenderEntry *draw_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle text
         rb, arena, texture, rectangle, mods, RGBA32_WHITE, shader, layer);
 }
 
-RenderEntry *draw_rectangle(RenderBatch *rb, LinearArena *arena, Rectangle rect,
-    RGBA32 color, ShaderHandle shader, RenderLayer layer)
+RenderEntry *draw_rectangle(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
+    ShaderHandle shader, RenderLayer layer)
 {
     return draw_colored_sprite(
         rb, arena, NULL_TEXTURE, rect, (SpriteModifiers){0}, color, shader, layer);
@@ -253,40 +251,38 @@ RenderEntry *draw_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangl
     cmd->triangle = triangle;
     cmd->color = color;
 
-    RenderKey key = render_key_create(
-        rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, (s32)triangle.a.y);
+    RenderKey key =
+        render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, (s32)triangle.a.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
 }
 
-RenderEntry *draw_outlined_triangle(RenderBatch *rb, LinearArena *arena,
-    Triangle triangle, RGBA32 color, f32 thickness, ShaderHandle shader,
-    RenderLayer layer)
+RenderEntry *draw_outlined_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle,
+    RGBA32 color, f32 thickness, ShaderHandle shader, RenderLayer layer)
 {
     OutlinedTriangleCmd *cmd = allocate_render_cmd(arena, OutlinedTriangleCmd);
     cmd->triangle = triangle;
     cmd->color = color;
     cmd->thickness = thickness;
 
-    RenderKey key = render_key_create(
-        rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, (s32)triangle.a.y);
+    RenderKey key =
+        render_key_create(rb, (s32)layer, shader, NULL_TEXTURE, NULL_FONT, (s32)triangle.a.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
 }
 
-RenderEntry *draw_clipped_sprite(RenderBatch *rb, LinearArena *arena,
-    TextureHandle texture, Rectangle rect, Rectangle viewport, RGBA32 color,
-    ShaderHandle shader, RenderLayer layer)
+RenderEntry *draw_clipped_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Rectangle rect, Rectangle viewport, RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     ClippedRectangleCmd *cmd = allocate_render_cmd(arena, ClippedRectangleCmd);
     cmd->rect = rect;
     cmd->viewport_rect = viewport;
     cmd->color = color;
 
-    RenderKey key = render_key_create(
-        rb, (s32)layer, shader, texture, NULL_FONT, (s32)rect.position.y);
+    RenderKey key =
+        render_key_create(rb, (s32)layer, shader, texture, NULL_FONT, (s32)rect.position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -306,9 +302,8 @@ RenderEntry *draw_outlined_rectangle(RenderBatch *rb, LinearArena *arena, Rectan
     return result;
 }
 
-RenderEntry *draw_textured_circle(RenderBatch *rb, LinearArena *arena,
-    TextureHandle texture, Vector2 position, RGBA32 color, f32 radius,
-    ShaderHandle shader, RenderLayer layer)
+RenderEntry *draw_textured_circle(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
+    Vector2 position, RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer)
 {
     CircleCmd *cmd = allocate_render_cmd(arena, CircleCmd);
     cmd->position = position;
@@ -322,8 +317,8 @@ RenderEntry *draw_textured_circle(RenderBatch *rb, LinearArena *arena,
     return result;
 }
 
-RenderEntry *draw_circle(RenderBatch *rb, LinearArena *arena, Vector2 position,
-    RGBA32 color, f32 radius, ShaderHandle shader, RenderLayer layer)
+RenderEntry *draw_circle(RenderBatch *rb, LinearArena *arena, Vector2 position, RGBA32 color,
+    f32 radius, ShaderHandle shader, RenderLayer layer)
 {
     return draw_textured_circle(
         rb, arena, NULL_TEXTURE, position, color, radius, shader, layer);
@@ -378,8 +373,8 @@ RenderEntry *draw_clipped_text(RenderBatch *rb, LinearArena *arena, String text,
     return result;
 }
 
-RenderEntry *draw_particles(RenderBatch *rb, LinearArena *arena,
-    ParticleBuffer *particles, ShaderHandle shader, RenderLayer layer)
+RenderEntry *draw_particles(RenderBatch *rb, LinearArena *arena, ParticleBuffer *particles,
+    ShaderHandle shader, RenderLayer layer)
 {
     ParticleGroupCmd *cmd = allocate_render_cmd(arena, ParticleGroupCmd);
     cmd->particles = particles;
@@ -390,8 +385,8 @@ RenderEntry *draw_particles(RenderBatch *rb, LinearArena *arena,
     return result;
 }
 
-RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena,
-    TriangulatedPolygon polygon, RGBA32 color, ShaderHandle shader, RenderLayer layer)
+RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena, TriangulatedPolygon polygon,
+    RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     PolygonCmd *cmd = allocate_render_cmd(arena, PolygonCmd);
     cmd->polygon = polygon;
@@ -403,8 +398,8 @@ RenderEntry *draw_polygon(RenderBatch *rb, LinearArena *arena,
     return result;
 }
 
-RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena,
-    TriangleFan triangle_fan, RGBA32 color, ShaderHandle shader, RenderLayer layer)
+RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan triangle_fan,
+    RGBA32 color, ShaderHandle shader, RenderLayer layer)
 {
     TriangleFanCmd *cmd = allocate_render_cmd(arena, TriangleFanCmd);
     cmd->triangle_fan = triangle_fan;
@@ -448,7 +443,7 @@ static void *allocate_render_setup_cmd_impl(
     } else {
         SetupCmdHeader *curr_cmd;
         for (curr_cmd = re->data->first_setup_command; curr_cmd->next;
-             curr_cmd = curr_cmd->next) {
+            curr_cmd = curr_cmd->next) {
         }
 
         curr_cmd->next = header;
@@ -457,8 +452,7 @@ static void *allocate_render_setup_cmd_impl(
     return result;
 }
 
-void set_vec4_uniform(
-    RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
+void set_vec4_uniform(RenderEntry *re, LinearArena *arena, String uniform_name, Vector4 vec)
 {
     ASSERT(re);
 

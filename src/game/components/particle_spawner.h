@@ -1,7 +1,7 @@
 #ifndef PARTICLE_SPAWNER_H
 #define PARTICLE_SPAWNER_H
 
-#include "particle.h"
+#include "world/particle.h"
 
 struct Chunk;
 
@@ -39,8 +39,8 @@ typedef struct {
     f32 particle_timer;
 } ParticleSpawner;
 
-void update_particle_spawner(struct World *world, struct Entity *entity,
-    ParticleSpawner *ps, struct PhysicsComponent *physics, f32 dt);
+void update_particle_spawner(struct World *world, struct Entity *entity, ParticleSpawner *ps,
+    struct PhysicsComponent *physics, f32 dt);
 b32 particle_spawner_is_finished(ParticleSpawner *ps);
 void initialize_particle_spawner(
     ParticleSpawner *ps, ParticleSpawnerConfig config, s32 particle_count);

@@ -129,8 +129,7 @@ void world_drop_item_from_position(Vector2 position, Entity *item_entity)
     PhysicsComponent *physics = es_get_or_add_component(item_entity, PhysicsComponent);
     physics->position = target_pos;
 
-    // TODO: remove component when done
-    AnimationComponent *anim = es_get_or_add_component(item_entity, AnimationComponent);
+    AnimationComponent *anim = es_add_component(item_entity, AnimationComponent);
     *anim = zero_struct(AnimationComponent);
     anim->animation.position_function = POSITION_ANIMATION_PARABOLA;
     anim->animation.start_position = v2_sub(origin, target_pos);
@@ -139,6 +138,8 @@ void world_drop_item_from_position(Vector2 position, Entity *item_entity)
 
     anim->animation.rotation_animation = ROTATION_ANIMATION_LERP;
     anim->animation.rotation_args.lerp.rotations_in_radians = deg_to_rad(360);
+
+    anim->animation.on_end_behaviour.kind = ANIM_ON_END_REMOVE_COMPONENT;
 
     anim->animation.duration = 0.5f;
 }
@@ -440,7 +441,7 @@ static void entity_update(
         AnimationComponent *anim = es_get_component(entity, AnimationComponent);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
-        update_procedural_animation(&anim->animation, physics, dt);
+        update_procedural_animation(world, &anim->animation, physics, dt);
     }
 
     if (es_has_components(

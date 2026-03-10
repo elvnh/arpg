@@ -2,6 +2,8 @@
 
 #include "base/utils.h"
 #include "components/component.h"
+#include "entity/entity_system.h"
+#include "world/world.h"
 
 static Vector2 dispatch_position_animation(
     PositionAnimation func, Vector2 start, PositionAnimationArgs args, f32 t)
@@ -52,16 +54,15 @@ static f32 dispatch_rotation_animation(
 }
 
 void update_procedural_animation(
-    ProceduralAnimation *anim, PhysicsComponent *physics, f32 dt)
+    World *world, ProceduralAnimation *anim, PhysicsComponent *physics, f32 dt)
 {
+    Entity *owning_entity =
+        es_get_component_owner(&world->entity_system, physics, PhysicsComponent);
+
     ASSERT(anim->duration >= 0.0f);
 
     anim->elapsed_time += dt;
     anim->elapsed_time = CLAMP(anim->elapsed_time, 0.0f, anim->duration);
-
-    if (anim->is_looping && (anim->elapsed_time >= anim->duration)) {
-        anim->elapsed_time = 0.0f;
-    }
 
     f32 t = anim->elapsed_time / anim->duration;
 
@@ -75,5 +76,29 @@ void update_procedural_animation(
     if (anim->rotation_animation != ROTATION_ANIMATION_NONE) {
         physics->visual_rotation = dispatch_rotation_animation(
             anim->rotation_animation, anim->start_rotation, anim->rotation_args, t);
+    }
+
+    if (anim->elapsed_time >= anim->duration) {
+        BEGIN_EXHAUSTIVE_SWITCH;
+        switch (anim->on_end_behaviour.kind) {
+            case ANIM_ON_END_DO_NOTHING: {
+            } break;
+
+            case ANIM_ON_END_REPEAT: {
+                anim->elapsed_time = 0;
+            } break;
+
+            case ANIM_ON_END_TRANSITION_TO_STATE: {
+                entity_force_transition_to_state(
+                    world, owning_entity, physics, anim->on_end_behaviour.as.state_transition);
+            } break;
+
+            case ANIM_ON_END_REMOVE_COMPONENT: {
+                es_remove_component(owning_entity, AnimationComponent);
+            } break;
+
+                INVALID_DEFAULT_CASE;
+        }
+        END_EXHAUSTIVE_SWITCH;
     }
 }

@@ -1,6 +1,7 @@
 #ifndef FLIPBOOK_ANIMATION_H
 #define FLIPBOOK_ANIMATION_H
 
+#include "animation.h"
 #include "base/vector.h"
 #include "entity/entity_state.h"
 #include "sprite.h"
@@ -14,12 +15,6 @@ struct LinearArena;
 struct AnimationComponent;
 struct PhysicsComponent;
 struct World;
-
-typedef enum {
-    ANIM_ON_END_DO_NOTHING,
-    ANIM_ON_END_REPEAT,
-    ANIM_ON_END_TRANSITION_TO_STATE,
-} AnimationOnEnd;
 
 typedef enum {
     FLIPBOOK_NULL = 0,
@@ -39,7 +34,6 @@ typedef struct {
     s32 frame_count;
 
     AnimationOnEnd on_end_behaviour;
-    EntityState state_transition_when_done;
 } Flipbook;
 
 typedef struct {

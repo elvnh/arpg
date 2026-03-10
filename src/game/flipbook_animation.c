@@ -28,7 +28,7 @@ static Flipbook animation_player_idle(void)
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
-    result.on_end_behaviour = ANIM_ON_END_REPEAT;
+    result.on_end_behaviour.kind = ANIM_ON_END_REPEAT;
 
     return result;
 }
@@ -47,7 +47,7 @@ static Flipbook animation_player_walking(void)
 
     result.frames[result.frame_count++] = frame_1;
     result.frames[result.frame_count++] = frame_2;
-    result.on_end_behaviour = ANIM_ON_END_REPEAT;
+    result.on_end_behaviour.kind = ANIM_ON_END_REPEAT;
 
     return result;
 }
@@ -72,8 +72,8 @@ static Flipbook animation_player_attack(void)
     result.frames[result.frame_count++] = frame_2;
     result.frames[result.frame_count++] = frame_3;
 
-    result.on_end_behaviour = ANIM_ON_END_TRANSITION_TO_STATE;
-    result.state_transition_when_done = state_idle();
+    result.on_end_behaviour.kind = ANIM_ON_END_TRANSITION_TO_STATE;
+    result.on_end_behaviour.as.state_transition = state_idle();
 
     return result;
 }
@@ -119,19 +119,27 @@ void update_flipbook_animation(World *world, Entity *entity, PhysicsComponent *p
             // Animations without special behaviour on animation end should stay on the last frame
             instance->current_frame = MIN(instance->current_frame, anim->frame_count - 1);
 
-            switch (anim->on_end_behaviour) {
+            BEGIN_EXHAUSTIVE_SWITCH;
+            switch (anim->on_end_behaviour.kind) {
+                case ANIM_ON_END_DO_NOTHING: {
+                } break;
+
                 case ANIM_ON_END_REPEAT: {
                     instance->current_frame = 0;
                 } break;
 
                 case ANIM_ON_END_TRANSITION_TO_STATE: {
                     entity_force_transition_to_state(
-                        world, entity, physics, anim->state_transition_when_done);
+                        world, entity, physics, anim->on_end_behaviour.as.state_transition);
                 } break;
 
-                default: {
+                case ANIM_ON_END_REMOVE_COMPONENT: {
+                    es_remove_component(entity, FlipbookComponent);
                 } break;
+
+                    INVALID_DEFAULT_CASE;
             }
+            END_EXHAUSTIVE_SWITCH;
         }
     }
 }

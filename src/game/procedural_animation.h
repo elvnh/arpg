@@ -1,10 +1,12 @@
 #ifndef PROCEDURAL_ANIMATION_H
 #define PROCEDURAL_ANIMATION_H
 
+#include "animation.h"
 #include "base/utils.h"
 #include "base/vector.h"
 
 struct PhysicsComponent;
+struct World;
 
 typedef enum {
     POSITION_ANIMATION_NONE,
@@ -46,10 +48,10 @@ typedef struct {
 
     f32 duration;
     f32 elapsed_time;
-    b32 is_looping;
+    AnimationOnEnd on_end_behaviour;
 } ProceduralAnimation;
 
 void update_procedural_animation(
-    ProceduralAnimation *anim, struct PhysicsComponent *physics, f32 dt);
+    struct World *world, ProceduralAnimation *anim, struct PhysicsComponent *physics, f32 dt);
 
 #endif //PROCEDURAL_ANIMATION_H

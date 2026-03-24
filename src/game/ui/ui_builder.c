@@ -83,6 +83,9 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_HOT_COLOR);
 
+	widget->hot_color = style.hot_color;
+	widget->active_color = style.active_color;
+
     widget->child_padding = 2.0f;
 
     ui_core_push_container(ui, widget);

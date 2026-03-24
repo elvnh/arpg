@@ -140,7 +140,16 @@ static String dbg_arena_usage_string(String name, ssize usage, LinearArena *aren
 
 void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *frame_data)
 {
-	TODO("Set color");
+	UIStyle debug_ui_style = {0};
+	debug_ui_style.font = ui_default_style(ui).font;
+	debug_ui_style.background_shadow_color = rgba32_mono(1.0f, 1.0f);
+	debug_ui_style.text_color = rgba32_mono(1.0f, 1.0f);
+	debug_ui_style.accent_color = rgba32(0.1f, 0.5f, 1.0f, 1.0f);
+	debug_ui_style.active_color = rgba32(1.0f, 0.0f, 0.0f, 1.0f);
+	debug_ui_style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
+
+	ui_push_style(ui, debug_ui_style);
+
     ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     ssize temp_arena_memory_usage = game->debug_state.scratch_arena_memory_usage;
@@ -222,6 +231,8 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     inspected_entity_debug_ui(ui, game, scratch);
 
     ui_pop_container(ui);
+
+	ui_pop_style(ui);
 }
 
 void debug_update(Game *game, const FrameData *frame_data)

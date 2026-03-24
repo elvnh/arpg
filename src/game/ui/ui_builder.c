@@ -144,12 +144,12 @@ void ui_textbox(UIState *ui, StringBuilder *sb)
     ui_core_pop_container(ui);
 }
 
-void ui_begin_list(UIState *ui)
+void ui_begin_list(UIState *ui, String name)
 {
 	UIStyle style = ui_get_current_style(ui);
 
     Widget *container =
-        ui_core_colored_box(ui, v2(256, 256), style.background_shadow_color, UI_NULL_WIDGET_ID, false);
+        ui_core_colored_box(ui, v2(256, 256), style.background_shadow_color, ui_core_hash_string(name), false);
     widget_set_semantic_sizes(container, UI_SIZE_KIND_ABSOLUTE);
 
     ui_core_push_container(ui, container);
@@ -190,11 +190,10 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
     return prev_interaction;
 }
 
-WidgetInteraction ui_begin_container(UIState *ui, Vector2 size,
-	UISizeKind size_kind, f32 child_padding)
+Widget *ui_create_container(UIState *ui, Vector2 size,
+	UISizeKind size_kind, f32 child_padding, WidgetID id, RGBA32 color)
 {
-	UIStyle style = ui_get_current_style(ui);
-    Widget *widget = ui_core_colored_box(ui, size, style.background_color, UI_NULL_WIDGET_ID, false);
+    Widget *widget = ui_core_colored_box(ui, size, color, id, false);
 
     widget->child_padding = child_padding;
     widget->semantic_size[AXIS_HORIZONTAL].kind = size_kind;
@@ -202,11 +201,33 @@ WidgetInteraction ui_begin_container(UIState *ui, Vector2 size,
 
     ui_core_push_container(ui, widget);
 
+	return widget;
+}
+
+void ui_begin_container(UIState *ui, Vector2 size,
+	UISizeKind size_kind, f32 child_padding)
+{
+	ui_create_container(ui, size, size_kind, child_padding, UI_NULL_WIDGET_ID, RGBA32_TRANSPARENT);
+}
+
+void ui_pop_container(UIState *ui)
+{
+    ui_core_pop_container(ui);
+}
+
+WidgetInteraction ui_begin_menu(UIState *ui, Vector2 size, String name,
+    UISizeKind size_kind, f32 child_padding)
+{
+	UIStyle style = ui_get_current_style(ui);
+
+	Widget *widget = ui_create_container(ui, size, size_kind, child_padding,
+		ui_core_hash_string(name), style.background_color);
+
     WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
     return prev_interaction;
 }
 
-void ui_pop_container(UIState *ui)
+void ui_pop_menu(UIState *ui)
 {
     ui_core_pop_container(ui);
 }

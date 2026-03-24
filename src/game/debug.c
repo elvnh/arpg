@@ -75,7 +75,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
-    ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+    ui_begin_menu(ui, V2_ZERO, str("inspect"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
         // TODO: inventory and equipment
         String faction = entity_faction_to_string(entity->faction);
 
@@ -103,7 +103,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
             es_try_get_component(entity, StatusEffectComponent);
 
         if (effects) {
-            ui_begin_list(ui); {
+            ui_begin_list(ui, str("effects")); {
                 EffectListContext context = {0};
                 context.arena = scratch;
                 context.ui = ui;
@@ -117,7 +117,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 
     ui_core_same_line(ui);
 
-    ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_menu(ui, V2_ZERO, str("components"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         for (ComponentType c = 0; c < COMPONENT_COUNT; ++c) {
             ComponentID id = FLAG(c);

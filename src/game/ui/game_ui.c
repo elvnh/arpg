@@ -26,11 +26,11 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
 {
     UIState *ui = &ui_state->backend_state;
 
-    ui_begin_container(
-        ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+    ui_begin_menu(
+        ui, V2_ZERO, str("spellbook_menu"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
         ui_text(ui, str("Spellbook"));
 
-        ui_begin_list(ui); {
+        ui_begin_list(ui, str("spellbook_list")); {
             Entity *player = world_get_player_entity(&game->world);
             SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
 
@@ -123,8 +123,8 @@ static void equipment_menu(
     UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game->world);
 
-    ui_begin_container(
-        ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_menu(
+        ui, V2_ZERO, str("eqiupment_container"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         ui_text(ui, str("Equipment"));
 
@@ -147,13 +147,13 @@ static void inventory_menu(
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
-    ui_begin_container(
-        ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_menu(
+        ui, V2_ZERO, str("inventory_container"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         ui_text(ui, str("Inventory"));
 
         // TODO: allow setting min/max size of list
-        ui_begin_list(ui);
+        ui_begin_list(ui, str("inventory_list"));
         {
             Inventory *inv = es_get_component(player, Inventory);
             Equipment *eq = es_get_component(player, Equipment);
@@ -219,8 +219,7 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
 	style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
 
 	ui_set_next_style(ui, UI_STYLE_TRANSPARENT);
-    ui_begin_container(
-        ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
 	ui_push_style(ui, style);
 

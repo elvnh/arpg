@@ -130,10 +130,10 @@ void ui_textbox(UIState *ui, StringBuilder *sb)
     ui_core_pop_container(ui);
 }
 
-void ui_begin_list(UIState *ui, String name)
+void ui_begin_list(UIState *ui)
 {
     Widget *container =
-        ui_core_colored_box(ui, v2(256, 256), RGBA32_WHITE, ui_core_hash_string(name), false);
+        ui_core_colored_box(ui, v2(256, 256), RGBA32_WHITE, UI_NULL_WIDGET_ID, false);
     widget_set_semantic_sizes(container, UI_SIZE_KIND_ABSOLUTE);
 
     ui_core_push_container(ui, container);
@@ -169,10 +169,10 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
     return prev_interaction;
 }
 
-WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, RGBA32 color,
+WidgetInteraction ui_begin_container(UIState *ui, Vector2 size, RGBA32 color,
     UISizeKind size_kind, f32 child_padding)
 {
-    Widget *widget = ui_core_colored_box(ui, size, color, ui_core_hash_string(title), false);
+    Widget *widget = ui_core_colored_box(ui, size, color, UI_NULL_WIDGET_ID, false);
 
     widget->child_padding = child_padding;
     widget->semantic_size[AXIS_HORIZONTAL].kind = size_kind;

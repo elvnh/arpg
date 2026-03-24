@@ -76,7 +76,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
     // TODO: don't require name for containers
-    ui_begin_container(ui, str("inspect"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
+    ui_begin_container(ui, V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
         UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         // TODO: inventory and equipment
@@ -106,8 +106,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
             es_try_get_component(entity, StatusEffectComponent);
 
         if (effects) {
-            ui_begin_list(ui, str("status_effects"));
-            {
+            ui_begin_list(ui); {
                 EffectListContext context = {0};
                 context.arena = scratch;
                 context.ui = ui;
@@ -122,7 +121,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 
     ui_core_same_line(ui);
 
-    ui_begin_container(ui, str("components"), V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
+    ui_begin_container(ui, V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
         UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         for (ComponentType c = 0; c < COMPONENT_COUNT; ++c) {
@@ -147,7 +146,7 @@ static String dbg_arena_usage_string(String name, ssize usage, LinearArena *aren
 void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *frame_data)
 {
     ui_begin_container(
-        ui, str("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+        ui, V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     ssize temp_arena_memory_usage = game->debug_state.scratch_arena_memory_usage;
     ssize perm_arena_memory_usage = game->debug_state.permanent_arena_memory_usage;

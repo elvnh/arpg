@@ -27,12 +27,10 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
     UIState *ui = &ui_state->backend_state;
 
     ui_begin_container(
-        ui, str("spellbook"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
-    {
+        ui, V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
         ui_text(ui, str("Spellbook"));
 
-        ui_begin_list(ui, str("spells"));
-        {
+        ui_begin_list(ui); {
             Entity *player = world_get_player_entity(&game->world);
             SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
 
@@ -126,7 +124,7 @@ static void equipment_menu(
     Entity *player = world_get_player_entity(&game->world);
 
     ui_begin_container(
-        ui, str("equipment"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+        ui, V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         ui_text(ui, str("Equipment"));
 
@@ -150,12 +148,12 @@ static void inventory_menu(
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
     ui_begin_container(
-        ui, str("inventory"), V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+        ui, V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         ui_text(ui, str("Inventory"));
 
         // TODO: allow setting min/max size of list
-        ui_begin_list(ui, str("player_inventory"));
+        ui_begin_list(ui);
         {
             Inventory *inv = es_get_component(player, Inventory);
             Equipment *eq = es_get_component(player, Equipment);
@@ -211,7 +209,7 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
     }
 
     ui_begin_container(
-        ui, str("root"), V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+        ui, V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     inventory_menu(&game->game_ui, game, scratch, frame_data);
 

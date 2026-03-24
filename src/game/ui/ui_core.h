@@ -36,9 +36,18 @@ typedef struct {
     WidgetContainer *tail;
 } WidgetContainerStack;
 
-typedef struct {
+typedef struct UIStyle {
     FontHandle font;
-    // TODO: color theme
+
+	RGBA32 text_color;
+	RGBA32 background_color;
+	RGBA32 background_shadow_color;
+	RGBA32 context_menu_color;
+	RGBA32 accent_color;
+	RGBA32 active_color;
+	RGBA32 hot_color;
+
+	struct UIStyle *next_style_in_stack;
 } UIStyle;
 
 typedef struct {
@@ -60,9 +69,11 @@ typedef struct {
     UILayoutKind current_layout_axis;
     UIAlignment current_alignment[AXIS_COUNT];
 
-    UIStyle current_style; // TODO: style stack
-    Widget *
-        root_widget; // TODO: push container that contains entire viewport on beginning of each frame
+    UIStyle default_style;
+	UIStyle *style_stack;
+
+    // TODO: push container that contains entire viewport on beginning of each frame
+    Widget *root_widget;
 
     WidgetList floating_widgets;
 } UIState;
@@ -71,12 +82,11 @@ typedef struct {
 
 // TODO: floatign shouldn't be a bool parameter
 
-void ui_core_initialize(UIState *ui, UIStyle style, LinearArena *arena);
+void ui_core_initialize(UIState *ui, UIStyle default_style, LinearArena *arena);
 void ui_core_begin_frame(UIState *ui);
 UIInteraction ui_core_end_layout(
     UIState *ui, const FrameData *frame_data, YDirection y_dir, PlatformCode platform_code);
 void ui_core_render(UIState *ui, const FrameData *frame_data, struct RenderBatch *rb);
-void ui_core_set_style(UIState *ui, UIStyle style);
 void ui_core_push_container(UIState *ui, Widget *widget);
 void ui_core_pop_container(UIState *ui);
 Widget *ui_core_get_top_container(UIState *ui);
@@ -87,5 +97,10 @@ WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widg
 void ui_core_same_line(UIState *ui);
 WidgetID ui_core_hash_string(String text);
 void ui_core_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis);
+
+UIStyle ui_default_style(UIState *ui);
+UIStyle ui_get_current_style(UIState *ui);
+void ui_push_style(UIState *ui, UIStyle style);
+void ui_pop_style(UIState *ui);
 
 #endif //UI_H

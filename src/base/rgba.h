@@ -10,6 +10,8 @@
 #define RGBA32_GREEN       rgba32(0.0f, 1.0f, 0.0f, 1.0f)
 #define RGBA32_YELLOW      rgba32(1.0f, 1.0f, 0.0f, 1.0f)
 #define RGBA32_TRANSPARENT rgba32(1, 1, 1, 0)
+#define RGBA32_GRAY        rgba32_mono(0.5f, 1.0f)
+#define RGBA32_CYAN        rgba32(0.0f, 1.0f, 1.0f, 1.0f)
 
 typedef struct {
     f32 r;
@@ -23,6 +25,12 @@ static inline RGBA32 rgba32(f32 r, f32 g, f32 b, f32 a)
     return (RGBA32){r, g, b, a};
 }
 
+static inline RGBA32 rgba32_mono(f32 value, f32 a)
+{
+	RGBA32 result = {value, value, value, a};
+
+	return result;
+}
 static inline b32 rgba32_eq(RGBA32 lhs, RGBA32 rhs)
 {
     b32 result =

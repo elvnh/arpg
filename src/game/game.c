@@ -349,7 +349,13 @@ void game_initialize(Game *game, GameMemory *game_memory)
 
     // NOTE: UI style is currently mostly unused
     UIStyle default_ui_style = {0};
-    default_ui_style.font = font_handle(DEFAULT_FONT);
+	default_ui_style.font = font_handle(DEFAULT_FONT);
+	default_ui_style.background_color = RGBA32_BLUE;
+	default_ui_style.background_shadow_color = RGBA32_GRAY;
+	default_ui_style.accent_color = RGBA32_GREEN;
+	default_ui_style.context_menu_color = RGBA32_CYAN;
+	default_ui_style.text_color = RGBA32_WHITE;
+
 
     // Debug UI
     ui_core_initialize(

@@ -75,10 +75,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
-    // TODO: don't require name for containers
-    ui_begin_container(ui, V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
-        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
-    {
+    ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
         // TODO: inventory and equipment
         String faction = entity_faction_to_string(entity->faction);
 
@@ -116,13 +113,11 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
             }
             ui_end_list(ui);
         }
-    }
-    ui_pop_container(ui);
+    } ui_pop_container(ui);
 
     ui_core_same_line(ui);
 
-    ui_begin_container(ui, V2_ZERO, rgba32(0, 0.5f, 1.0f, 0.8f),
-        UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         for (ComponentType c = 0; c < COMPONENT_COUNT; ++c) {
             ComponentID id = FLAG(c);
@@ -145,8 +140,8 @@ static String dbg_arena_usage_string(String name, ssize usage, LinearArena *aren
 
 void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *frame_data)
 {
-    ui_begin_container(
-        ui, V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+	TODO("Set color");
+    ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
     ssize temp_arena_memory_usage = game->debug_state.scratch_arena_memory_usage;
     ssize perm_arena_memory_usage = game->debug_state.permanent_arena_memory_usage;

@@ -11,6 +11,7 @@
 #include "base/utils.h"
 #include "base/vector.h"
 #include "game/ui/widget.h"
+#include "platform/asset.h"
 #include "platform/input.h"
 #include "renderer/frontend/render_batch.h"
 
@@ -61,17 +62,14 @@ static void widget_frame_table_push(WidgetFrameTable *table, Widget *widget)
     sl_list_push_back_x(&table->entries[index], widget, next_in_hash);
 }
 
-void ui_core_set_style(UIState *ui, UIStyle style)
-{
-    ui->current_style = style;
-}
-
-void ui_core_initialize(UIState *ui, UIStyle style, LinearArena *arena)
+void ui_core_initialize(UIState *ui, UIStyle default_style, LinearArena *arena)
 {
     ui->previous_frame_widgets = widget_frame_table_create(arena);
     ui->current_frame_widgets = widget_frame_table_create(arena);
 
-    ui_core_set_style(ui, style);
+	ASSERT(default_style.font.id != NULL_FONT.id);
+
+    ui->default_style = default_style;
 }
 
 void ui_core_begin_frame(UIState *ui)
@@ -443,11 +441,11 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
             RGBA32 color = widget->color;
 
             if (widget_is_hot(ui, widget) && widget_has_flag(widget, WIDGET_HOT_COLOR)) {
-                color = RGBA32_GREEN;
+                color = widget->hot_color;
             }
 
             if (widget_is_active(ui, widget) && widget_has_flag(widget, WIDGET_ACTIVE_COLOR)) {
-                color = RGBA32_RED;
+                color = widget->active_color;
             }
 
             draw_rectangle(rb, &ui->current_frame_widgets.arena, widget_rect, color,
@@ -482,6 +480,7 @@ UIInteraction ui_core_end_layout(
 {
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
+	ASSERT(!ui->style_stack && "Style stack should be empty at end of frame");
 
     UIInteraction result = {0};
 
@@ -639,4 +638,44 @@ WidgetID ui_core_hash_string(String text)
 void ui_core_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis)
 {
     ui->current_alignment[axis] = alignment;
+}
+
+UIStyle ui_get_current_style(UIState *ui)
+{
+	UIStyle result = {0};
+
+	if (ui->style_stack) {
+		result = *ui->style_stack;
+	} else {
+		result = ui->default_style;
+	}
+
+	return result;
+}
+
+UIStyle ui_default_style(UIState *ui)
+{
+	UIStyle result = ui->default_style;
+
+	return result;
+}
+
+void ui_push_style(UIState *ui, UIStyle style)
+{
+	ASSERT(style.font.id != NULL_FONT.id);
+
+	LinearArena *arena = get_frame_arena(ui);
+
+	UIStyle *elem = la_allocate_item(arena, UIStyle);
+	*elem = style;
+
+	elem->next_style_in_stack = ui->style_stack;
+	ui->style_stack = elem;
+}
+
+void ui_pop_style(UIState *ui)
+{
+	ASSERT(ui->style_stack && "Tried to pop from an empty style stack");
+
+	ui->style_stack = ui->style_stack->next_style_in_stack;
 }

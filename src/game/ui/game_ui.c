@@ -27,7 +27,7 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
     UIState *ui = &ui_state->backend_state;
 
     ui_begin_container(
-        ui, V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+        ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
         ui_text(ui, str("Spellbook"));
 
         ui_begin_list(ui); {
@@ -124,7 +124,7 @@ static void equipment_menu(
     Entity *player = world_get_player_entity(&game->world);
 
     ui_begin_container(
-        ui, V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+        ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         ui_text(ui, str("Equipment"));
 
@@ -148,7 +148,7 @@ static void inventory_menu(
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
     ui_begin_container(
-        ui, V2_ZERO, GAME_UI_COLOR, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+        ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
         ui_text(ui, str("Inventory"));
 
@@ -208,8 +208,20 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
         return;
     }
 
+	UIStyle style = {0};
+	style.font = ui_default_style(ui).font;
+	style.text_color = rgba32_mono(0.9f, 1.0f);
+	style.background_color = rgba32_mono(0.4f, 0.5f);
+	style.background_shadow_color = rgba32_mono(0.7f, 0.5f);
+	style.context_menu_color = rgba32_mono(0.8f, 0.5f);
+	style.accent_color = rgba32(0.1f, 0.5f, 0.8f, 1.0f);
+	style.active_color = rgba32(1.0f, 0.0f, 0.0f, 1.0f);
+	style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
+
     ui_begin_container(
-        ui, V2_ZERO, RGBA32_TRANSPARENT, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+        ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+
+	ui_push_style(ui, style);
 
     inventory_menu(&game->game_ui, game, scratch, frame_data);
 
@@ -222,4 +234,6 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
     spellbook_menu(&game->game_ui, game);
 
     ui_pop_container(ui);
+
+ 	ui_pop_style(ui);
 }

@@ -84,6 +84,8 @@ typedef struct Widget {
     } text;
 
     RGBA32 color;
+    RGBA32 hot_color;
+    RGBA32 active_color;
 
     StringBuilder *text_input_buffer;
 } Widget;

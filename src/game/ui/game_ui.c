@@ -218,6 +218,7 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
 	style.active_color = rgba32(1.0f, 0.0f, 0.0f, 1.0f);
 	style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
 
+	ui_set_next_style(ui, UI_STYLE_TRANSPARENT);
     ui_begin_container(
         ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 

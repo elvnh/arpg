@@ -16,6 +16,7 @@
  */
 
 #define UI_NULL_WIDGET_ID 0
+#define UI_STYLE_TRANSPARENT (UIStyle) {0}
 
 struct Input;
 struct RenderBatch;
@@ -48,6 +49,7 @@ typedef struct UIStyle {
 	RGBA32 hot_color;
 
 	struct UIStyle *next_style_in_stack;
+	b32 pop_after_one_use;
 } UIStyle;
 
 typedef struct {
@@ -100,6 +102,7 @@ void ui_core_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis);
 
 UIStyle ui_default_style(UIState *ui);
 UIStyle ui_get_current_style(UIState *ui);
+void ui_set_next_style(UIState *ui, UIStyle style);
 void ui_push_style(UIState *ui, UIStyle style);
 void ui_pop_style(UIState *ui);
 

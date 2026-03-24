@@ -67,8 +67,6 @@ void ui_core_initialize(UIState *ui, UIStyle default_style, LinearArena *arena)
     ui->previous_frame_widgets = widget_frame_table_create(arena);
     ui->current_frame_widgets = widget_frame_table_create(arena);
 
-	ASSERT(default_style.font.id != NULL_FONT.id);
-
     ui->default_style = default_style;
 }
 
@@ -453,6 +451,8 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
+			ASSERT(widget->text.font.id != NULL_FONT.id);
+
             Vector2 text_position = widget->final_position;
 
             if (rb->y_direction == Y_IS_DOWN) {
@@ -571,6 +571,10 @@ static void ui_core_push_widget(UIState *ui, Widget *widget, b32 floating)
     ui->current_layout_axis = DEFAULT_LAYOUT_AXIS;
     ui->current_alignment[AXIS_HORIZONTAL] = DEFAULT_ALIGNMENT;
     ui->current_alignment[AXIS_VERTICAL] = DEFAULT_ALIGNMENT;
+
+	if (ui->style_stack && ui->style_stack->pop_after_one_use) {
+		ui_pop_style(ui);
+	}
 }
 
 Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floating)
@@ -660,10 +664,14 @@ UIStyle ui_default_style(UIState *ui)
 	return result;
 }
 
+void ui_set_next_style(UIState *ui, UIStyle style)
+{
+	style.pop_after_one_use = true;
+	ui_push_style(ui, style);
+}
+
 void ui_push_style(UIState *ui, UIStyle style)
 {
-	ASSERT(style.font.id != NULL_FONT.id);
-
 	LinearArena *arena = get_frame_arena(ui);
 
 	UIStyle *elem = la_allocate_item(arena, UIStyle);

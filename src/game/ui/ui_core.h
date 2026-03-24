@@ -58,6 +58,8 @@ typedef struct {
     WidgetID active_widget;
 
     UILayoutKind current_layout_axis;
+    UIAlignment current_alignment[AXIS_COUNT];
+
     UIStyle current_style; // TODO: style stack
     Widget *
         root_widget; // TODO: push container that contains entire viewport on beginning of each frame
@@ -71,8 +73,8 @@ typedef struct {
 
 void ui_core_initialize(UIState *ui, UIStyle style, LinearArena *arena);
 void ui_core_begin_frame(UIState *ui);
-UIInteraction ui_core_end_layout(UIState *ui, const FrameData *frame_data,
-    YDirection y_dir, PlatformCode platform_code);
+UIInteraction ui_core_end_layout(
+    UIState *ui, const FrameData *frame_data, YDirection y_dir, PlatformCode platform_code);
 void ui_core_render(UIState *ui, const FrameData *frame_data, struct RenderBatch *rb);
 void ui_core_set_style(UIState *ui, UIStyle style);
 void ui_core_push_container(UIState *ui, Widget *widget);
@@ -84,5 +86,6 @@ Widget *ui_core_colored_box(
 WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widget);
 void ui_core_same_line(UIState *ui);
 WidgetID ui_core_hash_string(String text);
+void ui_core_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis);
 
 #endif //UI_H

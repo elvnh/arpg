@@ -15,8 +15,8 @@ WidgetInteraction ui_selectable(UIState *ui, String text);
 void ui_begin_mouse_menu(UIState *ui, Vector2 mouse_pos);
 void ui_end_mouse_menu(UIState *ui);
 
-WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size,
-    RGBA32 color, UISizeKind size_kind, f32 child_padding);
+WidgetInteraction ui_begin_container(UIState *ui, String title, Vector2 size, RGBA32 color,
+    UISizeKind size_kind, f32 child_padding);
 void ui_pop_container(UIState *ui);
 
 #endif //UI_BUILDER_H

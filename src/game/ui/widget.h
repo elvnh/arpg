@@ -48,6 +48,12 @@ typedef struct {
     struct Widget *tail;
 } WidgetList;
 
+typedef enum {
+    UI_ALIGN_LEFT,
+    UI_ALIGN_CENTER,
+    UI_ALIGN_RIGHT,
+} UIAlignment;
+
 typedef struct Widget {
     /* Common members */
     WidgetID id;
@@ -62,6 +68,7 @@ typedef struct Widget {
     Vector2 final_position;
 
     UILayoutKind layout_direction;
+    UIAlignment child_alignment[AXIS_COUNT];
 
     f32 child_padding;
     WidgetList children;

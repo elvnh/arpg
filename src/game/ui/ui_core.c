@@ -18,6 +18,7 @@
 
 #define FRAME_WIDGET_TABLE_SIZE 1024
 #define DEFAULT_LAYOUT_AXIS     UI_LAYOUT_VERTICAL
+#define DEFAULT_ALIGNMENT UI_ALIGN_LEFT
 
 WidgetFrameTable widget_frame_table_create(LinearArena *arena)
 {
@@ -53,9 +54,8 @@ static Widget *widget_frame_table_find(WidgetFrameTable *table, WidgetID id)
 
 static void widget_frame_table_push(WidgetFrameTable *table, Widget *widget)
 {
-    ASSERT(
-        (widget->id == UI_NULL_WIDGET_ID || !widget_frame_table_find(table, widget->id))
-        && "Hash collision");
+    ASSERT((widget->id == UI_NULL_WIDGET_ID || !widget_frame_table_find(table, widget->id))
+           && "Hash collision");
 
     ssize index = mod_index(widget->id, table->entry_table_size);
     sl_list_push_back_x(&table->entries[index], widget, next_in_hash);
@@ -81,8 +81,8 @@ void ui_core_begin_frame(UIState *ui)
         ui->previous_frame_widgets = ui->current_frame_widgets;
         ui->current_frame_widgets = tmp;
 
-        zero_array(ui->current_frame_widgets.entries,
-            ui->current_frame_widgets.entry_table_size);
+        zero_array(
+            ui->current_frame_widgets.entries, ui->current_frame_widgets.entry_table_size);
         la_reset(&ui->current_frame_widgets.arena);
     }
 
@@ -127,18 +127,85 @@ static TraversalOrder get_layout_traversal_order(UISizeKind size_kind)
     return 0;
 }
 
+static Vector2 get_first_child_pos_with_alignment(Widget *parent, Vector2 base)
+{
+    Vector2 result = base;
+
+    for (Axis axis = 0; axis < AXIS_COUNT; ++axis) {
+        if (parent->child_alignment[axis] != UI_ALIGN_LEFT) {
+            ASSERT(
+                (parent->semantic_size[axis].kind != UI_SIZE_KIND_SUM_OF_CHILDREN)
+                && "Cannot base widget size on size of children in axis while also aligning children "
+                   "in that axis. If aligning, parent size must be known beforehand.");
+        }
+
+        BEGIN_EXHAUSTIVE_SWITCH;
+        switch (parent->child_alignment[axis]) {
+            case UI_ALIGN_LEFT: {
+                // Nothing to be done
+            } break;
+
+            case UI_ALIGN_CENTER: {
+                *v2_index(&result, axis) +=
+                    (*v2_index(&parent->final_size, axis) - parent->child_padding * 2.0f)
+                    / 2.0f;
+            } break;
+
+            case UI_ALIGN_RIGHT: {
+                *v2_index(&result, axis) +=
+                    *v2_index(&parent->final_size, axis) - parent->child_padding * 2.0f;
+            } break;
+
+                INVALID_DEFAULT_CASE;
+        }
+        END_EXHAUSTIVE_SWITCH;
+    }
+
+    return result;
+}
+
+static Vector2 adjusted_child_position_for_alignment(Widget *parent, Widget *child, Axis axis)
+{
+    Vector2 result = child->final_position;
+
+    if (parent) {
+        BEGIN_EXHAUSTIVE_SWITCH;
+        switch (parent->child_alignment[axis]) {
+            case UI_ALIGN_LEFT: {
+                // Nothing to be done
+            } break;
+
+            case UI_ALIGN_CENTER: {
+                *v2_index(&result, axis) -= *v2_index(&child->final_size, axis) / 2.0f;
+            } break;
+
+            case UI_ALIGN_RIGHT: {
+                *v2_index(&result, axis) -= *v2_index(&child->final_size, axis);
+            } break;
+
+                INVALID_DEFAULT_CASE;
+        }
+        END_EXHAUSTIVE_SWITCH;
+    }
+
+    return result;
+}
+
 static void calculate_widget_layout(
     Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent);
 
 static void calculate_layout_of_children(Widget *widget, PlatformCode platform_code)
 {
     Vector2 next_child_pos =
-        v2_add(widget->final_position, v2(widget->child_padding, widget->child_padding));
+        v2_add(widget->final_position, v2_from_scalar(widget->child_padding));
+
+    next_child_pos = get_first_child_pos_with_alignment(widget, next_child_pos);
+
     f32 current_row_size = 0.0f;
 
-    for (Widget *child = list_head(&widget->children); child;
-         child = child->next_sibling) {
+    for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         calculate_widget_layout(child, next_child_pos, platform_code, widget);
+
         current_row_size = MAX(current_row_size, child->final_size.y);
 
         Widget *next = child->next_sibling;
@@ -182,7 +249,7 @@ static void calculate_widget_layout_on_axis(
             f32 max_bounds = 0.0f;
 
             for (Widget *child = list_head(&widget->children); child;
-                 child = child->next_sibling) {
+                child = child->next_sibling) {
                 f32 child_bounds = *v2_index(&child->final_position, axis)
                                    + *v2_index(&child->final_size, axis)
                                    - *v2_index(&offset, axis);
@@ -210,19 +277,10 @@ static void calculate_widget_layout_on_axis(
     }
     END_EXHAUSTIVE_SWITCH;
 
+    widget->final_position = adjusted_child_position_for_alignment(parent, widget, axis);
+
     if (order == TRAVERSAL_ORDER_PREORDER) {
         calculate_layout_of_children(widget, platform_code);
-    }
-
-    if (widget_has_flag(widget, WIDGET_TEXT)) {
-        f32 baseline =
-            platform_code.get_font_baseline_offset(widget->text.font, widget->text.size);
-        String visible_text = get_visible_widget_text(widget->text.string);
-        Vector2 text_dims = platform_code.get_text_dimensions(
-            widget->text.font, visible_text, widget->text.size);
-
-        widget->final_size = text_dims;
-        widget->text.baseline_y_offset = baseline;
     }
 }
 
@@ -251,6 +309,25 @@ static void calculate_widget_layout(
 {
     widget->final_position = v2_add(offset, widget->offset_from_parent);
 
+    // Text needs to be handled slightly differently since its size depends on the
+    // dimensions of the text with the selected font
+    if (widget_has_flag(widget, WIDGET_TEXT)) {
+        ASSERT(widget->semantic_size[AXIS_HORIZONTAL].kind == UI_SIZE_KIND_ABSOLUTE);
+        ASSERT(widget->semantic_size[AXIS_VERTICAL].kind == UI_SIZE_KIND_ABSOLUTE);
+
+        f32 baseline =
+            platform_code.get_font_baseline_offset(widget->text.font, widget->text.size);
+        String visible_text = get_visible_widget_text(widget->text.string);
+        Vector2 text_dims = platform_code.get_text_dimensions(
+            widget->text.font, visible_text, widget->text.size);
+
+        widget->text.baseline_y_offset = baseline;
+
+        for (Axis axis = 0; axis < AXIS_COUNT; ++axis) {
+            widget->semantic_size[axis].value = *v2_index(&text_dims, axis);
+        }
+    }
+
     for (Axis axis = 0; axis < AXIS_COUNT; ++axis) {
         calculate_widget_layout_on_axis(widget, offset, platform_code, parent, axis);
     }
@@ -261,15 +338,14 @@ typedef enum {
     CALC_INTERACTION_KEEP_GOING,
 } CalculateInteractionResult;
 
-static CalculateInteractionResult calculate_widget_interactions(UIState *ui,
-    Widget *widget, const FrameData *frame_data, Rectangle parent_bounds,
-    YDirection y_dir, UIInteraction *interactions)
+static CalculateInteractionResult calculate_widget_interactions(UIState *ui, Widget *widget,
+    const FrameData *frame_data, Rectangle parent_bounds, YDirection y_dir,
+    UIInteraction *interactions)
 {
     Rectangle clipped_bounds =
         widget_get_clipped_bounding_box(widget, parent_bounds, CLIP_TO_PARENT);
 
-    for (Widget *child = list_head(&widget->children); child;
-         child = child->next_sibling) {
+    for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         CalculateInteractionResult child_result = calculate_widget_interactions(
             ui, child, frame_data, clipped_bounds, y_dir, interactions);
 
@@ -358,8 +434,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
     Rectangle parent_bounds, ClippingBehaviour clipping)
 {
     // TODO: depth is required despite the fact that render commands are sorted using stable sort, figure that out
-    Rectangle widget_rect =
-        widget_get_clipped_bounding_box(widget, parent_bounds, clipping);
+    Rectangle widget_rect = widget_get_clipped_bounding_box(widget, parent_bounds, clipping);
 
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
         LinearArena *arena = get_frame_arena(ui);
@@ -371,8 +446,7 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
                 color = RGBA32_GREEN;
             }
 
-            if (widget_is_active(ui, widget)
-                && widget_has_flag(widget, WIDGET_ACTIVE_COLOR)) {
+            if (widget_is_active(ui, widget) && widget_has_flag(widget, WIDGET_ACTIVE_COLOR)) {
                 color = RGBA32_RED;
             }
 
@@ -398,14 +472,13 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
         }
     }
 
-    for (Widget *child = list_head(&widget->children); child;
-         child = child->next_sibling) {
+    for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
         render_widget(ui, child, rb, depth + 1, widget_rect, CLIP_TO_PARENT);
     }
 }
 
-UIInteraction ui_core_end_layout(UIState *ui, const FrameData *frame_data,
-    YDirection y_dir, PlatformCode platform_code)
+UIInteraction ui_core_end_layout(
+    UIState *ui, const FrameData *frame_data, YDirection y_dir, PlatformCode platform_code)
 {
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
@@ -427,7 +500,7 @@ UIInteraction ui_core_end_layout(UIState *ui, const FrameData *frame_data,
     }
 
     for (Widget *child = list_head(&ui->floating_widgets); child;
-         child = child->next_sibling) {
+        child = child->next_sibling) {
         calculate_widget_layout(child, child->final_position, platform_code, 0);
         calculate_widget_interactions(ui, child, frame_data, window_rect, y_dir, &result);
 
@@ -452,7 +525,7 @@ void ui_core_render(UIState *ui, const FrameData *frame_data, RenderBatch *rb)
     }
 
     for (Widget *child = list_head(&ui->floating_widgets); child;
-         child = child->next_sibling) {
+        child = child->next_sibling) {
         render_widget(ui, child, rb, 100, window_rect, CLIP_NONE);
     }
 }
@@ -492,7 +565,13 @@ static void ui_core_push_widget(UIState *ui, Widget *widget, b32 floating)
     }
 
     widget->layout_direction = ui->current_layout_axis;
+    widget->child_alignment[AXIS_HORIZONTAL] = ui->current_alignment[AXIS_HORIZONTAL];
+    widget->child_alignment[AXIS_VERTICAL] = ui->current_alignment[AXIS_VERTICAL];
+
+    // Reset layout and alignment
     ui->current_layout_axis = DEFAULT_LAYOUT_AXIS;
+    ui->current_alignment[AXIS_HORIZONTAL] = DEFAULT_ALIGNMENT;
+    ui->current_alignment[AXIS_VERTICAL] = DEFAULT_ALIGNMENT;
 }
 
 Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floating)
@@ -508,8 +587,7 @@ Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floati
     return widget;
 }
 
-Widget *ui_core_colored_box(
-    UIState *ui, Vector2 size, RGBA32 color, WidgetID id, b32 floating)
+Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id, b32 floating)
 {
     Widget *widget = ui_core_create_widget(ui, size, id, floating);
     widget_add_flag(widget, WIDGET_COLORED);
@@ -555,4 +633,10 @@ WidgetID ui_core_hash_string(String text)
     ASSERT(result != UI_NULL_WIDGET_ID);
 
     return result;
+}
+
+// TODO: instead use a stack of alignments
+void ui_core_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis)
+{
+    ui->current_alignment[axis] = alignment;
 }

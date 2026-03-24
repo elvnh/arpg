@@ -23,4 +23,6 @@ WidgetInteraction ui_begin_menu(UIState *ui, Vector2 size, String name,
     UISizeKind size_kind, f32 child_padding);
 void ui_pop_menu(UIState *ui);
 
+void ui_push_render_hook(UIState *ui, UIRenderHook hook, void *user_data);
+
 #endif //UI_BUILDER_H

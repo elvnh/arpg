@@ -253,3 +253,12 @@ void ui_end_mouse_menu(UIState *ui)
     // TODO: this function is unneccessary
     ui_core_pop_container(ui);
 }
+
+void ui_push_render_hook(UIState *ui, UIRenderHook hook, void *user_data)
+{
+    Widget *widget = ui_core_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID, false);
+    widget_add_flag(widget, WIDGET_RENDER_HOOK);
+
+    widget->render_hook = hook;
+    widget->render_hook_user_data = user_data;
+}

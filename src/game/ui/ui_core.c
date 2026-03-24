@@ -426,8 +426,8 @@ static LinearArena *get_frame_arena(UIState *ui)
     return result;
 }
 
-static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize depth,
-    Rectangle parent_bounds, ClippingBehaviour clipping)
+static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBatch *rb,
+    ssize depth, Rectangle parent_bounds, ClippingBehaviour clipping)
 {
     // TODO: depth is required despite the fact that render commands are sorted using stable sort, figure that out
     Rectangle widget_rect = widget_get_clipped_bounding_box(widget, parent_bounds, clipping);
@@ -471,7 +471,12 @@ static void render_widget(UIState *ui, Widget *widget, RenderBatch *rb, ssize de
     }
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        render_widget(ui, child, rb, depth + 1, widget_rect, CLIP_TO_PARENT);
+        render_widget(ui, child, widget, rb, depth + 1, widget_rect, CLIP_TO_PARENT);
+    }
+
+    if (widget_has_flag(widget, WIDGET_RENDER_HOOK)) {
+        ASSERT(widget->render_hook);
+        widget->render_hook(widget->render_hook_user_data, rb, parent, get_frame_arena(ui));
     }
 }
 
@@ -520,12 +525,12 @@ void ui_core_render(UIState *ui, const FrameData *frame_data, RenderBatch *rb)
     };
 
     if (ui->root_widget) {
-        render_widget(ui, ui->root_widget, rb, 0, window_rect, CLIP_TO_PARENT);
+        render_widget(ui, ui->root_widget, 0, rb, 0, window_rect, CLIP_TO_PARENT);
     }
 
     for (Widget *child = list_head(&ui->floating_widgets); child;
         child = child->next_sibling) {
-        render_widget(ui, child, rb, 100, window_rect, CLIP_NONE);
+        render_widget(ui, child, 0, rb, 100, window_rect, CLIP_NONE);
     }
 }
 

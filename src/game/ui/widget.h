@@ -7,18 +7,24 @@
 #include "base/vector.h"
 #include "platform/asset.h"
 
+struct RenderBatch;
+struct Widget;
+
 typedef u64 WidgetID;
+
+typedef void (*UIRenderHook)(void *, struct RenderBatch *, struct Widget *, LinearArena *);
 
 // clang-format off
 typedef enum {
-    WIDGET_CLICKABLE    = FLAG(0),
-    WIDGET_COLORED      = FLAG(1),
-    WIDGET_TEXT         = FLAG(2),
-    WIDGET_HIDDEN       = FLAG(3),
-    WIDGET_TEXT_INPUT   = FLAG(4),
-    WIDGET_STAY_ACTIVE  = FLAG(5),
-    WIDGET_HOT_COLOR    = FLAG(6),
-    WIDGET_ACTIVE_COLOR = FLAG(7),
+    WIDGET_CLICKABLE     = FLAG(0),
+    WIDGET_COLORED       = FLAG(1),
+    WIDGET_TEXT          = FLAG(2),
+    WIDGET_HIDDEN        = FLAG(3),
+    WIDGET_TEXT_INPUT    = FLAG(4),
+    WIDGET_STAY_ACTIVE   = FLAG(5),
+    WIDGET_HOT_COLOR     = FLAG(6),
+    WIDGET_ACTIVE_COLOR  = FLAG(7),
+    WIDGET_RENDER_HOOK   = FLAG(8),
 } WidgetFlag;
 // clang-format on
 
@@ -88,6 +94,9 @@ typedef struct Widget {
     RGBA32 active_color;
 
     StringBuilder *text_input_buffer;
+
+    UIRenderHook render_hook;
+    void *render_hook_user_data;
 } Widget;
 
 static inline b32 widget_has_flag(const Widget *widget, WidgetFlag flag)

@@ -279,7 +279,7 @@ Vector2 font_get_text_dimensions(FontAsset *asset, String text, s32 text_size)
             GlyphTexturePosition glyph_info =
                 asset->glyph_texture_positions[char_index(ch)];
 
-            result.x += glyph_info.advance_x + glyph_info.left_side_bearing;
+            result.x += glyph_info.advance_x;
             max_x = MAX(result.x, max_x);
         }
     }

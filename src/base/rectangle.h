@@ -103,6 +103,12 @@ static inline b32 rect_is_valid(Rectangle rect)
     return result;
 }
 
+static inline b32 rect_eq(Rectangle a, Rectangle b)
+{
+    b32 result = v2_eq(a.position, b.position) && v2_eq(a.size, b.size);
+
+    return result;
+}
 static inline b32 rect_intersects(Rectangle a, Rectangle b)
 {
     b32 result = (a.position.x < (b.position.x + b.size.x))
@@ -320,8 +326,13 @@ static inline RectanglePoint rect_bounds_point_closest_to_point(
 
 static inline b32 rect_contains_point(Rectangle rect, Vector2 p)
 {
+#if 0
     b32 result = (rect.position.x <= p.x) && (rect.position.x + rect.size.x >= p.x)
                  && (rect.position.y <= p.y) && (rect.position.y + rect.size.y >= p.y);
+#else
+    b32 result = (rect.position.x < p.x) && (rect.position.x + rect.size.x > p.x)
+                 && (rect.position.y < p.y) && (rect.position.y + rect.size.y > p.y);
+#endif
 
     return result;
 }

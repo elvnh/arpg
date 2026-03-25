@@ -62,7 +62,7 @@ b32 try_equip_item_from_inventory(
                 InventoryStorable *replaced_item =
                     es_get_component(replaced_item_entity, InventoryStorable);
 
-                insert_item_in_inventory(es, inventory, replaced_item, item);
+                try_add_item_to_inventory(es, inventory, replaced_item);
             }
 
             remove_item_from_inventory(es, inventory, item);
@@ -82,5 +82,5 @@ void unequip_item_and_put_in_inventory(
 
     *equipped_id = NULL_ENTITY_ID;
 
-    append_item_to_inventory(es, inventory, storable);
+    try_add_item_to_inventory(es, inventory, storable);
 }

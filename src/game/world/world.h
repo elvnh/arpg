@@ -57,6 +57,7 @@ void world_render(World *world, RenderBatches rb_list, const struct FrameData *f
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction);
 EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction);
+void world_make_entity_non_spatial(World *world, Entity *entity);
 void world_drop_item_from_position(Vector2 position, Entity *item_entity);
 Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physics);
 void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena);

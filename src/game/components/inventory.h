@@ -4,7 +4,7 @@
 #include "base/vector.h"
 #include "entity/entity_id.h"
 
-//// TODO: move this to component subdirectory
+#define INVENTORY_GRID_CELL_COUNTS (Vector2i){16, 8}
 
 struct EntitySystem;
 struct World;
@@ -12,6 +12,8 @@ struct World;
 typedef struct {
     EntityID next_item_in_inventory;
     EntityID prev_item_in_inventory;
+    Vector2i inventory_grid_position;
+    Vector2i inventory_grid_size;
 } InventoryStorable;
 
 typedef struct {
@@ -19,16 +21,22 @@ typedef struct {
     EntityID last_item_in_inventory;
 } Inventory;
 
-void append_item_to_inventory(
+void append_item_to_inventory_list(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add);
-void insert_item_in_inventory(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item_to_add, InventoryStorable *insert_after);
+b32 try_add_item_to_inventory_at(
+    struct EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position);
+b32 try_add_item_to_inventory(
+    struct EntitySystem *es, Inventory *inv, InventoryStorable *item);
 void remove_item_from_inventory(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item_to_remove);
 void drop_item_from_inventory_on_ground(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item);
 b32 inventory_contains_item(
     struct EntitySystem *es, Inventory *inventory, InventoryStorable *item);
+b32 item_collides_with_other_in_inventory(
+    struct EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position);
+EntityID try_get_inventory_item_at_position(
+    struct EntitySystem *es, Inventory *inv, Vector2i grid_position);
 
 static inline b32 inventory_is_empty(Inventory *inventory)
 {

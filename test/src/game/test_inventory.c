@@ -38,7 +38,7 @@ TEST_CASE(inventory_append_basic) {
     REQUIRE(entity_id_is_null(inv->first_item_in_inventory));
     REQUIRE(entity_id_is_null(inv->last_item_in_inventory));
 
-    append_item_to_inventory(es, inv, item_entity.item);
+    append_item_to_inventory_list(es, inv, item_entity.item);
 
     REQUIRE(!inventory_is_empty(inv));
     REQUIRE(inventory_contains_item(es, inv, item_entity.item));
@@ -53,7 +53,7 @@ TEST_CASE(inventory_append_empty) {
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item_entity = create_item_entity(es);
-    append_item_to_inventory(es, inv, item_entity.item);
+    append_item_to_inventory_list(es, inv, item_entity.item);
 
     REQUIRE(entity_id_equal(inv->first_item_in_inventory, item_entity.entity->id));
     REQUIRE(entity_id_equal(inv->last_item_in_inventory, item_entity.entity->id));
@@ -69,7 +69,7 @@ TEST_CASE(inventory_append_should_remove_position_component) {
 
     ItemEntity item_entity = create_item_entity(es);
     es_add_component(item_entity.entity, PhysicsComponent);
-    append_item_to_inventory(es, inv, item_entity.item);
+    append_item_to_inventory_list(es, inv, item_entity.item);
 
     REQUIRE(!es_has_component(item_entity.entity, PhysicsComponent));
 
@@ -83,10 +83,10 @@ TEST_CASE(inventory_append_when_one_element) {
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity first_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, first_item.item);
+    append_item_to_inventory_list(es, inv, first_item.item);
 
     ItemEntity last_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, last_item.item);
+    append_item_to_inventory_list(es, inv, last_item.item);
 
     REQUIRE(entity_id_equal(inv->first_item_in_inventory, first_item.entity->id));
     REQUIRE(entity_id_equal(inv->last_item_in_inventory, last_item.entity->id));
@@ -107,13 +107,13 @@ TEST_CASE(inventory_append_when_two_elements) {
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity first_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, first_item.item);
+    append_item_to_inventory_list(es, inv, first_item.item);
 
     ItemEntity middle_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, middle_item.item);
+    append_item_to_inventory_list(es, inv, middle_item.item);
 
     ItemEntity last_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, last_item.item);
+    append_item_to_inventory_list(es, inv, last_item.item);
 
     REQUIRE(entity_id_equal(inv->first_item_in_inventory, first_item.entity->id));
     REQUIRE(entity_id_equal(inv->last_item_in_inventory, last_item.entity->id));
@@ -121,125 +121,6 @@ TEST_CASE(inventory_append_when_two_elements) {
     REQUIRE(inventory_contains_item(es, inv, first_item.item));
     REQUIRE(inventory_contains_item(es, inv, middle_item.item));
     REQUIRE(inventory_contains_item(es, inv, last_item.item));
-
-    free_entity_system(es);
-}
-
-TEST_CASE(inventory_insert_after_when_one_element) {
-    EntitySystem *es = allocate_entity_system();
-
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
-    Inventory *inv = es_add_component(e.entity, Inventory);
-
-    ItemEntity first_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, first_item.item);
-
-    ItemEntity inserted_item = create_item_entity(es);
-    insert_item_in_inventory(es, inv, inserted_item.item, first_item.item);
-
-    REQUIRE(entity_id_equal(inv->first_item_in_inventory, first_item.entity->id));
-    REQUIRE(entity_id_equal(inv->last_item_in_inventory, inserted_item.entity->id));
-
-    REQUIRE(inventory_contains_item(es, inv, first_item.item));
-    REQUIRE(inventory_contains_item(es, inv, inserted_item.item));
-
-    free_entity_system(es);
-}
-
-TEST_CASE(inventory_insert_after_first_when_two_elements) {
-    EntitySystem *es = allocate_entity_system();
-
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
-    Inventory *inv = es_add_component(e.entity, Inventory);
-
-    ItemEntity first_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, first_item.item);
-
-    ItemEntity last_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, last_item.item);
-
-    ItemEntity inserted_item = create_item_entity(es);
-    insert_item_in_inventory(es, inv, inserted_item.item, first_item.item);
-
-    REQUIRE(entity_id_equal(inv->first_item_in_inventory, first_item.entity->id));
-    REQUIRE(entity_id_equal(inv->last_item_in_inventory, last_item.entity->id));
-
-    REQUIRE(inventory_contains_item(es, inv, first_item.item));
-    REQUIRE(inventory_contains_item(es, inv, inserted_item.item));
-    REQUIRE(inventory_contains_item(es, inv, last_item.item));
-
-    free_entity_system(es);
-}
-
-TEST_CASE(inventory_insert_after_last_when_two_elements) {
-    EntitySystem *es = allocate_entity_system();
-
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
-    Inventory *inv = es_add_component(e.entity, Inventory);
-
-    ItemEntity first_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, first_item.item);
-
-    ItemEntity last_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, last_item.item);
-
-    ItemEntity inserted_item = create_item_entity(es);
-    insert_item_in_inventory(es, inv, inserted_item.item, last_item.item);
-
-    REQUIRE(entity_id_equal(inv->first_item_in_inventory, first_item.entity->id));
-    REQUIRE(entity_id_equal(inv->last_item_in_inventory, inserted_item.entity->id));
-
-    REQUIRE(inventory_contains_item(es, inv, first_item.item));
-    REQUIRE(inventory_contains_item(es, inv, inserted_item.item));
-    REQUIRE(inventory_contains_item(es, inv, last_item.item));
-
-    free_entity_system(es);
-}
-
-TEST_CASE(inventory_insert_after_middle_when_three_elements) {
-    EntitySystem *es = allocate_entity_system();
-
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
-    Inventory *inv = es_add_component(e.entity, Inventory);
-
-    ItemEntity first_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, first_item.item);
-
-    ItemEntity middle_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, middle_item.item);
-
-    ItemEntity last_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, last_item.item);
-
-    ItemEntity inserted_item = create_item_entity(es);
-    insert_item_in_inventory(es, inv, inserted_item.item, middle_item.item);
-
-    REQUIRE(entity_id_equal(inv->first_item_in_inventory, first_item.entity->id));
-    REQUIRE(entity_id_equal(inv->last_item_in_inventory, last_item.entity->id));
-
-    REQUIRE(inventory_contains_item(es, inv, first_item.item));
-    REQUIRE(inventory_contains_item(es, inv, inserted_item.item));
-    REQUIRE(inventory_contains_item(es, inv, middle_item.item));
-    REQUIRE(inventory_contains_item(es, inv, last_item.item));
-
-    free_entity_system(es);
-}
-
-TEST_CASE(inventory_insert_should_remove_position_component) {
-    EntitySystem *es = allocate_entity_system();
-
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
-    Inventory *inv = es_add_component(e.entity, Inventory);
-
-    ItemEntity first_item = create_item_entity(es);
-    append_item_to_inventory(es, inv, first_item.item);
-
-    ItemEntity inserted_item = create_item_entity(es);
-    es_add_component(inserted_item.entity, PhysicsComponent);
-
-    insert_item_in_inventory(es, inv, inserted_item.item, first_item.item);
-
-    REQUIRE(!es_has_component(inserted_item.entity, PhysicsComponent));
 
     free_entity_system(es);
 }
@@ -251,7 +132,7 @@ TEST_CASE(inventory_remove_when_one_item) {
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item = create_item_entity(es);
-    append_item_to_inventory(es, inv, item.item);
+    append_item_to_inventory_list(es, inv, item.item);
 
     remove_item_from_inventory(es, inv, item.item);
 
@@ -269,8 +150,8 @@ TEST_CASE(inventory_remove_first_when_two_items) {
 
     ItemEntity item1 = create_item_entity(es);
     ItemEntity item2 = create_item_entity(es);
-    append_item_to_inventory(es, inv, item1.item);
-    append_item_to_inventory(es, inv, item2.item);
+    append_item_to_inventory_list(es, inv, item1.item);
+    append_item_to_inventory_list(es, inv, item2.item);
 
     remove_item_from_inventory(es, inv, item1.item);
 
@@ -291,8 +172,8 @@ TEST_CASE(inventory_remove_last_when_two_items) {
 
     ItemEntity item1 = create_item_entity(es);
     ItemEntity item2 = create_item_entity(es);
-    append_item_to_inventory(es, inv, item1.item);
-    append_item_to_inventory(es, inv, item2.item);
+    append_item_to_inventory_list(es, inv, item1.item);
+    append_item_to_inventory_list(es, inv, item2.item);
 
     remove_item_from_inventory(es, inv, item2.item);
 
@@ -314,9 +195,9 @@ TEST_CASE(inventory_remove_first_when_three_items) {
     ItemEntity item2 = create_item_entity(es);
     ItemEntity item3 = create_item_entity(es);
 
-    append_item_to_inventory(es, inv, item1.item);
-    append_item_to_inventory(es, inv, item2.item);
-    append_item_to_inventory(es, inv, item3.item);
+    append_item_to_inventory_list(es, inv, item1.item);
+    append_item_to_inventory_list(es, inv, item2.item);
+    append_item_to_inventory_list(es, inv, item3.item);
 
     remove_item_from_inventory(es, inv, item1.item);
 
@@ -344,9 +225,9 @@ TEST_CASE(inventory_remove_middle_when_three_items) {
     ItemEntity item2 = create_item_entity(es);
     ItemEntity item3 = create_item_entity(es);
 
-    append_item_to_inventory(es, inv, item1.item);
-    append_item_to_inventory(es, inv, item2.item);
-    append_item_to_inventory(es, inv, item3.item);
+    append_item_to_inventory_list(es, inv, item1.item);
+    append_item_to_inventory_list(es, inv, item2.item);
+    append_item_to_inventory_list(es, inv, item3.item);
 
     remove_item_from_inventory(es, inv, item2.item);
 
@@ -373,9 +254,9 @@ TEST_CASE(inventory_remove_last_when_three_items) {
     ItemEntity item2 = create_item_entity(es);
     ItemEntity item3 = create_item_entity(es);
 
-    append_item_to_inventory(es, inv, item1.item);
-    append_item_to_inventory(es, inv, item2.item);
-    append_item_to_inventory(es, inv, item3.item);
+    append_item_to_inventory_list(es, inv, item1.item);
+    append_item_to_inventory_list(es, inv, item2.item);
+    append_item_to_inventory_list(es, inv, item3.item);
 
     remove_item_from_inventory(es, inv, item3.item);
 

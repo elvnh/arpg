@@ -56,6 +56,7 @@ set(
   src/game/stats.c
   src/base/polygon.c
   src/game/ui/game_ui.c
+  src/game/ui/inventory_menu.c
   src/game/ui/ui_core.c
   src/game/ui/ui_builder.c
   src/game/status_effect.c

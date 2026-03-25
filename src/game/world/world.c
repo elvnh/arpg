@@ -349,6 +349,13 @@ static b32 entity_should_die(Entity *entity)
     return false;
 }
 
+void world_make_entity_non_spatial(World *world, Entity *entity)
+{
+    (void)world;
+
+    es_remove_component(entity, PhysicsComponent);
+}
+
 static void entity_update(
     World *world, ssize alive_entity_index, f32 dt, LinearArena *frame_arena)
 {
@@ -1156,7 +1163,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 2; ++i) {
+    for (s32 i = 0; i < 5; ++i) {
 #if 1
         EntityWithID entity_with_id =
             world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),

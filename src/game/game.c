@@ -17,6 +17,7 @@
 #include "renderer/frontend/render_key.h"
 #include "renderer/frontend/render_target.h"
 #include "status_effect.h"
+#include "ui/game_ui.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
 #include "world/world.h"
@@ -44,16 +45,6 @@ static void update_player(
 
     Vector2 camera_target = rect_center(world_get_entity_bounding_box(player, physics));
     camera_set_target(&world->camera, camera_target);
-
-    Entity *hovered_entity =
-        es_try_get_entity(&world->entity_system, game_ui->hovered_entity);
-
-    if (hovered_entity && input_is_key_pressed(&frame_data->input, MOUSE_RIGHT)) {
-        Inventory *inv = es_get_component(player, Inventory);
-        InventoryStorable *storable = es_get_component(hovered_entity, InventoryStorable);
-
-        append_item_to_inventory(&world->entity_system, inv, storable);
-    }
 
     if (player->state.kind != ENTITY_STATE_ATTACKING) {
 #if 0
@@ -200,6 +191,11 @@ static void render_ui(
     if (game->debug_state.render_chunks) {
         debug_render_chunks(game, rbs.worldspace_ui_rb, frame_arena);
     }
+
+    Vector2 mouse_pos =
+        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+    render_item_on_cursor(
+        &game->game_ui, &game->world, rbs.overlay_rb, mouse_pos, frame_arena);
 }
 
 static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,

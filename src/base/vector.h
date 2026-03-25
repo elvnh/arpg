@@ -186,6 +186,16 @@ static inline Vector2i v2i_add(Vector2i a, Vector2i b)
     return result;
 }
 
+static inline Vector2i v2i_div_s(Vector2i a, s32 scalar)
+{
+    Vector2i result = {
+        a.x / scalar,
+        a.y / scalar,
+    };
+
+    return result;
+}
+
 static inline s32 v2i_dist_sq(Vector2i a, Vector2i b)
 {
     s32 result = ((b.x - a.x) * (b.x - a.x)) + ((b.y - a.y) * (b.y - a.y));

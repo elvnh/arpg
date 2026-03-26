@@ -21,6 +21,12 @@ typedef struct {
     EntityID last_item_in_inventory;
 } Inventory;
 
+typedef struct {
+    b32 ok;
+
+    EntityID exchanged_item;
+} InventoryInsertion;
+
 void append_item_to_inventory_list(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add);
 b32 try_add_item_to_inventory_at(
@@ -33,6 +39,8 @@ void drop_item_from_inventory_on_ground(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item);
 b32 inventory_contains_item(
     struct EntitySystem *es, Inventory *inventory, InventoryStorable *item);
+InventoryInsertion try_place_or_exchange_inventory_item(
+    struct EntitySystem *es, Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
 
 b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size);
 // TODO: rename to can_place_item_in_inventory_at

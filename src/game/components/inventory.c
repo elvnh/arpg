@@ -87,13 +87,19 @@ void append_item_to_inventory_list(
     es_remove_component(item_entity, PhysicsComponent);
 }
 
-b32 item_collides_with_other_in_inventory(
-    EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position)
+// TODO: this doesn't need to count above 1
+typedef struct {
+    s32 collision_count;
+    EntityID first_collision_item;
+} InventoryCollision;
+
+static InventoryCollision count_inventory_item_collisions(
+    EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_pos)
 {
-    b32 result = false;
+    InventoryCollision result = {0};
 
     Rectangle self_rect = {
-        v2i_to_v2(grid_position),
+        v2i_to_v2(grid_pos),
         v2i_to_v2(item->inventory_grid_size),
     };
 
@@ -113,12 +119,25 @@ b32 item_collides_with_other_in_inventory(
         };
 
         if (rect_intersects(self_rect, other_rect)) {
-            result = true;
-            break;
+            ++result.collision_count;
+
+            if (result.collision_count == 1) {
+                result.first_collision_item = curr_id;
+            }
         }
 
         curr_id = other_item->next_item_in_inventory;
     }
+
+    return result;
+}
+
+b32 item_collides_with_other_in_inventory(
+    EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position)
+{
+    InventoryCollision collision =
+        count_inventory_item_collisions(es, inv, item, grid_position);
+    b32 result = collision.collision_count > 0;
 
     return result;
 }
@@ -147,6 +166,13 @@ b32 try_add_item_to_inventory_at(
     }
 
     return result;
+}
+
+static void add_item_to_inventory_at(
+    EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position)
+{
+    b32 added = try_add_item_to_inventory_at(es, inv, item, grid_position);
+    ASSERT(added);
 }
 
 b32 try_add_item_to_inventory(struct EntitySystem *es, Inventory *inv, InventoryStorable *item)
@@ -262,6 +288,34 @@ b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item
                  && (item_grid_coords.x + item_grid_size.x < INVENTORY_GRID_CELL_COUNTS.x)
                  && (item_grid_coords.y >= 0)
                  && (item_grid_coords.y + item_grid_size.y < INVENTORY_GRID_CELL_COUNTS.y);
+
+    return result;
+}
+
+InventoryInsertion try_place_or_exchange_inventory_item(
+    EntitySystem *es, Inventory *inventory, InventoryStorable *item, Vector2i grid_pos)
+{
+    InventoryCollision collision =
+        count_inventory_item_collisions(es, inventory, item, grid_pos);
+
+    InventoryInsertion result = {0};
+    result.ok = collision.collision_count <= 1;
+
+    if (collision.collision_count == 1) {
+        // Item only collides with one other, we can exchange it
+        ASSERT(!entity_id_is_null(collision.first_collision_item));
+
+        result.exchanged_item = collision.first_collision_item;
+
+        Entity *exchanged_entity = es_get_entity(es, result.exchanged_item);
+        InventoryStorable *exchanged_item =
+            es_get_component(exchanged_entity, InventoryStorable);
+        remove_item_from_inventory(es, inventory, exchanged_item);
+    }
+
+    if (result.ok) {
+        add_item_to_inventory_at(es, inventory, item, grid_pos);
+    }
 
     return result;
 }

@@ -167,10 +167,11 @@ static void handle_inventory_dropping(Game *game, Inventory *inventory, Vector2 
         item_is_in_bounds_of_inventory_grid(grid_coords, cursor_item->inventory_grid_size);
 
     if (in_bounds) {
-        b32 added = try_add_item_to_inventory_at(es, inventory, cursor_item, grid_coords);
+        InventoryInsertion insertion =
+            try_place_or_exchange_inventory_item(es, inventory, cursor_item, grid_coords);
 
-        if (added) {
-            game->game_ui.item_on_cursor = NULL_ENTITY_ID;
+        if (insertion.ok) {
+            game->game_ui.item_on_cursor = insertion.exchanged_item;
         }
     }
 }
@@ -313,6 +314,7 @@ void render_item_on_cursor(Game *game, RenderBatch *rb, Vector2 mouse_pos, Linea
     }
 }
 
+// TODO: rename this, it only works for spatial entities
 void put_item_on_cursor(Game *game, Entity *item_entity)
 {
     InventoryStorable *item = es_get_component(item_entity, InventoryStorable);

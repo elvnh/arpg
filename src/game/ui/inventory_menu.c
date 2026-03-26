@@ -27,12 +27,64 @@
  * outside unless this variable is true.
  */
 
+#define VALID_ITEM_BG_COLOR (RGBA32){0, 0.3f, 1, 1.0f}
+#define INVALID_ITEM_BG_COLOR (RGBA32){1, 0.3f, 0, 1.0f}
+
 typedef struct {
     World *world;
     InventoryMenu *inventory_menu;
     Inventory *inventory;
     const FrameData *frame_data;
 } InventoryHookContext;
+
+typedef enum {
+    GRID_COORD_TRUNCATE,
+    GRID_COORD_ROUND_TO_NEAREST,
+} GridCoordRounding;
+
+static inline Vector2i screen_to_inventory_grid_coords(
+    Vector2 position, Rectangle inventory_grid_rect, GridCoordRounding rounding)
+{
+    Vector2 screen_offset = v2_sub(position, inventory_grid_rect.position);
+    Vector2 floating_grid_pos = v2_div_s(screen_offset, INVENTORY_GRID_UI_CELL_SIZE);
+
+    if (rounding == GRID_COORD_ROUND_TO_NEAREST) {
+        floating_grid_pos.x = roundf(floating_grid_pos.x);
+        floating_grid_pos.y = roundf(floating_grid_pos.y);
+    }
+
+    Vector2i result = v2_to_v2i(floating_grid_pos);
+
+    return result;
+}
+
+static inline Vector2 inventory_grid_to_screen_vector(Vector2i grid_pos)
+{
+    Vector2 result = {(f32)grid_pos.x * INVENTORY_GRID_UI_CELL_SIZE,
+        (f32)grid_pos.y * INVENTORY_GRID_UI_CELL_SIZE};
+
+    return result;
+}
+
+static inline Vector2 inventory_grid_to_screen_coords(
+    Vector2i position, Rectangle inventory_grid_rect)
+{
+    Vector2 result = inventory_grid_to_screen_vector(position);
+    result = v2_add(result, inventory_grid_rect.position);
+
+    return result;
+}
+
+static Vector2i get_cursor_item_grid_coords(
+    InventoryMenu *inv_menu, InventoryStorable *item, Vector2 mouse_pos)
+{
+    Vector2 top_left = v2_sub(
+        mouse_pos, v2_div_s(inventory_grid_to_screen_vector(item->inventory_grid_size), 2.0f));
+    Vector2i result = screen_to_inventory_grid_coords(
+        top_left, inv_menu->inventory_grid_rect, GRID_COORD_ROUND_TO_NEAREST);
+
+    return result;
+}
 
 static void render_inventory_grid_overlay(
     InventoryHookContext *context, RenderBatch *rb, LinearArena *scratch)
@@ -67,28 +119,21 @@ static void render_inventory_items(
     InventoryHookContext *context, RenderBatch *rb, LinearArena *scratch)
 {
     EntitySystem *es = &context->world->entity_system;
-
-    Vector2 inv_grid_pos = context->inventory_menu->inventory_grid_rect.position;
-
     EntityID curr_item = context->inventory->first_item_in_inventory;
 
     while (!entity_id_is_null(curr_item)) {
         Entity *item_entity = es_get_entity(es, curr_item);
         InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
 
-        Vector2 item_screen_pos = v2_add(inv_grid_pos,
-            v2_mul_s(v2i_to_v2(item->inventory_grid_position), INVENTORY_GRID_UI_CELL_SIZE));
-
-        Vector2 item_px_size =
-            v2_mul_s(v2i_to_v2(item->inventory_grid_size), INVENTORY_GRID_UI_CELL_SIZE);
+        Vector2 item_screen_pos = inventory_grid_to_screen_coords(
+            item->inventory_grid_position, context->inventory_menu->inventory_grid_rect);
+        Vector2 item_px_size = inventory_grid_to_screen_vector(item->inventory_grid_size);
         Rectangle item_rect = {item_screen_pos, item_px_size};
 
-        SpriteComponent *sprite = es_get_component(item_entity, SpriteComponent);
-
-        RGBA32 background_color = {1, 0.3f, 1, 1.0f};
-
         draw_rectangle(
-            rb, scratch, item_rect, background_color, shader_handle(SHAPE_SHADER), 0);
+            rb, scratch, item_rect, VALID_ITEM_BG_COLOR, shader_handle(SHAPE_SHADER), 0);
+
+        SpriteComponent *sprite = es_get_component(item_entity, SpriteComponent);
         draw_sprite(rb, scratch, sprite->sprite.texture, item_rect,
             zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 10);
 
@@ -118,17 +163,6 @@ static void inventory_grid_hook(
 
     render_inventory_grid_overlay(context, rb, frame_arena);
     render_inventory_items(context, rb, frame_arena);
-}
-
-static Vector2i get_cursor_item_grid_coords(
-    InventoryMenu *inv_menu, InventoryStorable *item, Vector2 mouse_pos)
-{
-    Vector2 top_left = v2_sub(
-        mouse_pos, v2_div_s(inventory_grid_to_screen_vector(item->inventory_grid_size), 2.0f));
-    Vector2i result = screen_to_inventory_grid_coords(
-        top_left, inv_menu->inventory_grid_rect, GRID_COORD_ROUND_TO_NEAREST);
-
-    return result;
 }
 
 static void handle_inventory_dragging(Game *game, Inventory *inventory, Vector2 mouse_pos)
@@ -263,9 +297,10 @@ static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *in
 
         RGBA32 bg_color = {0};
         if (can_place_item) {
-            bg_color = RGBA32_BLUE;
+            bg_color = VALID_ITEM_BG_COLOR;
         } else {
-            bg_color = RGBA32_RED;
+            bg_color = INVALID_ITEM_BG_COLOR;
+            ;
         }
 
         Vector2 bg_screen_size = inventory_grid_to_screen_vector(clamped_item_grid_size);

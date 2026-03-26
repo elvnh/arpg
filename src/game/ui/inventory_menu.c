@@ -163,9 +163,15 @@ static void handle_inventory_dropping(Game *game, Inventory *inventory, Vector2 
     InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
 
     Vector2i grid_coords = get_cursor_item_grid_coords(inv_menu, cursor_item, mouse_pos);
+    b32 in_bounds =
+        item_is_in_bounds_of_inventory_grid(grid_coords, cursor_item->inventory_grid_size);
 
-    if (try_add_item_to_inventory_at(es, inventory, cursor_item, grid_coords)) {
-        game->game_ui.item_on_cursor = NULL_ENTITY_ID;
+    if (in_bounds) {
+        b32 added = try_add_item_to_inventory_at(es, inventory, cursor_item, grid_coords);
+
+        if (added) {
+            game->game_ui.item_on_cursor = NULL_ENTITY_ID;
+        }
     }
 }
 

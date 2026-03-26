@@ -255,3 +255,13 @@ EntityID try_get_inventory_item_at_position(
 
     return curr_id;
 }
+
+b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size)
+{
+    b32 result = (item_grid_coords.x >= 0)
+                 && (item_grid_coords.x + item_grid_size.x < INVENTORY_GRID_CELL_COUNTS.x)
+                 && (item_grid_coords.y >= 0)
+                 && (item_grid_coords.y + item_grid_size.y < INVENTORY_GRID_CELL_COUNTS.y);
+
+    return result;
+}

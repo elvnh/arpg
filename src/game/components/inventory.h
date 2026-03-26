@@ -34,7 +34,8 @@ void drop_item_from_inventory_on_ground(
 b32 inventory_contains_item(
     struct EntitySystem *es, Inventory *inventory, InventoryStorable *item);
 
-// TODO: rename
+b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size);
+// TODO: rename to can_place_item_in_inventory_at
 b32 item_collides_with_other_in_inventory(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position);
 

@@ -269,8 +269,8 @@ static void handle_inventory_dropping(InventoryMenu *inv_menu, EntitySystem *es,
             if (insertion.ok) {
                 inv_menu->item_on_cursor = insertion.exchanged_item;
             }
-        } else if (!cell_is_in_bounds_of_inventory_grid(item_grid_coords)) {
-            // If the entire item is outside the inventory, we drop it
+        } else if (item_is_completely_outside_inventory_grid(item_grid_coords,
+                       cursor_item->inventory_grid_size)) {
             drop_cursor_item_into_world(inv_menu, es, player_pos);
         }
     } else {

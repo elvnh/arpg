@@ -293,10 +293,23 @@ EntityID try_get_inventory_item_at_position(
 
 b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size)
 {
-    b32 result = (item_grid_coords.x >= 0)
-                 && (item_grid_coords.x + item_grid_size.x <= INVENTORY_GRID_CELL_COUNTS.x)
-                 && (item_grid_coords.y >= 0)
-                 && (item_grid_coords.y + item_grid_size.y <= INVENTORY_GRID_CELL_COUNTS.y);
+    s32 item_right = item_grid_coords.x + item_grid_size.x;
+    s32 item_bottom = item_grid_coords.y + item_grid_size.y;
+
+    b32 result = (item_grid_coords.x >= 0) && (item_right <= INVENTORY_GRID_CELL_COUNTS.x)
+                 && (item_grid_coords.y >= 0) && (item_bottom <= INVENTORY_GRID_CELL_COUNTS.y);
+
+    return result;
+}
+
+b32 item_is_completely_outside_inventory_grid(Vector2i item_grid_coords,
+    Vector2i item_grid_size)
+{
+    s32 item_right = item_grid_coords.x + item_grid_size.x;
+    s32 item_bottom = item_grid_coords.y + item_grid_size.y;
+
+    b32 result = ((item_right < 0) || (item_grid_coords.x > INVENTORY_GRID_CELL_COUNTS.x))
+                 || ((item_bottom < 0) || (item_grid_coords.y > INVENTORY_GRID_CELL_COUNTS.y));
 
     return result;
 }

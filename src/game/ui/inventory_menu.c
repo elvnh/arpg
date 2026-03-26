@@ -8,6 +8,7 @@
 #include "game.h"
 #include "platform/input.h"
 #include "renderer/frontend/render_batch.h"
+#include "world/world.h"
 
 /* NOTE:
  * Having a grid inventory with draggable items requires some work-arounds due
@@ -199,54 +200,80 @@ static void handle_inventory_dragging(
     }
 }
 
-static void handle_inventory_dropping(
-    InventoryMenu *inv_menu, EntitySystem *es, Inventory *inventory, Vector2 mouse_pos)
+static void drop_cursor_item_into_world(
+    InventoryMenu *inv_menu, EntitySystem *es, Vector2 player_pos)
 {
-    ASSERT(!entity_id_is_null(inv_menu->item_on_cursor));
+    Entity *cursor_entity = es_get_entity(es, inv_menu->item_on_cursor);
+    world_drop_item_from_position(player_pos, cursor_entity);
 
+    inv_menu->item_on_cursor = NULL_ENTITY_ID;
+}
+
+static void handle_inventory_dropping(InventoryMenu *inv_menu, EntitySystem *es,
+    Vector2 player_pos, Inventory *inventory, Vector2 mouse_pos)
+{
     Entity *cursor_item_entity = es_get_entity(es, inv_menu->item_on_cursor);
     InventoryStorable *cursor_item = es_get_component(cursor_item_entity, InventoryStorable);
 
-    Vector2i grid_coords = get_cursor_item_grid_coords(inv_menu, cursor_item, mouse_pos);
-    b32 in_bounds =
-        item_is_in_bounds_of_inventory_grid(grid_coords, cursor_item->inventory_grid_size);
+    if (inv_menu->can_interact_with_inventory) {
+        ASSERT(inv_menu->active);
 
-    if (in_bounds) {
-        InventoryInsertion insertion =
-            try_place_or_exchange_inventory_item(es, inventory, cursor_item, grid_coords);
+        Vector2i item_grid_coords =
+            get_cursor_item_grid_coords(inv_menu, cursor_item, mouse_pos);
 
-        if (insertion.ok) {
-            inv_menu->item_on_cursor = insertion.exchanged_item;
+        b32 in_bounds = item_is_in_bounds_of_inventory_grid(
+            item_grid_coords, cursor_item->inventory_grid_size);
+
+        if (in_bounds) {
+            InventoryInsertion insertion = try_place_or_exchange_inventory_item(
+                es, inventory, cursor_item, item_grid_coords);
+
+            if (insertion.ok) {
+                inv_menu->item_on_cursor = insertion.exchanged_item;
+            }
+        } else if (!cell_is_in_bounds_of_inventory_grid(item_grid_coords)) {
+            // If the entire item is outside the inventory, we drop it
+            drop_cursor_item_into_world(inv_menu, es, player_pos);
         }
+    } else {
+        // If inventory isn't open, always drop item
+        drop_cursor_item_into_world(inv_menu, es, player_pos);
     }
 }
 
-static void handle_inventory_drag_and_drop(
-    InventoryMenu *inv_menu, Inventory *inventory, World *world, const FrameData *frame_data)
+static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Vector2 player_pos,
+    Inventory *inventory, World *world, Vector2 mouse_pos)
 {
     ASSERT(inv_menu->can_interact_with_inventory);
-    Vector2 mouse_pos =
-        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
-    if (rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)
-        && input_is_key_pressed(&frame_data->input, MOUSE_LEFT)) {
-        if (entity_id_is_null(inv_menu->item_on_cursor)) {
-            handle_inventory_dragging(inv_menu, &world->entity_system, inventory, mouse_pos);
-        } else {
-            handle_inventory_dropping(inv_menu, &world->entity_system, inventory, mouse_pos);
-        }
+    if (entity_id_is_null(inv_menu->item_on_cursor)
+        && rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)) {
+        handle_inventory_dragging(inv_menu, &world->entity_system, inventory, mouse_pos);
+    } else {
+        handle_inventory_dropping(
+            inv_menu, &world->entity_system, player_pos, inventory, mouse_pos);
     }
 }
 
 void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world,
     const FrameData *frame_data, LinearArena *scratch)
 {
+    Entity *player = world_get_player_entity(world);
+    Inventory *inventory = es_get_component(player, Inventory);
+    PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
+
+    Vector2 mouse_pos =
+        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+    b32 mouse_pressed = input_is_key_pressed(&frame_data->input, MOUSE_LEFT);
+
     if (!inv_menu->active) {
         inv_menu->can_interact_with_inventory = false;
-    } else {
-        Entity *player = world_get_player_entity(world);
-        Inventory *inventory = es_get_component(player, Inventory);
 
+        if (mouse_pressed) {
+            drop_cursor_item_into_world(
+                inv_menu, &world->entity_system, player_physics->position);
+        }
+    } else {
         ui_begin_menu(
             ui, V2_ZERO, str("inventory_container"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
         {
@@ -263,8 +290,9 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world,
 
                 ui_push_render_hook(ui, inventory_grid_hook, context);
 
-                if (inv_menu->can_interact_with_inventory) {
-                    handle_inventory_drag_and_drop(inv_menu, inventory, world, frame_data);
+                if (inv_menu->can_interact_with_inventory && mouse_pressed) {
+                    handle_inventory_drag_and_drop(
+                        inv_menu, player_physics->position, inventory, world, mouse_pos);
                 }
             }
             ui_pop_menu(ui);

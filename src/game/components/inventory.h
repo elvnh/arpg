@@ -42,6 +42,8 @@ InventoryInsertion try_place_or_exchange_inventory_item(
     struct EntitySystem *es, Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
 
 b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size);
+b32 cell_is_in_bounds_of_inventory_grid(Vector2i cell_coords);
+
 b32 can_place_item_in_inventory_at(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position);
 EntityID try_get_inventory_item_at_position(

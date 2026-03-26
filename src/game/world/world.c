@@ -108,6 +108,7 @@ EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction)
 
     return result;
 }
+
 EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction)
 {
     EntityWithID result = world_spawn_non_spatial_entity(world, faction);

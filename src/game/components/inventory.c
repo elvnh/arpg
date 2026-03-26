@@ -293,6 +293,13 @@ b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item
     return result;
 }
 
+b32 cell_is_in_bounds_of_inventory_grid(Vector2i cell_coords)
+{
+    b32 result = item_is_in_bounds_of_inventory_grid(cell_coords, v2i(1, 1));
+
+    return result;
+}
+
 InventoryInsertion try_place_or_exchange_inventory_item(
     EntitySystem *es, Inventory *inventory, InventoryStorable *item, Vector2i grid_pos)
 {

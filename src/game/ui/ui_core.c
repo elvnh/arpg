@@ -525,7 +525,6 @@ void ui_core_render(UIState *ui, const FrameData *frame_data, RenderBatch *rb)
     };
 
     s32 base_render_layer = 0;
-
     if (ui->root_widget) {
         render_widget(ui, ui->root_widget, 0, rb, window_rect, CLIP_TO_PARENT,
             base_render_layer);
@@ -533,9 +532,14 @@ void ui_core_render(UIState *ui, const FrameData *frame_data, RenderBatch *rb)
 
     for (Widget *child = list_head(&ui->floating_widgets); child;
         child = child->next_sibling) {
-        // NOTE: we use a higher layer here since floating widgets should be
-        // drawn above normal widgets
-        render_widget(ui, child, 0, rb, window_rect, CLIP_NONE, base_render_layer + 1);
+        /* NOTE:
+         * We use a higher layer here since floating widgets should be
+         * drawn above normal widgets. This really shouldn't be needed, but
+         * there seems to be a bug with the render command sorting not being
+         * stable.
+         * TODO: fix it properly instead
+         */
+        render_widget(ui, child, 0, rb, window_rect, CLIP_NONE, base_render_layer + 10);
     }
 }
 

@@ -19,12 +19,30 @@
  * drawn, and holding on to the widget rectangle, and setting a flag that
  * indicates that the size of the inventory grid is known.
  *
- * The outside world should not interact with the inventory unless this flag is
- * set.
+ * This means the inventory can't be interacted with until it has been visible
+ * for one frame. The inventory is drawn from inside the hook though, so this
+ * shouldn't cause any visual issues, and the 1 frame delay for interacting with
+ * items in the inventory shouldn't be a problem.
  */
 
 #define VALID_ITEM_BG_COLOR (RGBA32){0, 0.3f, 1, 1.0f}
 #define INVALID_ITEM_BG_COLOR (RGBA32){1, 0.3f, 0, 1.0f}
+
+/* NOTE:
+ *
+ * There seems to be some issues with render command sorting, namely that the
+ * sort doesn't appear to be stable. Therefore, the layer of the item sprite has
+ * to be higher than the item background for it to appear in front.
+ *
+ * TODO: fix this properly
+ */
+enum {
+    INVENTORY_GRID_LAYER,
+    INVENTORY_ITEM_BACKGROUND_LAYER,
+    INVENTORY_ITEM_SPRITE_LAYER,
+    CURSOR_ITEM_BACKGROUND_LAYER,
+    CURSOR_ITEM_SPRITE_LAYER,
+};
 
 typedef struct {
     World *world;
@@ -112,7 +130,7 @@ static void render_inventory_grid_overlay(
         Vector2 end = v2_add(start, v2(grid_dims.size.x, 0));
 
         draw_line(rb, scratch, start, end, grid_color, grid_thickness,
-            shader_handle(SHAPE_SHADER), 0);
+            shader_handle(SHAPE_SHADER), (RenderLayer)INVENTORY_GRID_LAYER);
     }
 
     for (ssize col = 1; col < INVENTORY_GRID_CELL_COUNTS.x; ++col) {
@@ -121,7 +139,7 @@ static void render_inventory_grid_overlay(
         Vector2 end = v2_add(start, v2(0.0f, grid_dims.size.y));
 
         draw_line(rb, scratch, start, end, grid_color, grid_thickness,
-            shader_handle(SHAPE_SHADER), 0);
+            shader_handle(SHAPE_SHADER), (RenderLayer)INVENTORY_GRID_LAYER);
     }
 }
 
@@ -141,7 +159,7 @@ static void render_inventory_items(
         Rectangle item_rect = {item_screen_pos, item_px_size};
 
         draw_rectangle(rb, scratch, item_rect, VALID_ITEM_BG_COLOR,
-            shader_handle(SHAPE_SHADER), 0);
+            shader_handle(SHAPE_SHADER), (RenderLayer)INVENTORY_ITEM_BACKGROUND_LAYER);
 
         SpriteComponent *sprite = es_get_component(item_entity, SpriteComponent);
 
@@ -150,7 +168,8 @@ static void render_inventory_items(
         // since this shouldn't be the case as a stable sort is used for sorting
         // render commands.
         draw_sprite(rb, scratch, sprite->sprite.texture, item_rect,
-            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 1);
+            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER),
+            (RenderLayer)INVENTORY_ITEM_SPRITE_LAYER);
 
         curr_item = item->next_item_in_inventory;
     }
@@ -200,20 +219,19 @@ static void handle_inventory_dragging(InventoryMenu *inv_menu, Entity *player,
         try_get_inventory_item_at_position(es, inventory, mouse_grid_coords);
     Entity *grabbed_entity = es_try_get_entity(es, hovered_item_id);
 
-#if 0
     if (grabbed_entity) {
         // TODO: allow calling es_try_get_component on null entity
         InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
 
+#if 0
         put_item_on_cursor(inv_menu, es, grabbed_entity);
         remove_item_from_inventory(es, inventory, grabbed_item);
-    }
 #else
-    InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
-    Equipment *player_equipment = es_get_component(player, Equipment);
+        Equipment *player_equipment = es_get_component(player, Equipment);
 
-    try_equip_item_from_inventory(es, player_equipment, inventory, grabbed_item);
+        try_equip_item_from_inventory(es, player_equipment, inventory, grabbed_item);
 #endif
+    }
 }
 
 static void drop_cursor_item_into_world(
@@ -442,7 +460,8 @@ static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *in
             clamped_item_grid_pos, inv_menu->inventory_grid_rect);
         Rectangle bg_rect = {bg_screen_pos, bg_screen_size};
 
-        draw_rectangle(rb, arena, bg_rect, bg_color, shader_handle(SHAPE_SHADER), 0);
+        draw_rectangle(rb, arena, bg_rect, bg_color, shader_handle(SHAPE_SHADER),
+            (RenderLayer)CURSOR_ITEM_BACKGROUND_LAYER);
     }
 }
 
@@ -477,6 +496,7 @@ void render_item_on_cursor(InventoryMenu *inv_menu, World *world, RenderBatch *r
         Rectangle item_sprite_rect = {item_top_left, item_size_px};
 
         draw_sprite(rb, arena, sprite->sprite.texture, item_sprite_rect,
-            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 0);
+            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER),
+            (RenderLayer)CURSOR_ITEM_SPRITE_LAYER);
     }
 }

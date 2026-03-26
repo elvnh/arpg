@@ -11,21 +11,15 @@
 #include "world/world.h"
 
 /* NOTE:
- * Having a grid inventory with draggable items requires some work-arounds due
- * to the UI being immediate mode. This is currently done by making a inventory
- * container widget and registering a hook that is called when it's rendered. In
- * this callback, we render the inventory, however since the hook is called
- * AFTER the UI has started rendering, we can't call any UI functions in it as
- * the frame is over as far as the UI is concerned.
  *
- * In the hook, we also save the dimensions of the inventory grid rectangle,
- * which isn't known until the UI has finished laying out widgets. This
- * rectangle is then used by anyone from the outside who wants to interact with
- * the inventory, for example by dragging and dropping items to/from it.
+ * The fact that the game's UI is immediate mode means we can't know the size of
+ * the inventory grid before it is drawn for at least one frame. Currently this
+ * is solved by creating a hook that gets called after the inventory grid is
+ * drawn, and holding on to the widget rectangle, and setting a flag that
+ * indicates that the size of the inventory grid is known.
  *
- * We also store a variable that keeps track of whether the inventory widget
- * rectangle is known. Make sure to not interact with the inventory from the
- * outside unless this variable is true.
+ * The outside world should not interact with the inventory unless this flag is
+ * set.
  */
 
 #define VALID_ITEM_BG_COLOR (RGBA32){0, 0.3f, 1, 1.0f}
@@ -156,6 +150,13 @@ static void render_inventory_items(
     }
 }
 
+/* NOTE: This gets called after the inventory gets rendered. Read the comment at
+ * the top of the file for an explanation of why this is necessary.
+ *
+ * The fact that this hook is called after the UI is finished laying out means
+ * we can't call any UI functions in it since the frame is over as far as the UI
+ * is concerned.
+ */
 static void inventory_grid_hook(
     void *user_data, RenderBatch *rb, Widget *parent, LinearArena *frame_arena)
 {
@@ -176,6 +177,7 @@ static void inventory_grid_hook(
 
     menu->inventory_grid_rect = widget_rect;
 
+    // TODO: should these really be called from inside the hook?
     render_inventory_grid_overlay(context, rb, frame_arena);
     render_inventory_items(context, rb, frame_arena);
 }
@@ -209,6 +211,8 @@ static void drop_cursor_item_into_world(
     inv_menu->item_on_cursor = NULL_ENTITY_ID;
 }
 
+// TODO: UI shouldn't directly alter world state, instead create some sort
+// of command buffer that gets executed when world is updated
 static void handle_inventory_dropping(InventoryMenu *inv_menu, EntitySystem *es,
     Vector2 player_pos, Inventory *inventory, Vector2 mouse_pos)
 {

@@ -91,7 +91,7 @@ static void put_item_on_cursor(Game *game, Entity *item_entity)
     InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
     ensure_valid_item_grid_size(item);
 
-    game->game_ui.item_on_cursor =
+    game->game_ui.inventory_menu.item_on_cursor =
         es_get_id_of_entity(&game->world.entity_system, item_entity);
 }
 
@@ -182,7 +182,7 @@ static void inventory_grid_hook(
 
 static void handle_inventory_dragging(Game *game, Inventory *inventory, Vector2 mouse_pos)
 {
-    ASSERT(entity_id_is_null(game->game_ui.item_on_cursor));
+    ASSERT(entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor));
 
     InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
     EntitySystem *es = &game->world.entity_system;
@@ -204,10 +204,11 @@ static void handle_inventory_dragging(Game *game, Inventory *inventory, Vector2 
 
 static void handle_inventory_dropping(Game *game, Inventory *inventory, Vector2 mouse_pos)
 {
-    ASSERT(!entity_id_is_null(game->game_ui.item_on_cursor));
+    ASSERT(!entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor));
 
     EntitySystem *es = &game->world.entity_system;
-    Entity *cursor_item_entity = es_get_entity(es, game->game_ui.item_on_cursor);
+    Entity *cursor_item_entity =
+        es_get_entity(es, game->game_ui.inventory_menu.item_on_cursor);
     InventoryStorable *cursor_item = es_get_component(cursor_item_entity, InventoryStorable);
     InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
 
@@ -220,7 +221,7 @@ static void handle_inventory_dropping(Game *game, Inventory *inventory, Vector2 
             try_place_or_exchange_inventory_item(es, inventory, cursor_item, grid_coords);
 
         if (insertion.ok) {
-            game->game_ui.item_on_cursor = insertion.exchanged_item;
+            game->game_ui.inventory_menu.item_on_cursor = insertion.exchanged_item;
         }
     }
 }
@@ -236,7 +237,7 @@ static void handle_inventory_drag_and_drop(
 
     if (rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)
         && input_is_key_pressed(&frame_data->input, MOUSE_LEFT)) {
-        if (entity_id_is_null(game->game_ui.item_on_cursor)) {
+        if (entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor)) {
             handle_inventory_dragging(game, inventory, mouse_pos);
         } else {
             handle_inventory_dropping(game, inventory, mouse_pos);
@@ -330,7 +331,7 @@ void render_item_on_cursor(Game *game, RenderBatch *rb, Vector2 mouse_pos, Linea
 {
     GameUIState *ui = &game->game_ui;
 
-    if (entity_id_is_null(ui->item_on_cursor)) {
+    if (entity_id_is_null(ui->inventory_menu.item_on_cursor)) {
         return;
     }
 
@@ -338,7 +339,7 @@ void render_item_on_cursor(Game *game, RenderBatch *rb, Vector2 mouse_pos, Linea
     Inventory *inventory = es_get_component(player, Inventory);
 
     EntitySystem *es = &game->world.entity_system;
-    Entity *item_entity = es_get_entity(es, ui->item_on_cursor);
+    Entity *item_entity = es_get_entity(es, ui->inventory_menu.item_on_cursor);
     InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
 
     item->inventory_grid_size = v2i(3, 3);

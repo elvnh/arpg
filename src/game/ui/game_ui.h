@@ -20,7 +20,6 @@ typedef struct GameUIState {
 
     ssize selected_spellbook_index;
 
-    EntityID item_on_cursor;
 } GameUIState;
 
 void game_ui(

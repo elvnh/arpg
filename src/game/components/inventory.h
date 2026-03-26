@@ -33,8 +33,11 @@ void drop_item_from_inventory_on_ground(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item);
 b32 inventory_contains_item(
     struct EntitySystem *es, Inventory *inventory, InventoryStorable *item);
+
+// TODO: rename
 b32 item_collides_with_other_in_inventory(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position);
+
 EntityID try_get_inventory_item_at_position(
     struct EntitySystem *es, Inventory *inv, Vector2i grid_position);
 

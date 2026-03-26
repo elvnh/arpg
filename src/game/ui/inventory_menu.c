@@ -4,6 +4,7 @@
 #include "base/utils.h"
 #include "components/inventory.h"
 #include "entity/entity_id.h"
+#include "entity/entity_system.h"
 #include "game.h"
 #include "platform/input.h"
 #include "renderer/frontend/render_batch.h"
@@ -32,16 +33,6 @@ typedef struct {
     Inventory *inventory;
     const FrameData *frame_data;
 } InventoryHookContext;
-
-static Vector2i screen_to_inventory_grid_coords(
-    Vector2 position, Rectangle inventory_grid_rect)
-{
-    Vector2 screen_offset = v2_sub(position, inventory_grid_rect.position);
-    Vector2i result = v2_to_v2i(v2_div_s(screen_offset, INVENTORY_GRID_UI_CELL_SIZE));
-    /* result.y = INVENTORY_GRID_CELL_COUNTS.y - result.y; */
-
-    return result;
-}
 
 static void render_inventory_grid_overlay(
     InventoryHookContext *context, RenderBatch *rb, LinearArena *scratch)
@@ -94,6 +85,10 @@ static void render_inventory_items(
 
         SpriteComponent *sprite = es_get_component(item_entity, SpriteComponent);
 
+        RGBA32 background_color = {1, 0.3f, 1, 1.0f};
+
+        draw_rectangle(
+            rb, scratch, item_rect, background_color, shader_handle(SHAPE_SHADER), 0);
         draw_sprite(rb, scratch, sprite->sprite.texture, item_rect,
             zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 10);
 
@@ -125,48 +120,57 @@ static void inventory_grid_hook(
     render_inventory_items(context, rb, frame_arena);
 }
 
-static void handle_inventory_dragging(Game *game, Inventory *inventory,
-    Vector2i hovered_grid_coords, const FrameData *frame_data, LinearArena *scratch)
+static Vector2i get_cursor_item_grid_coords(
+    InventoryMenu *inv_menu, InventoryStorable *item, Vector2 mouse_pos)
+{
+    Vector2 top_left = v2_sub(
+        mouse_pos, v2_div_s(inventory_grid_to_screen_vector(item->inventory_grid_size), 2.0f));
+    Vector2i result = screen_to_inventory_grid_coords(
+        top_left, inv_menu->inventory_grid_rect, GRID_COORD_ROUND_TO_NEAREST);
+
+    return result;
+}
+
+static void handle_inventory_dragging(Game *game, Inventory *inventory, Vector2 mouse_pos)
 {
     ASSERT(entity_id_is_null(game->game_ui.item_on_cursor));
 
+    InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
     EntitySystem *es = &game->world.entity_system;
 
+    Vector2i mouse_grid_coords = screen_to_inventory_grid_coords(
+        mouse_pos, inv_menu->inventory_grid_rect, GRID_COORD_TRUNCATE);
+
     EntityID hovered_item_id =
-        try_get_inventory_item_at_position(es, inventory, hovered_grid_coords);
+        try_get_inventory_item_at_position(es, inventory, mouse_grid_coords);
 
     if (!entity_id_is_null(hovered_item_id)) {
-        game->game_ui.item_on_cursor = hovered_item_id;
+        Entity *grabbed_entity = es_get_entity(es, hovered_item_id);
+        InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
 
-        Entity *grabbed_item_entity = es_get_entity(es, hovered_item_id);
-        InventoryStorable *grabbed_item =
-            es_get_component(grabbed_item_entity, InventoryStorable);
-
+        put_item_on_cursor(game, grabbed_entity);
         remove_item_from_inventory(es, inventory, grabbed_item);
     }
 }
 
-static void handle_inventory_dropping(Game *game, Inventory *inventory,
-    Vector2i hovered_grid_coords, const FrameData *frame_data, LinearArena *scratch)
+static void handle_inventory_dropping(Game *game, Inventory *inventory, Vector2 mouse_pos)
 {
-    (void)game;
-    (void)inventory;
-    (void)frame_data;
-    (void)scratch;
-
     ASSERT(!entity_id_is_null(game->game_ui.item_on_cursor));
 
     EntitySystem *es = &game->world.entity_system;
     Entity *cursor_item_entity = es_get_entity(es, game->game_ui.item_on_cursor);
     InventoryStorable *cursor_item = es_get_component(cursor_item_entity, InventoryStorable);
+    InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
 
-    if (try_add_item_to_inventory_at(es, inventory, cursor_item, hovered_grid_coords)) {
+    Vector2i grid_coords = get_cursor_item_grid_coords(inv_menu, cursor_item, mouse_pos);
+
+    if (try_add_item_to_inventory_at(es, inventory, cursor_item, grid_coords)) {
         game->game_ui.item_on_cursor = NULL_ENTITY_ID;
     }
 }
 
 static void handle_inventory_drag_and_drop(
-    Game *game, Inventory *inventory, const FrameData *frame_data, LinearArena *scratch)
+    Game *game, Inventory *inventory, const FrameData *frame_data)
 {
     ASSERT(game->game_ui.inventory_menu.can_interact_with_inventory);
 
@@ -174,16 +178,12 @@ static void handle_inventory_drag_and_drop(
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
-    if (rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)) {
-        Vector2i grid_coords =
-            screen_to_inventory_grid_coords(mouse_pos, inv_menu->inventory_grid_rect);
-
-        if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)) {
-            if (entity_id_is_null(game->game_ui.item_on_cursor)) {
-                handle_inventory_dragging(game, inventory, grid_coords, frame_data, scratch);
-            } else {
-                handle_inventory_dropping(game, inventory, grid_coords, frame_data, scratch);
-            }
+    if (rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)
+        && input_is_key_pressed(&frame_data->input, MOUSE_LEFT)) {
+        if (entity_id_is_null(game->game_ui.item_on_cursor)) {
+            handle_inventory_dragging(game, inventory, mouse_pos);
+        } else {
+            handle_inventory_dropping(game, inventory, mouse_pos);
         }
     }
 }
@@ -216,11 +216,107 @@ void inventory_menu(Game *game, const FrameData *frame_data, LinearArena *scratc
                 ui_push_render_hook(ui, inventory_grid_hook, context);
 
                 if (game->game_ui.inventory_menu.can_interact_with_inventory) {
-                    handle_inventory_drag_and_drop(game, inventory, frame_data, scratch);
+                    handle_inventory_drag_and_drop(game, inventory, frame_data);
                 }
             }
             ui_pop_menu(ui);
         }
         ui_pop_menu(ui);
     }
+}
+
+static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *inventory,
+    InventoryStorable *item, Vector2 mouse_pos, EntitySystem *es, RenderBatch *rb,
+    LinearArena *arena)
+{
+    Vector2i item_grid_pos = get_cursor_item_grid_coords(inv_menu, item, mouse_pos);
+    Vector2i item_grid_size = item->inventory_grid_size;
+
+    Vector2i clamped_item_grid_pos = {
+        MAX(item_grid_pos.x, 0),
+        MAX(item_grid_pos.y, 0),
+    };
+
+    Vector2i clamp_pos_diff = v2i_sub(clamped_item_grid_pos, item_grid_pos);
+
+    Vector2i clamped_item_grid_size = {
+        MIN(item_grid_size.x, INVENTORY_GRID_CELL_COUNTS.x - item_grid_pos.x)
+            - clamp_pos_diff.x,
+        MIN(item_grid_size.y, INVENTORY_GRID_CELL_COUNTS.y - item_grid_pos.y)
+            - clamp_pos_diff.y,
+    };
+
+    b32 item_is_inside_inventory =
+        (clamped_item_grid_size.x > 0) && (clamped_item_grid_size.y > 0);
+
+    if (item_is_inside_inventory) {
+        b32 can_place_item =
+            !item_collides_with_other_in_inventory(es, inventory, item, item_grid_pos)
+            && v2i_eq(item_grid_size, clamped_item_grid_size);
+
+        RGBA32 bg_color = {0};
+        if (can_place_item) {
+            bg_color = RGBA32_BLUE;
+        } else {
+            bg_color = RGBA32_RED;
+        }
+
+        Vector2 bg_screen_size = inventory_grid_to_screen_vector(clamped_item_grid_size);
+        Vector2 bg_screen_pos = inventory_grid_to_screen_coords(
+            clamped_item_grid_pos, inv_menu->inventory_grid_rect);
+        Rectangle bg_rect = {bg_screen_pos, bg_screen_size};
+
+        draw_rectangle(rb, arena, bg_rect, bg_color, shader_handle(SHAPE_SHADER), 0);
+    }
+}
+
+void render_item_on_cursor(Game *game, RenderBatch *rb, Vector2 mouse_pos, LinearArena *arena)
+{
+    GameUIState *ui = &game->game_ui;
+
+    if (entity_id_is_null(ui->item_on_cursor)) {
+        return;
+    }
+
+    Entity *player = world_get_player_entity(&game->world);
+    Inventory *inventory = es_get_component(player, Inventory);
+
+    EntitySystem *es = &game->world.entity_system;
+    Entity *item_entity = es_get_entity(es, ui->item_on_cursor);
+    InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
+
+    item->inventory_grid_size = v2i(3, 3);
+
+    Vector2 item_size_px = inventory_grid_to_screen_vector(item->inventory_grid_size);
+    Vector2 item_top_left = v2_sub(mouse_pos, v2_div_s(item_size_px, 2.0f));
+
+    SpriteComponent *sprite = es_try_get_component(item_entity, SpriteComponent);
+    ASSERT(sprite);
+
+    InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
+
+    if (game->game_ui.inventory_menu.can_interact_with_inventory) {
+        render_cursor_item_background(inv_menu, inventory, item, mouse_pos, es, rb, arena);
+    }
+
+    if (sprite) {
+        Rectangle item_sprite_rect = {item_top_left, item_size_px};
+
+        draw_sprite(rb, arena, sprite->sprite.texture, item_sprite_rect,
+            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 100);
+    }
+}
+
+void put_item_on_cursor(Game *game, Entity *item_entity)
+{
+    InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
+
+    // TODO: break this out into function since it's repeated
+    item->inventory_grid_size.x = MAX(1, item->inventory_grid_size.x);
+    item->inventory_grid_size.y = MAX(1, item->inventory_grid_size.y);
+
+    game->game_ui.item_on_cursor =
+        es_get_id_of_entity(&game->world.entity_system, item_entity);
+
+    world_make_entity_non_spatial(&game->world, item_entity);
 }

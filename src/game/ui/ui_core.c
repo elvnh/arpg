@@ -427,9 +427,8 @@ static LinearArena *get_frame_arena(UIState *ui)
 }
 
 static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBatch *rb,
-    ssize depth, Rectangle parent_bounds, ClippingBehaviour clipping)
+    Rectangle parent_bounds, ClippingBehaviour clipping)
 {
-    // TODO: depth is required despite the fact that render commands are sorted using stable sort, figure that out
     Rectangle widget_rect = widget_get_clipped_bounding_box(widget, parent_bounds, clipping);
 
     if (!widget_has_flag(widget, WIDGET_HIDDEN)) {
@@ -447,7 +446,7 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
             }
 
             draw_rectangle(rb, &ui->current_frame_widgets.arena, widget_rect, color,
-                shader_handle(SHAPE_SHADER), (RenderLayer)depth);
+                shader_handle(SHAPE_SHADER), 0);
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
@@ -464,19 +463,20 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
             // NOTE: Characters after ## are hashed but not rendered
             String visible_substring = get_visible_widget_text(widget->text.string);
 
+            // TODO: why does text get rendered under parent widget unless depth is set to to 1?
             draw_clipped_text(rb, arena, visible_substring, text_position, parent_bounds,
                 widget->color, widget->text.size, shader_handle(TEXTURE_SHADER),
-                widget->text.font, (RenderLayer)depth);
+                widget->text.font, 1);
         }
-    }
-
-    for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        render_widget(ui, child, widget, rb, depth + 1, widget_rect, CLIP_TO_PARENT);
     }
 
     if (widget_has_flag(widget, WIDGET_RENDER_HOOK)) {
         ASSERT(widget->render_hook);
         widget->render_hook(widget->render_hook_user_data, rb, parent, get_frame_arena(ui));
+    }
+
+    for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
+        render_widget(ui, child, widget, rb, widget_rect, CLIP_TO_PARENT);
     }
 }
 
@@ -525,12 +525,12 @@ void ui_core_render(UIState *ui, const FrameData *frame_data, RenderBatch *rb)
     };
 
     if (ui->root_widget) {
-        render_widget(ui, ui->root_widget, 0, rb, 0, window_rect, CLIP_TO_PARENT);
+        render_widget(ui, ui->root_widget, 0, rb, window_rect, CLIP_TO_PARENT);
     }
 
     for (Widget *child = list_head(&ui->floating_widgets); child;
         child = child->next_sibling) {
-        render_widget(ui, child, 0, rb, 100, window_rect, CLIP_NONE);
+        render_widget(ui, child, 0, rb, window_rect, CLIP_NONE);
     }
 }
 

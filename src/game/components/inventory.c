@@ -181,8 +181,11 @@ b32 try_add_item_to_inventory(struct EntitySystem *es, Inventory *inv, Inventory
     // TODO: this function is horribly inefficient, do something more clever
     b32 result = false;
 
-    for (s32 x = 0; x < INVENTORY_GRID_CELL_COUNTS.x && !result; ++x) {
-        for (s32 y = 0; y < INVENTORY_GRID_CELL_COUNTS.y && !result; ++y) {
+    s32 max_x = INVENTORY_GRID_CELL_COUNTS.x - item->inventory_grid_size.x;
+    s32 max_y = INVENTORY_GRID_CELL_COUNTS.y - item->inventory_grid_size.y;
+
+    for (s32 x = 0; x < max_x && !result; ++x) {
+        for (s32 y = 0; y < max_y && !result; ++y) {
             Vector2i coords = {x, y};
 
             result = try_add_item_to_inventory_at(es, inv, item, coords);

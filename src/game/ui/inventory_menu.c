@@ -259,50 +259,56 @@ static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Vector2 play
     }
 }
 
+void inventory_menu_update(InventoryMenu *inv_menu, World *world, const FrameData *frame_data)
+{
+    Entity *player = world_get_player_entity(world);
+    PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
+
+    if (!inv_menu->active) {
+        inv_menu->can_interact_with_inventory = false;
+
+        if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)) {
+            drop_cursor_item_into_world(
+                inv_menu, &world->entity_system, player_physics->position);
+        }
+    }
+}
+
 void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world,
     const FrameData *frame_data, LinearArena *scratch)
 {
+    ASSERT(inv_menu->active);
+
     Entity *player = world_get_player_entity(world);
     Inventory *inventory = es_get_component(player, Inventory);
     PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
 
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
-    b32 mouse_pressed = input_is_key_pressed(&frame_data->input, MOUSE_LEFT);
 
-    if (!inv_menu->active) {
-        inv_menu->can_interact_with_inventory = false;
+    ui_begin_menu(ui, V2_ZERO, str("inventory_container"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    {
+        ui_text(ui, str("Inventory"));
 
-        if (mouse_pressed) {
-            drop_cursor_item_into_world(
-                inv_menu, &world->entity_system, player_physics->position);
-        }
-    } else {
         ui_begin_menu(
-            ui, V2_ZERO, str("inventory_container"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+            ui, INVENTORY_GRID_UI_SIZE, str("inventory_grid"), UI_SIZE_KIND_ABSOLUTE, 8.0f);
         {
-            ui_text(ui, str("Inventory"));
+            InventoryHookContext *context = la_allocate_item(scratch, InventoryHookContext);
+            context->world = world;
+            context->inventory = inventory;
+            context->inventory_menu = inv_menu;
 
-            ui_begin_menu(ui, INVENTORY_GRID_UI_SIZE, str("inventory_grid"),
-                UI_SIZE_KIND_ABSOLUTE, 8.0f);
-            {
-                InventoryHookContext *context =
-                    la_allocate_item(scratch, InventoryHookContext);
-                context->world = world;
-                context->inventory = inventory;
-                context->inventory_menu = inv_menu;
+            ui_push_render_hook(ui, inventory_grid_hook, context);
 
-                ui_push_render_hook(ui, inventory_grid_hook, context);
-
-                if (inv_menu->can_interact_with_inventory && mouse_pressed) {
-                    handle_inventory_drag_and_drop(
-                        inv_menu, player_physics->position, inventory, world, mouse_pos);
-                }
+            b32 mouse_pressed = input_is_key_pressed(&frame_data->input, MOUSE_LEFT);
+            if (inv_menu->can_interact_with_inventory && mouse_pressed) {
+                handle_inventory_drag_and_drop(
+                    inv_menu, player_physics->position, inventory, world, mouse_pos);
             }
-            ui_pop_menu(ui);
         }
         ui_pop_menu(ui);
     }
+    ui_pop_menu(ui);
 }
 
 static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *inventory,

@@ -151,6 +151,7 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
         es_try_get_entity(&game->world.entity_system, game->game_ui.hovered_entity);
 
     if (hovered_entity && input_is_key_pressed(&frame_data->input, MOUSE_RIGHT)) {
+        // TODO: this probably shouldn't be done here
         if (es_has_component(hovered_entity, InventoryStorable)) {
             ASSERT(entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor)
                    && "TODO: allow exchanging item on cursor with one on ground");
@@ -159,34 +160,38 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
         }
     }
 
-    UIStyle style = {0};
-    style.font = ui_default_style(ui).font;
-    style.text_color = rgba32_mono(0.9f, 1.0f);
-    style.background_color = rgba32_mono(0.4f, 0.5f);
-    style.background_shadow_color = rgba32_mono(0.7f, 0.5f);
-    style.context_menu_color = rgba32_mono(0.8f, 0.5f);
-    style.accent_color = rgba32(0.1f, 0.5f, 0.8f, 1.0f);
-    style.active_color = rgba32(1.0f, 0.0f, 0.0f, 1.0f);
-    style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
+    // NOTE: inventory menu currently handles dropping item on cursor too,
+    // so it should be updated even if the UI currently isn't active
+    inventory_menu_update(&game->game_ui.inventory_menu, &game->world, frame_data);
 
-    ui_set_next_style(ui, UI_STYLE_TRANSPARENT);
-    ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    if (game->game_ui.inventory_menu.active) {
+        UIStyle style = {0};
+        style.font = ui_default_style(ui).font;
+        style.text_color = rgba32_mono(0.9f, 1.0f);
+        style.background_color = rgba32_mono(0.4f, 0.5f);
+        style.background_shadow_color = rgba32_mono(0.7f, 0.5f);
+        style.context_menu_color = rgba32_mono(0.8f, 0.5f);
+        style.accent_color = rgba32(0.1f, 0.5f, 0.8f, 1.0f);
+        style.active_color = rgba32(1.0f, 0.0f, 0.0f, 1.0f);
+        style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
 
-    ui_push_style(ui, style);
+        ui_set_next_style(ui, UI_STYLE_TRANSPARENT);
+        ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
-    inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, frame_data, scratch);
+        ui_push_style(ui, style);
 
-#if 0
-    ui_core_same_line(ui);
+        inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, frame_data, scratch);
 
-    equipment_menu(&game->game_ui, game, scratch, frame_data);
+        ui_core_same_line(ui);
 
-    ui_core_same_line(ui);
+        equipment_menu(&game->game_ui, game, scratch, frame_data);
 
-    spellbook_menu(&game->game_ui, game);
-#endif
+        ui_core_same_line(ui);
 
-    ui_pop_container(ui);
+        spellbook_menu(&game->game_ui, game);
 
-    ui_pop_style(ui);
+        ui_pop_container(ui);
+
+        ui_pop_style(ui);
+    }
 }

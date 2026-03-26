@@ -195,7 +195,8 @@ static void render_ui(
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
-    render_item_on_cursor(game, rbs.overlay_rb, mouse_pos, frame_arena);
+    render_item_on_cursor(
+        &game->game_ui.inventory_menu, &game->world, rbs.overlay_rb, mouse_pos, frame_arena);
 }
 
 static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,

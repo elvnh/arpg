@@ -152,8 +152,10 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
 
     if (hovered_entity && input_is_key_pressed(&frame_data->input, MOUSE_RIGHT)) {
         if (es_has_component(hovered_entity, InventoryStorable)) {
-            // TODO: check that no item is on cursor already
-            pick_up_item_from_world_and_put_on_cursor(game, hovered_entity);
+            ASSERT(entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor)
+                   && "TODO: allow exchanging item on cursor with one on ground");
+            pick_up_item_from_world_and_put_on_cursor(
+                &game->game_ui.inventory_menu, &game->world, hovered_entity);
         }
     }
 
@@ -172,7 +174,7 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
 
     ui_push_style(ui, style);
 
-    inventory_menu(game, frame_data, scratch);
+    inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, frame_data, scratch);
 
 #if 0
     ui_core_same_line(ui);

@@ -59,7 +59,7 @@ typedef struct {
     b32 was_hovered;
 } UIInteraction;
 
-typedef struct {
+typedef struct UIState {
     WidgetFrameTable previous_frame_widgets;
     WidgetFrameTable current_frame_widgets;
     WidgetContainerStack container_stack;

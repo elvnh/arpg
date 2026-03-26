@@ -34,7 +34,6 @@ typedef struct {
     World *world;
     InventoryMenu *inventory_menu;
     Inventory *inventory;
-    const FrameData *frame_data;
 } InventoryHookContext;
 
 typedef enum {
@@ -86,19 +85,19 @@ static Vector2i get_cursor_item_grid_coords(
     return result;
 }
 
-static void put_item_on_cursor(Game *game, Entity *item_entity)
+static void put_item_on_cursor(InventoryMenu *inv_menu, EntitySystem *es, Entity *item_entity)
 {
     InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
     ensure_valid_item_grid_size(item);
 
-    game->game_ui.inventory_menu.item_on_cursor =
-        es_get_id_of_entity(&game->world.entity_system, item_entity);
+    inv_menu->item_on_cursor = es_get_id_of_entity(es, item_entity);
 }
 
-void pick_up_item_from_world_and_put_on_cursor(Game *game, Entity *item_entity)
+void pick_up_item_from_world_and_put_on_cursor(
+    InventoryMenu *inv_menu, World *world, Entity *item_entity)
 {
-    put_item_on_cursor(game, item_entity);
-    world_make_entity_non_spatial(&game->world, item_entity);
+    put_item_on_cursor(inv_menu, &world->entity_system, item_entity);
+    world_make_entity_non_spatial(world, item_entity);
 }
 
 static void render_inventory_grid_overlay(
@@ -180,12 +179,10 @@ static void inventory_grid_hook(
     render_inventory_items(context, rb, frame_arena);
 }
 
-static void handle_inventory_dragging(Game *game, Inventory *inventory, Vector2 mouse_pos)
+static void handle_inventory_dragging(
+    InventoryMenu *inv_menu, EntitySystem *es, Inventory *inventory, Vector2 mouse_pos)
 {
-    ASSERT(entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor));
-
-    InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
-    EntitySystem *es = &game->world.entity_system;
+    ASSERT(entity_id_is_null(inv_menu->item_on_cursor));
 
     Vector2i mouse_grid_coords = screen_to_inventory_grid_coords(
         mouse_pos, inv_menu->inventory_grid_rect, GRID_COORD_TRUNCATE);
@@ -197,20 +194,18 @@ static void handle_inventory_dragging(Game *game, Inventory *inventory, Vector2 
         Entity *grabbed_entity = es_get_entity(es, hovered_item_id);
         InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
 
-        put_item_on_cursor(game, grabbed_entity);
+        put_item_on_cursor(inv_menu, es, grabbed_entity);
         remove_item_from_inventory(es, inventory, grabbed_item);
     }
 }
 
-static void handle_inventory_dropping(Game *game, Inventory *inventory, Vector2 mouse_pos)
+static void handle_inventory_dropping(
+    InventoryMenu *inv_menu, EntitySystem *es, Inventory *inventory, Vector2 mouse_pos)
 {
-    ASSERT(!entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor));
+    ASSERT(!entity_id_is_null(inv_menu->item_on_cursor));
 
-    EntitySystem *es = &game->world.entity_system;
-    Entity *cursor_item_entity =
-        es_get_entity(es, game->game_ui.inventory_menu.item_on_cursor);
+    Entity *cursor_item_entity = es_get_entity(es, inv_menu->item_on_cursor);
     InventoryStorable *cursor_item = es_get_component(cursor_item_entity, InventoryStorable);
-    InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
 
     Vector2i grid_coords = get_cursor_item_grid_coords(inv_menu, cursor_item, mouse_pos);
     b32 in_bounds =
@@ -221,38 +216,35 @@ static void handle_inventory_dropping(Game *game, Inventory *inventory, Vector2 
             try_place_or_exchange_inventory_item(es, inventory, cursor_item, grid_coords);
 
         if (insertion.ok) {
-            game->game_ui.inventory_menu.item_on_cursor = insertion.exchanged_item;
+            inv_menu->item_on_cursor = insertion.exchanged_item;
         }
     }
 }
 
 static void handle_inventory_drag_and_drop(
-    Game *game, Inventory *inventory, const FrameData *frame_data)
+    InventoryMenu *inv_menu, Inventory *inventory, World *world, const FrameData *frame_data)
 {
-    ASSERT(game->game_ui.inventory_menu.can_interact_with_inventory);
-
-    InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
+    ASSERT(inv_menu->can_interact_with_inventory);
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
 
     if (rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)
         && input_is_key_pressed(&frame_data->input, MOUSE_LEFT)) {
-        if (entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor)) {
-            handle_inventory_dragging(game, inventory, mouse_pos);
+        if (entity_id_is_null(inv_menu->item_on_cursor)) {
+            handle_inventory_dragging(inv_menu, &world->entity_system, inventory, mouse_pos);
         } else {
-            handle_inventory_dropping(game, inventory, mouse_pos);
+            handle_inventory_dropping(inv_menu, &world->entity_system, inventory, mouse_pos);
         }
     }
 }
 
-void inventory_menu(Game *game, const FrameData *frame_data, LinearArena *scratch)
+void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world,
+    const FrameData *frame_data, LinearArena *scratch)
 {
-    UIState *ui = &game->game_ui.backend_state;
-
-    if (!game->game_ui.inventory_menu.active) {
-        game->game_ui.inventory_menu.can_interact_with_inventory = false;
+    if (!inv_menu->active) {
+        inv_menu->can_interact_with_inventory = false;
     } else {
-        Entity *player = world_get_player_entity(&game->world);
+        Entity *player = world_get_player_entity(world);
         Inventory *inventory = es_get_component(player, Inventory);
 
         ui_begin_menu(
@@ -265,15 +257,14 @@ void inventory_menu(Game *game, const FrameData *frame_data, LinearArena *scratc
             {
                 InventoryHookContext *context =
                     la_allocate_item(scratch, InventoryHookContext);
-                context->world = &game->world;
-                context->frame_data = frame_data;
+                context->world = world;
                 context->inventory = inventory;
-                context->inventory_menu = &game->game_ui.inventory_menu;
+                context->inventory_menu = inv_menu;
 
                 ui_push_render_hook(ui, inventory_grid_hook, context);
 
-                if (game->game_ui.inventory_menu.can_interact_with_inventory) {
-                    handle_inventory_drag_and_drop(game, inventory, frame_data);
+                if (inv_menu->can_interact_with_inventory) {
+                    handle_inventory_drag_and_drop(inv_menu, inventory, world, frame_data);
                 }
             }
             ui_pop_menu(ui);
@@ -327,21 +318,20 @@ static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *in
     }
 }
 
-void render_item_on_cursor(Game *game, RenderBatch *rb, Vector2 mouse_pos, LinearArena *arena)
+void render_item_on_cursor(InventoryMenu *inv_menu, World *world, RenderBatch *rb,
+    Vector2 mouse_pos, LinearArena *arena)
 {
-    GameUIState *ui = &game->game_ui;
-
-    if (entity_id_is_null(ui->inventory_menu.item_on_cursor)) {
+    if (entity_id_is_null(inv_menu->item_on_cursor)) {
         return;
     }
 
-    Entity *player = world_get_player_entity(&game->world);
+    Entity *player = world_get_player_entity(world);
     Inventory *inventory = es_get_component(player, Inventory);
 
-    EntitySystem *es = &game->world.entity_system;
-    Entity *item_entity = es_get_entity(es, ui->inventory_menu.item_on_cursor);
+    Entity *item_entity = es_get_entity(&world->entity_system, inv_menu->item_on_cursor);
     InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
 
+    // TODO: remove
     item->inventory_grid_size = v2i(3, 3);
 
     Vector2 item_size_px = inventory_grid_to_screen_vector(item->inventory_grid_size);
@@ -350,10 +340,9 @@ void render_item_on_cursor(Game *game, RenderBatch *rb, Vector2 mouse_pos, Linea
     SpriteComponent *sprite = es_try_get_component(item_entity, SpriteComponent);
     ASSERT(sprite);
 
-    InventoryMenu *inv_menu = &game->game_ui.inventory_menu;
-
-    if (game->game_ui.inventory_menu.can_interact_with_inventory) {
-        render_cursor_item_background(inv_menu, inventory, item, mouse_pos, es, rb, arena);
+    if (inv_menu->can_interact_with_inventory) {
+        render_cursor_item_background(
+            inv_menu, inventory, item, mouse_pos, &world->entity_system, rb, arena);
     }
 
     if (sprite) {

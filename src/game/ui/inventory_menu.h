@@ -2,6 +2,7 @@
 #define INVENTORY_MENU_H
 
 #include "base/rectangle.h"
+#include "base/string8.h"
 #include "entity/entity_id.h"
 
 // TODO: make these resize with screen instead
@@ -34,6 +35,9 @@ void inventory_menu(struct UIState *ui, InventoryMenu *inv_menu, struct World *w
     const struct FrameData *frame_data, struct LinearArena *scratch);
 void pick_up_item_from_world_and_put_on_cursor(
     InventoryMenu *inv_menu, struct World *world, struct Entity *item_entity);
+String get_item_name_widget_text(struct Entity *item_entity, struct LinearArena *arena);
+void item_hover_menu(struct UIState *ui, struct Entity *item, Vector2 mouse_position,
+    struct LinearArena *arena);
 
 // TODO: should this be called from within inventory_menu?
 void render_item_on_cursor(InventoryMenu *inv_menu, struct World *world,

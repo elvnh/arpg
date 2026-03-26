@@ -54,8 +54,9 @@ b32 try_equip_item_from_inventory(
 
     if (equippable) {
         EquipResult equip_result = try_equip_item(es, equipment, equippable);
+        result = equip_result.success;
 
-        if (equip_result.success) {
+        if (result) {
             if (!entity_id_is_null(equip_result.replaced_item)) {
                 Entity *replaced_item_entity =
                     es_get_entity(es, equip_result.replaced_item);
@@ -80,7 +81,7 @@ void unequip_item_and_put_in_inventory(
     InventoryStorable *storable = es_get_component(equipped, InventoryStorable);
     ASSERT(storable);
 
-    *equipped_id = NULL_ENTITY_ID;
-
-    try_add_item_to_inventory(es, inventory, storable);
+    if (try_add_item_to_inventory(es, inventory, storable)) {
+        *equipped_id = NULL_ENTITY_ID;
+    }
 }

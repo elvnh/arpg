@@ -20,7 +20,6 @@
 #include "world/world.h"
 
 // TODO: clean up this file
-
 static void spellbook_menu(GameUIState *ui_state, Game *game)
 {
     UIState *ui = &ui_state->backend_state;
@@ -49,49 +48,6 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
     ui_pop_container(ui);
 }
 
-static String get_item_widget_text(Entity *item_entity, LinearArena *arena)
-{
-    String result = {0};
-
-    NameComponent *name = es_try_get_component(item_entity, NameComponent);
-
-    if (name) {
-        // Append the item ID to ensure that there are no widget ID collisions
-        result = format(arena, "%.*s##%d,%d", name->length, name->data, item_entity->id.index,
-            item_entity->id.generation);
-    } else {
-        result = str("(unnamed item)");
-    }
-
-    return result;
-}
-
-static void item_hover_menu(
-    UIState *ui, Entity *item, Vector2 mouse_position, LinearArena *arena)
-{
-    ASSERT(es_has_component(item, InventoryStorable));
-
-    ui_begin_mouse_menu(ui, mouse_position);
-    {
-        ui_text(ui, get_item_widget_text(item, arena));
-
-        ui_spacing(ui, 12);
-
-        ItemModifiers *mods = es_try_get_component(item, ItemModifiers);
-
-        if (mods) {
-            for (ssize i = 0; i < mods->modifier_count; ++i) {
-                Modifier mod = mods->modifiers[i];
-                String mod_string = modifier_to_string(mod, arena);
-
-                ui_text(ui, mod_string);
-                ui_spacing(ui, 12);
-            }
-        }
-    }
-    ui_end_mouse_menu(ui);
-}
-
 static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *equipment,
     Inventory *inventory, EquipmentSlot slot, LinearArena *scratch, const Input *input)
 {
@@ -103,7 +59,7 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
     Entity *item = get_equipped_item_in_slot(&game->world.entity_system, equipment, slot);
 
     if (item) {
-        String text = get_item_widget_text(item, scratch);
+        String text = get_item_name_widget_text(item, scratch);
         WidgetInteraction interaction = ui_button(ui, text);
 
         if (interaction.clicked) {

@@ -23,7 +23,6 @@ typedef struct {
 
 typedef struct {
     b32 ok;
-
     EntityID exchanged_item;
 } InventoryInsertion;
 
@@ -43,12 +42,20 @@ InventoryInsertion try_place_or_exchange_inventory_item(
     struct EntitySystem *es, Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
 
 b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size);
-// TODO: rename to can_place_item_in_inventory_at
-b32 item_collides_with_other_in_inventory(
+b32 can_place_item_in_inventory_at(
     struct EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position);
-
 EntityID try_get_inventory_item_at_position(
     struct EntitySystem *es, Inventory *inv, Vector2i grid_position);
+
+static inline void ensure_valid_item_grid_size(InventoryStorable *item)
+{
+    ASSERT(item->inventory_grid_size.x <= INVENTORY_GRID_CELL_COUNTS.x);
+    ASSERT(item->inventory_grid_size.y <= INVENTORY_GRID_CELL_COUNTS.y);
+
+    // Default to 1x1 item size if the component was zero initialized
+    item->inventory_grid_size.x = MAX(1, item->inventory_grid_size.x);
+    item->inventory_grid_size.y = MAX(1, item->inventory_grid_size.y);
+}
 
 static inline b32 inventory_is_empty(Inventory *inventory)
 {

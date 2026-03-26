@@ -153,7 +153,7 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
     if (hovered_entity && input_is_key_pressed(&frame_data->input, MOUSE_RIGHT)) {
         if (es_has_component(hovered_entity, InventoryStorable)) {
             // TODO: check that no item is on cursor already
-            put_item_on_cursor(game, hovered_entity);
+            pick_up_item_from_world_and_put_on_cursor(game, hovered_entity);
         }
     }
 

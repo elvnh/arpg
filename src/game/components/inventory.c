@@ -132,12 +132,16 @@ static InventoryCollision count_inventory_item_collisions(
     return result;
 }
 
-b32 item_collides_with_other_in_inventory(
+b32 can_place_item_in_inventory_at(
     EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position)
 {
-    InventoryCollision collision =
-        count_inventory_item_collisions(es, inv, item, grid_position);
-    b32 result = collision.collision_count > 0;
+    b32 result = false;
+
+    if (item_is_in_bounds_of_inventory_grid(grid_position, item->inventory_grid_size)) {
+        InventoryCollision collision =
+            count_inventory_item_collisions(es, inv, item, grid_position);
+        result = collision.collision_count == 0;
+    }
 
     return result;
 }
@@ -146,10 +150,7 @@ b32 try_add_item_to_inventory_at(
     EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position)
 {
     ASSERT(!inventory_contains_item(es, inv, item));
-
-    // Default to 1x1 item size if the component was zero initialized
-    item->inventory_grid_size.x = MAX(1, item->inventory_grid_size.x);
-    item->inventory_grid_size.y = MAX(1, item->inventory_grid_size.y);
+    ensure_valid_item_grid_size(item);
 
     ASSERT(grid_position.x >= 0);
     ASSERT((grid_position.x + item->inventory_grid_size.x) <= INVENTORY_GRID_CELL_COUNTS.x);
@@ -158,7 +159,7 @@ b32 try_add_item_to_inventory_at(
 
     b32 result = false;
 
-    if (!item_collides_with_other_in_inventory(es, inv, item, grid_position)) {
+    if (can_place_item_in_inventory_at(es, inv, item, grid_position)) {
         result = true;
 
         item->inventory_grid_position = grid_position;

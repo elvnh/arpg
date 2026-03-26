@@ -86,6 +86,21 @@ static Vector2i get_cursor_item_grid_coords(
     return result;
 }
 
+static void put_item_on_cursor(Game *game, Entity *item_entity)
+{
+    InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
+    ensure_valid_item_grid_size(item);
+
+    game->game_ui.item_on_cursor =
+        es_get_id_of_entity(&game->world.entity_system, item_entity);
+}
+
+void pick_up_item_from_world_and_put_on_cursor(Game *game, Entity *item_entity)
+{
+    put_item_on_cursor(game, item_entity);
+    world_make_entity_non_spatial(&game->world, item_entity);
+}
+
 static void render_inventory_grid_overlay(
     InventoryHookContext *context, RenderBatch *rb, LinearArena *scratch)
 {
@@ -292,8 +307,7 @@ static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *in
 
     if (item_is_inside_inventory) {
         b32 can_place_item =
-            !item_collides_with_other_in_inventory(es, inventory, item, item_grid_pos)
-            && v2i_eq(item_grid_size, clamped_item_grid_size);
+            can_place_item_in_inventory_at(es, inventory, item, item_grid_pos);
 
         RGBA32 bg_color = {0};
         if (can_place_item) {
@@ -347,19 +361,4 @@ void render_item_on_cursor(Game *game, RenderBatch *rb, Vector2 mouse_pos, Linea
         draw_sprite(rb, arena, sprite->sprite.texture, item_sprite_rect,
             zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 100);
     }
-}
-
-// TODO: rename this, it only works for spatial entities
-void put_item_on_cursor(Game *game, Entity *item_entity)
-{
-    InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
-
-    // TODO: break this out into function since it's repeated
-    item->inventory_grid_size.x = MAX(1, item->inventory_grid_size.x);
-    item->inventory_grid_size.y = MAX(1, item->inventory_grid_size.y);
-
-    game->game_ui.item_on_cursor =
-        es_get_id_of_entity(&game->world.entity_system, item_entity);
-
-    world_make_entity_non_spatial(&game->world, item_entity);
 }

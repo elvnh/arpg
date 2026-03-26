@@ -27,6 +27,6 @@ void inventory_menu(
     struct Game *game, const struct FrameData *frame_data, struct LinearArena *scratch);
 void render_item_on_cursor(
     struct Game *game, struct RenderBatch *rb, Vector2 mouse_pos, struct LinearArena *arena);
-void put_item_on_cursor(struct Game *game, struct Entity *item_entity);
+void pick_up_item_from_world_and_put_on_cursor(struct Game *game, struct Entity *item_entity);
 
 #endif // INVENTORY_MENU_H

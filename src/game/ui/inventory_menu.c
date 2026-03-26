@@ -140,12 +140,17 @@ static void render_inventory_items(
         Vector2 item_px_size = inventory_grid_to_screen_vector(item->inventory_grid_size);
         Rectangle item_rect = {item_screen_pos, item_px_size};
 
-        draw_rectangle(
-            rb, scratch, item_rect, VALID_ITEM_BG_COLOR, shader_handle(SHAPE_SHADER), 0);
+        draw_rectangle(rb, scratch, item_rect, VALID_ITEM_BG_COLOR,
+            shader_handle(SHAPE_SHADER), 0);
 
         SpriteComponent *sprite = es_get_component(item_entity, SpriteComponent);
+
+        // TODO: a layer higher that the background rectangle is required here,
+        // otherwise the sprite appears behing the rectangle. Figure out why,
+        // since this shouldn't be the case as a stable sort is used for sorting
+        // render commands.
         draw_sprite(rb, scratch, sprite->sprite.texture, item_rect,
-            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 10);
+            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 1);
 
         curr_item = item->next_item_in_inventory;
     }
@@ -472,6 +477,6 @@ void render_item_on_cursor(InventoryMenu *inv_menu, World *world, RenderBatch *r
         Rectangle item_sprite_rect = {item_top_left, item_size_px};
 
         draw_sprite(rb, arena, sprite->sprite.texture, item_sprite_rect,
-            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 100);
+            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER), 0);
     }
 }

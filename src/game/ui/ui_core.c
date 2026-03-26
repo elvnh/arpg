@@ -427,7 +427,7 @@ static LinearArena *get_frame_arena(UIState *ui)
 }
 
 static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBatch *rb,
-    Rectangle parent_bounds, ClippingBehaviour clipping)
+    Rectangle parent_bounds, ClippingBehaviour clipping, RenderLayer layer)
 {
     Rectangle widget_rect = widget_get_clipped_bounding_box(widget, parent_bounds, clipping);
 
@@ -446,7 +446,7 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
             }
 
             draw_rectangle(rb, &ui->current_frame_widgets.arena, widget_rect, color,
-                shader_handle(SHAPE_SHADER), 0);
+                shader_handle(SHAPE_SHADER), layer);
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
@@ -466,7 +466,7 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
             // TODO: why does text get rendered under parent widget unless depth is set to to 1?
             draw_clipped_text(rb, arena, visible_substring, text_position, parent_bounds,
                 widget->color, widget->text.size, shader_handle(TEXTURE_SHADER),
-                widget->text.font, 1);
+                widget->text.font, layer + 1);
         }
     }
 
@@ -476,7 +476,7 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
     }
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        render_widget(ui, child, widget, rb, widget_rect, CLIP_TO_PARENT);
+        render_widget(ui, child, widget, rb, widget_rect, CLIP_TO_PARENT, layer);
     }
 }
 
@@ -524,13 +524,18 @@ void ui_core_render(UIState *ui, const FrameData *frame_data, RenderBatch *rb)
         v2i_to_v2(frame_data->window_size)
     };
 
+    s32 base_render_layer = 0;
+
     if (ui->root_widget) {
-        render_widget(ui, ui->root_widget, 0, rb, window_rect, CLIP_TO_PARENT);
+        render_widget(ui, ui->root_widget, 0, rb, window_rect, CLIP_TO_PARENT,
+            base_render_layer);
     }
 
     for (Widget *child = list_head(&ui->floating_widgets); child;
         child = child->next_sibling) {
-        render_widget(ui, child, 0, rb, window_rect, CLIP_NONE);
+        // NOTE: we use a higher layer here since floating widgets should be
+        // drawn above normal widgets
+        render_widget(ui, child, 0, rb, window_rect, CLIP_NONE, base_render_layer + 1);
     }
 }
 

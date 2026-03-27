@@ -4,6 +4,7 @@
 #include "base/string8.h"
 #include "input.h"
 #include "platform.h"
+#include "platform/input_event.h"
 
 #include <GLFW/glfw3.h>
 #include <dirent.h>
@@ -132,7 +133,7 @@ static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
     g_scroll_delta = (f32)yoffset;
 }
 
-void platform_update_input(Input *input, WindowHandle *window)
+static void platform_update_input(PlatformInput *input, WindowHandle *window)
 {
     memcpy(input->previous_keystates, input->keystates,
         KEY_COUNT * sizeof(*input->keystates));
@@ -166,7 +167,32 @@ void platform_update_input(Input *input, WindowHandle *window)
     }
 }
 
-void platform_initialize_input(Input *input, struct WindowHandle *window)
+InputEvents platform_poll_input_events(PlatformInput *input, WindowHandle *window)
+{
+    InputEvents result = {0};
+
+    platform_update_input(input, window);
+    result.scroll_delta = input->scroll_delta;
+    result.mouse_position = input->mouse_position;
+    result.mouse_click_position = input->mouse_click_position;
+
+    for (Key key = 0; key < KEY_COUNT; ++key) {
+        Keystate state = input->keystates[key];
+
+        if (state != KEYSTATE_UP) {
+            ASSERT(result.count < ARRAY_COUNT(result.data));
+
+            InputEvent event = {0};
+            event.key = key;
+            event.keystate = state;
+            result.data[result.count++] = event;
+        }
+    }
+
+    return result;
+}
+
+void platform_initialize_input(PlatformInput *input, struct WindowHandle *window)
 {
     input->mouse_click_position = v2(-1.0f, -1.0f);
     glfwSetScrollCallback(window->window, scroll_callback);

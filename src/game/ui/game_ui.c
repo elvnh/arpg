@@ -14,6 +14,7 @@
 #include "inventory_menu.h"
 #include "magic.h"
 #include "platform/input.h"
+#include "platform/input_event.h"
 #include "renderer/frontend/render_batch.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
@@ -49,7 +50,7 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
 }
 
 static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *equipment,
-    Inventory *inventory, EquipmentSlot slot, LinearArena *scratch, const Input *input)
+    Inventory *inventory, EquipmentSlot slot, InputEvents *input, LinearArena *scratch)
 {
     UIState *ui = &ui_state->backend_state;
 
@@ -66,15 +67,16 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
             unequip_item_and_put_in_inventory(
                 &game->world.entity_system, equipment, inventory, slot);
         } else if (interaction.hovered) {
-            item_hover_menu(ui, item, input->mouse_position, scratch);
+            Vector2 mouse_pos = get_mouse_pos(input);
+            item_hover_menu(ui, item, mouse_pos, scratch);
         }
     } else {
         ui_non_interactible_button(ui, str("(empty)"));
     }
 }
 
-static void equipment_menu(
-    GameUIState *ui_state, Game *game, LinearArena *scratch, const FrameData *frame_data)
+static void equipment_menu(GameUIState *ui_state, Game *game, LinearArena *scratch,
+    InputEvents *input)
 {
     UIState *ui = &ui_state->backend_state;
     Entity *player = world_get_player_entity(&game->world);
@@ -87,38 +89,25 @@ static void equipment_menu(
         Inventory *inv = es_get_component(player, Inventory);
 
         for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-            equipment_slot_widget(ui_state, game, eq, inv, slot, scratch, &frame_data->input);
+            equipment_slot_widget(ui_state, game, eq, inv, slot, input, scratch);
         }
     }
     ui_pop_container(ui);
 }
 
-void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
+void game_ui(Game *game, LinearArena *scratch, InputEvents *input)
 {
     Entity *player = world_get_player_entity(&game->world);
     UIState *ui = &game->game_ui.backend_state;
     ASSERT(player);
 
-    if (input_is_key_pressed(&frame_data->input, KEY_I)) {
+    if (consume_key_pressed(input, KEY_I)) {
         game->game_ui.inventory_menu.active = !game->game_ui.inventory_menu.active;
-    }
-
-    Entity *hovered_entity =
-        es_try_get_entity(&game->world.entity_system, game->game_ui.hovered_entity);
-
-    if (hovered_entity && input_is_key_pressed(&frame_data->input, MOUSE_RIGHT)) {
-        // TODO: this probably shouldn't be done here
-        if (es_has_component(hovered_entity, InventoryStorable)) {
-            ASSERT(entity_id_is_null(game->game_ui.inventory_menu.item_on_cursor)
-                   && "TODO: allow exchanging item on cursor with one on ground");
-            pick_up_item_from_world_and_put_on_cursor(
-                &game->game_ui.inventory_menu, &game->world, hovered_entity);
-        }
     }
 
     // NOTE: inventory menu currently handles dropping item on cursor too,
     // so it should be updated even if the UI currently isn't active
-    inventory_menu_update(&game->game_ui.inventory_menu, &game->world, frame_data);
+    inventory_menu_update(&game->game_ui.inventory_menu, &game->world, input);
 
     if (game->game_ui.inventory_menu.active) {
         UIStyle style = {0};
@@ -136,11 +125,11 @@ void game_ui(Game *game, LinearArena *scratch, const FrameData *frame_data)
 
         ui_push_style(ui, style);
 
-        inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, frame_data, scratch);
+        inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, input, scratch);
 
         ui_core_same_line(ui);
 
-        equipment_menu(&game->game_ui, game, scratch, frame_data);
+        equipment_menu(&game->game_ui, game, scratch, input);
 
         ui_core_same_line(ui);
 

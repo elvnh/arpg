@@ -360,7 +360,7 @@ static void render_inventory_item_hover_menu(UIState *ui, InventoryMenu *inv_men
     }
 }
 
-void inventory_menu_update(InventoryMenu *inv_menu, World *world, const FrameData *frame_data)
+void inventory_menu_update(InventoryMenu *inv_menu, World *world, InputEvents *input)
 {
     Entity *player = world_get_player_entity(world);
     PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
@@ -368,7 +368,7 @@ void inventory_menu_update(InventoryMenu *inv_menu, World *world, const FrameDat
     if (!inv_menu->active) {
         inv_menu->can_interact_with_inventory = false;
 
-        if (input_is_key_pressed(&frame_data->input, MOUSE_LEFT)
+        if (consume_key_pressed(input, MOUSE_LEFT)
             && !entity_id_is_null(inv_menu->item_on_cursor)) {
             drop_cursor_item_into_world(
                 inv_menu, &world->entity_system, player_physics->position);
@@ -376,8 +376,8 @@ void inventory_menu_update(InventoryMenu *inv_menu, World *world, const FrameDat
     }
 }
 
-void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world,
-    const FrameData *frame_data, LinearArena *scratch)
+void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEvents *input,
+    LinearArena *scratch)
 {
     ASSERT(inv_menu->active);
 
@@ -385,8 +385,7 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world,
     Inventory *inventory = es_get_component(player, Inventory);
     PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
 
-    Vector2 mouse_pos =
-        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+    Vector2 mouse_pos = get_mouse_pos(input);
 
     ui_begin_menu(ui, V2_ZERO, str("inventory_container"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {
@@ -402,11 +401,11 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world,
 
             ui_push_render_hook(ui, inventory_grid_hook, context);
 
-            b32 mouse_pressed = input_is_key_pressed(&frame_data->input, MOUSE_LEFT);
             if (inv_menu->can_interact_with_inventory) {
                 render_inventory_item_hover_menu(
                     ui, inv_menu, inventory, world, mouse_pos, scratch);
 
+                b32 mouse_pressed = consume_key_pressed(input, MOUSE_LEFT);
                 if (mouse_pressed) {
                     handle_inventory_drag_and_drop(inv_menu, player, player_physics->position,
                         inventory, world, mouse_pos);

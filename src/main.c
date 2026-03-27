@@ -16,13 +16,13 @@
 // loaded from the shared library. Otherwise, we just call the functions directly.
 #if HOT_RELOAD
 #    define GAME_INITIALIZE(game, mem, gc) (gc).initialize(game, mem);
-#    define GAME_UPDATE_AND_RENDER(game, pf_code, rbs, frame_data, mem, gc) \
-        (gc).update_and_render(game, pf_code, rbs, frame_data, mem);
+#    define GAME_UPDATE_AND_RENDER(game, pf_code, rbs, frame_input, mem, gc) \
+        (gc).update_and_render(game, pf_code, rbs, frame_input, mem);
 #    define HOT_RELOAD_IF_RECOMPILED(gc, mem) reload_game_code_if_recompiled(gc, mem)
 #else
 #    define GAME_INITIALIZE(game, mem, gc) game_initialize(game_state, game_memory);
-#    define GAME_UPDATE_AND_RENDER(game, pf_code, rbs, frame_data, mem, gc) \
-        game_update_and_render(game, pf_code, rbs, frame_data, mem);
+#    define GAME_UPDATE_AND_RENDER(game, pf_code, rbs, frame_input, mem, gc) \
+        game_update_and_render(game, pf_code, rbs, frame_input, mem);
 #endif
 
 const char *__asan_default_options(void)
@@ -71,7 +71,7 @@ int main(void)
     GameCode game_code = hot_reload_initialize(&game_memory);
 #endif
 
-    Input input = {0};
+    PlatformInput input = {0};
     platform_initialize_input(&input, window);
 
     AssetWatcherContext asset_watcher = {0};
@@ -96,18 +96,16 @@ int main(void)
             &asset_watcher, &game_memory.temporary_memory);
         HOT_RELOAD_IF_RECOMPILED(&game_code, &game_memory.temporary_memory);
 
-        platform_update_input(&input, window);
-
         Vector2i window_size = platform_get_window_size(window);
-        FrameData frame_data = {0};
-        frame_data.dt = dt;
-        frame_data.input = input;
-        frame_data.window_size = window_size;
+        FrameInput frame_input = {0};
+        frame_input.dt = dt;
+        frame_input.window_size = window_size;
+        frame_input.input_events = platform_poll_input_events(&input, window);
 
         list_clear(&render_batches);
 
-        GAME_UPDATE_AND_RENDER(game_state, platform_code, &render_batches,
-            frame_data, &game_memory, game_code);
+        GAME_UPDATE_AND_RENDER(game_state, platform_code, &render_batches, &frame_input,
+            &game_memory, game_code);
 
         renderer_backend_begin_frame(backend);
 

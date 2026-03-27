@@ -5,6 +5,7 @@
 #include "asset_table.h"
 #include "debug.h"
 #include "game/magic.h"
+#include "platform/input_event.h"
 #include "platform/platform.h"
 #include "ui/game_ui.h"
 #include "ui/ui_core.h"
@@ -44,7 +45,7 @@ typedef struct GameMemory {
 } GameMemory;
 
 void game_update_and_render(Game *game_state, PlatformCode platform_code,
-    struct RenderBatchList *rbs, FrameData frame_data, GameMemory *game_memory);
+    struct RenderBatchList *rbs, FrameInput *frame_input, GameMemory *game_memory);
 void game_initialize(Game *game_state, GameMemory *game_memory);
 
 #endif //GAME_H

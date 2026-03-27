@@ -13,6 +13,7 @@
 #include "game/ui/widget.h"
 #include "platform/asset.h"
 #include "platform/input.h"
+#include "platform/input_event.h"
 #include "renderer/frontend/render_batch.h"
 
 #include <string.h>
@@ -335,15 +336,15 @@ typedef enum {
 } CalculateInteractionResult;
 
 static CalculateInteractionResult calculate_widget_interactions(UIState *ui, Widget *widget,
-    const FrameData *frame_data, Rectangle parent_bounds, YDirection y_dir,
+    FrameInput *frame_input, Rectangle parent_bounds, YDirection y_dir,
     UIInteraction *interactions)
 {
     Rectangle clipped_bounds =
         widget_get_clipped_bounding_box(widget, parent_bounds, CLIP_TO_PARENT);
 
     for (Widget *child = list_head(&widget->children); child; child = child->next_sibling) {
-        CalculateInteractionResult child_result = calculate_widget_interactions(
-            ui, child, frame_data, clipped_bounds, y_dir, interactions);
+        CalculateInteractionResult child_result = calculate_widget_interactions(ui, child,
+            frame_input, clipped_bounds, y_dir, interactions);
 
         // If child widget is being interacted with, don't consider input further up the tree
         if (child_result == CALC_INTERACTION_STOP) {
@@ -355,13 +356,11 @@ static CalculateInteractionResult calculate_widget_interactions(UIState *ui, Wid
         return CALC_INTERACTION_KEEP_GOING;
     }
 
-    Vector2 mouse_pos =
-        input_get_mouse_pos(&frame_data->input, y_dir, frame_data->window_size);
-    Vector2 mouse_click_pos =
-        input_get_mouse_click_pos(&frame_data->input, y_dir, frame_data->window_size);
+    Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
+    Vector2 mouse_click_pos = get_mouse_click_pos(&frame_input->input_events);
     b32 mouse_inside = rect_contains_point(clipped_bounds, mouse_pos);
-    b32 mouse_clicked = input_is_key_down(&frame_data->input, MOUSE_LEFT);
-    b32 mouse_released = input_is_key_released(&frame_data->input, MOUSE_LEFT);
+    b32 mouse_clicked = check_key_down(&frame_input->input_events, MOUSE_LEFT);
+    b32 mouse_released = check_key_released(&frame_input->input_events, MOUSE_LEFT);
     b32 click_began_inside = rect_contains_point(clipped_bounds, mouse_click_pos);
     b32 clicked_inside = mouse_clicked && click_began_inside;
 
@@ -392,7 +391,7 @@ static CalculateInteractionResult calculate_widget_interactions(UIState *ui, Wid
 
         // TODO: proper text input
         if (widget_has_flag(widget, WIDGET_TEXT_INPUT)) {
-            if (input_is_key_pressed(&frame_data->input, KEY_A)) {
+            if (consume_key_pressed(&frame_input->input_events, KEY_A)) {
                 if (str_builder_has_capacity_for(widget->text_input_buffer, str("A"))) {
                     str_builder_append(widget->text_input_buffer, str("A"));
                 }
@@ -480,8 +479,8 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
     }
 }
 
-UIInteraction ui_core_end_layout(
-    UIState *ui, const FrameData *frame_data, YDirection y_dir, PlatformCode platform_code)
+UIInteraction ui_core_end_layout(UIState *ui, FrameInput *frame_input, YDirection y_dir,
+    PlatformCode platform_code)
 {
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
@@ -491,13 +490,13 @@ UIInteraction ui_core_end_layout(
 
     Rectangle window_rect = {
         {0, 0},
-        v2i_to_v2(frame_data->window_size)
+        v2i_to_v2(frame_input->window_size)
     };
 
     if (ui->root_widget) {
         calculate_widget_layout(ui->root_widget, V2_ZERO, platform_code, 0);
-        calculate_widget_interactions(
-            ui, ui->root_widget, frame_data, window_rect, y_dir, &result);
+        calculate_widget_interactions(ui, ui->root_widget, frame_input, window_rect, y_dir,
+            &result);
 
         // TODO: should root widget also not be clipped just like for floating widgets?
         //render_widget(ui, ui->root_widget, rb, 0, window_rect, CLIP_TO_PARENT);
@@ -506,7 +505,7 @@ UIInteraction ui_core_end_layout(
     for (Widget *child = list_head(&ui->floating_widgets); child;
         child = child->next_sibling) {
         calculate_widget_layout(child, child->final_position, platform_code, 0);
-        calculate_widget_interactions(ui, child, frame_data, window_rect, y_dir, &result);
+        calculate_widget_interactions(ui, child, frame_input, window_rect, y_dir, &result);
 
         // NOTE: for floating widgets each root widget isn't clipped to viewspace,
         // but any children of that widget are clipped to it's bounds
@@ -514,14 +513,22 @@ UIInteraction ui_core_end_layout(
         //render_widget(ui, child, rb, 100, window_rect, CLIP_NONE);
     }
 
+    // TODO: figure out why this has to be done, it should be enough to consume
+    // inside calculate_widget_interactions?
+    if (result.received_mouse_input || result.was_hovered) {
+        consume_key_down(&frame_input->input_events, MOUSE_LEFT);
+        consume_key_down(&frame_input->input_events, MOUSE_RIGHT);
+        consume_scroll_delta(&frame_input->input_events);
+    }
+
     return result;
 }
 
-void ui_core_render(UIState *ui, const FrameData *frame_data, RenderBatch *rb)
+void ui_core_render(UIState *ui, FrameInput *frame_input, RenderBatch *rb)
 {
     Rectangle window_rect = {
         {0, 0},
-        v2i_to_v2(frame_data->window_size)
+        v2i_to_v2(frame_input->window_size)
     };
 
     s32 base_render_layer = 0;

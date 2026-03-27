@@ -2,13 +2,13 @@
 #define DEBUG_H
 
 #include "camera.h"
+#include "platform/input_event.h"
 #include "ui/ui_core.h"
 
 #include <stdio.h>
 
 struct Game;
 struct GameMemory;
-struct FrameData;
 struct QuadTreeNode;
 struct RenderBatch;
 struct LinearArena;
@@ -49,9 +49,8 @@ static inline void print_v2(Vector2 v)
     printf("(%.2f, %.2f)\n", (f64)v.x, (f64)v.y);
 }
 
-void debug_update(struct Game *game, const struct FrameData *frame_data);
-void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch,
-    const struct FrameData *frame_data);
+void debug_update(struct Game *game, FrameInput *frame_input);
+void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch, f32 dt);
 void debug_render_quad_tree(
     struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena, ssize depth);
 void debug_render_chunks(

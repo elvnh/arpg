@@ -7,6 +7,7 @@
 #include "base/string8.h"
 #include "base/timestamp.h"
 #include "base/vector.h"
+#include "input_event.h"
 
 /* Window */
 typedef struct WindowHandle WindowHandle;
@@ -35,8 +36,9 @@ Vector2i platform_get_window_size(WindowHandle *window);
 /* Input */
 struct Input;
 
-void platform_update_input(struct Input *input, struct WindowHandle *window);
-void platform_initialize_input(struct Input *input, struct WindowHandle *window);
+InputEvents platform_poll_input_events(struct PlatformInput *input,
+    struct WindowHandle *window);
+void platform_initialize_input(struct PlatformInput *input, struct WindowHandle *window);
 
 /* Path */
 String platform_get_executable_path(Allocator allocator);

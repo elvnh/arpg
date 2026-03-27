@@ -852,52 +852,52 @@ void world_set_player_entity(World *world, EntityID id)
     world->player_entity = id;
 }
 
-static Rectangle get_area_visible_to_player(World *world, const FrameData *frame_data)
+static Rectangle get_area_visible_to_player(World *world, Vector2i viewport_size)
 {
-    Rectangle result = camera_get_visible_area(world->camera, frame_data->window_size);
+    Rectangle result = camera_get_visible_area(world->camera, viewport_size);
 
     return result;
 }
 
-static Rectangle get_area_to_update_and_render(World *world, const FrameData *frame_data)
+static Rectangle get_area_to_update_and_render(World *world, Vector2i viewport_size)
 {
     f32 margin = (f32)TILE_SIZE * 8.0f;
 
-    Rectangle result = get_area_visible_to_player(world, frame_data);
+    Rectangle result = get_area_visible_to_player(world, viewport_size);
     result.position = v2_sub(result.position, v2(margin, margin));
     result.size = v2_add(result.size, v2(margin * 2, margin * 2));
 
     return result;
 }
 
-void world_update(World *world, const FrameData *frame_data, LinearArena *frame_arena)
+void world_update(World *world, f32 dt, Vector2i viewport_size, LinearArena *frame_arena)
 {
     if (world->active_entity_count < 1) {
         return;
     }
 
     // TODO: only update in certain area around player
-    handle_collision_and_movement(world, frame_data->dt, frame_arena);
+    handle_collision_and_movement(world, dt, frame_arena);
 
     // TODO: should any newly spawned entities be updated this frame?
     EntityIndex entity_count = world->active_entity_count;
 
     for (EntityIndex i = 0; i < entity_count; ++i) {
-        entity_update(world, i, frame_data->dt, frame_arena);
+        entity_update(world, i, dt, frame_arena);
     }
 
-    hitsplats_update(world, frame_data);
+    hitsplats_update(world, dt);
 
-    ChunkPtrArray visible_chunks = get_chunks_in_area(
-        &world->map_chunks, get_area_to_update_and_render(world, frame_data), frame_arena);
+    ChunkPtrArray visible_chunks = get_chunks_in_area(&world->map_chunks,
+        get_area_to_update_and_render(world, viewport_size), frame_arena);
 
     for (ssize i = 0; i < visible_chunks.count; ++i) {
         Chunk *chunk = visible_chunks.chunks[i];
 
-        update_particle_buffers(&chunk->particle_buffers, frame_data->dt);
+        update_particle_buffers(&chunk->particle_buffers, dt);
     }
 
-    update_trigger_cooldowns(world, frame_data->dt);
+    update_trigger_cooldowns(world, dt);
 
     swap_and_reset_collision_tables(world);
 
@@ -922,10 +922,10 @@ void world_update(World *world, const FrameData *frame_data, LinearArena *frame_
     }
 }
 
-static void render_tilemap(
-    World *world, RenderBatches rb_list, const FrameData *frame_data, LinearArena *frame_arena)
+static void render_tilemap(World *world, RenderBatches rb_list, Vector2i viewport_size,
+    LinearArena *frame_arena)
 {
-    Rectangle tilemap_render_area = get_area_visible_to_player(world, frame_data);
+    Rectangle tilemap_render_area = get_area_visible_to_player(world, viewport_size);
     tilemap_render_area.position =
         v2_sub(tilemap_render_area.position, v2(TILE_SIZE, TILE_SIZE));
     tilemap_render_area.size =
@@ -1057,14 +1057,14 @@ static void render_tilemap(
     }
 }
 
-void world_render(World *world, RenderBatches rb_list, const FrameData *frame_data,
+void world_render(World *world, RenderBatches rb_list, Vector2i viewport_size,
     LinearArena *frame_arena, struct DebugState *debug_state)
 {
-    Rectangle render_area = get_area_to_update_and_render(world, frame_data);
+    Rectangle render_area = get_area_to_update_and_render(world, viewport_size);
 
     // TODO: move this and similar things to game.c
     if (debug_state->render_camera_bounds) {
-        Rectangle visible_area = get_area_visible_to_player(world, frame_data);
+        Rectangle visible_area = get_area_visible_to_player(world, viewport_size);
 
         draw_outlined_rectangle(rb_list.worldspace_ui_rb, frame_arena, visible_area,
             RGBA32_GREEN, 4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER), 0);
@@ -1073,7 +1073,7 @@ void world_render(World *world, RenderBatches rb_list, const FrameData *frame_da
             4.0f / (1.0f + world->camera.zoom), shader_handle(SHAPE_SHADER), 0);
     }
 
-    render_tilemap(world, rb_list, frame_data, frame_arena);
+    render_tilemap(world, rb_list, viewport_size, frame_arena);
 
     ChunkPtrArray visible_chunks =
         get_chunks_in_area(&world->map_chunks, render_area, frame_arena);

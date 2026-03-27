@@ -5,10 +5,12 @@
 #include "base/ring_buffer.h"
 #include "damage.h"
 #include "platform/input.h"
+#include "platform/input_event.h"
 #include "renderer/frontend/render_batch.h"
 #include "world/world.h"
 
-void hitsplats_update(World *world, const FrameData *frame_data)
+/// TODO: this shouldn't take frame data as parameter
+void hitsplats_update(World *world, f32 dt)
 {
     for (s32 i = 0; i < ring_length(&world->active_hitsplats); ++i) {
         Hitsplat *hitsplat = ring_at(&world->active_hitsplats, i);
@@ -21,9 +23,8 @@ void hitsplats_update(World *world, const FrameData *frame_data)
             }
         }
 
-        hitsplat->position =
-            v2_add(hitsplat->position, v2_mul_s(hitsplat->velocity, frame_data->dt));
-        hitsplat->timer += frame_data->dt;
+        hitsplat->position = v2_add(hitsplat->position, v2_mul_s(hitsplat->velocity, dt));
+        hitsplat->timer += dt;
     }
 }
 

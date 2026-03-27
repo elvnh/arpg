@@ -5,12 +5,14 @@
 #include "base/utils.h"
 #include "base/vector.h"
 
+// clang-format off
 typedef enum {
-    KEYSTATE_UP = 0,
-    KEYSTATE_PRESSED,
-    KEYSTATE_HELD,
-    KEYSTATE_RELEASED,
+    KEYSTATE_UP       = FLAG(0),
+    KEYSTATE_PRESSED  = FLAG(1),
+    KEYSTATE_HELD     = FLAG(2),
+    KEYSTATE_RELEASED = FLAG(3),
 } Keystate;
+// clang-format on
 
 #define INPUT_KEY_LIST                                                                   \
     INPUT_KEY(KEY_W)                                                                     \
@@ -42,98 +44,12 @@ typedef enum {
 } Key;
 #undef INPUT_KEY
 
-typedef struct Input {
+typedef struct PlatformInput {
     Keystate keystates[KEY_COUNT];
     Keystate previous_keystates[KEY_COUNT];
     f32 scroll_delta;
     Vector2 mouse_position;
     Vector2 mouse_click_position;
-} Input;
-
-typedef struct FrameData {
-    f32 dt;
-    Input input;
-    Vector2i window_size;
-} FrameData;
-
-static inline Keystate input_get_key(const Input *input, Key key)
-{
-    ASSERT(key >= 0);
-    ASSERT(key < KEY_COUNT);
-
-    Keystate result = input->keystates[key];
-    return result;
-}
-
-static inline b32 input_is_key_pressed(const Input *input, Key key)
-{
-    Keystate keystate = input_get_key(input, key);
-    b32 result = keystate == KEYSTATE_PRESSED;
-
-    return result;
-}
-
-static inline b32 input_is_key_held(const Input *input, Key key)
-{
-    Keystate keystate = input_get_key(input, key);
-    b32 result = keystate == KEYSTATE_HELD;
-
-    return result;
-}
-
-static inline b32 input_is_key_released(const Input *input, Key key)
-{
-    Keystate keystate = input_get_key(input, key);
-    b32 result = keystate == KEYSTATE_RELEASED;
-
-    return result;
-}
-
-static inline b32 input_is_key_down(const Input *input, Key key)
-{
-    Keystate keystate = input_get_key(input, key);
-    b32 result = (keystate == KEYSTATE_PRESSED) || (keystate == KEYSTATE_HELD);
-
-    return result;
-}
-
-static inline Vector2 input_mouse_pos_in_y_direction(
-    Vector2 position, YDirection y_dir, Vector2i window_size)
-{
-    Vector2 result = position;
-
-    if (y_dir == Y_IS_UP) {
-        result.y = (f32)window_size.y - result.y;
-    }
-
-    return result;
-}
-
-static inline Vector2 input_get_mouse_pos(
-    const Input *input, YDirection y_dir, Vector2i window_size)
-{
-    Vector2 result =
-        input_mouse_pos_in_y_direction(input->mouse_position, y_dir, window_size);
-
-    return result;
-}
-
-static inline Vector2 input_get_mouse_click_pos(
-    const Input *input, YDirection y_dir, Vector2i window_size)
-{
-    Vector2 result =
-        input_mouse_pos_in_y_direction(input->mouse_click_position, y_dir, window_size);
-
-    return result;
-}
-
-static inline void input_consume_input(Input *input, Key key)
-{
-    ASSERT(key >= 0);
-    ASSERT(key < KEY_COUNT);
-
-    input->keystates[key] = KEYSTATE_UP;
-    input->previous_keystates[key] = KEYSTATE_UP;
-}
+} PlatformInput;
 
 #endif //INPUT_H

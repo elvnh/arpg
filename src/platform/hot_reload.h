@@ -19,8 +19,8 @@
 #endif
 
 typedef void(GameInitialize)(Game *, GameMemory *);
-typedef void(GameUpdateAndRender)(
-    Game *, PlatformCode, RenderBatchList *, FrameData, GameMemory *);
+typedef void(
+    GameUpdateAndRender)(Game *, PlatformCode, RenderBatchList *, FrameInput *, GameMemory *);
 
 typedef struct {
     void *handle;

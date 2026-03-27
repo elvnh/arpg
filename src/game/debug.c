@@ -138,7 +138,7 @@ static String dbg_arena_usage_string(String name, ssize usage, LinearArena *aren
     return result;
 }
 
-void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *frame_data)
+void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
 {
 	UIStyle debug_ui_style = {0};
 	debug_ui_style.font = ui_default_style(ui).font;
@@ -156,7 +156,7 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
     ssize perm_arena_memory_usage = game->debug_state.permanent_arena_memory_usage;
     ssize world_arena_memory_usage = game->debug_state.world_arena_memory_usage;
 
-    String frame_time_str = format(scratch, "Frame time: %.5f", (f64)frame_data->dt);
+    String frame_time_str = format(scratch, "Frame time: %.5f", (f64)dt);
     String fps_str = format(scratch, "FPS: %.2f", (f64)game->debug_state.average_fps);
 
     String temp_arena_str =
@@ -235,13 +235,12 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, const FrameData *fr
 	ui_pop_style(ui);
 }
 
-void debug_update(Game *game, const FrameData *frame_data)
+void debug_update(Game *game, FrameInput *frame_input)
 {
-    f32 curr_fps = 1.0f / frame_data->dt;
+    f32 curr_fps = 1.0f / frame_input->dt;
     f32 avg_fps = game->debug_state.average_fps;
 
-    Vector2 mouse_pos =
-        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+    Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
     Camera active_camera = game->world.camera;
 
     if (game->debug_state.debug_menu_active) {
@@ -253,7 +252,7 @@ void debug_update(Game *game, const FrameData *frame_data)
     /* } */
 
     Vector2 mouse_world_pos =
-        screen_to_world_coords(active_camera, mouse_pos, frame_data->window_size);
+        screen_to_world_coords(active_camera, mouse_pos, frame_input->window_size);
 
     game->debug_state.hovered_chunk =
         get_chunk_at_position(&game->world.map_chunks, mouse_world_pos);
@@ -268,8 +267,8 @@ void debug_update(Game *game, const FrameData *frame_data)
         speed_modifier_step = 0.05f;
     }
 
-    if (input_is_key_pressed(&frame_data->input, KEY_Y)) {
-        if (input_is_key_down(&frame_data->input, KEY_LEFT_SHIFT)) {
+    if (consume_key_pressed(&frame_input->input_events, KEY_Y)) {
+        if (check_key_down(&frame_input->input_events, KEY_LEFT_SHIFT)) {
             // If shift is held, reset debug camera position to normal camera position
             game->debug_state.debug_camera = game->world.camera;
         } else {
@@ -284,15 +283,15 @@ void debug_update(Game *game, const FrameData *frame_data)
     } else {
         Vector2 debug_camera_delta = {0};
 
-        if (input_is_key_down(&frame_data->input, KEY_LEFT)) {
+        if (consume_key_down(&frame_input->input_events, KEY_LEFT)) {
             debug_camera_delta.x = -1;
-        } else if (input_is_key_down(&frame_data->input, KEY_RIGHT)) {
+        } else if (consume_key_down(&frame_input->input_events, KEY_RIGHT)) {
             debug_camera_delta.x = 1;
         }
 
-        if (input_is_key_down(&frame_data->input, KEY_UP)) {
+        if (consume_key_down(&frame_input->input_events, KEY_UP)) {
             debug_camera_delta.y = 1;
-        } else if (input_is_key_down(&frame_data->input, KEY_DOWN)) {
+        } else if (consume_key_down(&frame_input->input_events, KEY_DOWN)) {
             debug_camera_delta.y = -1;
         }
 
@@ -303,9 +302,9 @@ void debug_update(Game *game, const FrameData *frame_data)
                 v2_mul_s(debug_camera_delta, camera_speed));
     }
 
-    if (input_is_key_pressed(&frame_data->input, KEY_O)) {
+    if (consume_key_pressed(&frame_input->input_events, KEY_O)) {
         speed_modifier += speed_modifier_step;
-    } else if (input_is_key_pressed(&frame_data->input, KEY_L)) {
+    } else if (consume_key_pressed(&frame_input->input_events, KEY_L)) {
         if (speed_modifier - 0.05f <= 0.5f) {
             speed_modifier_step = 0.05f;
         }
@@ -313,7 +312,7 @@ void debug_update(Game *game, const FrameData *frame_data)
         speed_modifier -= speed_modifier_step;
     }
 
-    if (input_is_key_pressed(&frame_data->input, KEY_G)) {
+    if (consume_key_pressed(&frame_input->input_events, KEY_G)) {
         if (game->debug_state.timestep_modifier > 0.0f) {
             // Enter single stepping mode
             speed_modifier = 0.0f;
@@ -323,7 +322,7 @@ void debug_update(Game *game, const FrameData *frame_data)
         }
     }
 
-    if (input_is_key_pressed(&frame_data->input, KEY_T)) {
+    if (consume_key_pressed(&frame_input->input_events, KEY_T)) {
         game->debug_state.debug_menu_active = !game->debug_state.debug_menu_active;
     }
 
@@ -369,9 +368,9 @@ void debug_render_chunks(
 #else
     // NOTE: debugging code, can be removed
     Vector2 mouse_pos =
-        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+        input_get_mouse_pos(&frame_input->input, Y_IS_DOWN, frame_input->window_size);
     mouse_pos =
-        screen_to_world_coords(game->world.camera, mouse_pos, frame_data->window_size);
+        screen_to_world_coords(game->world.camera, mouse_pos, frame_input->window_size);
 
     Vector2 dims = {256, 256};
     Rectangle area = {v2_sub(mouse_pos, dims), v2_mul_s(dims, 2.0f)};

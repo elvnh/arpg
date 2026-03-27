@@ -36,8 +36,10 @@ static void set_global_state(Game *game)
     initialize_flipbook_animations();
 }
 
-static void update_player(
-    World *world, const FrameData *frame_data, GameUIState *game_ui, Camera active_camera)
+// TODO: don't change world state directly, instead create commands that
+// get executed at start of world update
+static void process_input(World *world, FrameInput *frame_input, GameUIState *game_ui,
+    Camera active_camera)
 {
     Entity *player = world_get_player_entity(world);
     ASSERT(player);
@@ -50,21 +52,21 @@ static void update_player(
 #if 0
 	f32 speed = 350.0f;
 
-	if (input_is_key_held(&frame_data->input, KEY_LEFT_SHIFT)) {
+	if (check_key_pressed(&frame_input->input_events, KEY_LEFT_SHIFT)) {
 	    speed *= 3.0f;
 	}
 
 	Vector2 acceleration = {0};
 
-	if (input_is_key_down(&frame_data->input, KEY_W)) {
+	if (consume_key_down(&frame_input->input_events, KEY_W)) {
 	    acceleration.y = 1.0f;
-	} else if (input_is_key_down(&frame_data->input, KEY_S)) {
+	} else if (consume_key_down(&frame_input->input, KEY_S)) {
 	    acceleration.y = -1.0f;
 	}
 
-	if (input_is_key_down(&frame_data->input, KEY_A)) {
+	if (consume_key_down(&frame_input->input, KEY_A)) {
 	    acceleration.x = -1.0f;
-	} else if (input_is_key_down(&frame_data->input, KEY_D)) {
+	} else if (consume_key_down(&frame_input->input, KEY_D)) {
 	    acceleration.x = 1.0f;
 	}
 
@@ -76,7 +78,7 @@ static void update_player(
 	    entity_try_transition_to_state(world, player, state_idle());
 	}
 
-	f32 dt = frame_data->dt;
+	f32 dt = frame_input->dt;
 	Vector2 v = player->velocity;
 	Vector2 p = player->position;
 
@@ -95,15 +97,15 @@ static void update_player(
 #else
         Vector2 direction = {0};
 
-        if (input_is_key_down(&frame_data->input, KEY_W)) {
+        if (consume_key_down(&frame_input->input_events, KEY_W)) {
             direction.y = 1.0f;
-        } else if (input_is_key_down(&frame_data->input, KEY_S)) {
+        } else if (consume_key_down(&frame_input->input_events, KEY_S)) {
             direction.y = -1.0f;
         }
 
-        if (input_is_key_down(&frame_data->input, KEY_A)) {
+        if (consume_key_down(&frame_input->input_events, KEY_A)) {
             direction.x = -1.0f;
-        } else if (input_is_key_down(&frame_data->input, KEY_D)) {
+        } else if (consume_key_down(&frame_input->input_events, KEY_D)) {
             direction.x = 1.0f;
         }
 
@@ -111,10 +113,10 @@ static void update_player(
         entity_try_transition_to_state(world, player, physics, state_walking(direction));
 #endif
 
-        if (input_is_key_held(&frame_data->input, MOUSE_LEFT)) {
-            Vector2 mouse_pos = frame_data->input.mouse_position;
+        if (consume_key_down(&frame_input->input_events, MOUSE_LEFT)) {
+            Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
             mouse_pos =
-                screen_to_world_coords(active_camera, mouse_pos, frame_data->window_size);
+                screen_to_world_coords(active_camera, mouse_pos, frame_input->window_size);
 
             SpellCasterComponent *spellcaster =
                 es_get_component(player, SpellCasterComponent);
@@ -124,13 +126,26 @@ static void update_player(
             try_cast_spell(world, selected_spell, player, mouse_pos);
         }
     }
+
+    Entity *hovered_entity = es_try_get_entity(&world->entity_system, game_ui->hovered_entity);
+
+    if (hovered_entity && consume_key_pressed(&frame_input->input_events, MOUSE_RIGHT)) {
+        // TODO: this probably shouldn't be done here, also UI shouldn't directly alter world
+        // state but rather do it via commands
+        if (es_has_component(hovered_entity, InventoryStorable)) {
+            ASSERT(entity_id_is_null(game_ui->inventory_menu.item_on_cursor)
+                   && "TODO: allow exchanging item on cursor with one on ground");
+            pick_up_item_from_world_and_put_on_cursor(&game_ui->inventory_menu, world,
+                hovered_entity);
+        }
+    }
 }
 
-static RenderBatches create_render_batches(
-    Game *game, RenderBatchList *rbs, const FrameData *frame_data, LinearArena *scratch)
+static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
+    FrameInput *frame_input, LinearArena *scratch)
 {
     RenderBatches result = {0};
-    Camera ui_camera = create_screenspace_camera(frame_data->window_size);
+    Camera ui_camera = create_screenspace_camera(frame_input->window_size);
 
     // TODO: make ambient light be property of each world
     f32 x = 0.2f;
@@ -142,35 +157,34 @@ static RenderBatches create_render_batches(
         active_camera = game->debug_state.debug_camera;
     }
 
-    result.world_rb = push_new_render_batch(rbs, active_camera, frame_data->window_size,
-        Y_IS_UP, FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT, BLEND_FUNCTION_MULTIPLICATIVE,
-        scratch);
+    result.world_rb =
+        push_new_render_batch(rbs, active_camera, frame_input->window_size, Y_IS_UP,
+            FRAME_BUFFER_GAMEPLAY, RGBA32_TRANSPARENT, BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
-    result.lighting_rb =
-        push_new_render_batch(rbs, active_camera, frame_data->window_size, Y_IS_UP,
-            FRAME_BUFFER_LIGHTING, ambient_light, BLEND_FUNCTION_ADDITIVE, scratch);
+    result.lighting_rb = push_new_render_batch(rbs, active_camera, frame_input->window_size,
+        Y_IS_UP, FRAME_BUFFER_LIGHTING, ambient_light, BLEND_FUNCTION_ADDITIVE, scratch);
 
     result.lighting_stencil_rb = add_stencil_pass(
         result.lighting_rb, STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, scratch);
 
-    result.worldspace_ui_rb = push_new_render_batch(rbs, active_camera,
-        frame_data->window_size, Y_IS_UP, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
-        BLEND_FUNCTION_MULTIPLICATIVE, scratch);
+    result.worldspace_ui_rb =
+        push_new_render_batch(rbs, active_camera, frame_input->window_size, Y_IS_UP,
+            FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT, BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
-    result.overlay_rb = push_new_render_batch(rbs, ui_camera, frame_data->window_size,
-        Y_IS_DOWN, FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT,
-        BLEND_FUNCTION_MULTIPLICATIVE, scratch);
+    result.overlay_rb =
+        push_new_render_batch(rbs, ui_camera, frame_input->window_size, Y_IS_DOWN,
+            FRAME_BUFFER_OVERLAY, RGBA32_TRANSPARENT, BLEND_FUNCTION_MULTIPLICATIVE, scratch);
 
     return result;
 }
 
-static void render_ui(
-    Game *game, RenderBatches rbs, FrameData *frame_data, LinearArena *frame_arena)
+static void render_ui(Game *game, RenderBatches rbs, FrameInput *frame_input,
+    LinearArena *frame_arena)
 {
-    ui_core_render(&game->game_ui.backend_state, frame_data, rbs.overlay_rb);
+    ui_core_render(&game->game_ui.backend_state, frame_input, rbs.overlay_rb);
 
     if (game->debug_state.debug_menu_active) {
-        ui_core_render(&game->debug_state.debug_ui, frame_data, rbs.overlay_rb);
+        ui_core_render(&game->debug_state.debug_ui, frame_input, rbs.overlay_rb);
     }
 
     if (game->debug_state.quad_tree_overlay) {
@@ -192,50 +206,45 @@ static void render_ui(
         debug_render_chunks(game, rbs.worldspace_ui_rb, frame_arena);
     }
 
-    Vector2 mouse_pos =
-        input_get_mouse_pos(&frame_data->input, Y_IS_DOWN, frame_data->window_size);
+    Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
 
     render_item_on_cursor(
         &game->game_ui.inventory_menu, &game->world, rbs.overlay_rb, mouse_pos, frame_arena);
 }
 
 static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,
-    FrameData *frame_data, LinearArena *scratch, PlatformCode platform_code)
+    FrameInput *frame_input, LinearArena *scratch, PlatformCode platform_code)
 {
     ui_core_begin_frame(ui);
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (overlay) {
         case UI_OVERLAY_GAME: {
-            game_ui(game, scratch, frame_data);
+            game_ui(game, scratch, &frame_input->input_events);
         } break;
 
         case UI_OVERLAY_DEBUG: {
-            debug_ui(ui, game, scratch, frame_data);
+            debug_ui(ui, game, scratch, frame_input->dt);
         } break;
 
             INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
-    UIInteraction interaction =
-        ui_core_end_layout(ui, frame_data, Y_IS_DOWN, platform_code);
-
-    // TODO: shouldn't click_began_inside_ui be counted as receiving mouse input?
-    if (interaction.received_mouse_input || interaction.click_began_inside_ui) {
-        input_consume_input(&frame_data->input, MOUSE_LEFT);
-    }
+    ui_core_end_layout(ui, frame_input, Y_IS_DOWN, platform_code);
 }
 
-static void update_ui(Game *game, FrameData *frame_data, LinearArena *frame_arena,
+static void update_ui(Game *game, FrameInput *frame_input, LinearArena *frame_arena,
     PlatformCode platform_code)
 {
-    Vector2 hovered_coords = screen_to_world_coords(
-        game->world.camera, frame_data->input.mouse_position, frame_data->window_size);
+    Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
+    Vector2 hovered_coords =
+        screen_to_world_coords(game->world.camera, mouse_pos, frame_input->window_size);
 
     Rectangle hovered_rect = {
         hovered_coords, {1, 1}
     };
+
     EntityIDList hovered_entities =
         qt_get_entities_in_area(&game->world.quad_tree, hovered_rect, frame_arena);
 
@@ -245,80 +254,80 @@ static void update_ui(Game *game, FrameData *frame_data, LinearArena *frame_aren
         game->game_ui.hovered_entity = NULL_ENTITY_ID;
     }
 
-    update_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_data,
+    update_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_input,
         frame_arena, platform_code);
 
     if (game->debug_state.debug_menu_active) {
-        update_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, frame_data,
+        update_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, frame_input,
             frame_arena, platform_code);
     }
 }
 
-static void game_render(
-    Game *game, RenderBatchList *rb_list, FrameData *frame_data, LinearArena *frame_arena)
+static void game_render(Game *game, RenderBatchList *rb_list, FrameInput *frame_input,
+    LinearArena *frame_arena)
 {
-    RenderBatches rbs = create_render_batches(game, rb_list, frame_data, frame_arena);
+    RenderBatches rbs = create_render_batches(game, rb_list, frame_input, frame_arena);
 
-    world_render(&game->world, rbs, frame_data, frame_arena, &game->debug_state);
+    world_render(&game->world, rbs, frame_input->window_size, frame_arena, &game->debug_state);
 
-    render_ui(game, rbs, frame_data, frame_arena);
+    render_ui(game, rbs, frame_input, frame_arena);
 
     for (RenderBatch *batch = list_head(rb_list); batch; batch = list_next(batch)) {
         sort_render_entries(batch, frame_arena);
     }
 }
 
-static void game_update(Game *game, FrameData *frame_data, PlatformCode platform_code,
+static void game_update(Game *game, FrameInput *frame_input, PlatformCode platform_code,
     LinearArena *frame_arena)
 {
     ASSERT(game->debug_state.timestep_modifier >= 0.0f);
 
-    debug_update(game, frame_data);
-    update_ui(game, frame_data, frame_arena, platform_code);
+    debug_update(game, frame_input);
+    update_ui(game, frame_input, frame_arena, platform_code);
 
     Camera *active_camera = &game->world.camera;
 
     if (game->debug_state.debug_camera_active) {
         active_camera = &game->debug_state.debug_camera;
-        camera_update(active_camera, frame_data->dt);
+        camera_update(active_camera, frame_input->dt);
     }
 
-    camera_zoom(active_camera, (s32)frame_data->input.scroll_delta);
+    camera_zoom(active_camera, (s32)consume_scroll_delta(&frame_input->input_events));
 
     // NOTE: normal camera is always updated too even if debug camera is active
-    camera_update(&game->world.camera, frame_data->dt);
+    camera_update(&game->world.camera, frame_input->dt);
 
-    frame_data->dt *= game->debug_state.timestep_modifier;
+    frame_input->dt *= game->debug_state.timestep_modifier;
 
     b32 game_paused = game->debug_state.timestep_modifier == 0.0f;
-    b32 frame_advance_key_pressed = input_is_key_pressed(&frame_data->input, KEY_K);
+    b32 frame_advance_key_pressed = consume_key_pressed(&frame_input->input_events, KEY_K);
     b32 should_update = !game_paused || frame_advance_key_pressed;
 
     if (should_update) {
         if (game_paused) {
             // When advancing by a single frame, set the dt to a reasonable default value
-            frame_data->dt = 0.016f;
+            frame_input->dt = 0.016f;
         }
 
-        update_player(&game->world, frame_data, &game->game_ui, *active_camera);
-        world_update(&game->world, frame_data, frame_arena);
+        process_input(&game->world, frame_input, &game->game_ui, *active_camera);
+        world_update(&game->world, frame_input->dt, frame_input->window_size, frame_arena);
     }
 }
 
 void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchList *rbs,
-    FrameData frame_data, GameMemory *game_memory)
+    FrameInput *frame_input, GameMemory *game_memory)
 {
 #if HOT_RELOAD
     // NOTE: these global pointers are set every frame in case we have hot reloaded
     set_global_state(game);
 #endif
 
-    if (input_is_key_pressed(&frame_data.input, KEY_ESCAPE)) {
+    if (consume_key_pressed(&frame_input->input_events, KEY_ESCAPE)) {
         DEBUG_BREAK;
     }
 
-    game_update(game, &frame_data, platform_code, &game_memory->temporary_memory);
-    game_render(game, rbs, &frame_data, &game_memory->temporary_memory);
+    game_update(game, frame_input, platform_code, &game_memory->temporary_memory);
+    game_render(game, rbs, frame_input, &game_memory->temporary_memory);
 
     // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
     // have had time to be used during the frame. This means that the stats have 1 frame delay
@@ -352,7 +361,6 @@ void game_initialize(Game *game, GameMemory *game_memory)
 	default_ui_style.accent_color = RGBA32_GREEN;
 	default_ui_style.context_menu_color = RGBA32_CYAN;
 	default_ui_style.text_color = RGBA32_WHITE;
-
 
     // Debug UI
     ui_core_initialize(

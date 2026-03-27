@@ -22,7 +22,7 @@ typedef struct {
 
 DEFINE_STATIC_RING_BUFFER(Hitsplat, HitsplatBuffer, 128);
 
-void hitsplats_update(struct World *world, const struct FrameData *frame_data);
+void hitsplats_update(struct World *world, f32 dt);
 void hitsplats_render(
     struct World *world, struct RenderBatch *rb, struct LinearArena *frame_arena);
 void hitsplats_create(struct World *world, Vector2 position, Damage damage);

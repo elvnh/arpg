@@ -8,6 +8,7 @@
 #include "components/component_id.h"
 #include "entity/entity_system.h"
 #include "hitsplat.h"
+#include "platform/input_event.h"
 #include "quad_tree.h"
 #include "renderer/frontend/render_target.h"
 #include "tilemap.h"
@@ -18,7 +19,6 @@
   - Copying over entities and items when switching world
  */
 
-struct FrameData;
 struct DebugState;
 struct RenderBatch;
 struct RenderBatchList;
@@ -52,8 +52,8 @@ typedef struct World {
 
 void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);
-void world_update(World *world, const struct FrameData *frame_data, LinearArena *frame_arena);
-void world_render(World *world, RenderBatches rb_list, const struct FrameData *frame_data,
+void world_update(World *world, f32 dt, Vector2i viewport_size, LinearArena *frame_arena);
+void world_render(World *world, RenderBatches rb_list, Vector2i viewport_size,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction);
 EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction);

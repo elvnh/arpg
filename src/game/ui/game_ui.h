@@ -3,11 +3,11 @@
 
 #include "entity/entity.h"
 #include "inventory_menu.h"
+#include "platform/input_event.h"
 #include "ui/ui_builder.h"
 
 struct Game;
 struct LinearArena;
-struct FrameData;
 struct World;
 struct RenderBatch;
 
@@ -22,7 +22,6 @@ typedef struct GameUIState {
 
 } GameUIState;
 
-void game_ui(
-    struct Game *game, struct LinearArena *scratch, const struct FrameData *frame_data);
+void game_ui(struct Game *game, struct LinearArena *scratch, InputEvents *input);
 
 #endif //GAME_UI_H

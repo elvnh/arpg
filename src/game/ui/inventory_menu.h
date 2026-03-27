@@ -4,6 +4,7 @@
 #include "base/rectangle.h"
 #include "base/string8.h"
 #include "entity/entity_id.h"
+#include "platform/input_event.h"
 
 // TODO: make these resize with screen instead
 #define INVENTORY_GRID_UI_CELL_SIZE 32
@@ -13,7 +14,6 @@
        }
 
 struct Game;
-struct FrameData;
 struct LinearArena;
 struct RenderBatch;
 struct Entity;
@@ -29,10 +29,9 @@ typedef struct {
     b32 can_interact_with_inventory;
 } InventoryMenu;
 
-void inventory_menu_update(
-    InventoryMenu *inv_menu, struct World *world, const struct FrameData *frame_data);
+void inventory_menu_update(InventoryMenu *inv_menu, struct World *world, InputEvents *input);
 void inventory_menu(struct UIState *ui, InventoryMenu *inv_menu, struct World *world,
-    const struct FrameData *frame_data, struct LinearArena *scratch);
+    InputEvents *input, struct LinearArena *scratch);
 void pick_up_item_from_world_and_put_on_cursor(
     InventoryMenu *inv_menu, struct World *world, struct Entity *item_entity);
 String get_item_name_widget_text(struct Entity *item_entity, struct LinearArena *arena);

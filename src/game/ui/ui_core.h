@@ -5,7 +5,7 @@
 #include "base/rectangle.h"
 #include "base/string8.h"
 #include "base/vector.h"
-#include "platform/input.h"
+#include "platform/input_event.h"
 #include "platform/platform.h"
 #include "widget.h"
 
@@ -88,9 +88,9 @@ typedef struct UIState {
 
 void ui_core_initialize(UIState *ui, UIStyle default_style, LinearArena *arena);
 void ui_core_begin_frame(UIState *ui);
-UIInteraction ui_core_end_layout(
-    UIState *ui, const FrameData *frame_data, YDirection y_dir, PlatformCode platform_code);
-void ui_core_render(UIState *ui, const FrameData *frame_data, struct RenderBatch *rb);
+UIInteraction ui_core_end_layout(UIState *ui, struct FrameInput *frame_data, YDirection y_dir,
+    PlatformCode platform_code);
+void ui_core_render(UIState *ui, FrameInput *frame_input, struct RenderBatch *rb);
 void ui_core_push_container(UIState *ui, Widget *widget);
 void ui_core_pop_container(UIState *ui);
 Widget *ui_core_get_top_container(UIState *ui);

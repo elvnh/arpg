@@ -516,11 +516,12 @@ UIInteraction ui_core_end_layout(UIState *ui, FrameInput *frame_input, YDirectio
     // TODO: figure out why this has to be done, it should be enough to consume
     // inside calculate_widget_interactions?
     // TODO: clicks that began inside UI shouldn't propagate even if UI isn't visible
-    if (result.received_mouse_input || result.was_hovered || result.click_began_inside_ui) {
-        consume_key_down(&frame_input->input_events, MOUSE_LEFT);
-        consume_key_down(&frame_input->input_events, MOUSE_RIGHT);
-
+    if (result.was_hovered) {
         consume_scroll_delta(&frame_input->input_events);
+    }
+
+    if (result.received_mouse_input || result.click_began_inside_ui) {
+        consume_key_down(&frame_input->input_events, MOUSE_LEFT);
     }
 
     return result;

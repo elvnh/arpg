@@ -96,12 +96,14 @@ void update_particle_spawner(
     Chunk *entity_chunk = get_chunk_at_position(&world->map_chunks, physics->position);
     ASSERT(entity_chunk);
 
-    spawn_particles_in_chunk(entity_chunk, entity_bounds, ps->config, particles_to_spawn);
+    if (entity_chunk) {
+        spawn_particles_in_chunk(entity_chunk, entity_bounds, ps->config, particles_to_spawn);
 
-    if (particle_spawner_is_finished(ps)
-        && !has_flag(ps->config.flags, PS_FLAG_WHEN_DONE_REMOVE_ENTITY)) {
-        // If we have the flag set to remove entire entity when done, let the game update
-        // handle that, since if we remove the component now, the entity removal won't be triggered
-        es_remove_component(entity, ParticleSpawner);
+        if (particle_spawner_is_finished(ps)
+            && !has_flag(ps->config.flags, PS_FLAG_WHEN_DONE_REMOVE_ENTITY)) {
+            // If we have the flag set to remove entire entity when done, let the game update
+            // handle that, since if we remove the component now, the entity removal won't be triggered
+            es_remove_component(entity, ParticleSpawner);
+        }
     }
 }

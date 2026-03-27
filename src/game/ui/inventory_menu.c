@@ -30,9 +30,7 @@
 
 /* NOTE:
  *
- * There seems to be some issues with render command sorting, namely that the
- * sort doesn't appear to be stable. Therefore, the layer of the item sprite has
- * to be higher than the item background for it to appear in front.
+ * This a hacky way of making the widgets appear in the correct order.
  *
  * TODO: fix this properly
  */

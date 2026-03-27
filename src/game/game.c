@@ -2,16 +2,19 @@
 
 #include "asset_table.h"
 #include "base/format.h"
+#include "base/list.h"
 #include "base/matrix.h"
 #include "base/random.h"
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "command.h"
 #include "components/component.h"
 #include "components/inventory.h"
 #include "components/modifier.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
 #include "platform/input.h"
+#include "platform/input_event.h"
 #include "renderer/backend/renderer_backend.h"
 #include "renderer/frontend/render_batch.h"
 #include "renderer/frontend/render_key.h"
@@ -36,10 +39,8 @@ static void set_global_state(Game *game)
     initialize_flipbook_animations();
 }
 
-// TODO: don't change world state directly, instead create commands that
-// get executed at start of world update
 static void process_input(World *world, FrameInput *frame_input, GameUIState *game_ui,
-    Camera active_camera)
+    Camera active_camera, CommandQueue *commands, LinearArena *arena)
 {
     Entity *player = world_get_player_entity(world);
     ASSERT(player);
@@ -48,96 +49,52 @@ static void process_input(World *world, FrameInput *frame_input, GameUIState *ga
     Vector2 camera_target = rect_center(world_get_entity_bounding_box(player, physics));
     camera_set_target(&world->camera, camera_target);
 
-    if (player->state.kind != ENTITY_STATE_ATTACKING) {
-#if 0
-	f32 speed = 350.0f;
-
-	if (check_key_pressed(&frame_input->input_events, KEY_LEFT_SHIFT)) {
-	    speed *= 3.0f;
-	}
-
-	Vector2 acceleration = {0};
-
-	if (consume_key_down(&frame_input->input_events, KEY_W)) {
-	    acceleration.y = 1.0f;
-	} else if (consume_key_down(&frame_input->input, KEY_S)) {
-	    acceleration.y = -1.0f;
-	}
-
-	if (consume_key_down(&frame_input->input, KEY_A)) {
-	    acceleration.x = -1.0f;
-	} else if (consume_key_down(&frame_input->input, KEY_D)) {
-	    acceleration.x = 1.0f;
-	}
-
-	acceleration = v2_norm(acceleration);
-
-	if (!v2_eq(acceleration, V2_ZERO)) {
-	    entity_try_transition_to_state(world, player, state_walking());
-	} else {
-	    entity_try_transition_to_state(world, player, state_idle());
-	}
-
-	f32 dt = frame_input->dt;
-	Vector2 v = player->velocity;
-	Vector2 p = player->position;
-
-	acceleration = v2_mul_s(acceleration, speed);
-	acceleration = v2_add(acceleration, v2_mul_s(v, -3.5f));
-
-	Vector2 new_pos = v2_add(
-	    v2_add(v2_mul_s(v2_mul_s(acceleration, dt * dt), 0.5f), v2_mul_s(v, dt)),
-	    p
-	);
-
-	Vector2 new_velocity = v2_add(v2_mul_s(acceleration, dt), v);
-
-	player->position = new_pos;
-	player->velocity = new_velocity;
-#else
-        Vector2 direction = {0};
-
-        if (consume_key_down(&frame_input->input_events, KEY_W)) {
-            direction.y = 1.0f;
-        } else if (consume_key_down(&frame_input->input_events, KEY_S)) {
-            direction.y = -1.0f;
-        }
-
-        if (consume_key_down(&frame_input->input_events, KEY_A)) {
-            direction.x = -1.0f;
-        } else if (consume_key_down(&frame_input->input_events, KEY_D)) {
-            direction.x = 1.0f;
-        }
-
-        direction = v2_norm(direction);
-        entity_try_transition_to_state(world, player, physics, state_walking(direction));
-#endif
-
-        if (consume_key_down(&frame_input->input_events, MOUSE_LEFT)) {
-            Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
-            mouse_pos =
-                screen_to_world_coords(active_camera, mouse_pos, frame_input->window_size);
-
-            SpellCasterComponent *spellcaster =
-                es_get_component(player, SpellCasterComponent);
-            SpellID selected_spell = get_spell_at_spellbook_index(
-                spellcaster, game_ui->selected_spellbook_index);
-
-            try_cast_spell(world, selected_spell, player, mouse_pos);
-        }
+    Vector2 direction = {0};
+    if (consume_key_down(&frame_input->input_events, KEY_W)) {
+        direction.y = 1.0f;
+    } else if (consume_key_down(&frame_input->input_events, KEY_S)) {
+        direction.y = -1.0f;
     }
 
-    Entity *hovered_entity = es_try_get_entity(&world->entity_system, game_ui->hovered_entity);
+    if (consume_key_down(&frame_input->input_events, KEY_A)) {
+        direction.x = -1.0f;
+    } else if (consume_key_down(&frame_input->input_events, KEY_D)) {
+        direction.x = 1.0f;
+    }
 
-    if (hovered_entity && consume_key_pressed(&frame_input->input_events, MOUSE_RIGHT)) {
-        // TODO: this probably shouldn't be done here, also UI shouldn't directly alter world
-        // state but rather do it via commands
-        if (es_has_component(hovered_entity, InventoryStorable)) {
-            ASSERT(entity_id_is_null(game_ui->inventory_menu.item_on_cursor)
-                   && "TODO: allow exchanging item on cursor with one on ground");
-            pick_up_item_from_world_and_put_on_cursor(&game_ui->inventory_menu, world,
-                hovered_entity);
+    direction = v2_norm(direction);
+    push_command(commands, move_command(direction), arena);
+
+    b32 key_pressed = consume_key_pressed(&frame_input->input_events, MOUSE_LEFT);
+    b32 key_held = consume_key_held(&frame_input->input_events, MOUSE_LEFT);
+    b32 item_on_cursor = !entity_id_is_null(game_ui->inventory_menu.item_on_cursor);
+
+    if (item_on_cursor && key_pressed) {
+        Command cmd = move_item_command(game_ui->inventory_menu.item_on_cursor,
+            item_location_cursor(), item_location_world());
+
+        push_command(commands, cmd, arena);
+    } else if (!item_on_cursor && (key_pressed || key_held)) {
+        Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
+        Vector2 attack_target =
+            screen_to_world_coords(active_camera, mouse_pos, frame_input->window_size);
+
+        push_command(commands, attack_command(attack_target), arena);
+    } else if (!entity_id_is_null(game_ui->hovered_entity)
+               && consume_key_pressed(&frame_input->input_events, MOUSE_RIGHT)) {
+        Command cmd = {0};
+
+        if (game_ui->inventory_menu.active) {
+            // If inventory is open, move item to cursor
+            cmd = move_item_command(game_ui->hovered_entity, item_location_world(),
+                item_location_cursor());
+        } else {
+            // Otherwise try to pick up in any available inventory slot
+            cmd = move_item_command(game_ui->hovered_entity, item_location_world(),
+                item_location_any_inventory_slot());
         }
+
+        push_command(commands, cmd, arena);
     }
 }
 
@@ -213,14 +170,15 @@ static void render_ui(Game *game, RenderBatches rbs, FrameInput *frame_input,
 }
 
 static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,
-    FrameInput *frame_input, LinearArena *scratch, PlatformCode platform_code)
+    FrameInput *frame_input, CommandQueue *commands, LinearArena *scratch,
+    PlatformCode platform_code)
 {
     ui_core_begin_frame(ui);
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (overlay) {
         case UI_OVERLAY_GAME: {
-            game_ui(game, scratch, &frame_input->input_events);
+            game_ui(game, scratch, &frame_input->input_events, commands);
         } break;
 
         case UI_OVERLAY_DEBUG: {
@@ -234,8 +192,8 @@ static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,
     ui_core_end_layout(ui, frame_input, Y_IS_DOWN, platform_code);
 }
 
-static void update_ui(Game *game, FrameInput *frame_input, LinearArena *frame_arena,
-    PlatformCode platform_code)
+static void update_ui(Game *game, FrameInput *frame_input, CommandQueue *commands,
+    LinearArena *frame_arena, PlatformCode platform_code)
 {
     Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
     Vector2 hovered_coords =
@@ -255,11 +213,11 @@ static void update_ui(Game *game, FrameInput *frame_input, LinearArena *frame_ar
     }
 
     update_overlay_ui(&game->game_ui.backend_state, game, UI_OVERLAY_GAME, frame_input,
-        frame_arena, platform_code);
+        commands, frame_arena, platform_code);
 
     if (game->debug_state.debug_menu_active) {
         update_overlay_ui(&game->debug_state.debug_ui, game, UI_OVERLAY_DEBUG, frame_input,
-            frame_arena, platform_code);
+            commands, frame_arena, platform_code);
     }
 }
 
@@ -282,8 +240,9 @@ static void game_update(Game *game, FrameInput *frame_input, PlatformCode platfo
 {
     ASSERT(game->debug_state.timestep_modifier >= 0.0f);
 
+    CommandQueue cmds = {0};
     debug_update(game, frame_input);
-    update_ui(game, frame_input, frame_arena, platform_code);
+    update_ui(game, frame_input, &cmds, frame_arena, platform_code);
 
     Camera *active_camera = &game->world.camera;
 
@@ -309,7 +268,10 @@ static void game_update(Game *game, FrameInput *frame_input, PlatformCode platfo
             frame_input->dt = 0.016f;
         }
 
-        process_input(&game->world, frame_input, &game->game_ui, *active_camera);
+        process_input(&game->world, frame_input, &game->game_ui, *active_camera, &cmds,
+            frame_arena);
+        execute_command_queue(&cmds, &game->world, &game->game_ui);
+
         world_update(&game->world, frame_input->dt, frame_input->window_size, frame_arena);
     }
 }

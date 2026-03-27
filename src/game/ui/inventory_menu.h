@@ -3,6 +3,7 @@
 
 #include "base/rectangle.h"
 #include "base/string8.h"
+#include "command.h"
 #include "entity/entity_id.h"
 #include "platform/input_event.h"
 
@@ -29,11 +30,9 @@ typedef struct {
     b32 can_interact_with_inventory;
 } InventoryMenu;
 
-void inventory_menu_update(InventoryMenu *inv_menu, struct World *world, InputEvents *input);
+void inventory_menu_update(InventoryMenu *inv_menu);
 void inventory_menu(struct UIState *ui, InventoryMenu *inv_menu, struct World *world,
-    InputEvents *input, struct LinearArena *scratch);
-void pick_up_item_from_world_and_put_on_cursor(
-    InventoryMenu *inv_menu, struct World *world, struct Entity *item_entity);
+    InputEvents *input, CommandQueue *commands, LinearArena *scratch);
 String get_item_name_widget_text(struct Entity *item_entity, struct LinearArena *arena);
 void item_hover_menu(struct UIState *ui, struct Entity *item, Vector2 mouse_position,
     struct LinearArena *arena);

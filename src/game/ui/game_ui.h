@@ -1,6 +1,7 @@
 #ifndef GAME_UI_H
 #define GAME_UI_H
 
+#include "command.h"
 #include "entity/entity.h"
 #include "inventory_menu.h"
 #include "platform/input_event.h"
@@ -22,6 +23,7 @@ typedef struct GameUIState {
 
 } GameUIState;
 
-void game_ui(struct Game *game, struct LinearArena *scratch, InputEvents *input);
+void game_ui(struct Game *game, struct LinearArena *scratch, InputEvents *input,
+    CommandQueue *commands);
 
 #endif //GAME_UI_H

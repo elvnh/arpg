@@ -130,7 +130,7 @@ void world_drop_item_from_position(Vector2 position, Entity *item_entity)
     PhysicsComponent *physics = es_get_or_add_component(item_entity, PhysicsComponent);
     physics->position = target_pos;
 
-    AnimationComponent *anim = es_add_component(item_entity, AnimationComponent);
+    AnimationComponent *anim = es_get_or_add_component(item_entity, AnimationComponent);
     *anim = zero_struct(AnimationComponent);
     anim->animation.position_function = POSITION_ANIMATION_PARABOLA;
     anim->animation.start_position = v2_sub(origin, target_pos);

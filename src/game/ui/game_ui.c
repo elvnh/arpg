@@ -95,7 +95,7 @@ static void equipment_menu(GameUIState *ui_state, Game *game, LinearArena *scrat
     ui_pop_container(ui);
 }
 
-void game_ui(Game *game, LinearArena *scratch, InputEvents *input)
+void game_ui(Game *game, LinearArena *scratch, InputEvents *input, CommandQueue *commands)
 {
     Entity *player = world_get_player_entity(&game->world);
     UIState *ui = &game->game_ui.backend_state;
@@ -107,7 +107,7 @@ void game_ui(Game *game, LinearArena *scratch, InputEvents *input)
 
     // NOTE: inventory menu currently handles dropping item on cursor too,
     // so it should be updated even if the UI currently isn't active
-    inventory_menu_update(&game->game_ui.inventory_menu, &game->world, input);
+    inventory_menu_update(&game->game_ui.inventory_menu);
 
     if (game->game_ui.inventory_menu.active) {
         UIStyle style = {0};
@@ -125,7 +125,8 @@ void game_ui(Game *game, LinearArena *scratch, InputEvents *input)
 
         ui_push_style(ui, style);
 
-        inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, input, scratch);
+        inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, input, commands,
+            scratch);
 
         ui_core_same_line(ui);
 

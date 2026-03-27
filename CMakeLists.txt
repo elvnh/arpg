@@ -48,6 +48,7 @@ set(
   src/game/collision/collision_policy.c
   src/game/debug.c
   src/game/asset_table.c
+  src/game/command.c
   src/game/damage.c
   src/game/entity/entity_system.c
   src/game/entity/entity_state.c

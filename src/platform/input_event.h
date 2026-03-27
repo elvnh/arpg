@@ -62,7 +62,7 @@ static inline b32 consume_keystate(InputEvents *events, Key key, Keystate state_
 
     if (event) {
         ssize remaining = events->count - (event - events->data) - 1;
-        memmove(event, event + 1, (usize)remaining);
+        memmove(event, event + 1, (usize)remaining * sizeof(*event));
 
         --events->count;
     }

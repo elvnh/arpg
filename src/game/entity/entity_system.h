@@ -36,7 +36,7 @@
     ((type *)es_impl_try_get_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 #define es_has_component(entity, type) es_has_components((entity), component_id(type))
 #define es_has_components(entity, flags)                                                 \
-    (((entity)->active_components & (flags)) == (flags))
+    ((entity) && ((entity)->active_components & (flags)) == (flags))
 #define es_get_or_add_component(entity, type)                                            \
     ((type *)es_impl_get_or_add_component(entity, ES_IMPL_COMP_ENUM_NAME(type)))
 

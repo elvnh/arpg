@@ -60,6 +60,63 @@ TEST_CASE(es_adding_components_single)
     free_entity_system(entity_sys);
 }
 
+TEST_CASE(es_get_component)
+{
+    EntitySystem *es = allocate_entity_system();
+    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL);
+
+    PhysicsComponent *comp1 = es_add_component(e1.entity, PhysicsComponent);
+    PhysicsComponent *comp2 = es_get_component(e1.entity, PhysicsComponent);
+
+    REQUIRE(comp1 == comp2);
+
+    PhysicsComponent *comp3 = es_try_get_component(e1.entity, PhysicsComponent);
+    REQUIRE(comp2 == comp3);
+
+    free_entity_system(es);
+}
+
+TEST_CASE(es_try_get_component)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL);
+
+    LightEmitter *comp = es_try_get_component(e1.entity, LightEmitter);
+    REQUIRE(!comp);
+
+    free_entity_system(es);
+}
+
+TEST_CASE(es_has_component_on_null_entity)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    REQUIRE(!es_has_component((Entity *)0, PhysicsComponent));
+
+    free_entity_system(es);
+}
+
+TEST_CASE(es_has_components_on_null_entity)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    REQUIRE(!es_has_components((Entity *)0,
+        component_id(PhysicsComponent) | component_id(LightEmitter)));
+
+    free_entity_system(es);
+}
+
+TEST_CASE(es_try_get_component_on_null_entity)
+{
+    EntitySystem *es = allocate_entity_system();
+
+    LightEmitter *comp = es_try_get_component(0, LightEmitter);
+    REQUIRE(!comp);
+
+    free_entity_system(es);
+}
+
 TEST_CASE(es_fake_id)
 {
     EntitySystem *entity_sys = allocate_entity_system();

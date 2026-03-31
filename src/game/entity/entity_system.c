@@ -221,6 +221,8 @@ void *es_impl_add_component(Entity *entity, ComponentType type)
 
 void *es_impl_get_component(Entity *entity, ComponentType type)
 {
+    ASSERT(entity && "es_get_component called on null entity");
+
     void *result = es_impl_try_get_component(entity, type);
     ASSERT(result && "es_get_component called but entity didn't have component");
 

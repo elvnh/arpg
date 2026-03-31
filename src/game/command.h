@@ -57,7 +57,6 @@ typedef struct Command {
     } as;
 
     struct Command *next;
-    struct Command *prev;
 } Command;
 
 typedef struct {

@@ -5,6 +5,7 @@
 #include "ui/game_ui.h"
 #include "world/world.h"
 
+// TODO: move things related to item transactions to separate file
 typedef struct {
     b32 ok;
     EntityID source_item_replaced_with;
@@ -116,7 +117,7 @@ void push_command(CommandQueue *commands, Command command, LinearArena *arena)
     Command *command_node = la_allocate_item(arena, Command);
     *command_node = command;
 
-    list_push_back(commands, command_node);
+    sl_list_push_back(commands, command_node);
 }
 
 void execute_command_queue(CommandQueue *commands, World *world, GameUI *game_ui)
@@ -156,7 +157,7 @@ void execute_command_queue(CommandQueue *commands, World *world, GameUI *game_ui
         }
         END_EXHAUSTIVE_SWITCH;
 
-        list_pop_head(commands);
+        sl_list_pop(commands);
         current = list_head(commands);
     }
 }

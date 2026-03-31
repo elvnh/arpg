@@ -105,8 +105,6 @@ void game_ui(Game *game, LinearArena *scratch, InputEvents *input, CommandQueue 
         game->game_ui.inventory_menu.active = !game->game_ui.inventory_menu.active;
     }
 
-    // NOTE: inventory menu currently handles dropping item on cursor too,
-    // so it should be updated even if the UI currently isn't active
     inventory_menu_update(&game->game_ui.inventory_menu);
 
     if (game->game_ui.inventory_menu.active) {

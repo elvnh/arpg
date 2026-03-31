@@ -163,10 +163,10 @@ static void render_ui(Game *game, RenderBatches rbs, FrameInput *frame_input,
         debug_render_chunks(game, rbs.worldspace_ui_rb, frame_arena);
     }
 
-    Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
+    /* Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events); */
 
-    render_item_on_cursor(
-        &game->game_ui.inventory_menu, &game->world, rbs.overlay_rb, mouse_pos, frame_arena);
+    /* render_item_on_cursor( */
+    /*     &game->game_ui.inventory_menu, &game->world, rbs.overlay_rb, mouse_pos, frame_arena); */
 }
 
 static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,

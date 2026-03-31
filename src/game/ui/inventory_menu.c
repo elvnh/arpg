@@ -47,6 +47,7 @@ typedef struct {
     World *world;
     InventoryMenu *inventory_menu;
     Inventory *inventory;
+    Vector2 mouse_pos;
 } InventoryHookContext;
 
 typedef enum {
@@ -159,6 +160,87 @@ static void render_inventory_items(
     }
 }
 
+static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *inventory,
+    InventoryStorable *item, Vector2 mouse_pos, EntitySystem *es, RenderBatch *rb,
+    LinearArena *arena)
+{
+    Vector2i item_grid_pos = get_cursor_item_grid_coords(inv_menu, item, mouse_pos);
+    Vector2i item_grid_size = item->inventory_grid_size;
+
+    Vector2i clamped_item_grid_pos = {
+        MAX(item_grid_pos.x, 0),
+        MAX(item_grid_pos.y, 0),
+    };
+
+    Vector2i clamp_pos_diff = v2i_sub(clamped_item_grid_pos, item_grid_pos);
+
+    Vector2i clamped_item_grid_size = {
+        MIN(item_grid_size.x, INVENTORY_GRID_CELL_COUNTS.x - item_grid_pos.x)
+            - clamp_pos_diff.x,
+        MIN(item_grid_size.y, INVENTORY_GRID_CELL_COUNTS.y - item_grid_pos.y)
+            - clamp_pos_diff.y,
+    };
+
+    b32 item_is_inside_inventory =
+        (clamped_item_grid_size.x > 0) && (clamped_item_grid_size.y > 0);
+
+    if (item_is_inside_inventory) {
+        b32 can_place_item =
+            can_place_item_in_inventory_at(es, inventory, item, item_grid_pos);
+
+        RGBA32 bg_color = {0};
+        if (can_place_item) {
+            bg_color = VALID_ITEM_BG_COLOR;
+        } else {
+            bg_color = INVALID_ITEM_BG_COLOR;
+        }
+
+        Vector2 bg_screen_size = inventory_grid_to_screen_vector(clamped_item_grid_size);
+        Vector2 bg_screen_pos = inventory_grid_to_screen_coords(
+            clamped_item_grid_pos, inv_menu->inventory_grid_rect);
+        Rectangle bg_rect = {bg_screen_pos, bg_screen_size};
+
+        draw_rectangle(rb, arena, bg_rect, bg_color, shader_handle(SHAPE_SHADER),
+            (RenderLayer)CURSOR_ITEM_BACKGROUND_LAYER);
+    }
+}
+
+void render_item_on_cursor(InventoryMenu *inv_menu, World *world, RenderBatch *rb,
+    Vector2 mouse_pos, LinearArena *arena)
+{
+    if (entity_id_is_null(inv_menu->item_on_cursor)) {
+        return;
+    }
+
+    Entity *player = world_get_player_entity(world);
+    Inventory *inventory = es_get_component(player, Inventory);
+
+    Entity *item_entity = es_get_entity(&world->entity_system, inv_menu->item_on_cursor);
+    InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
+
+    // TODO: remove
+    item->inventory_grid_size = v2i(3, 3);
+
+    Vector2 item_size_px = inventory_grid_to_screen_vector(item->inventory_grid_size);
+    Vector2 item_top_left = v2_sub(mouse_pos, v2_div_s(item_size_px, 2.0f));
+
+    SpriteComponent *sprite = es_try_get_component(item_entity, SpriteComponent);
+    ASSERT(sprite);
+
+    if (inv_menu->can_interact_with_inventory) {
+        render_cursor_item_background(
+            inv_menu, inventory, item, mouse_pos, &world->entity_system, rb, arena);
+    }
+
+    if (sprite) {
+        Rectangle item_sprite_rect = {item_top_left, item_size_px};
+
+        draw_sprite(rb, arena, sprite->sprite.texture, item_sprite_rect,
+            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER),
+            (RenderLayer)CURSOR_ITEM_SPRITE_LAYER);
+    }
+}
+
 /* NOTE: This gets called after the inventory gets rendered. Read the comment at
  * the top of the file for an explanation of why this is necessary.
  *
@@ -190,6 +272,7 @@ static void inventory_grid_hook(
     // TODO: should these really be called from inside the hook?
     render_inventory_grid_overlay(context, rb, frame_arena);
     render_inventory_items(context, rb, frame_arena);
+    render_item_on_cursor(menu, context->world, rb, context->mouse_pos, frame_arena);
 }
 
 static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
@@ -203,11 +286,9 @@ static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
     EntityID hovered_item_id =
         try_get_inventory_item_at_position(es, inventory, mouse_grid_coords);
     Entity *grabbed_entity = es_try_get_entity(es, hovered_item_id);
+    InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
 
-    if (grabbed_entity) {
-        // TODO: allow calling es_try_get_component on null entity
-        InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
-
+    if (grabbed_item) {
 #if 1
         Command cmd = move_item_command(hovered_item_id,
             item_location_inventory(grabbed_item->inventory_grid_position),
@@ -221,8 +302,6 @@ static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
     }
 }
 
-// TODO: UI shouldn't directly alter world state, instead create some sort
-// of command buffer that gets executed when world is updated
 static void handle_inventory_dropping(InventoryMenu *inv_menu, EntitySystem *es,
     Vector2 mouse_pos, CommandQueue *commands, LinearArena *arena)
 {
@@ -361,6 +440,7 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
             context->world = world;
             context->inventory = inventory;
             context->inventory_menu = inv_menu;
+            context->mouse_pos = mouse_pos;
 
             ui_push_render_hook(ui, inventory_grid_hook, context);
 
@@ -380,85 +460,6 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
         ui_pop_menu(ui);
     }
     ui_pop_menu(ui);
-}
 
-static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *inventory,
-    InventoryStorable *item, Vector2 mouse_pos, EntitySystem *es, RenderBatch *rb,
-    LinearArena *arena)
-{
-    Vector2i item_grid_pos = get_cursor_item_grid_coords(inv_menu, item, mouse_pos);
-    Vector2i item_grid_size = item->inventory_grid_size;
 
-    Vector2i clamped_item_grid_pos = {
-        MAX(item_grid_pos.x, 0),
-        MAX(item_grid_pos.y, 0),
-    };
-
-    Vector2i clamp_pos_diff = v2i_sub(clamped_item_grid_pos, item_grid_pos);
-
-    Vector2i clamped_item_grid_size = {
-        MIN(item_grid_size.x, INVENTORY_GRID_CELL_COUNTS.x - item_grid_pos.x)
-            - clamp_pos_diff.x,
-        MIN(item_grid_size.y, INVENTORY_GRID_CELL_COUNTS.y - item_grid_pos.y)
-            - clamp_pos_diff.y,
-    };
-
-    b32 item_is_inside_inventory =
-        (clamped_item_grid_size.x > 0) && (clamped_item_grid_size.y > 0);
-
-    if (item_is_inside_inventory) {
-        b32 can_place_item =
-            can_place_item_in_inventory_at(es, inventory, item, item_grid_pos);
-
-        RGBA32 bg_color = {0};
-        if (can_place_item) {
-            bg_color = VALID_ITEM_BG_COLOR;
-        } else {
-            bg_color = INVALID_ITEM_BG_COLOR;
-        }
-
-        Vector2 bg_screen_size = inventory_grid_to_screen_vector(clamped_item_grid_size);
-        Vector2 bg_screen_pos = inventory_grid_to_screen_coords(
-            clamped_item_grid_pos, inv_menu->inventory_grid_rect);
-        Rectangle bg_rect = {bg_screen_pos, bg_screen_size};
-
-        draw_rectangle(rb, arena, bg_rect, bg_color, shader_handle(SHAPE_SHADER),
-            (RenderLayer)CURSOR_ITEM_BACKGROUND_LAYER);
-    }
-}
-
-void render_item_on_cursor(InventoryMenu *inv_menu, World *world, RenderBatch *rb,
-    Vector2 mouse_pos, LinearArena *arena)
-{
-    if (entity_id_is_null(inv_menu->item_on_cursor)) {
-        return;
-    }
-
-    Entity *player = world_get_player_entity(world);
-    Inventory *inventory = es_get_component(player, Inventory);
-
-    Entity *item_entity = es_get_entity(&world->entity_system, inv_menu->item_on_cursor);
-    InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
-
-    // TODO: remove
-    item->inventory_grid_size = v2i(3, 3);
-
-    Vector2 item_size_px = inventory_grid_to_screen_vector(item->inventory_grid_size);
-    Vector2 item_top_left = v2_sub(mouse_pos, v2_div_s(item_size_px, 2.0f));
-
-    SpriteComponent *sprite = es_try_get_component(item_entity, SpriteComponent);
-    ASSERT(sprite);
-
-    if (inv_menu->can_interact_with_inventory) {
-        render_cursor_item_background(
-            inv_menu, inventory, item, mouse_pos, &world->entity_system, rb, arena);
-    }
-
-    if (sprite) {
-        Rectangle item_sprite_rect = {item_top_left, item_size_px};
-
-        draw_sprite(rb, arena, sprite->sprite.texture, item_sprite_rect,
-            zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER),
-            (RenderLayer)CURSOR_ITEM_SPRITE_LAYER);
-    }
 }

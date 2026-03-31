@@ -33,12 +33,10 @@ typedef struct {
 void inventory_menu_update(InventoryMenu *inv_menu);
 void inventory_menu(struct UIState *ui, InventoryMenu *inv_menu, struct World *world,
     InputEvents *input, CommandQueue *commands, LinearArena *scratch);
+
+// TODO: once the equipment and inventory menu are unified, these don't need to be in header
 String get_item_name_widget_text(struct Entity *item_entity, struct LinearArena *arena);
 void item_hover_menu(struct UIState *ui, struct Entity *item, Vector2 mouse_position,
     struct LinearArena *arena);
-
-// TODO: should this be called from within inventory_menu?
-void render_item_on_cursor(InventoryMenu *inv_menu, struct World *world,
-    struct RenderBatch *rb, Vector2 mouse_pos, struct LinearArena *arena);
 
 #endif // INVENTORY_MENU_H

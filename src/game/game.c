@@ -39,7 +39,7 @@ static void set_global_state(Game *game)
     initialize_flipbook_animations();
 }
 
-static void process_input(World *world, FrameInput *frame_input, GameUIState *game_ui,
+static void process_input(World *world, FrameInput *frame_input, GameUI *game_ui,
     Camera active_camera, CommandQueue *commands, LinearArena *arena)
 {
     Entity *player = world_get_player_entity(world);

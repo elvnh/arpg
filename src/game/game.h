@@ -29,7 +29,7 @@ typedef struct Game {
     AssetTable asset_table;
     DebugState debug_state;
     RNGState rng_state;
-    GameUIState game_ui;
+    GameUI game_ui;
 } Game;
 
 typedef struct GameMemory {

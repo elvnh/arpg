@@ -11,8 +11,8 @@ typedef struct {
 } MoveItemToResult;
 
 MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocation source,
-    ItemLocation destination, EntitySystem *es, GameUIState *game_ui,
-    Inventory *player_inventory, Vector2 player_position)
+    ItemLocation destination, EntitySystem *es, GameUI *game_ui, Inventory *player_inventory,
+    Vector2 player_position)
 {
     MoveItemToResult result = {0};
 
@@ -57,7 +57,7 @@ MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocation sour
 }
 
 static void move_item_from_source(Entity *item_entity, ItemLocation source,
-    MoveItemToResult move_to_result, EntitySystem *es, GameUIState *game_ui,
+    MoveItemToResult move_to_result, EntitySystem *es, GameUI *game_ui,
     Inventory *player_inventory, Vector2 player_position)
 {
     InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
@@ -93,8 +93,7 @@ static void move_item_from_source(Entity *item_entity, ItemLocation source,
     }
 }
 
-static void execute_item_transaction(MoveItemCommand command, World *world,
-    GameUIState *game_ui)
+static void execute_item_transaction(MoveItemCommand command, World *world, GameUI *game_ui)
 {
     Entity *player = world_get_player_entity(world);
     PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
@@ -120,7 +119,7 @@ void push_command(CommandQueue *commands, Command command, LinearArena *arena)
     list_push_back(commands, command_node);
 }
 
-void execute_command_queue(CommandQueue *commands, World *world, GameUIState *game_ui)
+void execute_command_queue(CommandQueue *commands, World *world, GameUI *game_ui)
 {
     Command *current = list_head(commands);
 

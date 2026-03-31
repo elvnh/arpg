@@ -12,7 +12,7 @@ struct LinearArena;
 struct World;
 struct RenderBatch;
 
-typedef struct GameUIState {
+typedef struct GameUI {
     UIState backend_state;
 
     EntityID hovered_entity;
@@ -21,7 +21,7 @@ typedef struct GameUIState {
 
     ssize selected_spellbook_index;
 
-} GameUIState;
+} GameUI;
 
 void game_ui(struct Game *game, struct LinearArena *scratch, InputEvents *input,
     CommandQueue *commands);

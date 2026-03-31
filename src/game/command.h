@@ -12,7 +12,7 @@
  */
 
 struct World;
-struct GameUIState;
+struct GameUI;
 
 typedef enum {
     COMMAND_ATTACK,
@@ -67,7 +67,7 @@ typedef struct {
 
 void push_command(CommandQueue *commands, Command command, LinearArena *arena);
 void execute_command_queue(CommandQueue *commands, struct World *world,
-    struct GameUIState *game_ui);
+    struct GameUI *game_ui);
 
 static inline Command attack_command(Vector2 target)
 {

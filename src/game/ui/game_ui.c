@@ -21,7 +21,7 @@
 #include "world/world.h"
 
 // TODO: clean up this file
-static void spellbook_menu(GameUIState *ui_state, Game *game)
+static void spellbook_menu(GameUI *ui_state, Game *game)
 {
     UIState *ui = &ui_state->backend_state;
 
@@ -49,7 +49,7 @@ static void spellbook_menu(GameUIState *ui_state, Game *game)
     ui_pop_container(ui);
 }
 
-static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *equipment,
+static void equipment_slot_widget(GameUI *ui_state, Game *game, Equipment *equipment,
     Inventory *inventory, EquipmentSlot slot, InputEvents *input, LinearArena *scratch)
 {
     UIState *ui = &ui_state->backend_state;
@@ -75,7 +75,7 @@ static void equipment_slot_widget(GameUIState *ui_state, Game *game, Equipment *
     }
 }
 
-static void equipment_menu(GameUIState *ui_state, Game *game, LinearArena *scratch,
+static void equipment_menu(GameUI *ui_state, Game *game, LinearArena *scratch,
     InputEvents *input)
 {
     UIState *ui = &ui_state->backend_state;

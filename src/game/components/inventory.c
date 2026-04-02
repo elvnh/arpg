@@ -185,12 +185,15 @@ InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory 
     s32 max_x = INVENTORY_GRID_CELL_COUNTS.x - item->inventory_grid_size.x;
     s32 max_y = INVENTORY_GRID_CELL_COUNTS.y - item->inventory_grid_size.y;
 
-    for (s32 x = 0; x < max_x && !result.ok; ++x) {
-        for (s32 y = 0; y < max_y && !result.ok; ++y) {
+    for (s32 x = 0; x <= max_x && !result.ok; ++x) {
+        for (s32 y = 0; y <= max_y && !result.ok; ++y) {
             Vector2i coords = {x, y};
 
             result = can_place_item_in_inventory_at(es, inv, item, coords);
-            break;
+
+            if (result.ok) {
+                break;
+            }
         }
     }
 

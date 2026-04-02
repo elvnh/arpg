@@ -224,9 +224,6 @@ void render_item_on_cursor(InventoryMenu *inv_menu, World *world, RenderBatch *r
     Entity *item_entity = es_get_entity(&world->entity_system, inv_menu->item_on_cursor);
     InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
 
-    // TODO: remove
-    item->inventory_grid_size = v2i(3, 3);
-
     Vector2 item_size_px = inventory_grid_to_screen_vector(item->inventory_grid_size);
     Vector2 item_top_left = v2_sub(mouse_pos, v2_div_s(item_size_px, 2.0f));
 
@@ -354,9 +351,16 @@ static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
     InventoryStorable *grabbed_item = es_try_get_component(grabbed_entity, InventoryStorable);
 
     if (grabbed_item) {
-        Command cmd = move_item_command(hovered_item_id,
-            item_location_inventory(grabbed_item->inventory_grid_position),
-            item_location_cursor());
+        ItemLocation destination = {0};
+
+        if (true /*check_key_down(input, KEY_CTRL)*/) {
+            destination = item_location_any_equipment_slot();
+        } else {
+            destination = item_location_cursor();
+        }
+
+        ItemLocation source = item_location_inventory(grabbed_item->inventory_grid_position);
+        Command cmd = move_item_command(hovered_item_id, source, destination);
         push_command(commands, cmd, arena);
     }
 }

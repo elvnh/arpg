@@ -4,8 +4,12 @@
 #include "base/list.h"
 #include "base/utils.h"
 #include "components/equipment.h"
+#include "entity/entity_id.h"
 #include "ui/game_ui.h"
 #include "world/world.h"
+
+// TODO: rather than performing and then rolling back transaction,
+// check beforehand that the transaction passes and then commit it
 
 // TODO: move things related to item transactions to separate file
 typedef struct {
@@ -20,7 +24,7 @@ static MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocati
     MoveItemToResult result = {0};
 
     InventoryStorable *inv_item = es_get_component(item_entity, InventoryStorable);
-    Equippable        *equippable = es_try_get_component(item_entity, Equippable);
+    Equippable *equippable = es_try_get_component(item_entity, Equippable);
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (destination.kind) {
@@ -57,8 +61,14 @@ static MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocati
         case ITEM_LOCATION_EQUIP_SLOT: {
             if (equippable) {
                 // TODO: try to make inventory insertion as simple as this
-                EquipResult equip = try_equip_item_in_slot(es, player_equipment, equippable,
-                    destination.equipment_slot);
+                EquipResult equip = {0};
+
+                if (destination.equipment_slot_provided) {
+                    equip = try_equip_item_in_slot(es, player_equipment, equippable,
+                        destination.equipment_slot);
+                } else {
+                    equip = try_equip_item_in_any_slot(es, player_equipment, equippable);
+                }
 
                 result.ok = equip.ok;
                 result.source_item_replaced_with = equip.replaced_item;
@@ -74,8 +84,9 @@ static MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocati
 }
 
 static void move_item_from_source(Entity *item_entity, ItemLocation source,
-    MoveItemToResult move_to_result, EntitySystem *es, GameUI *game_ui,
-    Inventory *player_inventory, Equipment *player_equipment, Vector2 player_position)
+    ItemLocation destination, MoveItemToResult move_to_result, EntitySystem *es,
+    GameUI *game_ui, Inventory *player_inventory, Equipment *player_equipment,
+    Vector2 player_position)
 {
     ASSERT(move_to_result.ok);
 
@@ -110,8 +121,24 @@ static void move_item_from_source(Entity *item_entity, ItemLocation source,
         Entity *exchanged_item_entity =
             es_get_entity(es, move_to_result.source_item_replaced_with);
 
-        move_item_to_destination(exchanged_item_entity, item_location_null(), source, es,
-            game_ui, player_inventory, player_equipment, player_position);
+        ItemLocation new_destination = source;
+
+        if ((destination.kind == ITEM_LOCATION_EQUIP_SLOT)
+            && (source.kind == ITEM_LOCATION_INVENTORY)) {
+            // NOTE: If we eqiupped from inventory into first suitable equipment slot,
+            // when exchanging the items in inventory and equipment slot we don't want to
+            // reuse the same inventory coordinates, but instead place in first suitable
+            // inventory slot.
+            new_destination.inventory_coords_provided = false;
+        }
+
+        // NOTE: Exchanging the source item and item originally found in
+        // destination could fail, for example if we are equipping a small item
+        // from inventory, which causes a larger item to be unequipped, and that
+        // item doesn't fit.
+        // TODO: handle this
+        move_item_to_destination(exchanged_item_entity, item_location_null(), new_destination,
+            es, game_ui, player_inventory, player_equipment, player_position);
     }
 }
 
@@ -120,7 +147,7 @@ static void execute_item_transaction(MoveItemCommand command, World *world, Game
     Entity *player = world_get_player_entity(world);
     PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
     Inventory *player_inventory = es_get_component(player, Inventory);
-    Equipment        *player_equipment = es_get_component(player, Equipment);
+    Equipment *player_equipment = es_get_component(player, Equipment);
 
     Entity *item_entity = es_try_get_entity(&world->entity_system, command.item_id);
 
@@ -130,9 +157,9 @@ static void execute_item_transaction(MoveItemCommand command, World *world, Game
             player_equipment, player_physics->position);
 
         if (move_to_result.ok) {
-            move_item_from_source(item_entity, command.source, move_to_result,
-                &world->entity_system, game_ui, player_inventory, player_equipment,
-                player_physics->position);
+            move_item_from_source(item_entity, command.source, command.destination,
+                move_to_result, &world->entity_system, game_ui, player_inventory,
+                player_equipment, player_physics->position);
         }
     }
 }

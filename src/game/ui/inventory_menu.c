@@ -282,7 +282,8 @@ static void inventory_grid_hook(
 }
 
 static void render_equipment_slot_containers(UIState *ui, InventoryMenu *inv_menu,
-    World *world, Equipment *equipment, RenderBatch *rb, LinearArena *frame_arena)
+    World *world, Equipment *equipment, Vector2 mouse_pos, RenderBatch *rb,
+    LinearArena *frame_arena)
 {
     UIStyle style = ui_get_current_style(ui);
 
@@ -293,6 +294,19 @@ static void render_equipment_slot_containers(UIState *ui, InventoryMenu *inv_men
 
         draw_rectangle(rb, frame_arena, rect, slot_color, shader_handle(SHAPE_SHADER),
             (RenderLayer)INVENTORY_ITEM_BACKGROUND_LAYER);
+
+        if (rect_contains_point(rect, mouse_pos)
+            && !entity_id_is_null(inv_menu->item_on_cursor)) {
+            Entity *cursor_entity =
+                es_get_entity(&world->entity_system, inv_menu->item_on_cursor);
+            Equippable *cursor_equippable = es_try_get_component(cursor_entity, Equippable);
+
+            if (cursor_equippable
+                && can_equip_item_in_slot(equipment, cursor_equippable, slot).ok) {
+                draw_rectangle(rb, frame_arena, rect, style.accent_color,
+                    shader_handle(SHAPE_SHADER), (RenderLayer)INVENTORY_ITEM_BACKGROUND_LAYER);
+            }
+        }
 
         Entity *equipped_entity =
             get_equipped_item_in_slot(&world->entity_system, equipment, slot);
@@ -386,7 +400,7 @@ static void equipment_grid_hook(void *user_data, RenderBatch *rb, Widget *parent
         padding);
 
     render_equipment_slot_containers(context->ui, inv_menu, context->world, context->equipment,
-        rb, frame_arena);
+        context->mouse_pos, rb, frame_arena);
 }
 
 static String get_item_name_widget_text(Entity *item_entity, LinearArena *arena)

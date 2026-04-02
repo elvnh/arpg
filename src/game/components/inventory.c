@@ -230,21 +230,6 @@ void remove_item_from_inventory(
     item_to_remove->next_item_in_inventory = NULL_ENTITY_ID;
 }
 
-void drop_item_from_inventory_on_ground(
-    EntitySystem *es, Inventory *inv, InventoryStorable *item)
-{
-    ASSERT(inventory_contains_item(es, inv, item));
-    Entity *owner = es_get_component_owner(es, inv, Inventory);
-    PhysicsComponent *owner_physics = es_get_component(owner, PhysicsComponent);
-
-    Entity *item_entity = es_get_component_owner(es, item, InventoryStorable);
-    ASSERT(!es_has_component(item_entity, PhysicsComponent));
-
-    remove_item_from_inventory(es, inv, item);
-
-    world_drop_item_from_position(owner_physics->position, item_entity);
-}
-
 b32 inventory_contains_item(EntitySystem *es, Inventory *inventory, InventoryStorable *item)
 {
     // TODO: keep a ID from item to inventory, or in general from entity to it's parent
@@ -301,25 +286,6 @@ b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item
 
     b32 result = (item_grid_coords.x >= 0) && (item_right <= INVENTORY_GRID_CELL_COUNTS.x)
                  && (item_grid_coords.y >= 0) && (item_bottom <= INVENTORY_GRID_CELL_COUNTS.y);
-
-    return result;
-}
-
-b32 item_is_completely_outside_inventory_grid(Vector2i item_grid_coords,
-    Vector2i item_grid_size)
-{
-    s32 item_right = item_grid_coords.x + item_grid_size.x;
-    s32 item_bottom = item_grid_coords.y + item_grid_size.y;
-
-    b32 result = ((item_right < 0) || (item_grid_coords.x > INVENTORY_GRID_CELL_COUNTS.x))
-                 || ((item_bottom < 0) || (item_grid_coords.y > INVENTORY_GRID_CELL_COUNTS.y));
-
-    return result;
-}
-
-b32 cell_is_in_bounds_of_inventory_grid(Vector2i cell_coords)
-{
-    b32 result = item_is_in_bounds_of_inventory_grid(cell_coords, v2i(1, 1));
 
     return result;
 }

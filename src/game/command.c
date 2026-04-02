@@ -37,7 +37,7 @@ static MoveItemToResult can_move_item_to_destination(Entity *item_entity, ItemLo
             InventoryInsertion insertion = {0};
 
             if (destination.inventory_coords_provided) {
-                insertion = can_place_or_exchange_inventory_item(es, player_inventory,
+                insertion = can_place_or_exchange_inventory_item_at(es, player_inventory,
                     inv_item, destination.inventory_coords);
 
                 if (!insertion.ok && (source.kind != ITEM_LOCATION_CURSOR)) {

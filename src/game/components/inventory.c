@@ -338,7 +338,7 @@ b32 cell_is_in_bounds_of_inventory_grid(Vector2i cell_coords)
     return result;
 }
 
-InventoryInsertion can_place_or_exchange_inventory_item(struct EntitySystem *es,
+InventoryInsertion can_place_or_exchange_inventory_item_at(struct EntitySystem *es,
     Inventory *inventory, InventoryStorable *item, Vector2i grid_pos)
 {
     InventoryInsertion result = {0};
@@ -366,7 +366,7 @@ InventoryInsertion try_place_or_exchange_inventory_item(EntitySystem *es, Invent
     InventoryStorable *item, Vector2i grid_pos)
 {
     InventoryInsertion result =
-        can_place_or_exchange_inventory_item(es, inventory, item, grid_pos);
+        can_place_or_exchange_inventory_item_at(es, inventory, item, grid_pos);
 
     if (result.ok) {
         Entity *exchanged_entity = es_try_get_entity(es, result.exchanged_item);

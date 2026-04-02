@@ -4,7 +4,7 @@
 #include "base/vector.h"
 #include "entity/entity_id.h"
 
-#define INVENTORY_GRID_CELL_COUNTS (Vector2i){16, 8}
+#define INVENTORY_GRID_CELL_COUNTS (Vector2i){12, 6}
 
 struct EntitySystem;
 struct World;
@@ -27,40 +27,44 @@ typedef struct {
     Vector2i inventory_coords;
 } InventoryInsertion;
 
+// TODO: this shouldn't be exported
 void append_item_to_inventory_list(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item_to_add);
 
-// TODO: remove these try_add_* functions
-/* InventoryInsertion try_add_item_to_inventory_at(struct EntitySystem *es, Inventory *inv, */
-/*     InventoryStorable *item, Vector2i grid_position); */
-
-InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item);
-InventoryInsertion try_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item);
-
-void remove_item_from_inventory(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item_to_remove);
-void drop_item_from_inventory_on_ground(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item);
-
+/* Querying operations */
 b32 inventory_contains_item(struct EntitySystem *es, Inventory *inventory,
     InventoryStorable *item);
-
-InventoryInsertion try_place_or_exchange_inventory_item(struct EntitySystem *es,
+InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
+    InventoryStorable *item);
+InventoryInsertion can_place_item_in_inventory_at(struct EntitySystem *es, Inventory *inv,
+    InventoryStorable *item, Vector2i grid_position);
+InventoryInsertion can_place_or_exchange_inventory_item_at(struct EntitySystem *es,
     Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
-InventoryInsertion can_place_or_exchange_inventory_item(struct EntitySystem *es,
-    Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
-
 b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size);
 b32 item_is_completely_outside_inventory_grid(Vector2i item_grid_coords,
     Vector2i item_grid_size);
 b32 cell_is_in_bounds_of_inventory_grid(Vector2i cell_coords);
-
-InventoryInsertion can_place_item_in_inventory_at(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item, Vector2i grid_position);
 EntityID try_get_inventory_item_at_position(struct EntitySystem *es, Inventory *inv,
     Vector2i grid_position);
+
+static inline b32 inventory_is_empty(Inventory *inventory)
+{
+    b32 result = entity_id_is_null(inventory->first_item_in_inventory);
+    ASSERT((!result || entity_id_is_null(inventory->last_item_in_inventory))
+           && "Either both head and tail should be null, or neither should be");
+
+    return result;
+}
+
+/* Modifying operations */
+InventoryInsertion try_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
+    InventoryStorable *item);
+InventoryInsertion try_place_or_exchange_inventory_item(struct EntitySystem *es,
+    Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
+void remove_item_from_inventory(struct EntitySystem *es, Inventory *inv,
+    InventoryStorable *item_to_remove);
+void drop_item_from_inventory_on_ground(struct EntitySystem *es, Inventory *inv,
+    InventoryStorable *item);
 
 static inline void ensure_valid_item_grid_size(InventoryStorable *item)
 {
@@ -70,15 +74,6 @@ static inline void ensure_valid_item_grid_size(InventoryStorable *item)
     // Default to 1x1 item size if the component was zero initialized
     item->inventory_grid_size.x = MAX(1, item->inventory_grid_size.x);
     item->inventory_grid_size.y = MAX(1, item->inventory_grid_size.y);
-}
-
-static inline b32 inventory_is_empty(Inventory *inventory)
-{
-    b32 result = entity_id_is_null(inventory->first_item_in_inventory);
-    ASSERT((!result || entity_id_is_null(inventory->last_item_in_inventory))
-           && "Either both head and tail should be null, or neither should be");
-
-    return result;
 }
 
 #endif //INVENTORY_H

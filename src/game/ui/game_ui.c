@@ -83,7 +83,7 @@ void game_ui(Game *game, LinearArena *scratch, InputEvents *input, CommandQueue 
 
         /* equipment_menu(&game->game_ui, game, scratch, input); */
 
-        ui_core_same_line(ui);
+        ui_same_line(ui);
 
         spellbook_menu(&game->game_ui, game);
 

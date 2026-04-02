@@ -63,7 +63,7 @@ static void widget_frame_table_push(WidgetFrameTable *table, Widget *widget)
     sl_list_push_back_x(&table->entries[index], widget, next_in_hash);
 }
 
-void ui_core_initialize(UIState *ui, UIStyle default_style, LinearArena *arena)
+void ui_initialize(UIState *ui, UIStyle default_style, LinearArena *arena)
 {
     ui->previous_frame_widgets = widget_frame_table_create(arena);
     ui->current_frame_widgets = widget_frame_table_create(arena);
@@ -71,7 +71,7 @@ void ui_core_initialize(UIState *ui, UIStyle default_style, LinearArena *arena)
     ui->default_style = default_style;
 }
 
-void ui_core_begin_frame(UIState *ui)
+void ui_begin_frame(UIState *ui)
 {
     ASSERT(!ui->frame_started && "Tried to start UI frame without first ending it");
 
@@ -483,7 +483,7 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
     }
 }
 
-UIInteraction ui_core_end_layout(UIState *ui, FrameInput *frame_input, YDirection y_dir,
+UIInteraction ui_end_layout(UIState *ui, FrameInput *frame_input, YDirection y_dir,
     PlatformCode platform_code)
 {
     ASSERT(ui->frame_started && "Tried to end UI frame without first starting it");
@@ -534,7 +534,7 @@ UIInteraction ui_core_end_layout(UIState *ui, FrameInput *frame_input, YDirectio
     return result;
 }
 
-void ui_core_render(UIState *ui, FrameInput *frame_input, RenderBatch *rb)
+void ui_render(UIState *ui, FrameInput *frame_input, RenderBatch *rb)
 {
     Rectangle window_rect = {
         {0, 0},
@@ -560,7 +560,7 @@ void ui_core_render(UIState *ui, FrameInput *frame_input, RenderBatch *rb)
     }
 }
 
-Widget *ui_core_get_top_container(UIState *ui)
+Widget *ui_get_top_container(UIState *ui)
 {
     WidgetContainer *container = list_head(&ui->container_stack);
 
@@ -586,7 +586,7 @@ static void ui_core_push_widget(UIState *ui, Widget *widget, b32 floating)
             ui->root_widget = widget;
         }
 
-        Widget *top_container = ui_core_get_top_container(ui);
+        Widget *top_container = ui_get_top_container(ui);
 
         if (top_container) {
             widget_add_to_children(top_container, widget);
@@ -610,7 +610,7 @@ static void ui_core_push_widget(UIState *ui, Widget *widget, b32 floating)
 	}
 }
 
-Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floating)
+Widget *ui_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floating)
 {
     Widget *widget = la_allocate_item(get_frame_arena(ui), Widget);
     widget->id = id;
@@ -623,16 +623,16 @@ Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floati
     return widget;
 }
 
-Widget *ui_core_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id, b32 floating)
+Widget *ui_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id, b32 floating)
 {
-    Widget *widget = ui_core_create_widget(ui, size, id, floating);
+    Widget *widget = ui_create_widget(ui, size, id, floating);
     widget_add_flag(widget, WIDGET_COLORED);
     widget->color = color;
 
     return widget;
 }
 
-void ui_core_push_container(UIState *ui, Widget *widget)
+void ui_push_container(UIState *ui, Widget *widget)
 {
     WidgetContainer *container = la_allocate_item(get_frame_arena(ui), WidgetContainer);
     container->widget = widget;
@@ -640,13 +640,13 @@ void ui_core_push_container(UIState *ui, Widget *widget)
     sl_list_push_front(&ui->container_stack, container);
 }
 
-void ui_core_pop_container(UIState *ui)
+void ui_pop_container(UIState *ui)
 {
     ASSERT(!list_is_empty(&ui->container_stack));
     sl_list_pop(&ui->container_stack);
 }
 
-WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widget)
+WidgetInteraction ui_get_widget_interaction(UIState *ui, const Widget *widget)
 {
     WidgetInteraction result = {0};
     Widget *found = widget_frame_table_find(&ui->previous_frame_widgets, widget->id);
@@ -658,12 +658,12 @@ WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widg
     return result;
 }
 
-void ui_core_same_line(UIState *ui)
+void ui_same_line(UIState *ui)
 {
     ui->current_layout_axis = UI_LAYOUT_HORIZONTAL;
 }
 
-WidgetID ui_core_hash_string(String text)
+WidgetID ui_create_id(String text)
 {
     WidgetID result = hash_string(text);
     ASSERT(result != UI_NULL_WIDGET_ID);
@@ -672,7 +672,7 @@ WidgetID ui_core_hash_string(String text)
 }
 
 // TODO: instead use a stack of alignments
-void ui_core_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis)
+void ui_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis)
 {
     ui->current_alignment[axis] = alignment;
 }

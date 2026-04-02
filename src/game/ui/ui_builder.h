@@ -14,15 +14,10 @@ void ui_end_list(UIState *ui);
 WidgetInteraction ui_selectable(UIState *ui, String text);
 void ui_begin_mouse_menu(UIState *ui, Vector2 mouse_pos);
 void ui_end_mouse_menu(UIState *ui);
-
-void ui_begin_container(UIState *ui, Vector2 size,
-    UISizeKind size_kind, f32 child_padding);
-void ui_pop_container(UIState *ui);
-
-WidgetInteraction ui_begin_menu(UIState *ui, Vector2 size, String name,
-    UISizeKind size_kind, f32 child_padding);
+void ui_begin_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 child_padding);
+WidgetInteraction ui_begin_menu(UIState *ui, Vector2 size, String name, UISizeKind size_kind,
+    f32 child_padding);
 void ui_pop_menu(UIState *ui);
-
 void ui_push_render_hook(UIState *ui, UIRenderHook hook, void *user_data);
 
 #endif //UI_BUILDER_H

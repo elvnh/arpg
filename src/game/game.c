@@ -139,10 +139,10 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
 static void render_ui(Game *game, RenderBatches rbs, FrameInput *frame_input,
     LinearArena *frame_arena)
 {
-    ui_core_render(&game->game_ui.backend_state, frame_input, rbs.overlay_rb);
+    ui_render(&game->game_ui.backend_state, frame_input, rbs.overlay_rb);
 
     if (game->debug_state.debug_menu_active) {
-        ui_core_render(&game->debug_state.debug_ui, frame_input, rbs.overlay_rb);
+        ui_render(&game->debug_state.debug_ui, frame_input, rbs.overlay_rb);
     }
 
     if (game->debug_state.quad_tree_overlay) {
@@ -169,7 +169,7 @@ static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,
     FrameInput *frame_input, CommandQueue *commands, LinearArena *scratch,
     PlatformCode platform_code)
 {
-    ui_core_begin_frame(ui);
+    ui_begin_frame(ui);
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (overlay) {
@@ -185,7 +185,7 @@ static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,
     }
     END_EXHAUSTIVE_SWITCH;
 
-    ui_core_end_layout(ui, frame_input, Y_IS_DOWN, platform_code);
+    ui_end_layout(ui, frame_input, Y_IS_DOWN, platform_code);
 }
 
 static void update_ui(Game *game, FrameInput *frame_input, CommandQueue *commands,
@@ -321,8 +321,8 @@ void game_initialize(Game *game, GameMemory *game_memory)
 	default_ui_style.text_color = RGBA32_WHITE;
 
     // Debug UI
-    ui_core_initialize(
-        &game->debug_state.debug_ui, default_ui_style, &game_memory->permanent_memory);
-    ui_core_initialize(
-        &game->game_ui.backend_state, default_ui_style, &game_memory->permanent_memory);
+    ui_initialize(&game->debug_state.debug_ui, default_ui_style,
+        &game_memory->permanent_memory);
+    ui_initialize(&game->game_ui.backend_state, default_ui_style,
+        &game_memory->permanent_memory);
 }

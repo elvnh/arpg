@@ -88,21 +88,20 @@ typedef struct UIState {
 
 // TODO: floatign shouldn't be a bool parameter
 
-void ui_core_initialize(UIState *ui, UIStyle default_style, LinearArena *arena);
-void ui_core_begin_frame(UIState *ui);
-UIInteraction ui_core_end_layout(UIState *ui, struct FrameInput *frame_data, YDirection y_dir,
+void ui_initialize(UIState *ui, UIStyle default_style, LinearArena *arena);
+void ui_begin_frame(UIState *ui);
+UIInteraction ui_end_layout(UIState *ui, struct FrameInput *frame_data, YDirection y_dir,
     PlatformCode platform_code);
-void ui_core_render(UIState *ui, FrameInput *frame_input, struct RenderBatch *rb);
-void ui_core_push_container(UIState *ui, Widget *widget);
-void ui_core_pop_container(UIState *ui);
-Widget *ui_core_get_top_container(UIState *ui);
-Widget *ui_core_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floating);
-Widget *ui_core_colored_box(
-    UIState *ui, Vector2 size, RGBA32 color, WidgetID id, b32 floating);
-WidgetInteraction ui_core_get_widget_interaction(UIState *ui, const Widget *widget);
-void ui_core_same_line(UIState *ui);
-WidgetID ui_core_hash_string(String text);
-void ui_core_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis);
+void ui_render(UIState *ui, FrameInput *frame_input, struct RenderBatch *rb);
+void ui_push_container(UIState *ui, Widget *widget);
+void ui_pop_container(UIState *ui);
+Widget *ui_get_top_container(UIState *ui);
+Widget *ui_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floating);
+Widget *ui_colored_box(UIState *ui, Vector2 size, RGBA32 color, WidgetID id, b32 floating);
+WidgetInteraction ui_get_widget_interaction(UIState *ui, const Widget *widget);
+void ui_same_line(UIState *ui);
+WidgetID ui_create_id(String text);
+void ui_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis);
 
 UIStyle ui_default_style(UIState *ui);
 UIStyle ui_get_current_style(UIState *ui);

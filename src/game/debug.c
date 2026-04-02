@@ -115,7 +115,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
         }
     } ui_pop_container(ui);
 
-    ui_core_same_line(ui);
+    ui_same_line(ui);
 
     ui_begin_menu(ui, V2_ZERO, str("components"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
     {

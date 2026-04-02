@@ -9,7 +9,7 @@
 
 static Widget *ui_internal_text(UIState *ui, String text, Vector2 offset)
 {
-    Widget *widget = ui_core_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID, false);
+    Widget *widget = ui_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID, false);
 
     widget_add_flag(widget, WIDGET_TEXT);
 
@@ -33,7 +33,7 @@ static Widget *ui_create_non_interactible_button(UIState *ui, String text, Widge
 {
     // TODO: allow changing size
 	UIStyle style = ui_get_current_style(ui);
-    Widget *widget = ui_core_colored_box(ui, v2(0, 32.0f), style.accent_color, id, false);
+    Widget *widget = ui_colored_box(ui, v2(0, 32.0f), style.accent_color, id, false);
 
     widget->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
     widget->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_ABSOLUTE;
@@ -41,16 +41,16 @@ static Widget *ui_create_non_interactible_button(UIState *ui, String text, Widge
     widget->child_alignment[AXIS_VERTICAL] = UI_ALIGN_CENTER;
     widget->child_padding = 8.0f;
 
-    ui_core_push_container(ui, widget);
+    ui_push_container(ui, widget);
     ui_internal_text(ui, text, V2_ZERO);
-    ui_core_pop_container(ui);
+    ui_pop_container(ui);
 
     return widget;
 }
 
 WidgetInteraction ui_button(UIState *ui, String text)
 {
-    Widget *widget = ui_create_non_interactible_button(ui, text, ui_core_hash_string(text));
+    Widget *widget = ui_create_non_interactible_button(ui, text, ui_create_id(text));
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_HOT_COLOR);
     widget_add_flag(widget, WIDGET_ACTIVE_COLOR);
@@ -59,7 +59,7 @@ WidgetInteraction ui_button(UIState *ui, String text)
 	widget->hot_color = style.hot_color;
 	widget->active_color = style.active_color;
 
-    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
+    WidgetInteraction prev_interaction = ui_get_widget_interaction(ui, widget);
     return prev_interaction;
 }
 
@@ -67,7 +67,7 @@ WidgetInteraction ui_non_interactible_button(UIState *ui, String text)
 {
     Widget *widget = ui_create_non_interactible_button(ui, text, UI_NULL_WIDGET_ID);
 
-    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
+    WidgetInteraction prev_interaction = ui_get_widget_interaction(ui, widget);
     return prev_interaction;
 }
 
@@ -78,8 +78,8 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 
 	UIStyle style = ui_get_current_style(ui);
 
-    Widget *widget =
-        ui_core_colored_box(ui, v2(12, 12), style.background_shadow_color, ui_core_hash_string(text), false);
+    Widget *widget = ui_colored_box(ui, v2(12, 12), style.background_shadow_color,
+        ui_create_id(text), false);
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_HOT_COLOR);
 
@@ -88,10 +88,10 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 
     widget->child_padding = 2.0f;
 
-    ui_core_push_container(ui, widget);
+    ui_push_container(ui, widget);
 
     Widget *child_box =
-        ui_core_colored_box(ui, v2(1.0f, 1.0f), style.accent_color, UI_NULL_WIDGET_ID, false);
+        ui_colored_box(ui, v2(1.0f, 1.0f), style.accent_color, UI_NULL_WIDGET_ID, false);
     child_box->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
     child_box->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
 
@@ -101,10 +101,10 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
         widget_add_flag(child_box, WIDGET_HIDDEN);
     }
 
-    ui_core_same_line(ui);
+    ui_same_line(ui);
     ui_text(ui, text);
 
-    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
+    WidgetInteraction prev_interaction = ui_get_widget_interaction(ui, widget);
 
     if (prev_interaction.clicked) {
         *b = !(*b);
@@ -115,7 +115,7 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
 
 void ui_spacing(UIState *ui, f32 amount)
 {
-    Widget *widget = ui_core_create_widget(ui, v2(amount, amount), UI_NULL_WIDGET_ID, false);
+    Widget *widget = ui_create_widget(ui, v2(amount, amount), UI_NULL_WIDGET_ID, false);
     widget_add_flag(widget, WIDGET_HIDDEN);
 
     if (widget->layout_direction == UI_LAYOUT_VERTICAL) {
@@ -129,7 +129,8 @@ void ui_textbox(UIState *ui, StringBuilder *sb)
 {
 	UIStyle style = ui_get_current_style(ui);
 
-    Widget *widget = ui_core_colored_box(ui, v2(128, 32), style.background_shadow_color, (u64)sb, false);
+    Widget *widget =
+        ui_colored_box(ui, v2(128, 32), style.background_shadow_color, (u64)sb, false);
     widget->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_ABSOLUTE;
     widget->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
 
@@ -139,39 +140,39 @@ void ui_textbox(UIState *ui, StringBuilder *sb)
 
     widget->text_input_buffer = sb;
 
-    ui_core_push_container(ui, widget);
+    ui_push_container(ui, widget);
     ui_internal_text(ui, sb->buffer, V2_ZERO);
-    ui_core_pop_container(ui);
+    ui_pop_container(ui);
 }
 
 void ui_begin_list(UIState *ui, String name)
 {
 	UIStyle style = ui_get_current_style(ui);
 
-    Widget *container =
-        ui_core_colored_box(ui, v2(256, 256), style.background_shadow_color, ui_core_hash_string(name), false);
+    Widget *container = ui_colored_box(ui, v2(256, 256), style.background_shadow_color,
+        ui_create_id(name), false);
     widget_set_semantic_sizes(container, UI_SIZE_KIND_ABSOLUTE);
 
-    ui_core_push_container(ui, container);
+    ui_push_container(ui, container);
 }
 
 void ui_end_list(UIState *ui)
 {
-    ui_core_pop_container(ui);
+    ui_pop_container(ui);
 }
 
 WidgetInteraction ui_selectable(UIState *ui, String text)
 {
-    Widget *list_widget = ui_core_get_top_container(ui);
+    Widget *list_widget = ui_get_top_container(ui);
     ASSERT(list_widget);
 
     // NOTE: the hash of the selectable is a combination of the hash of the
     // list that contains it and the text of the selectable
-    u64 hash = list_widget->id ^ ui_core_hash_string(text);
+    u64 hash = list_widget->id ^ ui_create_id(text);
 
-	UIStyle style = ui_get_current_style(ui);
+    UIStyle style = ui_get_current_style(ui);
 
-    Widget *selectable = ui_core_colored_box(ui, v2(1.0f, 0.0f), style.accent_color, hash, false);
+    Widget *selectable = ui_colored_box(ui, v2(1.0f, 0.0f), style.accent_color, hash, false);
     selectable->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_PERCENT_OF_PARENT;
     selectable->semantic_size[AXIS_VERTICAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
 
@@ -182,26 +183,26 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
 	selectable->hot_color = style.hot_color;
 	selectable->active_color = style.active_color;
 
-    ui_core_push_container(ui, selectable);
+    ui_push_container(ui, selectable);
     ui_text(ui, text);
-    ui_core_pop_container(ui);
+    ui_pop_container(ui);
 
-    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, selectable);
+    WidgetInteraction prev_interaction = ui_get_widget_interaction(ui, selectable);
     return prev_interaction;
 }
 
 Widget *ui_create_container(UIState *ui, Vector2 size,
 	UISizeKind size_kind, f32 child_padding, WidgetID id, RGBA32 color)
 {
-    Widget *widget = ui_core_colored_box(ui, size, color, id, false);
+    Widget *widget = ui_colored_box(ui, size, color, id, false);
 
     widget->child_padding = child_padding;
     widget->semantic_size[AXIS_HORIZONTAL].kind = size_kind;
     widget->semantic_size[AXIS_VERTICAL].kind = size_kind;
 
-    ui_core_push_container(ui, widget);
+    ui_push_container(ui, widget);
 
-	return widget;
+    return widget;
 }
 
 void ui_begin_container(UIState *ui, Vector2 size,
@@ -210,26 +211,21 @@ void ui_begin_container(UIState *ui, Vector2 size,
 	ui_create_container(ui, size, size_kind, child_padding, UI_NULL_WIDGET_ID, RGBA32_TRANSPARENT);
 }
 
-void ui_pop_container(UIState *ui)
-{
-    ui_core_pop_container(ui);
-}
-
 WidgetInteraction ui_begin_menu(UIState *ui, Vector2 size, String name,
     UISizeKind size_kind, f32 child_padding)
 {
 	UIStyle style = ui_get_current_style(ui);
 
-	Widget *widget = ui_create_container(ui, size, size_kind, child_padding,
-		ui_core_hash_string(name), style.background_color);
+    Widget *widget = ui_create_container(ui, size, size_kind, child_padding,
+        ui_create_id(name), style.background_color);
 
-    WidgetInteraction prev_interaction = ui_core_get_widget_interaction(ui, widget);
+    WidgetInteraction prev_interaction = ui_get_widget_interaction(ui, widget);
     return prev_interaction;
 }
 
 void ui_pop_menu(UIState *ui)
 {
-    ui_core_pop_container(ui);
+    ui_pop_container(ui);
 }
 
 void ui_begin_mouse_menu(UIState *ui, Vector2 mouse_pos)
@@ -237,13 +233,14 @@ void ui_begin_mouse_menu(UIState *ui, Vector2 mouse_pos)
     // NOTE: null id because the container itself can't be interacted with
 	UIStyle style = ui_get_current_style(ui);
 
-    Widget *container = ui_core_colored_box(ui, V2_ZERO, style.context_menu_color, UI_NULL_WIDGET_ID, true);
+    Widget *container =
+        ui_colored_box(ui, V2_ZERO, style.context_menu_color, UI_NULL_WIDGET_ID, true);
 
     container->final_position = v2_add(mouse_pos, v2(10, 0));
 
     widget_set_semantic_sizes(container, UI_SIZE_KIND_SUM_OF_CHILDREN);
 
-    ui_core_push_container(ui, container);
+    ui_push_container(ui, container);
 }
 
 void ui_end_mouse_menu(UIState *ui)
@@ -251,12 +248,12 @@ void ui_end_mouse_menu(UIState *ui)
     ASSERT(!list_is_empty(&ui->floating_widgets)
            && "Only use this function for ending floating containers");
     // TODO: this function is unneccessary
-    ui_core_pop_container(ui);
+    ui_pop_container(ui);
 }
 
 void ui_push_render_hook(UIState *ui, UIRenderHook hook, void *user_data)
 {
-    Widget *widget = ui_core_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID, false);
+    Widget *widget = ui_create_widget(ui, V2_ZERO, UI_NULL_WIDGET_ID, false);
     widget_add_flag(widget, WIDGET_RENDER_HOOK);
 
     widget->render_hook = hook;

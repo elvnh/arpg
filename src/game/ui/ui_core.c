@@ -73,6 +73,10 @@ void ui_core_initialize(UIState *ui, UIStyle default_style, LinearArena *arena)
 
 void ui_core_begin_frame(UIState *ui)
 {
+    ASSERT(!ui->frame_started && "Tried to start UI frame without first ending it");
+
+    ui->frame_started = true;
+
     {
         WidgetFrameTable tmp = ui->previous_frame_widgets;
         ui->previous_frame_widgets = ui->current_frame_widgets;
@@ -482,6 +486,9 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
 UIInteraction ui_core_end_layout(UIState *ui, FrameInput *frame_input, YDirection y_dir,
     PlatformCode platform_code)
 {
+    ASSERT(ui->frame_started && "Tried to end UI frame without first starting it");
+    ui->frame_started = false;
+
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
 	ASSERT(!ui->style_stack && "Style stack should be empty at end of frame");
@@ -568,6 +575,8 @@ Widget *ui_core_get_top_container(UIState *ui)
 // TODO: floating should either not be a parameter or at least not a bool
 static void ui_core_push_widget(UIState *ui, Widget *widget, b32 floating)
 {
+    ASSERT(ui->frame_started && "Tried to push widget without starting frame");
+
     widget_frame_table_push(&ui->current_frame_widgets, widget);
 
     if (!floating) {

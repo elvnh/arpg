@@ -80,6 +80,8 @@ typedef struct UIState {
     Widget *root_widget;
 
     WidgetList floating_widgets;
+
+    b32 frame_started;
 } UIState;
 
 // TODO: remove ui_core_ prefixes?

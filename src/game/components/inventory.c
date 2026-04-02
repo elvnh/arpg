@@ -328,8 +328,7 @@ InventoryInsertion can_place_or_exchange_inventory_item_at(struct EntitySystem *
     Inventory *inventory, InventoryStorable *item, Vector2i grid_pos)
 {
     InventoryInsertion result = {0};
-    b32 in_bounds = item_is_in_bounds_of_inventory_grid(item->inventory_grid_position,
-        item->inventory_grid_size);
+    b32 in_bounds = item_is_in_bounds_of_inventory_grid(grid_pos, item->inventory_grid_size);
 
     if (in_bounds) {
         InventoryCollision collision =

@@ -78,6 +78,7 @@ EquipResult try_equip_item_in_slot(struct EntitySystem *es, Equipment *equipment
     return result;
 }
 
+// TODO: remove these?
 b32 try_equip_item_from_inventory(
     EntitySystem *es, Equipment *equipment, Inventory *inventory, InventoryStorable *item)
 {
@@ -97,7 +98,7 @@ b32 try_equip_item_from_inventory(
                 InventoryStorable *replaced_item =
                     es_get_component(replaced_item_entity, InventoryStorable);
 
-                try_add_item_to_inventory(es, inventory, replaced_item);
+                add_item_to_inventory(es, inventory, replaced_item);
             }
 
             remove_item_from_inventory(es, inventory, item);

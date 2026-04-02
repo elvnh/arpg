@@ -4,6 +4,7 @@
 #include "base/list.h"
 #include "base/utils.h"
 #include "components/equipment.h"
+#include "components/inventory.h"
 #include "entity/entity_id.h"
 #include "ui/game_ui.h"
 #include "world/world.h"
@@ -38,6 +39,13 @@ static MoveItemToResult can_move_item_to_destination(Entity *item_entity, ItemLo
             if (destination.inventory_coords_provided) {
                 insertion = can_place_or_exchange_inventory_item(es, player_inventory,
                     inv_item, destination.inventory_coords);
+
+                if (!insertion.ok && (source.kind != ITEM_LOCATION_CURSOR)) {
+                    // NOTE: As long as we're not moving item from cursor, we want to
+                    // first try inserting at exact position and then at the first available
+                    // position
+                    insertion = can_add_item_to_inventory(es, player_inventory, inv_item);
+                }
             } else {
                 insertion = can_add_item_to_inventory(es, player_inventory, inv_item);
             }

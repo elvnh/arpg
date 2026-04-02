@@ -20,7 +20,7 @@ typedef struct {
 
 static MoveItemToResult can_move_item_to_destination(Entity *item_entity, ItemLocation source,
     ItemLocation destination, EntitySystem *es, GameUI *game_ui, Inventory *player_inventory,
-    Equipment *player_equipment, Vector2 player_position)
+    Equipment *player_equipment)
 {
     MoveItemToResult result = {0};
 
@@ -65,10 +65,10 @@ static MoveItemToResult can_move_item_to_destination(Entity *item_entity, ItemLo
                 EquipResult equip = {0};
 
                 if (destination.equipment_slot_provided) {
-                    equip = can_equip_item_in_slot(es, player_equipment, equippable,
+                    equip = can_equip_item_in_slot(player_equipment, equippable,
                         destination.equipment_slot);
                 } else {
-                    equip = can_equip_item_in_any_slot(es, player_equipment, equippable);
+                    equip = can_equip_item_in_any_slot(player_equipment, equippable);
                 }
 
                 result.ok = equip.ok;
@@ -84,14 +84,11 @@ static MoveItemToResult can_move_item_to_destination(Entity *item_entity, ItemLo
     return result;
 }
 
-static b32 can_move_item_from_source(Entity *item_entity, ItemLocation source,
-    ItemLocation destination, MoveItemToResult move_to_result, EntitySystem *es,
-    GameUI *game_ui, Inventory *player_inventory, Equipment *player_equipment,
-    Vector2 player_position)
+static b32 can_move_item_from_source(ItemLocation source, MoveItemToResult move_to_result,
+    EntitySystem *es, GameUI *game_ui, Inventory *player_inventory,
+    Equipment *player_equipment)
 {
     ASSERT(move_to_result.ok);
-
-    InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
 
     // NOTE: Moving item from a location can only fail if the exchange with the
     // item currently at that location fails
@@ -107,9 +104,8 @@ static b32 can_move_item_from_source(Entity *item_entity, ItemLocation source,
         // destination could fail, for example if we are equipping a small item
         // from inventory, which causes a larger item to be unequipped, and that
         // item doesn't fit in inventory.
-        MoveItemToResult exchange =
-            can_move_item_to_destination(exchanged_item_entity, item_location_null(), source,
-                es, game_ui, player_inventory, player_equipment, player_position);
+        MoveItemToResult exchange = can_move_item_to_destination(exchanged_item_entity,
+            item_location_null(), source, es, game_ui, player_inventory, player_equipment);
 
         result = exchange.ok;
     }
@@ -117,8 +113,8 @@ static b32 can_move_item_from_source(Entity *item_entity, ItemLocation source,
     return result;
 }
 
-static void move_item_to_destination(Entity *item_entity, ItemLocation source,
-    ItemLocation destination, EntitySystem *es, GameUI *game_ui, Inventory *player_inventory,
+static void move_item_to_destination(Entity *item_entity, ItemLocation destination,
+    EntitySystem *es, GameUI *game_ui, Inventory *player_inventory,
     Equipment *player_equipment, Vector2 player_position)
 {
     InventoryStorable *inv_item = es_get_component(item_entity, InventoryStorable);
@@ -191,7 +187,7 @@ static void move_item_from_source(Entity *item_entity, ItemLocation source,
         } break;
 
         case ITEM_LOCATION_EQUIP_SLOT: {
-            unequip_item_in_slot(es, player_equipment, source.equipment_slot);
+            unequip_item_in_slot(player_equipment, source.equipment_slot);
         } break;
 
             INVALID_CASE(ITEM_LOCATION_NULL);
@@ -216,8 +212,8 @@ static void move_item_from_source(Entity *item_entity, ItemLocation source,
             new_destination.inventory_coords_provided = false;
         }
 
-        move_item_to_destination(exchanged_item_entity, item_location_null(), new_destination,
-            es, game_ui, player_inventory, player_equipment, player_position);
+        move_item_to_destination(exchanged_item_entity, new_destination, es, game_ui,
+            player_inventory, player_equipment, player_position);
     }
 }
 
@@ -231,19 +227,17 @@ static void execute_item_transaction(MoveItemCommand command, World *world, Game
     Entity *item_entity = es_try_get_entity(&world->entity_system, command.item_id);
 
     if (item_entity) {
-        MoveItemToResult move_to_result = can_move_item_to_destination(item_entity,
-            command.source, command.destination, &world->entity_system, game_ui,
-            player_inventory, player_equipment, player_physics->position);
+        MoveItemToResult move_to_result =
+            can_move_item_to_destination(item_entity, command.source, command.destination,
+                &world->entity_system, game_ui, player_inventory, player_equipment);
 
         b32 success = move_to_result.ok
-                      && can_move_item_from_source(item_entity, command.source,
-                          command.destination, move_to_result, &world->entity_system, game_ui,
-                          player_inventory, player_equipment, player_physics->position);
+                      && can_move_item_from_source(command.source, move_to_result,
+                          &world->entity_system, game_ui, player_inventory, player_equipment);
 
         if (success) {
-            move_item_to_destination(item_entity, command.source, command.destination,
-                &world->entity_system, game_ui, player_inventory, player_equipment,
-                player_physics->position);
+            move_item_to_destination(item_entity, command.destination, &world->entity_system,
+                game_ui, player_inventory, player_equipment, player_physics->position);
 
             move_item_from_source(item_entity, command.source, command.destination,
                 move_to_result, &world->entity_system, game_ui, player_inventory,

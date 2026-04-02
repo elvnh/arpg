@@ -282,8 +282,7 @@ static void inventory_grid_hook(
 }
 
 static void render_equipment_slot_containers(UIState *ui, InventoryMenu *inv_menu,
-    World *world, Equipment *equipment, RenderBatch *rb, Vector2 mouse_pos,
-    LinearArena *frame_arena)
+    World *world, Equipment *equipment, RenderBatch *rb, LinearArena *frame_arena)
 {
     UIStyle style = ui_get_current_style(ui);
 
@@ -387,7 +386,7 @@ static void equipment_grid_hook(void *user_data, RenderBatch *rb, Widget *parent
         padding);
 
     render_equipment_slot_containers(context->ui, inv_menu, context->world, context->equipment,
-        rb, context->mouse_pos, frame_arena);
+        rb, frame_arena);
 }
 
 static String get_item_name_widget_text(Entity *item_entity, LinearArena *arena)
@@ -447,19 +446,19 @@ static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
     Entity *grabbed_entity = es_try_get_entity(&world->entity_system, grabbed_entity_id);
 
     EntityID moved_item = {0};
-    ItemLocation source = {0};
-    ItemLocation destination = {0};
+    ItemLocation item_source = {0};
+    ItemLocation item_dest = {0};
 
     if (grabbed_entity) {
         InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
 
         moved_item = grabbed_entity_id;
-        source = item_location_inventory(grabbed_item->inventory_grid_position);
+        item_source = item_location_inventory(grabbed_item->inventory_grid_position);
 
         if (check_key_down(input, KEY_LEFT_CONTROL)) {
-            destination = item_location_any_equipment_slot();
+            item_dest = item_location_any_equipment_slot();
         } else {
-            destination = item_location_cursor();
+            item_dest = item_location_cursor();
         }
     } else {
         Entity *cursor_entity =
@@ -473,18 +472,18 @@ static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
                 get_cursor_item_grid_coords(inv_menu, cursor_item, mouse_pos);
 
             moved_item = inv_menu->item_on_cursor;
-            source = item_location_cursor();
-            destination = item_location_inventory(destination_grid_pos);
+            item_source = item_location_cursor();
+            item_dest = item_location_inventory(destination_grid_pos);
         }
     }
 
-    Command command = move_item_command(moved_item, source, destination);
+    Command command = move_item_command(moved_item, item_source, item_dest);
     push_command(commands, command, arena);
 }
 
-static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *inventory,
-    Equipment *equipment, World *world, Vector2 mouse_pos, CommandQueue *commands,
-    InputEvents *input, LinearArena *arena)
+static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Equipment *equipment,
+    World *world, Vector2 mouse_pos, CommandQueue *commands, InputEvents *input,
+    LinearArena *arena)
 {
     ASSERT(inv_menu->can_interact_with_inventory);
 
@@ -493,29 +492,28 @@ static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
 
         if (rect_contains_point(rect, mouse_pos)) {
             EntityID moved_item = {0};
-            ItemLocation source = {0};
-            ItemLocation destination = {0};
+            ItemLocation item_source = {0};
+            ItemLocation item_dest = {0};
 
-            EntityID equipped_item_id =
-                get_equipped_item_id_in_slot(&world->entity_system, equipment, slot);
+            EntityID equipped_item_id = get_equipped_item_id_in_slot(equipment, slot);
             Entity *equipped_item = es_try_get_entity(&world->entity_system, equipped_item_id);
 
             if (equipped_item) {
                 moved_item = equipped_item_id;
-                source = item_location_equipment_slot(slot);
+                item_source = item_location_equipment_slot(slot);
 
                 if (check_key_down(input, KEY_LEFT_CONTROL)) {
-                    destination = item_location_any_inventory_slot();
+                    item_dest = item_location_any_inventory_slot();
                 } else {
-                    destination = item_location_cursor();
+                    item_dest = item_location_cursor();
                 }
             } else {
                 moved_item = inv_menu->item_on_cursor;
-                source = item_location_cursor();
-                destination = item_location_equipment_slot(slot);
+                item_source = item_location_cursor();
+                item_dest = item_location_equipment_slot(slot);
             }
 
-            Command command = move_item_command(moved_item, source, destination);
+            Command command = move_item_command(moved_item, item_source, item_dest);
             push_command(commands, command, arena);
 
             break;
@@ -524,8 +522,7 @@ static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
 }
 
 static void render_equipment_item_hover_menu(UIState *ui, InventoryMenu *inv_menu,
-    Inventory *inventory, Equipment *equipment, World *world, Vector2 mouse_pos,
-    LinearArena *arena)
+    Equipment *equipment, World *world, Vector2 mouse_pos, LinearArena *arena)
 {
     ASSERT(inv_menu->can_interact_with_inventory);
 
@@ -609,12 +606,12 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
             ui_push_render_hook(ui, equipment_grid_hook, hook_context);
 
             if (inv_menu->can_interact_with_inventory) {
-                render_equipment_item_hover_menu(ui, inv_menu, inventory, equipment, world,
-                    mouse_pos, scratch);
+                render_equipment_item_hover_menu(ui, inv_menu, equipment, world, mouse_pos,
+                    scratch);
 
                 if (check_key_pressed(input, MOUSE_LEFT)) {
-                    handle_equipment_drag_and_drop(inv_menu, inventory, equipment, world,
-                        mouse_pos, commands, input, scratch);
+                    handle_equipment_drag_and_drop(inv_menu, equipment, world, mouse_pos,
+                        commands, input, scratch);
                 }
             }
         }

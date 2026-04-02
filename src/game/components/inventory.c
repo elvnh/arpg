@@ -189,16 +189,13 @@ InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory 
     return result;
 }
 
-InventoryInsertion try_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
+void add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item)
 {
     InventoryInsertion result = can_add_item_to_inventory(es, inv, item);
+    ASSERT(result.ok);
 
-    if (result.ok) {
-        add_item_to_inventory_at(es, inv, item, result.inventory_coords);
-    }
-
-    return result;
+    add_item_to_inventory_at(es, inv, item, result.inventory_coords);
 }
 
 void remove_item_from_inventory(
@@ -351,23 +348,22 @@ InventoryInsertion can_place_or_exchange_inventory_item_at(struct EntitySystem *
     return result;
 }
 
-InventoryInsertion try_place_or_exchange_inventory_item(EntitySystem *es, Inventory *inventory,
+InventoryInsertion place_or_exchange_inventory_item_at(EntitySystem *es, Inventory *inventory,
     InventoryStorable *item, Vector2i grid_pos)
 {
     InventoryInsertion result =
         can_place_or_exchange_inventory_item_at(es, inventory, item, grid_pos);
+    ASSERT(result.ok);
 
-    if (result.ok) {
-        Entity *exchanged_entity = es_try_get_entity(es, result.exchanged_item);
+    Entity *exchanged_entity = es_try_get_entity(es, result.exchanged_item);
 
-        if (exchanged_entity) {
-            InventoryStorable *exchanged_item =
-                es_get_component(exchanged_entity, InventoryStorable);
-            remove_item_from_inventory(es, inventory, exchanged_item);
-        }
-
-        add_item_to_inventory_at(es, inventory, item, grid_pos);
+    if (exchanged_entity) {
+        InventoryStorable *exchanged_item =
+            es_get_component(exchanged_entity, InventoryStorable);
+        remove_item_from_inventory(es, inventory, exchanged_item);
     }
+
+    add_item_to_inventory_at(es, inventory, item, grid_pos);
 
     return result;
 }

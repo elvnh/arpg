@@ -55,9 +55,9 @@ static inline b32 inventory_is_empty(Inventory *inventory)
 }
 
 /* Modifying operations */
-InventoryInsertion try_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
+void add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item);
-InventoryInsertion try_place_or_exchange_inventory_item(struct EntitySystem *es,
+InventoryInsertion place_or_exchange_inventory_item_at(struct EntitySystem *es,
     Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
 void remove_item_from_inventory(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item_to_remove);

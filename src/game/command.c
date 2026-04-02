@@ -132,10 +132,10 @@ static void move_item_to_destination(Entity *item_entity, ItemLocation source,
 
         case ITEM_LOCATION_INVENTORY: {
             if (destination.inventory_coords_provided) {
-                try_place_or_exchange_inventory_item(es, player_inventory, inv_item,
+                place_or_exchange_inventory_item_at(es, player_inventory, inv_item,
                     destination.inventory_coords);
             } else {
-                try_add_item_to_inventory(es, player_inventory, inv_item);
+                add_item_to_inventory(es, player_inventory, inv_item);
             }
         } break;
 

@@ -303,6 +303,85 @@ static void render_equipment_slot_containers(UIState *ui, InventoryMenu *inv_men
                 zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER),
                 (RenderLayer)INVENTORY_ITEM_SPRITE_LAYER);
         }
+
+        draw_text(rb, frame_arena, equipment_slot_to_string(slot),
+            v2_add(rect.position, v2_div_s(rect.size, 2)), RGBA32_WHITE, 14,
+            shader_handle(TEXTURE_SHADER), font_handle(DEFAULT_FONT),
+            (RenderLayer)(INVENTORY_ITEM_SPRITE_LAYER + 1));
+    }
+}
+
+static void set_equipment_slot_rectangles(InventoryMenu *inv_menu, Vector2 base,
+    Vector2 menu_size, f32 pad)
+{
+    // TODO: this is all very bad, handle the layout in a better way
+    f32 base_slot_size = 80.0f;
+
+    // clang-format off
+    Vector2 slot_sizes[] = {
+        [EQUIP_SLOT_HEAD] = {base_slot_size, base_slot_size},
+        [EQUIP_SLOT_GLOVES] = {base_slot_size, base_slot_size},
+        [EQUIP_SLOT_WEAPON] = {base_slot_size, base_slot_size * 2.0f},
+        [EQUIP_SLOT_BODY] = {base_slot_size, base_slot_size * 2.0f},
+        [EQUIP_SLOT_LEGS] = {base_slot_size, base_slot_size * 2.0f},
+        [EQUIP_SLOT_FEET] = {base_slot_size, base_slot_size},
+        [EQUIP_SLOT_NECK] = {base_slot_size / 2.0f, base_slot_size / 2.0f},
+        [EQUIP_SLOT_LEFT_FINGER] = {base_slot_size / 2.0f, base_slot_size / 2.0f},
+        [EQUIP_SLOT_RIGHT_FINGER] = {base_slot_size / 2.0f, base_slot_size / 2.0f},
+    };
+    // clang-format on
+
+    Vector2 slot_locations[EQUIP_SLOT_COUNT] = {0};
+
+    f32 center_x = menu_size.x / 2.0f + pad - base_slot_size / 2.0f;
+
+    slot_locations[EQUIP_SLOT_HEAD] = v2(center_x, pad);
+
+    slot_locations[EQUIP_SLOT_BODY] =
+        v2(center_x, slot_locations[EQUIP_SLOT_HEAD].y + slot_sizes[EQUIP_SLOT_HEAD].y + pad);
+
+    slot_locations[EQUIP_SLOT_NECK] =
+        v2(slot_locations[EQUIP_SLOT_BODY].x + slot_sizes[EQUIP_SLOT_BODY].x + pad,
+            slot_locations[EQUIP_SLOT_BODY].y + pad);
+
+    slot_locations[EQUIP_SLOT_LEFT_FINGER] = v2(slot_locations[EQUIP_SLOT_NECK].x,
+        slot_locations[EQUIP_SLOT_NECK].y + slot_sizes[EQUIP_SLOT_NECK].y + pad);
+
+    slot_locations[EQUIP_SLOT_RIGHT_FINGER] = v2(
+        slot_locations[EQUIP_SLOT_LEFT_FINGER].x + slot_sizes[EQUIP_SLOT_LEFT_FINGER].x + pad,
+        slot_locations[EQUIP_SLOT_LEFT_FINGER].y);
+
+    slot_locations[EQUIP_SLOT_LEGS] =
+        v2(center_x, slot_locations[EQUIP_SLOT_BODY].y + slot_sizes[EQUIP_SLOT_BODY].y + pad);
+
+    slot_locations[EQUIP_SLOT_FEET] =
+        v2(slot_locations[EQUIP_SLOT_LEGS].x + slot_sizes[EQUIP_SLOT_LEGS].x + pad,
+            slot_locations[EQUIP_SLOT_LEGS].y + slot_sizes[EQUIP_SLOT_LEGS].y / 2.0f);
+
+    slot_locations[EQUIP_SLOT_WEAPON] = v2(center_x - slot_sizes[EQUIP_SLOT_WEAPON].x - pad,
+        slot_locations[EQUIP_SLOT_BODY].y);
+
+    slot_locations[EQUIP_SLOT_GLOVES] =
+        v2(slot_locations[EQUIP_SLOT_LEGS].x - slot_sizes[EQUIP_SLOT_GLOVES].x - pad,
+            slot_locations[EQUIP_SLOT_FEET].y);
+
+    /* STATIC_ASSERT(ARRAY_COUNT(slot_sizes) == (ssize)EQUIP_SLOT_COUNT); */
+    /* STATIC_ASSERT(ARRAY_COUNT(slot_locations) == (ssize)EQUIP_SLOT_COUNT); */
+
+    /* for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) { */
+    /*     f32 size = 64.0f; */
+
+    /*     equipment_slot_sizes[slot] = v2_from_scalar(size); */
+    /*     equipment_slot_base_locations[slot] = v2(0, (f32)slot * (size + padding)); */
+    /* } */
+
+    for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+        ASSERT(!v2_eq(slot_sizes[slot], V2_ZERO))
+
+        inv_menu->equipment_slot_rects[slot].position =
+            v2_add(base, v2_add(slot_locations[slot], v2_from_scalar(0.0f)));
+
+        inv_menu->equipment_slot_rects[slot].size = slot_sizes[slot];
     }
 }
 
@@ -312,26 +391,9 @@ static void equipment_grid_hook(void *user_data, RenderBatch *rb, Widget *parent
     InventoryHookContext *context = user_data;
     InventoryMenu *inv_menu = context->inventory_menu;
 
-    f32 pad = parent->child_padding;
-    Vector2 base = v2_add(parent->final_position, v2_from_scalar(pad));
-
-    // TODO: don't do it like this
-    Vector2 equipment_slot_base_locations[EQUIP_SLOT_COUNT];
-    Vector2 equipment_slot_sizes[EQUIP_SLOT_COUNT];
-
-    for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-        f32 size = 64.0f;
-
-        equipment_slot_sizes[slot] = v2_from_scalar(size);
-        equipment_slot_base_locations[slot] = v2(0, (f32)slot * (size + pad));
-    }
-
-    for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-        inv_menu->equipment_slot_rects[slot].position =
-            v2_add(base, equipment_slot_base_locations[slot]);
-
-        inv_menu->equipment_slot_rects[slot].size = equipment_slot_sizes[slot];
-    }
+    f32 padding = parent->child_padding;
+    set_equipment_slot_rectangles(inv_menu, parent->final_position, parent->final_size,
+        padding);
 
     render_equipment_slot_containers(context->ui, inv_menu, context->world, context->equipment,
         rb, context->mouse_pos, frame_arena);

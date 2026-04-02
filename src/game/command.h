@@ -144,6 +144,7 @@ static inline ItemLocation item_location_equipment_slot(EquipmentSlot slot)
     ItemLocation result = {0};
     result.kind = ITEM_LOCATION_EQUIP_SLOT;
     result.equipment_slot = slot;
+    result.equipment_slot_provided = true;
 
     return result;
 }

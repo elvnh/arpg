@@ -51,7 +51,7 @@
 #    define ALIGNAS_T(t)            __attribute__((aligned((ALIGNOF(t)))))
 #    define TYPEOF(e)               __typeof__(e)
 #    define TYPES_EQUAL(t, u)       __builtin_types_compatible_p(t, u)
-#    define STATIC_ASSERT(e)        ((e) ? 0 : static_assert_fail())
+#    define STATIC_ASSERT(e)        (void)((e) ? 0 : static_assert_fail())
 #    define STATIC_ASSERT_ATTRIBUTE __attribute__((error("Static assertion failed")))
 #    define FILE_NAME               __FILE__
 #    define LINE                    __LINE__

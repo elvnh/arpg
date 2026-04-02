@@ -36,8 +36,6 @@ b32 inventory_contains_item(struct EntitySystem *es, Inventory *inventory,
     InventoryStorable *item);
 InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item);
-InventoryInsertion can_place_item_in_inventory_at(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item, Vector2i grid_position);
 InventoryInsertion can_place_or_exchange_inventory_item_at(struct EntitySystem *es,
     Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
 b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size);

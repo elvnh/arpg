@@ -191,8 +191,9 @@ static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *in
         (clamped_item_grid_size.x > 0) && (clamped_item_grid_size.y > 0);
 
     if (item_is_inside_inventory) {
-        b32 can_place_item =
-            can_place_item_in_inventory_at(es, inventory, item, item_grid_pos).ok;
+        InventoryInsertion insertion =
+            can_place_or_exchange_inventory_item_at(es, inventory, item, item_grid_pos);
+        b32 can_place_item = insertion.ok && entity_id_is_null(insertion.exchanged_item);
 
         RGBA32 bg_color = {0};
         if (can_place_item) {

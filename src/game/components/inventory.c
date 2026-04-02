@@ -132,7 +132,7 @@ static InventoryCollision count_inventory_item_collisions(
     return result;
 }
 
-InventoryInsertion can_place_item_in_inventory_at(EntitySystem *es, Inventory *inv,
+InventoryInsertion can_add_item_to_inventory_at(EntitySystem *es, Inventory *inv,
     InventoryStorable *item, Vector2i grid_position)
 {
     InventoryInsertion result = {0};
@@ -148,10 +148,12 @@ InventoryInsertion can_place_item_in_inventory_at(EntitySystem *es, Inventory *i
     return result;
 }
 
-InventoryInsertion try_add_item_to_inventory_at(EntitySystem *es, Inventory *inv,
-    InventoryStorable *item, Vector2i grid_position)
+static void add_item_to_inventory_at(EntitySystem *es, Inventory *inv, InventoryStorable *item,
+    Vector2i grid_position)
 {
     ASSERT(!inventory_contains_item(es, inv, item));
+    ASSERT(can_add_item_to_inventory_at(es, inv, item, grid_position).ok);
+
     ensure_valid_item_grid_size(item);
 
     ASSERT(grid_position.x >= 0);
@@ -159,21 +161,8 @@ InventoryInsertion try_add_item_to_inventory_at(EntitySystem *es, Inventory *inv
     ASSERT(grid_position.y >= 0);
     ASSERT((grid_position.y + item->inventory_grid_size.y) <= INVENTORY_GRID_CELL_COUNTS.y);
 
-    InventoryInsertion result = can_place_item_in_inventory_at(es, inv, item, grid_position);
-
-    if (result.ok) {
-        item->inventory_grid_position = result.inventory_coords;
-        append_item_to_inventory_list(es, inv, item);
-    }
-
-    return result;
-}
-
-static void add_item_to_inventory_at(
-    EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_position)
-{
-    b32 added = try_add_item_to_inventory_at(es, inv, item, grid_position).ok;
-    ASSERT(added);
+    item->inventory_grid_position = grid_position;
+    append_item_to_inventory_list(es, inv, item);
 }
 
 InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
@@ -189,7 +178,7 @@ InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory 
         for (s32 y = 0; y <= max_y && !result.ok; ++y) {
             Vector2i coords = {x, y};
 
-            result = can_place_item_in_inventory_at(es, inv, item, coords);
+            result = can_add_item_to_inventory_at(es, inv, item, coords);
 
             if (result.ok) {
                 break;

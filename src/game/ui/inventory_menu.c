@@ -390,61 +390,6 @@ static void equipment_grid_hook(void *user_data, RenderBatch *rb, Widget *parent
         rb, context->mouse_pos, frame_arena);
 }
 
-static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
-    Inventory *inventory, Vector2 mouse_pos, CommandQueue *commands, InputEvents *input,
-    LinearArena *arena)
-{
-    ASSERT(entity_id_is_null(inv_menu->item_on_cursor));
-
-    Vector2i mouse_grid_coords = screen_to_inventory_grid_coords(
-        mouse_pos, inv_menu->inventory_grid_rect, GRID_COORD_TRUNCATE);
-
-    EntityID hovered_item_id =
-        try_get_inventory_item_at_position(es, inventory, mouse_grid_coords);
-    Entity *grabbed_entity = es_try_get_entity(es, hovered_item_id);
-    InventoryStorable *grabbed_item = es_try_get_component(grabbed_entity, InventoryStorable);
-
-    if (grabbed_item) {
-        ItemLocation destination = {0};
-
-        if (check_key_down(input, KEY_LEFT_CONTROL)) {
-            destination = item_location_any_equipment_slot();
-        } else {
-            destination = item_location_cursor();
-        }
-
-        ItemLocation source = item_location_inventory(grabbed_item->inventory_grid_position);
-        Command cmd = move_item_command(hovered_item_id, source, destination);
-        push_command(commands, cmd, arena);
-    }
-}
-
-static void handle_inventory_dropping(InventoryMenu *inv_menu, EntitySystem *es,
-    Vector2 mouse_pos, CommandQueue *commands, LinearArena *arena)
-{
-    ASSERT(!entity_id_is_null(inv_menu->item_on_cursor));
-
-    if (inv_menu->can_interact_with_inventory) {
-        Entity *cursor_item_entity = es_get_entity(es, inv_menu->item_on_cursor);
-        InventoryStorable *cursor_item =
-            es_get_component(cursor_item_entity, InventoryStorable);
-
-        ASSERT(inv_menu->active);
-
-        Vector2i item_grid_coords =
-            get_cursor_item_grid_coords(inv_menu, cursor_item, mouse_pos);
-
-        b32 in_bounds = item_is_in_bounds_of_inventory_grid(
-            item_grid_coords, cursor_item->inventory_grid_size);
-
-        if (in_bounds) {
-            Command cmd = move_item_command(inv_menu->item_on_cursor, item_location_cursor(),
-                item_location_inventory(item_grid_coords));
-            push_command(commands, cmd, arena);
-        }
-    }
-}
-
 static String get_item_name_widget_text(Entity *item_entity, LinearArena *arena)
 {
     String result = {0};
@@ -488,20 +433,53 @@ static void item_hover_menu(UIState *ui, Entity *item, Vector2 mouse_position,
     ui_end_mouse_menu(ui);
 }
 
-// TODO: clean up these paramters
 static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Inventory *inventory,
     World *world, Vector2 mouse_pos, CommandQueue *commands, InputEvents *input,
     LinearArena *arena)
 {
     ASSERT(inv_menu->can_interact_with_inventory);
 
-    if (entity_id_is_null(inv_menu->item_on_cursor)
-        && rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)) {
-        handle_inventory_dragging(inv_menu, &world->entity_system, inventory, mouse_pos,
-            commands, input, arena);
-    } else if (!entity_id_is_null(inv_menu->item_on_cursor)) {
-        handle_inventory_dropping(inv_menu, &world->entity_system, mouse_pos, commands, arena);
+    Vector2i mouse_grid_pos = screen_to_inventory_grid_coords(mouse_pos,
+        inv_menu->inventory_grid_rect, GRID_COORD_TRUNCATE);
+
+    EntityID grabbed_entity_id =
+        try_get_inventory_item_at_position(&world->entity_system, inventory, mouse_grid_pos);
+    Entity *grabbed_entity = es_try_get_entity(&world->entity_system, grabbed_entity_id);
+
+    EntityID moved_item = {0};
+    ItemLocation source = {0};
+    ItemLocation destination = {0};
+
+    if (grabbed_entity) {
+        InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
+
+        moved_item = grabbed_entity_id;
+        source = item_location_inventory(grabbed_item->inventory_grid_position);
+
+        if (check_key_down(input, KEY_LEFT_CONTROL)) {
+            destination = item_location_any_equipment_slot();
+        } else {
+            destination = item_location_cursor();
+        }
+    } else {
+        Entity *cursor_entity =
+            es_try_get_entity(&world->entity_system, inv_menu->item_on_cursor);
+
+        if (cursor_entity) {
+            InventoryStorable *cursor_item =
+                es_get_component(cursor_entity, InventoryStorable);
+
+            Vector2i destination_grid_pos =
+                get_cursor_item_grid_coords(inv_menu, cursor_item, mouse_pos);
+
+            moved_item = inv_menu->item_on_cursor;
+            source = item_location_cursor();
+            destination = item_location_inventory(destination_grid_pos);
+        }
     }
+
+    Command command = move_item_command(moved_item, source, destination);
+    push_command(commands, command, arena);
 }
 
 static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *inventory,

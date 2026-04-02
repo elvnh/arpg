@@ -48,9 +48,11 @@ enum {
 };
 
 typedef struct {
+    UIState *ui;
     World *world;
     InventoryMenu *inventory_menu;
     Inventory *inventory;
+    Equipment *equipment;
     Vector2 mouse_pos;
 } InventoryHookContext;
 
@@ -281,14 +283,29 @@ static void inventory_grid_hook(
     render_item_on_cursor(menu, context->world, rb, context->mouse_pos, frame_arena);
 }
 
-static void render_equipment_slot_containers(InventoryMenu *inv_menu, World *world,
-    RenderBatch *rb, Vector2 mouse_pos, LinearArena *frame_arena)
+static void render_equipment_slot_containers(UIState *ui, InventoryMenu *inv_menu,
+    World *world, Equipment *equipment, RenderBatch *rb, Vector2 mouse_pos,
+    LinearArena *frame_arena)
 {
+    UIStyle style = ui_get_current_style(ui);
+
+    RGBA32 slot_color = style.background_shadow_color;
+
     for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
         Rectangle rect = inv_menu->equipment_slot_rects[slot];
 
-        draw_rectangle(rb, frame_arena, rect, RGBA32_BLUE, shader_handle(SHAPE_SHADER),
+        draw_rectangle(rb, frame_arena, rect, slot_color, shader_handle(SHAPE_SHADER),
             (RenderLayer)INVENTORY_ITEM_BACKGROUND_LAYER);
+
+        Entity *equipped_entity =
+            get_equipped_item_in_slot(&world->entity_system, equipment, slot);
+        SpriteComponent *sprite = es_try_get_component(equipped_entity, SpriteComponent);
+
+        if (sprite) {
+            draw_sprite(rb, frame_arena, sprite->sprite.texture, rect,
+                zero_struct(SpriteModifiers), shader_handle(TEXTURE_SHADER),
+                (RenderLayer)INVENTORY_ITEM_SPRITE_LAYER);
+        }
     }
 }
 
@@ -296,14 +313,15 @@ static void equipment_grid_hook(void *user_data, RenderBatch *rb, Widget *parent
     LinearArena *frame_arena)
 {
     InventoryHookContext *context = user_data;
-    InventoryMenu        *inv_menu = context->inventory_menu;
+    InventoryMenu *inv_menu = context->inventory_menu;
 
-    f32     pad = parent->child_padding;
+    f32 pad = parent->child_padding;
     Vector2 base = v2_add(parent->final_position, v2_from_scalar(pad));
 
     // TODO: don't do it like this
     Vector2 equipment_slot_base_locations[EQUIP_SLOT_COUNT];
     Vector2 equipment_slot_sizes[EQUIP_SLOT_COUNT];
+
     for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
         f32 size = 64.0f;
 
@@ -314,11 +332,12 @@ static void equipment_grid_hook(void *user_data, RenderBatch *rb, Widget *parent
     for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
         inv_menu->equipment_slot_rects[slot].position =
             v2_add(base, equipment_slot_base_locations[slot]);
+
         inv_menu->equipment_slot_rects[slot].size = equipment_slot_sizes[slot];
     }
 
-    render_equipment_slot_containers(inv_menu, context->world, rb, context->mouse_pos,
-        frame_arena);
+    render_equipment_slot_containers(context->ui, inv_menu, context->world, context->equipment,
+        rb, context->mouse_pos, frame_arena);
 }
 
 static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
@@ -335,16 +354,10 @@ static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
     InventoryStorable *grabbed_item = es_try_get_component(grabbed_entity, InventoryStorable);
 
     if (grabbed_item) {
-#if 1
         Command cmd = move_item_command(hovered_item_id,
             item_location_inventory(grabbed_item->inventory_grid_position),
             item_location_cursor());
         push_command(commands, cmd, arena);
-#else
-        Equipment *player_equipment = es_get_component(player, Equipment);
-
-        try_equip_item_from_inventory(es, player_equipment, inventory, grabbed_item);
-#endif
     }
 }
 
@@ -510,19 +523,21 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
     // TODO: calculate this based on equipment slot sizes
     Vector2 equipment_menu_size = {512, 512};
 
+    InventoryHookContext *hook_context = la_allocate_item(scratch, InventoryHookContext);
+    hook_context->ui = ui;
+    hook_context->world = world;
+    hook_context->inventory = inventory;
+    hook_context->equipment = equipment;
+    hook_context->inventory_menu = inv_menu;
+    hook_context->mouse_pos = mouse_pos;
+
     ui_begin_menu(ui, V2_ZERO, str("inv_and_eq_container"), UI_SIZE_KIND_SUM_OF_CHILDREN,
         8.0f);
     {
         ui_begin_menu(ui, equipment_menu_size, str("equipment_menu"), UI_SIZE_KIND_ABSOLUTE,
             8.0f);
         {
-            InventoryHookContext *context = la_allocate_item(scratch, InventoryHookContext);
-            context->world = world;
-            context->inventory = inventory;
-            context->inventory_menu = inv_menu;
-            context->mouse_pos = mouse_pos;
-
-            ui_push_render_hook(ui, equipment_grid_hook, context);
+            ui_push_render_hook(ui, equipment_grid_hook, hook_context);
 
             if (inv_menu->can_interact_with_inventory) {
                 if (check_key_pressed(input, MOUSE_LEFT)) {
@@ -540,14 +555,7 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
             ui_begin_menu(ui, INVENTORY_GRID_UI_SIZE, str("inventory_grid"),
                 UI_SIZE_KIND_ABSOLUTE, 8.0f);
             {
-                InventoryHookContext *context =
-                    la_allocate_item(scratch, InventoryHookContext);
-                context->world = world;
-                context->inventory = inventory;
-                context->inventory_menu = inv_menu;
-                context->mouse_pos = mouse_pos;
-
-                ui_push_render_hook(ui, inventory_grid_hook, context);
+                ui_push_render_hook(ui, inventory_grid_hook, hook_context);
 
                 if (inv_menu->can_interact_with_inventory) {
                     render_inventory_item_hover_menu(ui, inv_menu, inventory, world, mouse_pos,

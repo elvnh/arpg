@@ -71,7 +71,7 @@ static void process_input(World *world, FrameInput *frame_input, GameUI *game_ui
     b32 item_on_cursor = !entity_id_is_null(game_ui->inventory_menu.item_on_cursor);
 
     if (item_on_cursor && key_pressed) {
-        Command cmd = move_item_command(game_ui->inventory_menu.item_on_cursor,
+        Command cmd = item_transaction_command(game_ui->inventory_menu.item_on_cursor,
             item_location_cursor(), item_location_world());
 
         push_command(commands, cmd, arena);
@@ -87,11 +87,11 @@ static void process_input(World *world, FrameInput *frame_input, GameUI *game_ui
 
         if (game_ui->inventory_menu.active) {
             // If inventory is open, move item to cursor
-            cmd = move_item_command(game_ui->hovered_entity, item_location_world(),
+            cmd = item_transaction_command(game_ui->hovered_entity, item_location_world(),
                 item_location_cursor());
         } else {
             // Otherwise try to pick up in any available inventory slot
-            cmd = move_item_command(game_ui->hovered_entity, item_location_world(),
+            cmd = item_transaction_command(game_ui->hovered_entity, item_location_world(),
                 item_location_any_inventory_slot());
         }
 

@@ -5,6 +5,7 @@
 #include "base/vector.h"
 #include "components/equipment.h"
 #include "game/entity/entity_id.h"
+#include "item_transaction.h"
 
 /* A Command represents an action that the player wishes to perform, such as
  * attacking in a certain direction. Other parts of the game merely need to
@@ -18,37 +19,16 @@ struct GameUI;
 typedef enum {
     COMMAND_ATTACK,
     COMMAND_WALK,
-    COMMAND_MOVE_ITEM,
+    COMMAND_ITEM_TRANSACTION,
 } CommandKind;
 
 typedef struct {
     Vector2 target;
 } AttackCommand;
 
-typedef enum {
-    ITEM_LOCATION_NULL,
-    ITEM_LOCATION_WORLD,
-    ITEM_LOCATION_INVENTORY,
-    ITEM_LOCATION_CURSOR,
-    ITEM_LOCATION_EQUIP_SLOT,
-} ItemLocationKind;
-
 typedef struct {
-    ItemLocationKind kind;
-
-    // TODO: put these in a union
-    Vector2i inventory_coords;
-    b32 inventory_coords_provided;
-
-    EquipmentSlot equipment_slot;
-    b32 equipment_slot_provided;
-} ItemLocation;
-
-typedef struct {
-    EntityID item_id;
-    ItemLocation source;
-    ItemLocation destination;
-} MoveItemCommand; // TODO: rename to itemtransaction
+    ItemTransaction transaction;
+} ItemTransactionCommand;
 
 typedef struct {
     Vector2 direction;
@@ -60,7 +40,7 @@ typedef struct Command {
     union {
         AttackCommand attack;
         MoveCommand move;
-        MoveItemCommand move_item;
+        ItemTransactionCommand item_transaction;
     } as;
 
     struct Command *next;
@@ -84,14 +64,13 @@ static inline Command attack_command(Vector2 target)
     return result;
 }
 
-// TODO: rename to transfer item
-static inline Command move_item_command(EntityID item_id, ItemLocation source,
+static inline Command item_transaction_command(EntityID item_id, ItemLocation source,
     ItemLocation destination)
 {
     Command result = {0};
-    result.kind = COMMAND_MOVE_ITEM;
-    result.as.move_item =
-        (MoveItemCommand){.item_id = item_id, .source = source, .destination = destination};
+
+    result.kind = COMMAND_ITEM_TRANSACTION;
+    result.as.item_transaction.transaction = item_transaction(item_id, source, destination);
 
     return result;
 }
@@ -101,65 +80,6 @@ static inline Command move_command(Vector2 direction)
     Command result = {0};
     result.kind = COMMAND_WALK;
     result.as.move = (MoveCommand){.direction = direction};
-
-    return result;
-}
-
-static inline ItemLocation item_location_world(void)
-{
-    ItemLocation result = {0};
-    result.kind = ITEM_LOCATION_WORLD;
-
-    return result;
-}
-
-static inline ItemLocation item_location_inventory(Vector2i inventory_coords)
-{
-    ItemLocation result = {0};
-    result.kind = ITEM_LOCATION_INVENTORY;
-    result.inventory_coords = inventory_coords;
-    result.inventory_coords_provided = true;
-
-    return result;
-}
-
-static inline ItemLocation item_location_any_inventory_slot(void)
-{
-    ItemLocation result = {0};
-    result.kind = ITEM_LOCATION_INVENTORY;
-
-    return result;
-}
-
-static inline ItemLocation item_location_cursor(void)
-{
-    ItemLocation result = {0};
-    result.kind = ITEM_LOCATION_CURSOR;
-
-    return result;
-}
-
-static inline ItemLocation item_location_equipment_slot(EquipmentSlot slot)
-{
-    ItemLocation result = {0};
-    result.kind = ITEM_LOCATION_EQUIP_SLOT;
-    result.equipment_slot = slot;
-    result.equipment_slot_provided = true;
-
-    return result;
-}
-
-static inline ItemLocation item_location_any_equipment_slot(void)
-{
-    ItemLocation result = {0};
-    result.kind = ITEM_LOCATION_EQUIP_SLOT;
-
-    return result;
-}
-
-static inline ItemLocation item_location_null(void)
-{
-    ItemLocation result = {0};
 
     return result;
 }

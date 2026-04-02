@@ -477,7 +477,7 @@ static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
         }
     }
 
-    Command command = move_item_command(moved_item, item_source, item_dest);
+    Command command = item_transaction_command(moved_item, item_source, item_dest);
     push_command(commands, command, arena);
 }
 
@@ -513,7 +513,7 @@ static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Equipment *e
                 item_dest = item_location_equipment_slot(slot);
             }
 
-            Command command = move_item_command(moved_item, item_source, item_dest);
+            Command command = item_transaction_command(moved_item, item_source, item_dest);
             push_command(commands, command, arena);
 
             break;

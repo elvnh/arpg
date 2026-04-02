@@ -2,6 +2,7 @@
 
 #include "base/rectangle.h"
 #include "base/utils.h"
+#include "base/vector.h"
 #include "command.h"
 #include "components/equipment.h"
 #include "components/inventory.h"
@@ -9,7 +10,10 @@
 #include "entity/entity_system.h"
 #include "game.h"
 #include "platform/input.h"
+#include "platform/input_event.h"
 #include "renderer/frontend/render_batch.h"
+#include "ui/ui_core.h"
+#include "ui/widget.h"
 #include "world/world.h"
 
 /* NOTE:
@@ -272,7 +276,49 @@ static void inventory_grid_hook(
     // TODO: should these really be called from inside the hook?
     render_inventory_grid_overlay(context, rb, frame_arena);
     render_inventory_items(context, rb, frame_arena);
+
+    // TODO: don't call this from within hook
     render_item_on_cursor(menu, context->world, rb, context->mouse_pos, frame_arena);
+}
+
+static void render_equipment_slot_containers(InventoryMenu *inv_menu, World *world,
+    RenderBatch *rb, Vector2 mouse_pos, LinearArena *frame_arena)
+{
+    for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+        Rectangle rect = inv_menu->equipment_slot_rects[slot];
+
+        draw_rectangle(rb, frame_arena, rect, RGBA32_BLUE, shader_handle(SHAPE_SHADER),
+            (RenderLayer)INVENTORY_ITEM_BACKGROUND_LAYER);
+    }
+}
+
+static void equipment_grid_hook(void *user_data, RenderBatch *rb, Widget *parent,
+    LinearArena *frame_arena)
+{
+    InventoryHookContext *context = user_data;
+    InventoryMenu        *inv_menu = context->inventory_menu;
+
+    f32     pad = parent->child_padding;
+    Vector2 base = v2_add(parent->final_position, v2_from_scalar(pad));
+
+    // TODO: don't do it like this
+    Vector2 equipment_slot_base_locations[EQUIP_SLOT_COUNT];
+    Vector2 equipment_slot_sizes[EQUIP_SLOT_COUNT];
+    for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+        f32 size = 64.0f;
+
+        equipment_slot_sizes[slot] = v2_from_scalar(size);
+        equipment_slot_base_locations[slot] = v2(0, (f32)slot * (size + pad));
+    }
+
+    for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+        inv_menu->equipment_slot_rects[slot].position =
+            v2_add(base, equipment_slot_base_locations[slot]);
+        inv_menu->equipment_slot_rects[slot].size = equipment_slot_sizes[slot];
+    }
+
+    render_equipment_slot_containers(inv_menu, context->world, rb, context->mouse_pos,
+        frame_arena);
 }
 
 static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
@@ -286,7 +332,7 @@ static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
     EntityID hovered_item_id =
         try_get_inventory_item_at_position(es, inventory, mouse_grid_coords);
     Entity *grabbed_entity = es_try_get_entity(es, hovered_item_id);
-    InventoryStorable *grabbed_item = es_get_component(grabbed_entity, InventoryStorable);
+    InventoryStorable *grabbed_item = es_try_get_component(grabbed_entity, InventoryStorable);
 
     if (grabbed_item) {
 #if 1
@@ -338,9 +384,40 @@ static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
         && rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)) {
         handle_inventory_dragging(inv_menu, &world->entity_system, inventory, mouse_pos,
             commands, arena);
-
     } else if (!entity_id_is_null(inv_menu->item_on_cursor)) {
         handle_inventory_dropping(inv_menu, &world->entity_system, mouse_pos, commands, arena);
+    }
+}
+
+static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *inventory,
+    Equipment *equipment, World *world, Vector2 mouse_pos, CommandQueue *commands,
+    LinearArena *arena)
+{
+    ASSERT(inv_menu->can_interact_with_inventory);
+
+    for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+        Rectangle rect = inv_menu->equipment_slot_rects[slot];
+
+        if (rect_contains_point(rect, mouse_pos)) {
+            Command command = {0};
+
+            // TODO: ctrl-clicking to equip/unequip without dragging
+
+            if (entity_id_is_null(inv_menu->item_on_cursor)) {
+                EntityID equipped =
+                    get_equipped_item_id_in_slot(&world->entity_system, equipment, slot);
+
+                command = move_item_command(equipped, item_location_equipment_slot(slot),
+                    item_location_cursor());
+            } else {
+                command = move_item_command(inv_menu->item_on_cursor, item_location_cursor(),
+                    item_location_equipment_slot(slot));
+            }
+
+            push_command(commands, command, arena);
+
+            break;
+        }
     }
 }
 
@@ -426,15 +503,18 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
 
     Entity *player = world_get_player_entity(world);
     Inventory *inventory = es_get_component(player, Inventory);
+    Equipment *equipment = es_get_component(player, Equipment);
 
     Vector2 mouse_pos = get_mouse_pos(input);
 
-    ui_begin_menu(ui, V2_ZERO, str("inventory_container"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
-    {
-        ui_text(ui, str("Inventory"));
+    // TODO: calculate this based on equipment slot sizes
+    Vector2 equipment_menu_size = {512, 512};
 
-        ui_begin_menu(
-            ui, INVENTORY_GRID_UI_SIZE, str("inventory_grid"), UI_SIZE_KIND_ABSOLUTE, 8.0f);
+    ui_begin_menu(ui, V2_ZERO, str("inv_and_eq_container"), UI_SIZE_KIND_SUM_OF_CHILDREN,
+        8.0f);
+    {
+        ui_begin_menu(ui, equipment_menu_size, str("equipment_menu"), UI_SIZE_KIND_ABSOLUTE,
+            8.0f);
         {
             InventoryHookContext *context = la_allocate_item(scratch, InventoryHookContext);
             context->world = world;
@@ -442,24 +522,49 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
             context->inventory_menu = inv_menu;
             context->mouse_pos = mouse_pos;
 
-            ui_push_render_hook(ui, inventory_grid_hook, context);
+            ui_push_render_hook(ui, equipment_grid_hook, context);
 
             if (inv_menu->can_interact_with_inventory) {
-                render_inventory_item_hover_menu(
-                    ui, inv_menu, inventory, world, mouse_pos, scratch);
-
-                // NOTE: we don't consume the key press here as the UI will do
-                // that if necessary
-                b32 mouse_pressed = check_key_pressed(input, MOUSE_LEFT);
-                if (mouse_pressed) {
-                    handle_inventory_drag_and_drop(inv_menu, inventory, world, mouse_pos,
-                        commands, scratch);
+                if (check_key_pressed(input, MOUSE_LEFT)) {
+                    handle_equipment_drag_and_drop(inv_menu, inventory, equipment, world,
+                        mouse_pos, commands, scratch);
                 }
             }
         }
         ui_pop_menu(ui);
+
+        ui_begin_menu(ui, V2_ZERO, str("inventory_menu"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+        {
+            ui_text(ui, str("Inventory"));
+
+            ui_begin_menu(ui, INVENTORY_GRID_UI_SIZE, str("inventory_grid"),
+                UI_SIZE_KIND_ABSOLUTE, 8.0f);
+            {
+                InventoryHookContext *context =
+                    la_allocate_item(scratch, InventoryHookContext);
+                context->world = world;
+                context->inventory = inventory;
+                context->inventory_menu = inv_menu;
+                context->mouse_pos = mouse_pos;
+
+                ui_push_render_hook(ui, inventory_grid_hook, context);
+
+                if (inv_menu->can_interact_with_inventory) {
+                    render_inventory_item_hover_menu(ui, inv_menu, inventory, world, mouse_pos,
+                        scratch);
+
+                    // NOTE: we don't consume the key press here as the UI will do
+                    // that if necessary
+                    b32 mouse_pressed = check_key_pressed(input, MOUSE_LEFT);
+                    if (mouse_pressed) {
+                        handle_inventory_drag_and_drop(inv_menu, inventory, world, mouse_pos,
+                            commands, scratch);
+                    }
+                }
+            }
+            ui_pop_menu(ui);
+        }
+        ui_pop_menu(ui);
     }
     ui_pop_menu(ui);
-
-
 }

@@ -4,6 +4,7 @@
 #include "base/rectangle.h"
 #include "base/string8.h"
 #include "command.h"
+#include "components/equipment.h"
 #include "entity/entity_id.h"
 #include "platform/input_event.h"
 
@@ -28,6 +29,8 @@ typedef struct {
     b32 active;
     Rectangle inventory_grid_rect;
     b32 can_interact_with_inventory;
+
+    Rectangle equipment_slot_rects[EQUIP_SLOT_COUNT];
 } InventoryMenu;
 
 void inventory_menu_update(InventoryMenu *inv_menu);

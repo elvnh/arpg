@@ -34,12 +34,22 @@ typedef struct {
     EquipmentSlot equippable_in_slot;
 } Equippable;
 
-struct Entity *get_equipped_item_in_slot(
-    struct EntitySystem *es, Equipment *equipment, EquipmentSlot slot);
-b32 try_equip_item_from_inventory(struct EntitySystem *es, Equipment *equipment,
-    Inventory *inventory, InventoryStorable *item);
-void unequip_item_and_put_in_inventory(struct EntitySystem *es, Equipment *equipment,
-    Inventory *inventory, EquipmentSlot slot);
+typedef struct {
+    b32      ok;
+    EntityID replaced_item;
+} EquipResult;
+
+struct Entity *get_equipped_item_in_slot(struct EntitySystem *es, Equipment *equipment,
+    EquipmentSlot slot);
+EntityID       get_equipped_item_id_in_slot(struct EntitySystem *es, Equipment *equipment,
+    EquipmentSlot slot);
+EquipResult    try_equip_item_in_any_slot(struct EntitySystem *es, Equipment *equipment,
+    Equippable *equippable);
+EquipResult    try_equip_item_in_slot(struct EntitySystem *es, Equipment *equipment,
+    Equippable *equippable, EquipmentSlot slot);
+//b32 try_equip_item_from_inventory(struct EntitySystem *es, Equipment *equipment, Inventory *inventory, InventoryStorable *item);
+//void unequip_item_and_put_in_inventory(struct EntitySystem *es, Equipment *equipment, Inventory *inventory, EquipmentSlot slot);
+void unequip_item(struct EntitySystem *es, Equipment *equipment, EquipmentSlot slot);
 
 static inline String equipment_slot_to_string(EquipmentSlot slot)
 {

@@ -2,6 +2,8 @@
 
 #include "base/linear_arena.h"
 #include "base/list.h"
+#include "base/utils.h"
+#include "components/equipment.h"
 #include "ui/game_ui.h"
 #include "world/world.h"
 
@@ -11,13 +13,14 @@ typedef struct {
     EntityID source_item_replaced_with;
 } MoveItemToResult;
 
-MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocation source,
+static MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocation source,
     ItemLocation destination, EntitySystem *es, GameUI *game_ui, Inventory *player_inventory,
-    Vector2 player_position)
+    Equipment *player_equipment, Vector2 player_position)
 {
     MoveItemToResult result = {0};
 
-    InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
+    InventoryStorable *inv_item = es_get_component(item_entity, InventoryStorable);
+    Equippable        *equippable = es_try_get_component(item_entity, Equippable);
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (destination.kind) {
@@ -27,18 +30,19 @@ MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocation sour
         } break;
 
         case ITEM_LOCATION_INVENTORY: {
+            // TODO: are these special cases really needed?
             if (source.kind == ITEM_LOCATION_CURSOR) {
                 InventoryInsertion insertion = try_place_or_exchange_inventory_item(es,
-                    player_inventory, item, destination.inventory_coords);
+                    player_inventory, inv_item, destination.inventory_coords);
 
                 result.ok = insertion.ok;
                 result.source_item_replaced_with = insertion.exchanged_item;
             } else {
                 if (destination.inventory_coords_provided) {
-                    result.ok = try_add_item_to_inventory_at(es, player_inventory, item,
+                    result.ok = try_add_item_to_inventory_at(es, player_inventory, inv_item,
                         destination.inventory_coords);
                 } else {
-                    result.ok = try_add_item_to_inventory(es, player_inventory, item);
+                    result.ok = try_add_item_to_inventory(es, player_inventory, inv_item);
                 }
             }
         } break;
@@ -46,7 +50,19 @@ MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocation sour
         case ITEM_LOCATION_CURSOR: {
             result.ok = true;
             result.source_item_replaced_with = game_ui->inventory_menu.item_on_cursor;
+
             game_ui->inventory_menu.item_on_cursor = es_get_id_of_entity(es, item_entity);
+        } break;
+
+        case ITEM_LOCATION_EQUIP_SLOT: {
+            if (equippable) {
+                // TODO: try to make inventory insertion as simple as this
+                EquipResult equip = try_equip_item_in_slot(es, player_equipment, equippable,
+                    destination.equipment_slot);
+
+                result.ok = equip.ok;
+                result.source_item_replaced_with = equip.replaced_item;
+            }
         } break;
 
             INVALID_CASE(ITEM_LOCATION_NULL);
@@ -59,8 +75,10 @@ MoveItemToResult move_item_to_destination(Entity *item_entity, ItemLocation sour
 
 static void move_item_from_source(Entity *item_entity, ItemLocation source,
     MoveItemToResult move_to_result, EntitySystem *es, GameUI *game_ui,
-    Inventory *player_inventory, Vector2 player_position)
+    Inventory *player_inventory, Equipment *player_equipment, Vector2 player_position)
 {
+    ASSERT(move_to_result.ok);
+
     InventoryStorable *item = es_get_component(item_entity, InventoryStorable);
 
     BEGIN_EXHAUSTIVE_SWITCH;
@@ -75,7 +93,10 @@ static void move_item_from_source(Entity *item_entity, ItemLocation source,
 
         case ITEM_LOCATION_CURSOR: {
             game_ui->inventory_menu.item_on_cursor = move_to_result.source_item_replaced_with;
+        } break;
 
+        case ITEM_LOCATION_EQUIP_SLOT: {
+            unequip_item(es, player_equipment, source.equipment_slot);
         } break;
 
             INVALID_CASE(ITEM_LOCATION_NULL);
@@ -90,7 +111,7 @@ static void move_item_from_source(Entity *item_entity, ItemLocation source,
             es_get_entity(es, move_to_result.source_item_replaced_with);
 
         move_item_to_destination(exchanged_item_entity, item_location_null(), source, es,
-            game_ui, player_inventory, player_position);
+            game_ui, player_inventory, player_equipment, player_position);
     }
 }
 
@@ -99,16 +120,20 @@ static void execute_item_transaction(MoveItemCommand command, World *world, Game
     Entity *player = world_get_player_entity(world);
     PhysicsComponent *player_physics = es_get_component(player, PhysicsComponent);
     Inventory *player_inventory = es_get_component(player, Inventory);
+    Equipment        *player_equipment = es_get_component(player, Equipment);
 
-    Entity *item_entity = es_get_entity(&world->entity_system, command.item_id);
+    Entity *item_entity = es_try_get_entity(&world->entity_system, command.item_id);
 
-    MoveItemToResult move_to_result =
-        move_item_to_destination(item_entity, command.source, command.destination,
-            &world->entity_system, game_ui, player_inventory, player_physics->position);
+    if (item_entity) {
+        MoveItemToResult move_to_result = move_item_to_destination(item_entity, command.source,
+            command.destination, &world->entity_system, game_ui, player_inventory,
+            player_equipment, player_physics->position);
 
-    if (move_to_result.ok) {
-        move_item_from_source(item_entity, command.source, move_to_result,
-            &world->entity_system, game_ui, player_inventory, player_physics->position);
+        if (move_to_result.ok) {
+            move_item_from_source(item_entity, command.source, move_to_result,
+                &world->entity_system, game_ui, player_inventory, player_equipment,
+                player_physics->position);
+        }
     }
 }
 

@@ -3,6 +3,7 @@
 
 #include "base/linear_arena.h"
 #include "base/vector.h"
+#include "components/equipment.h"
 #include "game/entity/entity_id.h"
 
 /* A Command represents an action that the player wishes to perform, such as
@@ -29,12 +30,16 @@ typedef enum {
     ITEM_LOCATION_WORLD,
     ITEM_LOCATION_INVENTORY,
     ITEM_LOCATION_CURSOR,
+    ITEM_LOCATION_EQUIP_SLOT,
 } ItemLocationKind;
 
 typedef struct {
     ItemLocationKind kind;
+
+    // TODO: put these in a union
     Vector2i inventory_coords;
     b32 inventory_coords_provided;
+    EquipmentSlot equipment_slot;
 } ItemLocation;
 
 typedef struct {
@@ -128,6 +133,15 @@ static inline ItemLocation item_location_cursor(void)
 {
     ItemLocation result = {0};
     result.kind = ITEM_LOCATION_CURSOR;
+
+    return result;
+}
+
+static inline ItemLocation item_location_equipment_slot(EquipmentSlot slot)
+{
+    ItemLocation result = {0};
+    result.kind = ITEM_LOCATION_EQUIP_SLOT;
+    result.equipment_slot = slot;
 
     return result;
 }

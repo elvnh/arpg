@@ -49,6 +49,8 @@ static void spellbook_menu(GameUI *ui_state, Game *game)
     ui_pop_container(ui);
 }
 
+// TODO: remove this
+#if 0
 static void equipment_slot_widget(GameUI *ui_state, Game *game, Equipment *equipment,
     Inventory *inventory, EquipmentSlot slot, InputEvents *input, LinearArena *scratch)
 {
@@ -94,6 +96,7 @@ static void equipment_menu(GameUI *ui_state, Game *game, LinearArena *scratch,
     }
     ui_pop_container(ui);
 }
+#endif
 
 void game_ui(Game *game, LinearArena *scratch, InputEvents *input, CommandQueue *commands)
 {
@@ -126,9 +129,9 @@ void game_ui(Game *game, LinearArena *scratch, InputEvents *input, CommandQueue 
         inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, input, commands,
             scratch);
 
-        ui_core_same_line(ui);
+        /* ui_core_same_line(ui); */
 
-        equipment_menu(&game->game_ui, game, scratch, input);
+        /* equipment_menu(&game->game_ui, game, scratch, input); */
 
         ui_core_same_line(ui);
 

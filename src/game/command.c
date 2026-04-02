@@ -185,6 +185,8 @@ static void move_item_from_source(Entity *item_entity, ItemLocation source,
         } break;
 
         case ITEM_LOCATION_CURSOR: {
+            ASSERT(entity_id_equal(item_entity->id, game_ui->inventory_menu.item_on_cursor));
+
             game_ui->inventory_menu.item_on_cursor = move_to_result.source_item_replaced_with;
         } break;
 

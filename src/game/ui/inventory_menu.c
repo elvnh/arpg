@@ -531,8 +531,22 @@ static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
                 command = move_item_command(equipped, item_location_equipment_slot(slot),
                     destination);
             } else {
-                command = move_item_command(inv_menu->item_on_cursor, item_location_cursor(),
-                    item_location_equipment_slot(slot));
+                EntityID item = {0};
+                ItemLocation source = {0};
+                ItemLocation destination = {0};
+
+                if (check_key_down(input, KEY_LEFT_CONTROL)) {
+                    item =
+                        get_equipped_item_id_in_slot(&world->entity_system, equipment, slot);
+                    source = item_location_equipment_slot(slot);
+                    destination = item_location_any_inventory_slot();
+                } else {
+                    item = inv_menu->item_on_cursor;
+                    source = item_location_cursor();
+                    destination = item_location_equipment_slot(slot);
+                }
+
+                command = move_item_command(item, source, destination);
             }
 
             push_command(commands, command, arena);

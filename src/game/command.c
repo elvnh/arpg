@@ -149,11 +149,13 @@ static void move_item_to_destination(Entity *item_entity, ItemLocation source,
                 EquipResult equip = {0};
 
                 if (destination.equipment_slot_provided) {
-                    equip = try_equip_item_in_slot(es, player_equipment, equippable,
+                    equip = equip_item_in_slot(es, player_equipment, equippable,
                         destination.equipment_slot);
                 } else {
-                    equip = try_equip_item_in_any_slot(es, player_equipment, equippable);
+                    equip = equip_item_in_any_slot(es, player_equipment, equippable);
                 }
+
+                ASSERT(equip.ok);
             }
         } break;
 
@@ -187,7 +189,7 @@ static void move_item_from_source(Entity *item_entity, ItemLocation source,
         } break;
 
         case ITEM_LOCATION_EQUIP_SLOT: {
-            unequip_item(es, player_equipment, source.equipment_slot);
+            unequip_item_in_slot(es, player_equipment, source.equipment_slot);
         } break;
 
             INVALID_CASE(ITEM_LOCATION_NULL);

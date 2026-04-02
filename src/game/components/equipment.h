@@ -39,24 +39,25 @@ typedef struct {
     EntityID replaced_item;
 } EquipResult;
 
+/* Querying operations */
 struct Entity *get_equipped_item_in_slot(struct EntitySystem *es, Equipment *equipment,
     EquipmentSlot slot);
-EntityID       get_equipped_item_id_in_slot(struct EntitySystem *es, Equipment *equipment,
+EntityID get_equipped_item_id_in_slot(struct EntitySystem *es, Equipment *equipment,
     EquipmentSlot slot);
-
 EquipResult can_equip_item_in_any_slot(struct EntitySystem *es, Equipment *equipment,
     Equippable *equippable);
 EquipResult can_equip_item_in_slot(struct EntitySystem *es, Equipment *equipment,
     Equippable *equippable, EquipmentSlot slot);
 
-// TODO: remove these try_* functions, both here and in inventory.h
-EquipResult    try_equip_item_in_any_slot(struct EntitySystem *es, Equipment *equipment,
+/* Modifying operations */
+EquipResult equip_item_in_any_slot(struct EntitySystem *es, Equipment *equipment,
     Equippable *equippable);
-EquipResult    try_equip_item_in_slot(struct EntitySystem *es, Equipment *equipment,
+EquipResult equip_item_in_slot(struct EntitySystem *es, Equipment *equipment,
     Equippable *equippable, EquipmentSlot slot);
 
-void unequip_item(struct EntitySystem *es, Equipment *equipment, EquipmentSlot slot);
+void unequip_item_in_slot(struct EntitySystem *es, Equipment *equipment, EquipmentSlot slot);
 
+/* Miscellaneous */
 static inline String equipment_slot_to_string(EquipmentSlot slot)
 {
     // clang-format off

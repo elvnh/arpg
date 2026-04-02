@@ -453,6 +453,49 @@ static void handle_inventory_dropping(InventoryMenu *inv_menu, EntitySystem *es,
     }
 }
 
+static String get_item_name_widget_text(Entity *item_entity, LinearArena *arena)
+{
+    String result = {0};
+
+    NameComponent *name = es_try_get_component(item_entity, NameComponent);
+
+    if (name) {
+        // Append the item ID to ensure that there are no widget ID collisions
+        result = format(arena, "%.*s##%d,%d", name->length, name->data, item_entity->id.index,
+            item_entity->id.generation);
+    } else {
+        result = str("(unnamed item)");
+    }
+
+    return result;
+}
+
+static void item_hover_menu(UIState *ui, Entity *item, Vector2 mouse_position,
+    LinearArena *arena)
+{
+    ASSERT(es_has_component(item, InventoryStorable));
+
+    ui_begin_mouse_menu(ui, mouse_position);
+    {
+        ui_text(ui, get_item_name_widget_text(item, arena));
+
+        ui_spacing(ui, 12);
+
+        ItemModifiers *mods = es_try_get_component(item, ItemModifiers);
+
+        if (mods) {
+            for (ssize i = 0; i < mods->modifier_count; ++i) {
+                Modifier mod = mods->modifiers[i];
+                String mod_string = modifier_to_string(mod, arena);
+
+                ui_text(ui, mod_string);
+                ui_spacing(ui, 12);
+            }
+        }
+    }
+    ui_end_mouse_menu(ui);
+}
+
 // TODO: clean up these paramters
 static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Inventory *inventory,
     World *world, Vector2 mouse_pos, CommandQueue *commands, LinearArena *arena)
@@ -520,48 +563,6 @@ static void render_equipment_item_hover_menu(UIState *ui, InventoryMenu *inv_men
             }
         }
     }
-}
-
-String get_item_name_widget_text(Entity *item_entity, LinearArena *arena)
-{
-    String result = {0};
-
-    NameComponent *name = es_try_get_component(item_entity, NameComponent);
-
-    if (name) {
-        // Append the item ID to ensure that there are no widget ID collisions
-        result = format(arena, "%.*s##%d,%d", name->length, name->data, item_entity->id.index,
-            item_entity->id.generation);
-    } else {
-        result = str("(unnamed item)");
-    }
-
-    return result;
-}
-
-void item_hover_menu(UIState *ui, Entity *item, Vector2 mouse_position, LinearArena *arena)
-{
-    ASSERT(es_has_component(item, InventoryStorable));
-
-    ui_begin_mouse_menu(ui, mouse_position);
-    {
-        ui_text(ui, get_item_name_widget_text(item, arena));
-
-        ui_spacing(ui, 12);
-
-        ItemModifiers *mods = es_try_get_component(item, ItemModifiers);
-
-        if (mods) {
-            for (ssize i = 0; i < mods->modifier_count; ++i) {
-                Modifier mod = mods->modifiers[i];
-                String mod_string = modifier_to_string(mod, arena);
-
-                ui_text(ui, mod_string);
-                ui_spacing(ui, 12);
-            }
-        }
-    }
-    ui_end_mouse_menu(ui);
 }
 
 static void render_inventory_item_hover_menu(UIState *ui, InventoryMenu *inv_menu,

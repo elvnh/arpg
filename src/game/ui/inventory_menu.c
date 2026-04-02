@@ -192,7 +192,7 @@ static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *in
 
     if (item_is_inside_inventory) {
         b32 can_place_item =
-            can_place_item_in_inventory_at(es, inventory, item, item_grid_pos);
+            can_place_item_in_inventory_at(es, inventory, item, item_grid_pos).ok;
 
         RGBA32 bg_color = {0};
         if (can_place_item) {

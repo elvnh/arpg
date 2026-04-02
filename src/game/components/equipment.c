@@ -31,6 +31,30 @@ EntityID get_equipped_item_id_in_slot(struct EntitySystem *es, Equipment *equipm
     return result;
 }
 
+EquipResult can_equip_item_in_any_slot(EntitySystem *es, Equipment *equipment,
+    Equippable *equippable)
+{
+    EquipResult result =
+        can_equip_item_in_slot(es, equipment, equippable, equippable->equippable_in_slot);
+
+    return result;
+}
+
+EquipResult can_equip_item_in_slot(EntitySystem *es, Equipment *equipment,
+    Equippable *equippable, EquipmentSlot slot)
+{
+    EquipResult result = {0};
+
+    if (equippable->equippable_in_slot == slot) {
+        Entity *item_entity = es_get_component_owner(es, equippable, Equippable);
+
+        result.ok = true;
+        result.replaced_item = *get_equipped_entity_id_ptr_in_slot(equipment, slot);
+    }
+
+    return result;
+}
+
 EquipResult try_equip_item_in_any_slot(EntitySystem *es, Equipment *equipment,
     Equippable *equippable)
 {
@@ -43,15 +67,12 @@ EquipResult try_equip_item_in_any_slot(EntitySystem *es, Equipment *equipment,
 EquipResult try_equip_item_in_slot(struct EntitySystem *es, Equipment *equipment,
     Equippable *equippable, EquipmentSlot slot)
 {
-    EquipResult result = {0};
+    EquipResult result = can_equip_item_in_slot(es, equipment, equippable, slot);
 
-    if (equippable->equippable_in_slot == slot) {
+    if (result.ok) {
         Entity *item_entity = es_get_component_owner(es, equippable, Equippable);
-
-        result.replaced_item = *get_equipped_entity_id_ptr_in_slot(equipment, slot);
-        *get_equipped_entity_id_ptr_in_slot(equipment, slot) = item_entity->id;
-
-        result.ok = true;
+        *get_equipped_entity_id_ptr_in_slot(equipment, slot) =
+            es_get_id_of_entity(es, item_entity);
     }
 
     return result;

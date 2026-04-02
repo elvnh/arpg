@@ -24,21 +24,32 @@ typedef struct {
 typedef struct {
     b32 ok;
     EntityID exchanged_item;
+    Vector2i inventory_coords;
 } InventoryInsertion;
 
 void append_item_to_inventory_list(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item_to_add);
-b32 try_add_item_to_inventory_at(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item, Vector2i grid_position);
-b32 try_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
+
+// TODO: remove these try_add_* functions
+/* InventoryInsertion try_add_item_to_inventory_at(struct EntitySystem *es, Inventory *inv, */
+/*     InventoryStorable *item, Vector2i grid_position); */
+
+InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item);
+InventoryInsertion try_add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
+    InventoryStorable *item);
+
 void remove_item_from_inventory(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item_to_remove);
 void drop_item_from_inventory_on_ground(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item);
+
 b32 inventory_contains_item(struct EntitySystem *es, Inventory *inventory,
     InventoryStorable *item);
+
 InventoryInsertion try_place_or_exchange_inventory_item(struct EntitySystem *es,
+    Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
+InventoryInsertion can_place_or_exchange_inventory_item(struct EntitySystem *es,
     Inventory *inventory, InventoryStorable *item, Vector2i grid_pos);
 
 b32 item_is_in_bounds_of_inventory_grid(Vector2i item_grid_coords, Vector2i item_grid_size);
@@ -46,7 +57,7 @@ b32 item_is_completely_outside_inventory_grid(Vector2i item_grid_coords,
     Vector2i item_grid_size);
 b32 cell_is_in_bounds_of_inventory_grid(Vector2i cell_coords);
 
-b32 can_place_item_in_inventory_at(struct EntitySystem *es, Inventory *inv,
+InventoryInsertion can_place_item_in_inventory_at(struct EntitySystem *es, Inventory *inv,
     InventoryStorable *item, Vector2i grid_position);
 EntityID try_get_inventory_item_at_position(struct EntitySystem *es, Inventory *inv,
     Vector2i grid_position);

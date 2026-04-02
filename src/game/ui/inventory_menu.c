@@ -500,6 +500,28 @@ static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
     }
 }
 
+static void render_equipment_item_hover_menu(UIState *ui, InventoryMenu *inv_menu,
+    Inventory *inventory, Equipment *equipment, World *world, Vector2 mouse_pos,
+    LinearArena *arena)
+{
+    ASSERT(inv_menu->can_interact_with_inventory);
+
+    for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
+        Entity *equipped_item =
+            get_equipped_item_in_slot(&world->entity_system, equipment, slot);
+
+        if (equipped_item) {
+            Rectangle rect = inv_menu->equipment_slot_rects[slot];
+            ASSERT(rect_is_valid(rect));
+
+            if (rect_contains_point(rect, mouse_pos)) {
+                item_hover_menu(ui, equipped_item, mouse_pos, arena);
+                break;
+            }
+        }
+    }
+}
+
 String get_item_name_widget_text(Entity *item_entity, LinearArena *arena)
 {
     String result = {0};
@@ -606,6 +628,9 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
             ui_push_render_hook(ui, equipment_grid_hook, hook_context);
 
             if (inv_menu->can_interact_with_inventory) {
+                render_equipment_item_hover_menu(ui, inv_menu, inventory, equipment, world,
+                    mouse_pos, scratch);
+
                 if (check_key_pressed(input, MOUSE_LEFT)) {
                     handle_equipment_drag_and_drop(inv_menu, inventory, equipment, world,
                         mouse_pos, commands, scratch);

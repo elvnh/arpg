@@ -8,7 +8,6 @@
 #include "entity/entity_id.h"
 #include "platform/input_event.h"
 
-// TODO: make these resize with screen instead
 #define INVENTORY_GRID_UI_CELL_SIZE 32
 #define INVENTORY_GRID_UI_SIZE (Vector2) {                                       \
             (f32)INVENTORY_GRID_CELL_COUNTS.x * (f32)INVENTORY_GRID_UI_CELL_SIZE,     \
@@ -22,7 +21,11 @@ struct Entity;
 struct World;
 struct UIState;
 
-// TODO: generalize this so that it can handle shop interfaces and such too
+/* TODO:
+ * - Generalize this so that it can handle shop interfaces and such too
+ * - Allow ctrl-clicking to exchange items even when there is an item on cursor
+ */
+
 typedef struct {
     EntityID item_on_cursor;
 

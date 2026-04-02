@@ -366,16 +366,6 @@ static void set_equipment_slot_rectangles(InventoryMenu *inv_menu, Vector2 base,
         v2(slot_locations[EQUIP_SLOT_LEGS].x - slot_sizes[EQUIP_SLOT_GLOVES].x - pad,
             slot_locations[EQUIP_SLOT_FEET].y);
 
-    /* STATIC_ASSERT(ARRAY_COUNT(slot_sizes) == (ssize)EQUIP_SLOT_COUNT); */
-    /* STATIC_ASSERT(ARRAY_COUNT(slot_locations) == (ssize)EQUIP_SLOT_COUNT); */
-
-    /* for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) { */
-    /*     f32 size = 64.0f; */
-
-    /*     equipment_slot_sizes[slot] = v2_from_scalar(size); */
-    /*     equipment_slot_base_locations[slot] = v2(0, (f32)slot * (size + padding)); */
-    /* } */
-
     for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
         ASSERT(!v2_eq(slot_sizes[slot], V2_ZERO))
 
@@ -401,7 +391,8 @@ static void equipment_grid_hook(void *user_data, RenderBatch *rb, Widget *parent
 }
 
 static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
-    Inventory *inventory, Vector2 mouse_pos, CommandQueue *commands, LinearArena *arena)
+    Inventory *inventory, Vector2 mouse_pos, CommandQueue *commands, InputEvents *input,
+    LinearArena *arena)
 {
     ASSERT(entity_id_is_null(inv_menu->item_on_cursor));
 
@@ -416,7 +407,7 @@ static void handle_inventory_dragging(InventoryMenu *inv_menu, EntitySystem *es,
     if (grabbed_item) {
         ItemLocation destination = {0};
 
-        if (true /*check_key_down(input, KEY_CTRL)*/) {
+        if (check_key_down(input, KEY_LEFT_CONTROL)) {
             destination = item_location_any_equipment_slot();
         } else {
             destination = item_location_cursor();
@@ -499,14 +490,15 @@ static void item_hover_menu(UIState *ui, Entity *item, Vector2 mouse_position,
 
 // TODO: clean up these paramters
 static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Inventory *inventory,
-    World *world, Vector2 mouse_pos, CommandQueue *commands, LinearArena *arena)
+    World *world, Vector2 mouse_pos, CommandQueue *commands, InputEvents *input,
+    LinearArena *arena)
 {
     ASSERT(inv_menu->can_interact_with_inventory);
 
     if (entity_id_is_null(inv_menu->item_on_cursor)
         && rect_contains_point(inv_menu->inventory_grid_rect, mouse_pos)) {
         handle_inventory_dragging(inv_menu, &world->entity_system, inventory, mouse_pos,
-            commands, arena);
+            commands, input, arena);
     } else if (!entity_id_is_null(inv_menu->item_on_cursor)) {
         handle_inventory_dropping(inv_menu, &world->entity_system, mouse_pos, commands, arena);
     }
@@ -514,7 +506,7 @@ static void handle_inventory_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
 
 static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *inventory,
     Equipment *equipment, World *world, Vector2 mouse_pos, CommandQueue *commands,
-    LinearArena *arena)
+    InputEvents *input, LinearArena *arena)
 {
     ASSERT(inv_menu->can_interact_with_inventory);
 
@@ -524,14 +516,20 @@ static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
         if (rect_contains_point(rect, mouse_pos)) {
             Command command = {0};
 
-            // TODO: ctrl-clicking to equip/unequip without dragging
-
             if (entity_id_is_null(inv_menu->item_on_cursor)) {
                 EntityID equipped =
                     get_equipped_item_id_in_slot(&world->entity_system, equipment, slot);
 
+                ItemLocation destination = {0};
+
+                if (check_key_down(input, KEY_LEFT_CONTROL)) {
+                    destination = item_location_any_inventory_slot();
+                } else {
+                    destination = item_location_cursor();
+                }
+
                 command = move_item_command(equipped, item_location_equipment_slot(slot),
-                    item_location_cursor());
+                    destination);
             } else {
                 command = move_item_command(inv_menu->item_on_cursor, item_location_cursor(),
                     item_location_equipment_slot(slot));
@@ -611,7 +609,7 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
     Vector2 mouse_pos = get_mouse_pos(input);
 
     // TODO: calculate this based on equipment slot sizes
-    Vector2 equipment_menu_size = {512, 512};
+    Vector2 equipment_menu_size = {512, 450};
 
     InventoryHookContext *hook_context = la_allocate_item(scratch, InventoryHookContext);
     hook_context->ui = ui;
@@ -635,7 +633,7 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
 
                 if (check_key_pressed(input, MOUSE_LEFT)) {
                     handle_equipment_drag_and_drop(inv_menu, inventory, equipment, world,
-                        mouse_pos, commands, scratch);
+                        mouse_pos, commands, input, scratch);
                 }
             }
         }
@@ -659,7 +657,7 @@ void inventory_menu(UIState *ui, InventoryMenu *inv_menu, World *world, InputEve
                     b32 mouse_pressed = check_key_pressed(input, MOUSE_LEFT);
                     if (mouse_pressed) {
                         handle_inventory_drag_and_drop(inv_menu, inventory, world, mouse_pos,
-                            commands, scratch);
+                            commands, input, scratch);
                     }
                 }
             }

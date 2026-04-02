@@ -20,7 +20,6 @@
 #include "ui/widget.h"
 #include "world/world.h"
 
-// TODO: clean up this file
 static void spellbook_menu(GameUI *ui_state, Game *game)
 {
     UIState *ui = &ui_state->backend_state;
@@ -48,55 +47,6 @@ static void spellbook_menu(GameUI *ui_state, Game *game)
     }
     ui_pop_container(ui);
 }
-
-// TODO: remove this
-#if 0
-static void equipment_slot_widget(GameUI *ui_state, Game *game, Equipment *equipment,
-    Inventory *inventory, EquipmentSlot slot, InputEvents *input, LinearArena *scratch)
-{
-    UIState *ui = &ui_state->backend_state;
-
-    ui_text(ui, equipment_slot_to_string(slot));
-    ui_core_same_line(ui);
-
-    Entity *item = get_equipped_item_in_slot(&game->world.entity_system, equipment, slot);
-
-    if (item) {
-        String text = get_item_name_widget_text(item, scratch);
-        WidgetInteraction interaction = ui_button(ui, text);
-
-        if (interaction.clicked) {
-            unequip_item_and_put_in_inventory(
-                &game->world.entity_system, equipment, inventory, slot);
-        } else if (interaction.hovered) {
-            Vector2 mouse_pos = get_mouse_pos(input);
-            item_hover_menu(ui, item, mouse_pos, scratch);
-        }
-    } else {
-        ui_non_interactible_button(ui, str("(empty)"));
-    }
-}
-
-static void equipment_menu(GameUI *ui_state, Game *game, LinearArena *scratch,
-    InputEvents *input)
-{
-    UIState *ui = &ui_state->backend_state;
-    Entity *player = world_get_player_entity(&game->world);
-
-    ui_begin_menu(ui, V2_ZERO, str("equipment_container"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
-    {
-        ui_text(ui, str("Equipment"));
-
-        Equipment *eq = es_get_component(player, Equipment);
-        Inventory *inv = es_get_component(player, Inventory);
-
-        for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-            equipment_slot_widget(ui_state, game, eq, inv, slot, input, scratch);
-        }
-    }
-    ui_pop_container(ui);
-}
-#endif
 
 void game_ui(Game *game, LinearArena *scratch, InputEvents *input, CommandQueue *commands)
 {

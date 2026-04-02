@@ -492,41 +492,30 @@ static void handle_equipment_drag_and_drop(InventoryMenu *inv_menu, Inventory *i
         Rectangle rect = inv_menu->equipment_slot_rects[slot];
 
         if (rect_contains_point(rect, mouse_pos)) {
-            Command command = {0};
+            EntityID moved_item = {0};
+            ItemLocation source = {0};
+            ItemLocation destination = {0};
 
-            if (entity_id_is_null(inv_menu->item_on_cursor)) {
-                EntityID equipped =
-                    get_equipped_item_id_in_slot(&world->entity_system, equipment, slot);
+            EntityID equipped_item_id =
+                get_equipped_item_id_in_slot(&world->entity_system, equipment, slot);
+            Entity *equipped_item = es_try_get_entity(&world->entity_system, equipped_item_id);
 
-                ItemLocation destination = {0};
+            if (equipped_item) {
+                moved_item = equipped_item_id;
+                source = item_location_equipment_slot(slot);
 
                 if (check_key_down(input, KEY_LEFT_CONTROL)) {
                     destination = item_location_any_inventory_slot();
                 } else {
                     destination = item_location_cursor();
                 }
-
-                command = move_item_command(equipped, item_location_equipment_slot(slot),
-                    destination);
             } else {
-                EntityID item = {0};
-                ItemLocation source = {0};
-                ItemLocation destination = {0};
-
-                if (check_key_down(input, KEY_LEFT_CONTROL)) {
-                    item =
-                        get_equipped_item_id_in_slot(&world->entity_system, equipment, slot);
-                    source = item_location_equipment_slot(slot);
-                    destination = item_location_any_inventory_slot();
-                } else {
-                    item = inv_menu->item_on_cursor;
-                    source = item_location_cursor();
-                    destination = item_location_equipment_slot(slot);
-                }
-
-                command = move_item_command(item, source, destination);
+                moved_item = inv_menu->item_on_cursor;
+                source = item_location_cursor();
+                destination = item_location_equipment_slot(slot);
             }
 
+            Command command = move_item_command(moved_item, source, destination);
             push_command(commands, command, arena);
 
             break;

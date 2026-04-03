@@ -1,7 +1,8 @@
 # arpg
 ![](screenshot.png)
 
-An action RPG focused on magic made in a custom game engine written in C99. It is currently under progress and far from complete.
+An action RPG focused on magic made in a custom game engine written in C99. It is currently under
+progress and far from complete.
 
 ## Building
 For now, the game is only possible to compile on Linux. Windows builds are planned in the future.
@@ -20,9 +21,7 @@ will change immediately in game.
 
 ### Compiling
 ```bash
-mkdir build && cd build
-cmake ..
-cd ..
+cmake -B build
 cmake --build build -j
 ```
 
@@ -51,5 +50,6 @@ Please be aware that the gameplay is still in a prototyping stage and any contro
   to increase the game speed
 - When in single step mode, press `k` to advance the game by a single frame
 - Press `y` to detach the camera
+- While in detached camera mode, use the arrow keys to move the camera around
 - While in detached camera mode, press `y` to return to normal camera mode
 - While in detached camera mode, press `shift`+`y` to reset the camera position and zoom level

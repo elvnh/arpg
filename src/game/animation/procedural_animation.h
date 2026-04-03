@@ -51,7 +51,7 @@ typedef struct {
     AnimationOnEnd on_end_behaviour;
 } ProceduralAnimation;
 
-void update_procedural_animation(
-    struct World *world, ProceduralAnimation *anim, struct PhysicsComponent *physics, f32 dt);
+void update_procedural_animation(struct World *world, ProceduralAnimation *anim,
+    struct PhysicsComponent *physics, f32 dt);
 
 #endif //PROCEDURAL_ANIMATION_H

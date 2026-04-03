@@ -21,8 +21,8 @@ inline static Matrix4 mat4_identity(void)
     return m;
 }
 
-inline static Matrix4 mat4_orthographic_base(
-    f32 left, f32 right, f32 bottom, f32 top, f32 z_near, f32 z_far)
+inline static Matrix4 mat4_orthographic_base(f32 left, f32 right, f32 bottom, f32 top,
+    f32 z_near, f32 z_far)
 {
     Matrix4 m = {0};
 
@@ -43,11 +43,11 @@ inline static Matrix4 mat4_orthographic(Vector2i window_size, YDirection y_direc
     Matrix4 result = {0};
 
     if (y_direction == Y_IS_UP) {
-        result = mat4_orthographic_base(
-            0.0f, (f32)window_size.x, 0.0f, (f32)window_size.y, 0.1f, 100.0f);
+        result = mat4_orthographic_base(0.0f, (f32)window_size.x, 0.0f, (f32)window_size.y,
+            0.1f, 100.0f);
     } else {
-        result = mat4_orthographic_base(
-            0.0f, (f32)window_size.x, (f32)window_size.y, 0.0f, 0.1f, 100.0f);
+        result = mat4_orthographic_base(0.0f, (f32)window_size.x, (f32)window_size.y, 0.0f,
+            0.1f, 100.0f);
     }
 
     return result;

@@ -26,8 +26,7 @@ typedef struct {
 } CollisionEventTable;
 
 CollisionEventTable collision_event_table_create(struct LinearArena *parent_arena);
-CollisionEvent *collision_event_table_find(
-    CollisionEventTable *table, EntityID a, EntityID b);
+CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID a, EntityID b);
 void collision_event_table_insert(CollisionEventTable *table, EntityID a, EntityID b);
 b32 entities_intersected_this_frame(struct World *world, EntityID a, EntityID b);
 b32 entities_intersected_previous_frame(struct World *world, EntityID a, EntityID b);

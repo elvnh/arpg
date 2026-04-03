@@ -65,8 +65,7 @@ void la_destroy(LinearArena *arena)
     arena->offset_into_top_block = 0;
 }
 
-static void *try_allocate_in_top_block(
-    LinearArena *arena, ssize byte_count, ssize alignment)
+static void *try_allocate_in_top_block(LinearArena *arena, ssize byte_count, ssize alignment)
 {
     ssize block_address = (ssize)(arena->top_block + 1);
     ssize top_address = block_address + arena->offset_into_top_block;
@@ -225,8 +224,8 @@ void la_pop_to(LinearArena *arena, void *ptr)
     ASSERT(curr_block);
 }
 
-void *la_copy_allocation(
-    void *context, void *arr, ssize item_count, ssize item_size, ssize alignment)
+void *la_copy_allocation(void *context, void *arr, ssize item_count, ssize item_size,
+    ssize alignment)
 {
     void *new_alloc = la_allocate(context, item_count, item_size, alignment);
     memcpy(new_alloc, arr, ssize_to_usize(item_count * item_size));

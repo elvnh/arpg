@@ -31,8 +31,7 @@ void tilemap_initialize(Tilemap *tilemap)
 }
 
 // TODO: allocating tiles from a freelist arena is kind of inefficient
-void tilemap_insert_tile(
-    Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena)
+void tilemap_insert_tile(Tilemap *tilemap, Vector2i coords, TileType type, LinearArena *arena)
 {
     ASSERT(is_pow2(TILEMAP_MAX_TILES));
 
@@ -89,16 +88,14 @@ Tile *tilemap_get_tile(Tilemap *tilemap, Vector2i coords)
 Rectangle tilemap_get_bounding_box(const Tilemap *tilemap)
 {
     Rectangle result = {0};
-    result.position =
-        v2((f32)(tilemap->min_x * TILE_SIZE), (f32)(tilemap->min_y * TILE_SIZE));
+    result.position = v2((f32)(tilemap->min_x * TILE_SIZE), (f32)(tilemap->min_y * TILE_SIZE));
     result.size = v2((f32)((tilemap->max_x - tilemap->min_x + 1) * TILE_SIZE),
         (f32)((tilemap->max_y - tilemap->min_y + 1) * TILE_SIZE));
 
     return result;
 }
 
-static Tile *get_tile_neighbour(
-    Tilemap *tilemap, Vector2i tile_coords, CardinalDirection dir)
+static Tile *get_tile_neighbour(Tilemap *tilemap, Vector2i tile_coords, CardinalDirection dir)
 {
     Vector2 v = cardinal_direction_vector(dir);
     Vector2i neighbour_coords = v2i_add(tile_coords, v2_to_v2i(v));
@@ -107,8 +104,8 @@ static Tile *get_tile_neighbour(
     return result;
 }
 
-static Vector2 get_wall_line_segment_begin(
-    Vector2 tile_world_coords, CardinalDirection edge_dir)
+static Vector2 get_wall_line_segment_begin(Vector2 tile_world_coords,
+    CardinalDirection edge_dir)
 {
     Vector2 result = {0};
 
@@ -197,9 +194,8 @@ static void set_wall_edge_id(Tile *tile, CardinalDirection edge_dir, WallEdgeID 
     tile->edges[edge_dir].exists = true;
 }
 
-static void try_create_wall_edge_on_side(Tilemap *tilemap, Tile *tile,
-    Vector2i tile_coords, CardinalDirection edge_dir, EdgePool *edge_pool,
-    Allocator alloc)
+static void try_create_wall_edge_on_side(Tilemap *tilemap, Tile *tile, Vector2i tile_coords,
+    CardinalDirection edge_dir, EdgePool *edge_pool, Allocator alloc)
 {
     ASSERT(tile);
     ASSERT(tile->type == TILE_WALL);
@@ -210,11 +206,9 @@ static void try_create_wall_edge_on_side(Tilemap *tilemap, Tile *tile,
 
     if (!edge_neighbour || (edge_neighbour->type != TILE_WALL)) {
         CardinalDirection neighbour_dir = get_connectible_neighbour_direction(edge_dir);
-        Tile *connected_neighbour =
-            get_tile_neighbour(tilemap, tile_coords, neighbour_dir);
+        Tile *connected_neighbour = get_tile_neighbour(tilemap, tile_coords, neighbour_dir);
 
-        Vector2 wall_line_begin =
-            get_wall_line_segment_begin(tile_world_coords, edge_dir);
+        Vector2 wall_line_begin = get_wall_line_segment_begin(tile_world_coords, edge_dir);
         Vector2 wall_line_end = get_wall_line_segment_end(wall_line_begin, edge_dir);
 
         WallEdgeID edge_id = -1;
@@ -259,16 +253,15 @@ EdgePool tilemap_get_edge_list(Tilemap *tilemap, Allocator alloc)
 
             if (tile && (tile->type == TILE_WALL)) {
                 // TODO: instead cache results
-                memset(tile->edges, 0,
-                    (usize)ARRAY_COUNT(tile->edges) * sizeof(*tile->edges));
+                memset(tile->edges, 0, (usize)ARRAY_COUNT(tile->edges) * sizeof(*tile->edges));
 
                 // TODO: not needed
-                try_create_wall_edge_on_side(
-                    tilemap, tile, tile_coords, CARDINAL_DIR_NORTH, &edge_pool, alloc);
-                try_create_wall_edge_on_side(
-                    tilemap, tile, tile_coords, CARDINAL_DIR_WEST, &edge_pool, alloc);
-                try_create_wall_edge_on_side(
-                    tilemap, tile, tile_coords, CARDINAL_DIR_EAST, &edge_pool, alloc);
+                try_create_wall_edge_on_side(tilemap, tile, tile_coords, CARDINAL_DIR_NORTH,
+                    &edge_pool, alloc);
+                try_create_wall_edge_on_side(tilemap, tile, tile_coords, CARDINAL_DIR_WEST,
+                    &edge_pool, alloc);
+                try_create_wall_edge_on_side(tilemap, tile, tile_coords, CARDINAL_DIR_EAST,
+                    &edge_pool, alloc);
             }
         }
     }

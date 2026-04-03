@@ -82,8 +82,8 @@ void ui_begin_frame(UIState *ui)
         ui->previous_frame_widgets = ui->current_frame_widgets;
         ui->current_frame_widgets = tmp;
 
-        zero_array(
-            ui->current_frame_widgets.entries, ui->current_frame_widgets.entry_table_size);
+        zero_array(ui->current_frame_widgets.entries,
+            ui->current_frame_widgets.entry_table_size);
         la_reset(&ui->current_frame_widgets.arena);
     }
 
@@ -192,8 +192,8 @@ static Vector2 adjusted_child_position_for_alignment(Widget *parent, Widget *chi
     return result;
 }
 
-static void calculate_widget_layout(
-    Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent);
+static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code,
+    Widget *parent);
 
 static void calculate_layout_of_children(Widget *widget, PlatformCode platform_code)
 {
@@ -230,8 +230,8 @@ static String get_visible_widget_text(String string)
     return result;
 }
 
-static void calculate_widget_layout_on_axis(
-    Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent, Axis axis)
+static void calculate_widget_layout_on_axis(Widget *widget, Vector2 offset,
+    PlatformCode platform_code, Widget *parent, Axis axis)
 {
     UISizeKind size_kind = widget->semantic_size[axis].kind;
     TraversalOrder order = get_layout_traversal_order(size_kind);
@@ -290,8 +290,8 @@ typedef enum {
     CLIP_NONE,
 } ClippingBehaviour;
 
-static Rectangle widget_get_clipped_bounding_box(
-    Widget *widget, Rectangle parent_bounds, ClippingBehaviour clipping)
+static Rectangle widget_get_clipped_bounding_box(Widget *widget, Rectangle parent_bounds,
+    ClippingBehaviour clipping)
 {
     Rectangle unclipped = widget_get_bounding_box(widget);
     Rectangle result = {0};
@@ -305,8 +305,8 @@ static Rectangle widget_get_clipped_bounding_box(
     return result;
 }
 
-static void calculate_widget_layout(
-    Widget *widget, Vector2 offset, PlatformCode platform_code, Widget *parent)
+static void calculate_widget_layout(Widget *widget, Vector2 offset, PlatformCode platform_code,
+    Widget *parent)
 {
     widget->final_position = v2_add(offset, widget->offset_from_parent);
 
@@ -319,8 +319,8 @@ static void calculate_widget_layout(
         f32 baseline =
             platform_code.get_font_baseline_offset(widget->text.font, widget->text.size);
         String visible_text = get_visible_widget_text(widget->text.string);
-        Vector2 text_dims = platform_code.get_text_dimensions(
-            widget->text.font, visible_text, widget->text.size);
+        Vector2 text_dims = platform_code.get_text_dimensions(widget->text.font, visible_text,
+            widget->text.size);
 
         widget->text.baseline_y_offset = baseline;
 
@@ -453,7 +453,7 @@ static void render_widget(UIState *ui, Widget *widget, Widget *parent, RenderBat
         }
 
         if (widget_has_flag(widget, WIDGET_TEXT)) {
-			ASSERT(widget->text.font.id != NULL_FONT.id);
+            ASSERT(widget->text.font.id != NULL_FONT.id);
 
             Vector2 text_position = widget->final_position;
 
@@ -491,7 +491,7 @@ UIInteraction ui_end_layout(UIState *ui, FrameInput *frame_input, YDirection y_d
 
     ASSERT(ui->current_layout_axis == DEFAULT_LAYOUT_AXIS);
     ASSERT(list_is_empty(&ui->container_stack));
-	ASSERT(!ui->style_stack && "Style stack should be empty at end of frame");
+    ASSERT(!ui->style_stack && "Style stack should be empty at end of frame");
 
     UIInteraction result = {0};
 
@@ -605,9 +605,9 @@ static void ui_core_push_widget(UIState *ui, Widget *widget, b32 floating)
     ui->current_alignment[AXIS_HORIZONTAL] = DEFAULT_ALIGNMENT;
     ui->current_alignment[AXIS_VERTICAL] = DEFAULT_ALIGNMENT;
 
-	if (ui->style_stack && ui->style_stack->pop_after_one_use) {
-		ui_pop_style(ui);
-	}
+    if (ui->style_stack && ui->style_stack->pop_after_one_use) {
+        ui_pop_style(ui);
+    }
 }
 
 Widget *ui_create_widget(UIState *ui, Vector2 size, WidgetID id, b32 floating)
@@ -679,44 +679,44 @@ void ui_set_next_alignment(UIState *ui, UIAlignment alignment, Axis axis)
 
 UIStyle ui_get_current_style(UIState *ui)
 {
-	UIStyle result = {0};
+    UIStyle result = {0};
 
-	if (ui->style_stack) {
-		result = *ui->style_stack;
-	} else {
-		result = ui->default_style;
-	}
+    if (ui->style_stack) {
+        result = *ui->style_stack;
+    } else {
+        result = ui->default_style;
+    }
 
-	return result;
+    return result;
 }
 
 UIStyle ui_default_style(UIState *ui)
 {
-	UIStyle result = ui->default_style;
+    UIStyle result = ui->default_style;
 
-	return result;
+    return result;
 }
 
 void ui_set_next_style(UIState *ui, UIStyle style)
 {
-	style.pop_after_one_use = true;
-	ui_push_style(ui, style);
+    style.pop_after_one_use = true;
+    ui_push_style(ui, style);
 }
 
 void ui_push_style(UIState *ui, UIStyle style)
 {
-	LinearArena *arena = get_frame_arena(ui);
+    LinearArena *arena = get_frame_arena(ui);
 
-	UIStyle *elem = la_allocate_item(arena, UIStyle);
-	*elem = style;
+    UIStyle *elem = la_allocate_item(arena, UIStyle);
+    *elem = style;
 
-	elem->next_style_in_stack = ui->style_stack;
-	ui->style_stack = elem;
+    elem->next_style_in_stack = ui->style_stack;
+    ui->style_stack = elem;
 }
 
 void ui_pop_style(UIState *ui)
 {
-	ASSERT(ui->style_stack && "Tried to pop from an empty style stack");
+    ASSERT(ui->style_stack && "Tried to pop from an empty style stack");
 
-	ui->style_stack = ui->style_stack->next_style_in_stack;
+    ui->style_stack = ui->style_stack->next_style_in_stack;
 }

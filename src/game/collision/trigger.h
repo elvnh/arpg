@@ -57,11 +57,10 @@ typedef struct {
 } TriggerCooldownTable;
 
 void add_trigger_cooldown(TriggerCooldownTable *table, EntityID self, EntityID other,
-    ComponentID component, RetriggerBehaviour retrigger_behaviour,
-    struct LinearArena *arena);
+    ComponentID component, RetriggerBehaviour retrigger_behaviour, struct LinearArena *arena);
 void update_trigger_cooldowns(struct World *world, f32 dt);
-b32 trigger_is_on_cooldown(
-    TriggerCooldownTable *table, EntityID a, EntityID b, ComponentID component);
+b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b,
+    ComponentID component);
 
 static inline RetriggerBehaviour retrigger_whenever(void)
 {

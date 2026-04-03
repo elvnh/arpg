@@ -21,8 +21,7 @@ typedef struct ModifiedAsset {
 static String get_assets_directory(LinearArena *arena)
 {
     String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
-    String result =
-        format(arena, FMT_STR "/../" ASSET_DIRECTORY, FMT_STR_ARG(executable_dir));
+    String result = format(arena, FMT_STR "/../" ASSET_DIRECTORY, FMT_STR_ARG(executable_dir));
     result = str_null_terminate(result, la_allocator(arena));
 
     return result;
@@ -116,8 +115,7 @@ void *file_watcher_thread(void *user_data)
                 }
 
                 String name = {event.name, (ssize)event.len};
-                ModifiedAsset *modified_asset =
-                    allocate_item(ctx->allocator, ModifiedAsset);
+                ModifiedAsset *modified_asset = allocate_item(ctx->allocator, ModifiedAsset);
 
                 // TODO: instead store the canonical path
                 String asset_path = str_concat(parent_path, name, ctx->allocator);

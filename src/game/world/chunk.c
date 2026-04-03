@@ -41,15 +41,12 @@ Chunk *get_chunk_at_position(Chunks *chunks, Vector2 position)
     Vector2 chunks_base_world_coords =
         tile_to_world_coords(chunks->chunk_grid_base_tile_coords);
 
-    s32 chunk_x =
-        (s32)floorf((position.x - chunks_base_world_coords.x) / chunk_world_size);
-    s32 chunk_y =
-        (s32)floorf((position.y - chunks_base_world_coords.y) / chunk_world_size);
+    s32 chunk_x = (s32)floorf((position.x - chunks_base_world_coords.x) / chunk_world_size);
+    s32 chunk_y = (s32)floorf((position.y - chunks_base_world_coords.y) / chunk_world_size);
 
     Chunk *result = 0;
 
-    b32 in_bounds = (chunk_x >= 0) && (chunk_y >= 0)
-                    && (chunk_x < chunks->chunk_grid_dims.x)
+    b32 in_bounds = (chunk_x >= 0) && (chunk_y >= 0) && (chunk_x < chunks->chunk_grid_dims.x)
                     && (chunk_y < chunks->chunk_grid_dims.y);
 
     if (in_bounds) {

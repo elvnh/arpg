@@ -37,32 +37,30 @@ void renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator
 void renderer_backend_use_shader(ShaderAsset *shader);
 void renderer_backend_bind_texture(TextureAsset *texture);
 void renderer_backend_set_global_projection(RendererBackend *backend, Matrix4 matrix);
-void renderer_backend_set_uniform_vec4(
-    ShaderAsset *shader, String uniform_name, Vector4 vec, LinearArena *scratch);
-void renderer_backend_set_uniform_float(
-    ShaderAsset *shader, String uniform_name, f32 value, LinearArena *scratch);
+void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec,
+    LinearArena *scratch);
+void renderer_backend_set_uniform_float(ShaderAsset *shader, String uniform_name, f32 value,
+    LinearArena *scratch);
 void renderer_backend_clear_color_buffer(RGBA32 color);
 void renderer_backend_flush(RendererBackend *backend);
-void renderer_backend_draw_triangle(
-    RendererBackend *backend, Vertex a, Vertex b, Vertex c);
-void renderer_backend_draw_quad(
-    RendererBackend *backend, Vertex a, Vertex b, Vertex c, Vertex d);
-void renderer_backend_change_framebuffer(
-    RendererBackend *backend, FrameBuffer render_target);
+void renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b, Vertex c);
+void renderer_backend_draw_quad(RendererBackend *backend, Vertex a, Vertex b, Vertex c,
+    Vertex d);
+void renderer_backend_change_framebuffer(RendererBackend *backend, FrameBuffer render_target);
 void renderer_backend_change_to_main_framebuffer(RendererBackend *backend);
-void renderer_backend_blend_framebuffers(
-    RendererBackend *backend, FrameBuffer a, FrameBuffer b, ShaderAsset *shader);
+void renderer_backend_blend_framebuffers(RendererBackend *backend, FrameBuffer a,
+    FrameBuffer b, ShaderAsset *shader);
 void renderer_backend_set_blend_function(BlendFunction function);
-void renderer_backend_draw_framebuffer_as_texture(
-    RendererBackend *backend, FrameBuffer render_target, ShaderAsset *shader);
+void renderer_backend_draw_framebuffer_as_texture(RendererBackend *backend,
+    FrameBuffer render_target, ShaderAsset *shader);
 void renderer_backend_begin_frame(RendererBackend *backend);
 void renderer_backend_enable_stencil_writes(void);
 void renderer_backend_disable_stencil_writes(void);
 void renderer_backend_enable_color_buffer_writes(RendererBackend *backend);
 void renderer_backend_disable_color_buffer_writes(RendererBackend *backend);
-void renderer_backend_set_stencil_function(
-    RendererBackend *backend, StencilFunction function, s32 arg);
-void renderer_backend_set_stencil_pass_operation(
-    RendererBackend *backend, StencilOperation op);
+void renderer_backend_set_stencil_function(RendererBackend *backend, StencilFunction function,
+    s32 arg);
+void renderer_backend_set_stencil_pass_operation(RendererBackend *backend,
+    StencilOperation op);
 
 #endif //RENDERER_BACKEND_H

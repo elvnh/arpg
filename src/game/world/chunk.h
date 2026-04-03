@@ -28,7 +28,6 @@ typedef struct ChunkPtrArray {
 
 Chunks create_chunks_for_tilemap(struct Tilemap *tilemap, struct LinearArena *arena);
 Chunk *get_chunk_at_position(Chunks *chunks, Vector2 position);
-ChunkPtrArray get_chunks_in_area(
-    Chunks *chunks, Rectangle area, struct LinearArena *arena);
+ChunkPtrArray get_chunks_in_area(Chunks *chunks, Rectangle area, struct LinearArena *arena);
 
 #endif //CHUNK_H

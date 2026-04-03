@@ -15,8 +15,8 @@
 #include "world/chunk.h"
 #include "world/world.h"
 
-void debug_render_quad_tree(
-    QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena, ssize depth)
+void debug_render_quad_tree(QuadTreeNode *tree, RenderBatch *rb, LinearArena *arena,
+    ssize depth)
 {
     if (tree) {
         debug_render_quad_tree(tree->top_left, rb, arena, depth + 1);
@@ -38,8 +38,8 @@ void debug_render_quad_tree(
         ASSERT(depth < ARRAY_COUNT(colors));
 
         RGBA32 color = colors[depth];
-        draw_outlined_rectangle(
-            rb, arena, tree->area, color, 4.0f, shader_handle(SHAPE_SHADER), 0);
+        draw_outlined_rectangle(rb, arena, tree->area, color, 4.0f,
+            shader_handle(SHAPE_SHADER), 0);
     }
 }
 
@@ -54,9 +54,8 @@ static StatusEffectCallbackResult status_effect_list_callback(
     EffectListContext context = *(EffectListContext *)user_data;
 
     String status_effect_name = status_effect_to_string(params.status_effect_id);
-    String str =
-        format(context.arena, FMT_STR " (%.2f)##%p", FMT_STR_ARG(status_effect_name),
-            (f64)params.instance->time_remaining, (void *)params.instance);
+    String str = format(context.arena, FMT_STR " (%.2f)##%p", FMT_STR_ARG(status_effect_name),
+        (f64)params.instance->time_remaining, (void *)params.instance);
 
     ui_selectable(context.ui, str);
 
@@ -75,7 +74,8 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
 
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
-    ui_begin_menu(ui, V2_ZERO, str("inspect"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f); {
+    ui_begin_menu(ui, V2_ZERO, str("inspect"), UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
+    {
         // TODO: inventory and equipment
         String faction = entity_faction_to_string(entity->faction);
 
@@ -83,8 +83,7 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
             format(scratch, "Hovered entity: %d", game->game_ui.hovered_entity.index);
         String entity_pos_str =
             format(scratch, "Position: " FMT_V2, FMT_V2_ARG(physics->position));
-        String entity_faction_str =
-            format(scratch, "Faction: " FMT_STR, FMT_STR_ARG(faction));
+        String entity_faction_str = format(scratch, "Faction: " FMT_STR, FMT_STR_ARG(faction));
 
         ui_text(ui, entity_str);
         ui_text(ui, entity_pos_str);
@@ -99,21 +98,21 @@ static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scra
             ui_text(ui, hp_str);
         }
 
-        StatusEffectComponent *effects =
-            es_try_get_component(entity, StatusEffectComponent);
+        StatusEffectComponent *effects = es_try_get_component(entity, StatusEffectComponent);
 
         if (effects) {
-            ui_begin_list(ui, str("effects")); {
+            ui_begin_list(ui, str("effects"));
+            {
                 EffectListContext context = {0};
                 context.arena = scratch;
                 context.ui = ui;
 
-                for_each_active_status_effect(
-                    effects, status_effect_list_callback, &context);
+                for_each_active_status_effect(effects, status_effect_list_callback, &context);
             }
             ui_end_list(ui);
         }
-    } ui_pop_container(ui);
+    }
+    ui_pop_container(ui);
 
     ui_same_line(ui);
 
@@ -140,15 +139,15 @@ static String dbg_arena_usage_string(String name, ssize usage, LinearArena *aren
 
 void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
 {
-	UIStyle debug_ui_style = {0};
-	debug_ui_style.font = ui_default_style(ui).font;
-	debug_ui_style.background_shadow_color = rgba32_mono(1.0f, 1.0f);
-	debug_ui_style.text_color = rgba32_mono(1.0f, 1.0f);
-	debug_ui_style.accent_color = rgba32(0.1f, 0.5f, 1.0f, 1.0f);
-	debug_ui_style.active_color = rgba32(1.0f, 0.0f, 0.0f, 1.0f);
-	debug_ui_style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
+    UIStyle debug_ui_style = {0};
+    debug_ui_style.font = ui_default_style(ui).font;
+    debug_ui_style.background_shadow_color = rgba32_mono(1.0f, 1.0f);
+    debug_ui_style.text_color = rgba32_mono(1.0f, 1.0f);
+    debug_ui_style.accent_color = rgba32(0.1f, 0.5f, 1.0f, 1.0f);
+    debug_ui_style.active_color = rgba32(1.0f, 0.0f, 0.0f, 1.0f);
+    debug_ui_style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
 
-	ui_push_style(ui, debug_ui_style);
+    ui_push_style(ui, debug_ui_style);
 
     ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
 
@@ -202,14 +201,12 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
     ui_checkbox(ui, str("Render colliders"), &game->debug_state.render_colliders);
     ui_checkbox(ui, str("Render origin"), &game->debug_state.render_origin);
     ui_checkbox(ui, str("Render entity bounds"), &game->debug_state.render_entity_bounds);
-    ui_checkbox(
-        ui, str("Render entity velocity"), &game->debug_state.render_entity_velocity);
+    ui_checkbox(ui, str("Render entity velocity"), &game->debug_state.render_entity_velocity);
     ui_checkbox(ui, str("Render edge list"), &game->debug_state.render_edge_list);
     ui_checkbox(ui, str("Render camera bounds"), &game->debug_state.render_camera_bounds);
     ui_checkbox(ui, str("Render chunks"), &game->debug_state.render_chunks);
     ui_checkbox(ui, str("Render chain links"), &game->debug_state.render_chain_links);
-    ui_checkbox(
-        ui, str("Render chaining spells"), &game->debug_state.render_chaining_spells);
+    ui_checkbox(ui, str("Render chaining spells"), &game->debug_state.render_chaining_spells);
 
     ui_spacing(ui, 8);
 
@@ -218,8 +215,8 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
                                 ? str("DEBUG CAMERA ACTIVE")
                                 : str("NORMAL CAMERA ACTIVE");
 
-        String camera_pos_str = format(
-            scratch, "Camera position: " FMT_V2, FMT_V2_ARG(game->world.camera.position));
+        String camera_pos_str = format(scratch, "Camera position: " FMT_V2,
+            FMT_V2_ARG(game->world.camera.position));
         String zoom_str = format(scratch, "Zoom: %.2f", (f64)game->world.camera.zoom);
 
         ui_text(ui, camera_str);
@@ -232,7 +229,7 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
 
     ui_pop_container(ui);
 
-	ui_pop_style(ui);
+    ui_pop_style(ui);
 }
 
 void debug_update(Game *game, FrameInput *frame_input)
@@ -273,8 +270,7 @@ void debug_update(Game *game, FrameInput *frame_input)
             game->debug_state.debug_camera = game->world.camera;
         } else {
             // Otherwise, just toggle between debug camera and normal camera
-            game->debug_state.debug_camera_active =
-                !game->debug_state.debug_camera_active;
+            game->debug_state.debug_camera_active = !game->debug_state.debug_camera_active;
         }
     }
 
@@ -329,8 +325,7 @@ void debug_update(Game *game, FrameInput *frame_input)
     game->debug_state.timestep_modifier = CLAMP(speed_modifier, 0.0f, 5.0f);
 }
 
-void debug_render_chunks(
-    struct Game *game, struct RenderBatch *rb, struct LinearArena *arena)
+void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct LinearArena *arena)
 {
 #if 1
     Chunks *chunks = &game->world.map_chunks;
@@ -361,8 +356,8 @@ void debug_render_chunks(
             /*     layer = 1; */
             /* } */
 
-            draw_outlined_rectangle(
-                rb, arena, rect, color, 4.0f, shader_handle(SHAPE_SHADER), layer);
+            draw_outlined_rectangle(rb, arena, rect, color, 4.0f, shader_handle(SHAPE_SHADER),
+                layer);
         }
     }
 #else
@@ -375,8 +370,8 @@ void debug_render_chunks(
     Vector2 dims = {256, 256};
     Rectangle area = {v2_sub(mouse_pos, dims), v2_mul_s(dims, 2.0f)};
 
-    draw_rectangle(
-        rb, arena, area, rgba32(0, 0.5f, 1.0f, 0.4f), shader_handle(SHAPE_SHADER), 0);
+    draw_rectangle(rb, arena, area, rgba32(0, 0.5f, 1.0f, 0.4f), shader_handle(SHAPE_SHADER),
+        0);
 
     Chunks *chunks = &game->world.map_chunks;
     ChunkPtrArray chunks_in_area = get_chunks_in_area(chunks, area, arena);

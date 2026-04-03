@@ -122,8 +122,8 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     result.lighting_rb = push_new_render_batch(rbs, active_camera, frame_input->window_size,
         Y_IS_UP, FRAME_BUFFER_LIGHTING, ambient_light, BLEND_FUNCTION_ADDITIVE, scratch);
 
-    result.lighting_stencil_rb = add_stencil_pass(
-        result.lighting_rb, STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, scratch);
+    result.lighting_stencil_rb = add_stencil_pass(result.lighting_rb,
+        STENCIL_FUNCTION_NOT_EQUAL, 1, STENCIL_OP_REPLACE, scratch);
 
     result.worldspace_ui_rb =
         push_new_render_batch(rbs, active_camera, frame_input->window_size, Y_IS_UP,
@@ -146,8 +146,8 @@ static void render_ui(Game *game, RenderBatches rbs, FrameInput *frame_input,
     }
 
     if (game->debug_state.quad_tree_overlay) {
-        debug_render_quad_tree(
-            &game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
+        debug_render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena,
+            0);
     }
 
     if (game->debug_state.render_origin) {
@@ -294,8 +294,7 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
         la_get_memory_usage(&game_memory->temporary_memory);
     game->debug_state.permanent_arena_memory_usage =
         la_get_memory_usage(&game_memory->permanent_memory);
-    game->debug_state.world_arena_memory_usage =
-        la_get_memory_usage(&game->world.world_arena);
+    game->debug_state.world_arena_memory_usage = la_get_memory_usage(&game->world.world_arena);
 }
 
 void game_initialize(Game *game, GameMemory *game_memory)
@@ -313,12 +312,12 @@ void game_initialize(Game *game, GameMemory *game_memory)
 
     // NOTE: UI style is currently mostly unused
     UIStyle default_ui_style = {0};
-	default_ui_style.font = font_handle(DEFAULT_FONT);
-	default_ui_style.background_color = RGBA32_BLUE;
-	default_ui_style.background_shadow_color = RGBA32_GRAY;
-	default_ui_style.accent_color = RGBA32_GREEN;
-	default_ui_style.context_menu_color = RGBA32_CYAN;
-	default_ui_style.text_color = RGBA32_WHITE;
+    default_ui_style.font = font_handle(DEFAULT_FONT);
+    default_ui_style.background_color = RGBA32_BLUE;
+    default_ui_style.background_shadow_color = RGBA32_GRAY;
+    default_ui_style.accent_color = RGBA32_GREEN;
+    default_ui_style.context_menu_color = RGBA32_CYAN;
+    default_ui_style.text_color = RGBA32_WHITE;
 
     // Debug UI
     ui_initialize(&game->debug_state.debug_ui, default_ui_style,

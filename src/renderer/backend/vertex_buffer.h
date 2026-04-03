@@ -11,8 +11,8 @@ typedef struct {
     s32 index_count;
 } VertexBuffer;
 
-static inline b32 vertex_buffer_flush_needed(
-    VertexBuffer *vb, s32 vertices_to_draw, ssize indices_to_draw)
+static inline b32 vertex_buffer_flush_needed(VertexBuffer *vb, s32 vertices_to_draw,
+    ssize indices_to_draw)
 {
     b32 result = (vb->vertex_count + vertices_to_draw > ARRAY_COUNT(vb->vertices))
                  || ((vb->index_count + indices_to_draw) > ARRAY_COUNT(vb->indices));
@@ -20,8 +20,7 @@ static inline b32 vertex_buffer_flush_needed(
     return result;
 }
 
-static inline void vertex_buffer_push_triangle(
-    VertexBuffer *vb, Vertex a, Vertex b, Vertex c)
+static inline void vertex_buffer_push_triangle(VertexBuffer *vb, Vertex a, Vertex b, Vertex c)
 {
     u32 start_count = (u32)vb->vertex_count;
 
@@ -34,8 +33,8 @@ static inline void vertex_buffer_push_triangle(
     vb->indices[vb->index_count++] = start_count + 2;
 }
 
-static inline void vertex_buffer_push_quad(
-    VertexBuffer *vb, Vertex a, Vertex b, Vertex c, Vertex d)
+static inline void vertex_buffer_push_quad(VertexBuffer *vb, Vertex a, Vertex b, Vertex c,
+    Vertex d)
 {
     u32 start_count = (u32)vb->vertex_count;
 

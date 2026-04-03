@@ -58,8 +58,8 @@ static void insert_item_in_inventory(EntitySystem *es, Inventory *inv,
     es_remove_component(item_to_add_entity, PhysicsComponent);
 }
 
-void append_item_to_inventory_list(
-    EntitySystem *es, Inventory *inv, InventoryStorable *item_to_add)
+void append_item_to_inventory_list(EntitySystem *es, Inventory *inv,
+    InventoryStorable *item_to_add)
 {
     ASSERT(!inventory_contains_item(es, inv, item_to_add));
     ASSERT(entity_id_is_null(item_to_add->next_item_in_inventory));
@@ -93,8 +93,8 @@ typedef struct {
     EntityID first_collision_item;
 } InventoryCollision;
 
-static InventoryCollision count_inventory_item_collisions(
-    EntitySystem *es, Inventory *inv, InventoryStorable *item, Vector2i grid_pos)
+static InventoryCollision count_inventory_item_collisions(EntitySystem *es, Inventory *inv,
+    InventoryStorable *item, Vector2i grid_pos)
 {
     InventoryCollision result = {0};
 
@@ -189,8 +189,7 @@ InventoryInsertion can_add_item_to_inventory(struct EntitySystem *es, Inventory 
     return result;
 }
 
-void add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
-    InventoryStorable *item)
+void add_item_to_inventory(struct EntitySystem *es, Inventory *inv, InventoryStorable *item)
 {
     InventoryInsertion result = can_add_item_to_inventory(es, inv, item);
     ASSERT(result.ok);
@@ -198,8 +197,8 @@ void add_item_to_inventory(struct EntitySystem *es, Inventory *inv,
     add_item_to_inventory_at(es, inv, item, result.inventory_coords);
 }
 
-void remove_item_from_inventory(
-    EntitySystem *es, Inventory *inv, InventoryStorable *item_to_remove)
+void remove_item_from_inventory(EntitySystem *es, Inventory *inv,
+    InventoryStorable *item_to_remove)
 {
     ASSERT(inventory_contains_item(es, inv, item_to_remove));
 
@@ -255,8 +254,8 @@ b32 inventory_contains_item(EntitySystem *es, Inventory *inventory, InventorySto
     return result;
 }
 
-EntityID try_get_inventory_item_at_position(
-    struct EntitySystem *es, Inventory *inv, Vector2i grid_position)
+EntityID try_get_inventory_item_at_position(struct EntitySystem *es, Inventory *inv,
+    Vector2i grid_position)
 {
     EntityID curr_id = inv->first_item_in_inventory;
 

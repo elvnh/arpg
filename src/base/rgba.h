@@ -27,14 +27,13 @@ static inline RGBA32 rgba32(f32 r, f32 g, f32 b, f32 a)
 
 static inline RGBA32 rgba32_mono(f32 value, f32 a)
 {
-	RGBA32 result = {value, value, value, a};
+    RGBA32 result = {value, value, value, a};
 
-	return result;
+    return result;
 }
 static inline b32 rgba32_eq(RGBA32 lhs, RGBA32 rhs)
 {
-    b32 result =
-        (lhs.r == rhs.r) && (lhs.g == rhs.g) && (lhs.b == rhs.b) && (lhs.a == rhs.a);
+    b32 result = (lhs.r == rhs.r) && (lhs.g == rhs.g) && (lhs.b == rhs.b) && (lhs.a == rhs.a);
 
     return result;
 }

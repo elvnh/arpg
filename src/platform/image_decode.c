@@ -24,8 +24,7 @@ Image image_decode_png(Span span, Allocator allocator)
     memcpy(img_copy, img_data, (usize)image_size);
     free(img_data);
 
-    Image result = {
-        .data = img_copy, .width = width, .height = height, .channels = channels};
+    Image result = {.data = img_copy, .width = width, .height = height, .channels = channels};
 
     return result;
 }

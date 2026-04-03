@@ -13,7 +13,7 @@ static Widget *ui_internal_text(UIState *ui, String text, Vector2 offset)
 
     widget_add_flag(widget, WIDGET_TEXT);
 
-	UIStyle style = ui_get_current_style(ui);
+    UIStyle style = ui_get_current_style(ui);
 
     widget->text.string = text;
     widget->text.font = style.font;
@@ -32,7 +32,7 @@ void ui_text(UIState *ui, String text)
 static Widget *ui_create_non_interactible_button(UIState *ui, String text, WidgetID id)
 {
     // TODO: allow changing size
-	UIStyle style = ui_get_current_style(ui);
+    UIStyle style = ui_get_current_style(ui);
     Widget *widget = ui_colored_box(ui, v2(0, 32.0f), style.accent_color, id, false);
 
     widget->semantic_size[AXIS_HORIZONTAL].kind = UI_SIZE_KIND_SUM_OF_CHILDREN;
@@ -55,9 +55,9 @@ WidgetInteraction ui_button(UIState *ui, String text)
     widget_add_flag(widget, WIDGET_HOT_COLOR);
     widget_add_flag(widget, WIDGET_ACTIVE_COLOR);
 
-	UIStyle style = ui_get_current_style(ui);
-	widget->hot_color = style.hot_color;
-	widget->active_color = style.active_color;
+    UIStyle style = ui_get_current_style(ui);
+    widget->hot_color = style.hot_color;
+    widget->active_color = style.active_color;
 
     WidgetInteraction prev_interaction = ui_get_widget_interaction(ui, widget);
     return prev_interaction;
@@ -76,15 +76,15 @@ WidgetInteraction ui_checkbox(UIState *ui, String text, b32 *b)
     // TODO: fix vertical alignment with text
     ASSERT(b);
 
-	UIStyle style = ui_get_current_style(ui);
+    UIStyle style = ui_get_current_style(ui);
 
     Widget *widget = ui_colored_box(ui, v2(12, 12), style.background_shadow_color,
         ui_create_id(text), false);
     widget_add_flag(widget, WIDGET_CLICKABLE);
     widget_add_flag(widget, WIDGET_HOT_COLOR);
 
-	widget->hot_color = style.hot_color;
-	widget->active_color = style.active_color;
+    widget->hot_color = style.hot_color;
+    widget->active_color = style.active_color;
 
     widget->child_padding = 2.0f;
 
@@ -127,7 +127,7 @@ void ui_spacing(UIState *ui, f32 amount)
 
 void ui_textbox(UIState *ui, StringBuilder *sb)
 {
-	UIStyle style = ui_get_current_style(ui);
+    UIStyle style = ui_get_current_style(ui);
 
     Widget *widget =
         ui_colored_box(ui, v2(128, 32), style.background_shadow_color, (u64)sb, false);
@@ -147,7 +147,7 @@ void ui_textbox(UIState *ui, StringBuilder *sb)
 
 void ui_begin_list(UIState *ui, String name)
 {
-	UIStyle style = ui_get_current_style(ui);
+    UIStyle style = ui_get_current_style(ui);
 
     Widget *container = ui_colored_box(ui, v2(256, 256), style.background_shadow_color,
         ui_create_id(name), false);
@@ -180,8 +180,8 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
     widget_add_flag(selectable, WIDGET_HOT_COLOR);
     widget_add_flag(selectable, WIDGET_ACTIVE_COLOR);
 
-	selectable->hot_color = style.hot_color;
-	selectable->active_color = style.active_color;
+    selectable->hot_color = style.hot_color;
+    selectable->active_color = style.active_color;
 
     ui_push_container(ui, selectable);
     ui_text(ui, text);
@@ -191,8 +191,8 @@ WidgetInteraction ui_selectable(UIState *ui, String text)
     return prev_interaction;
 }
 
-Widget *ui_create_container(UIState *ui, Vector2 size,
-	UISizeKind size_kind, f32 child_padding, WidgetID id, RGBA32 color)
+Widget *ui_create_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 child_padding,
+    WidgetID id, RGBA32 color)
 {
     Widget *widget = ui_colored_box(ui, size, color, id, false);
 
@@ -205,16 +205,16 @@ Widget *ui_create_container(UIState *ui, Vector2 size,
     return widget;
 }
 
-void ui_begin_container(UIState *ui, Vector2 size,
-	UISizeKind size_kind, f32 child_padding)
+void ui_begin_container(UIState *ui, Vector2 size, UISizeKind size_kind, f32 child_padding)
 {
-	ui_create_container(ui, size, size_kind, child_padding, UI_NULL_WIDGET_ID, RGBA32_TRANSPARENT);
+    ui_create_container(ui, size, size_kind, child_padding, UI_NULL_WIDGET_ID,
+        RGBA32_TRANSPARENT);
 }
 
-WidgetInteraction ui_begin_menu(UIState *ui, Vector2 size, String name,
-    UISizeKind size_kind, f32 child_padding)
+WidgetInteraction ui_begin_menu(UIState *ui, Vector2 size, String name, UISizeKind size_kind,
+    f32 child_padding)
 {
-	UIStyle style = ui_get_current_style(ui);
+    UIStyle style = ui_get_current_style(ui);
 
     Widget *widget = ui_create_container(ui, size, size_kind, child_padding,
         ui_create_id(name), style.background_color);
@@ -231,7 +231,7 @@ void ui_pop_menu(UIState *ui)
 void ui_begin_mouse_menu(UIState *ui, Vector2 mouse_pos)
 {
     // NOTE: null id because the container itself can't be interacted with
-	UIStyle style = ui_get_current_style(ui);
+    UIStyle style = ui_get_current_style(ui);
 
     Widget *container =
         ui_colored_box(ui, V2_ZERO, style.context_menu_color, UI_NULL_WIDGET_ID, true);

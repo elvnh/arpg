@@ -27,8 +27,8 @@ static ssize polygon_size(Polygon *polygon)
     return result;
 }
 
-static b32 triangle_is_ear(
-    Polygon *polygon, PolygonVertex *a, PolygonVertex *b, PolygonVertex *c)
+static b32 triangle_is_ear(Polygon *polygon, PolygonVertex *a, PolygonVertex *b,
+    PolygonVertex *c)
 {
     Triangle potential_triangle = {a->point, b->point, c->point};
 
@@ -74,10 +74,8 @@ static int sort_polygon_cmp(const void *a, const void *b, void *data)
     Vector2 pa = *(Vector2 *)a;
     Vector2 pb = *(Vector2 *)b;
 
-    f32 angle_a =
-        (f32)fmodf(rad_to_deg(atan2f(pa.x - center.x, pa.y - center.y)) + 360, 360);
-    f32 angle_b =
-        (f32)fmodf(rad_to_deg(atan2f(pb.x - center.x, pb.y - center.y)) + 360, 360);
+    f32 angle_a = (f32)fmodf(rad_to_deg(atan2f(pa.x - center.x, pa.y - center.y)) + 360, 360);
+    f32 angle_b = (f32)fmodf(rad_to_deg(atan2f(pb.x - center.x, pb.y - center.y)) + 360, 360);
 
     int result = (int)(angle_a - angle_b);
     return result;
@@ -98,8 +96,7 @@ void sort_polygon_vertices(Polygon *polygon, Vector2 center, LinearArena *arena)
 
     list_clear(polygon);
 
-    qsort_r(
-        verts, ssize_to_usize(point_count), sizeof(*verts), sort_polygon_cmp, &center);
+    qsort_r(verts, ssize_to_usize(point_count), sizeof(*verts), sort_polygon_cmp, &center);
 
     for (ssize i = 0; i < point_count; ++i) {
         PolygonVertex *vert = la_allocate_item(arena, PolygonVertex);
@@ -108,8 +105,7 @@ void sort_polygon_vertices(Polygon *polygon, Vector2 center, LinearArena *arena)
     }
 }
 
-TriangulatedPolygon triangulate_polygon(
-    Polygon *polygon, Vector2 center, LinearArena *arena)
+TriangulatedPolygon triangulate_polygon(Polygon *polygon, Vector2 center, LinearArena *arena)
 {
     sort_polygon_vertices(polygon, center, arena);
 

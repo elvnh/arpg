@@ -5,9 +5,9 @@
 #include "components/component.h"
 #include "world/world.h"
 
-static void execute_collision_policy(World *world, Entity *entity,
-    PhysicsComponent *physics, CollisionPolicy policy, CollisionInfo collision,
-    EntityPairIndex collision_pair_index, b32 should_block, LinearArena *frame_arena)
+static void execute_collision_policy(World *world, Entity *entity, PhysicsComponent *physics,
+    CollisionPolicy policy, CollisionInfo collision, EntityPairIndex collision_pair_index,
+    b32 should_block, LinearArena *frame_arena)
 {
     // NOTE: This function handles both entity vs tilemap and entity vs entity collisions.
     // If the collision is vs a tile, pass ENTITY_PAIR_INDEX_FIRST as collision_pair_index.
@@ -103,6 +103,6 @@ void execute_entity_vs_entity_collision_policy(World *world, Entity *entity,
 
     // NOTE: we only execute OUR behaviour for THEM, this function is expected to be called
     // twice for each collision pair
-    execute_collision_policy(world, entity, entity_physics, our_policy_for_them,
-        collision, collision_index, should_block, frame_arena);
+    execute_collision_policy(world, entity, entity_physics, our_policy_for_them, collision,
+        collision_index, should_block, frame_arena);
 }

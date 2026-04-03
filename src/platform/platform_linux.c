@@ -28,8 +28,8 @@ static void framebuffer_size_callback(GLFWwindow *window, s32 width, s32 height)
     glViewport(0, 0, width, height);
 }
 
-WindowHandle *platform_create_window(
-    s32 width, s32 height, const char *title, u32 window_flags, Allocator allocator)
+WindowHandle *platform_create_window(s32 width, s32 height, const char *title,
+    u32 window_flags, Allocator allocator)
 {
     if (!glfwInit()) {
         return 0;
@@ -135,8 +135,7 @@ static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 
 static void platform_update_input(PlatformInput *input, WindowHandle *window)
 {
-    memcpy(input->previous_keystates, input->keystates,
-        KEY_COUNT * sizeof(*input->keystates));
+    memcpy(input->previous_keystates, input->keystates, KEY_COUNT * sizeof(*input->keystates));
 
     input->scroll_delta = g_scroll_delta;
     g_scroll_delta = 0.0f;
@@ -240,8 +239,7 @@ bool platform_path_is_absolute(String path)
     return str_starts_with(path, str("/"));
 }
 
-String platform_get_absolute_path(
-    String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_absolute_path(String path, Allocator allocator, LinearArena *scratch_arena)
 {
     if (platform_path_is_absolute(path)) {
         return path;
@@ -256,8 +254,8 @@ String platform_get_absolute_path(
     return result;
 }
 
-String platform_get_canonical_path(
-    String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_canonical_path(String path, Allocator allocator,
+    LinearArena *scratch_arena)
 {
     Allocator scratch = la_allocator(scratch_arena);
 
@@ -305,8 +303,7 @@ void platform_change_working_directory(String path)
     ASSERT(result == 0);
 }
 
-String platform_get_parent_path(
-    String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena)
 {
     String absolute = platform_get_absolute_path(path, allocator, scratch_arena);
     ssize last_slash_pos = str_find_last_occurence(absolute, str("/"));
@@ -366,8 +363,8 @@ done:
     return result;
 }
 
-String platform_read_entire_file_as_string(
-    String path, Allocator allocator, LinearArena *scratch)
+String platform_read_entire_file_as_string(String path, Allocator allocator,
+    LinearArena *scratch)
 {
     Span file_contents = platform_read_entire_file(path, allocator, scratch);
     String result = {(char *)file_contents.data, file_contents.size};
@@ -403,8 +400,7 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
         return result;
     }
 
-    Timestamp mod_time = {
-        .seconds = st.st_mtim.tv_sec, .nanoseconds = st.st_mtim.tv_nsec};
+    Timestamp mod_time = {.seconds = st.st_mtim.tv_sec, .nanoseconds = st.st_mtim.tv_nsec};
 
     FileType type = FILE_TYPE_OTHER;
 
@@ -421,8 +417,8 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
     return result;
 }
 
-void platform_for_each_file_in_dir(
-    String directory, void (*callback)(String), LinearArena *scratch)
+void platform_for_each_file_in_dir(String directory, void (*callback)(String),
+    LinearArena *scratch)
 {
     String null_terminated = str_null_terminate(directory, la_allocator(scratch));
     DIR *dir = opendir(null_terminated.data);
@@ -432,9 +428,8 @@ void platform_for_each_file_in_dir(
         String name = {entry->d_name, (ssize)strlen(entry->d_name)};
 
         // TODO: use new format function for constructing paths
-        String full_path =
-            str_concat(str_concat(directory, str("/"), la_allocator(scratch)), name,
-                la_allocator(scratch));
+        String full_path = str_concat(str_concat(directory, str("/"), la_allocator(scratch)),
+            name, la_allocator(scratch));
 
         if (entry->d_type == DT_DIR) {
             if (!str_equal(name, str(".")) && !str_equal(name, str(".."))) {

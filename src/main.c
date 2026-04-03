@@ -36,10 +36,8 @@ int main(void)
 
     GameMemory game_memory = {0};
 
-    game_memory.permanent_memory =
-        la_create(la_allocator(&main_arena), PERMANENT_ARENA_SIZE);
-    game_memory.temporary_memory =
-        la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE);
+    game_memory.permanent_memory = la_create(la_allocator(&main_arena), PERMANENT_ARENA_SIZE);
+    game_memory.temporary_memory = la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE);
     game_memory.free_list_memory =
         fl_create(la_allocator(&game_memory.permanent_memory), FREE_LIST_ARENA_SIZE);
 
@@ -49,9 +47,8 @@ int main(void)
 
     WindowHandle *window = platform_create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "foo",
         WINDOW_FLAG_NON_RESIZABLE, la_allocator(&game_memory.permanent_memory));
-    RendererBackend *backend =
-        renderer_backend_initialize(v2i(WINDOW_WIDTH, WINDOW_HEIGHT),
-            la_allocator(&game_memory.permanent_memory));
+    RendererBackend *backend = renderer_backend_initialize(v2i(WINDOW_WIDTH, WINDOW_HEIGHT),
+        la_allocator(&game_memory.permanent_memory));
 
     assets_initialize(la_allocator(&game_memory.permanent_memory));
 
@@ -92,8 +89,7 @@ int main(void)
         la_reset(&game_memory.temporary_memory);
 
         // TODO: Guard asset reloading behind macro too, just like code hot reloading
-        file_watcher_reload_modified_assets(
-            &asset_watcher, &game_memory.temporary_memory);
+        file_watcher_reload_modified_assets(&asset_watcher, &game_memory.temporary_memory);
         HOT_RELOAD_IF_RECOMPILED(&game_code, &game_memory.temporary_memory);
 
         Vector2i window_size = platform_get_window_size(window);
@@ -110,26 +106,25 @@ int main(void)
         renderer_backend_begin_frame(backend);
 
         for (RenderBatch *batch = list_head(&render_batches); batch;
-             batch = list_next(batch)) {
+            batch = list_next(batch)) {
             execute_render_commands(batch, backend, &game_memory.temporary_memory);
         }
 
         renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS, 0);
 
         // TODO: Do this somewhere else
-        ShaderAsset *light_blending_shader =
-            assets_get_shader(get_shader_handle_from_table(
-                &game_state->asset_table, GAME_ASSET_LIGHT_BLENDING_SHADER));
+        ShaderAsset *light_blending_shader = assets_get_shader(get_shader_handle_from_table(
+            &game_state->asset_table, GAME_ASSET_LIGHT_BLENDING_SHADER));
 
         renderer_backend_blend_framebuffers(backend, FRAME_BUFFER_GAMEPLAY,
             FRAME_BUFFER_LIGHTING, light_blending_shader);
 
         ShaderAsset *screenspace_texture_shader =
-            assets_get_shader(get_shader_handle_from_table(
-                &game_state->asset_table, GAME_ASSET_SCREENSPACE_TEXTURE_SHADER));
+            assets_get_shader(get_shader_handle_from_table(&game_state->asset_table,
+                GAME_ASSET_SCREENSPACE_TEXTURE_SHADER));
 
-        renderer_backend_draw_framebuffer_as_texture(
-            backend, FRAME_BUFFER_OVERLAY, screenspace_texture_shader);
+        renderer_backend_draw_framebuffer_as_texture(backend, FRAME_BUFFER_OVERLAY,
+            screenspace_texture_shader);
 
         platform_poll_events(window);
     }

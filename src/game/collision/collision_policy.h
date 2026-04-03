@@ -20,16 +20,14 @@ typedef enum {
     COLLISION_POLICY_DIE,
 } CollisionPolicy;
 
-void execute_entity_vs_tilemap_collision_policy(struct World *world,
-    struct Entity *entity, struct PhysicsComponent *physics,
-    struct ColliderComponent *collider, CollisionInfo collision,
-    struct LinearArena *frame_arena);
+void execute_entity_vs_tilemap_collision_policy(struct World *world, struct Entity *entity,
+    struct PhysicsComponent *physics, struct ColliderComponent *collider,
+    CollisionInfo collision, struct LinearArena *frame_arena);
 
 // TODO: reduce number of parameters
 void execute_entity_vs_entity_collision_policy(struct World *world, struct Entity *entity,
     struct PhysicsComponent *entity_physics, struct ColliderComponent *entity_collider,
-    struct Entity *other, struct ColliderComponent *other_collider,
-    CollisionInfo collision, EntityPairIndex collision_index,
-    struct LinearArena *frame_arena);
+    struct Entity *other, struct ColliderComponent *other_collider, CollisionInfo collision,
+    EntityPairIndex collision_index, struct LinearArena *frame_arena);
 
 #endif //COLLISION_POLICY_H

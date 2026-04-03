@@ -69,8 +69,7 @@ static inline AssetKind get_game_asset_kind(GameAsset asset_name)
     return 0;
 }
 
-static inline TextureHandle get_texture_handle_from_table(
-    AssetTable *assets, GameAsset asset)
+static inline TextureHandle get_texture_handle_from_table(AssetTable *assets, GameAsset asset)
 {
     ASSERT(get_game_asset_kind(asset) == ASSET_KIND_TEXTURE);
     TextureHandle result = assets->textures[asset];
@@ -78,8 +77,7 @@ static inline TextureHandle get_texture_handle_from_table(
     return result;
 }
 
-static inline ShaderHandle get_shader_handle_from_table(
-    AssetTable *assets, GameAsset asset)
+static inline ShaderHandle get_shader_handle_from_table(AssetTable *assets, GameAsset asset)
 {
     ASSERT(get_game_asset_kind(asset) == ASSET_KIND_SHADER);
     ShaderHandle result = assets->shaders[asset];

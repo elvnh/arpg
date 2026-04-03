@@ -252,8 +252,8 @@ static inline Vector2i v2_to_v2i(Vector2 from)
     return result;
 }
 
-static inline Vector2 v2_rotate_around_point(
-    Vector2 v, f32 rotation_in_radians, Vector2 origin)
+static inline Vector2 v2_rotate_around_point(Vector2 v, f32 rotation_in_radians,
+    Vector2 origin)
 {
     f32 s = sin_f32(rotation_in_radians);
     f32 c = cos_f32(rotation_in_radians);

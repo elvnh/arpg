@@ -53,8 +53,8 @@ static inline EntityState state_walking(Vector2 direction)
     return result;
 }
 
-static inline EntityState state_attacking(
-    SpellID spell_being_cast, Vector2 target_pos, StatValue cast_speed)
+static inline EntityState state_attacking(SpellID spell_being_cast, Vector2 target_pos,
+    StatValue cast_speed)
 {
     EntityState result = {0};
     result.kind = ENTITY_STATE_ATTACKING;

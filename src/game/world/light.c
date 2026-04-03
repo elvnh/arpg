@@ -52,8 +52,8 @@ int sort_points_cmp(const void *a, const void *b, void *data)
     return 0;
 }
 
-static void cast_rays_towards_corner(
-    RayHits *hit_array, Vector2 origin, Vector2 target, EdgePool *edges)
+static void cast_rays_towards_corner(RayHits *hit_array, Vector2 origin, Vector2 target,
+    EdgePool *edges)
 {
     Vector2 target_direction = v2_norm(v2_sub(target, origin));
     f32 target_angle = atan2f(target_direction.y, target_direction.x);
@@ -111,8 +111,7 @@ TriangleFan get_visibility_polygon(Vector2 origin, Tilemap *tilemap, LinearArena
     EdgePool edge_pool = tilemap_get_edge_list(tilemap, alloc);
 
     RayHits ray_hits = {0};
-    ray_hits.items =
-        la_allocate_array(arena, RayHit, edge_pool.count * 2 * RAYS_PER_CORNER);
+    ray_hits.items = la_allocate_array(arena, RayHit, edge_pool.count * 2 * RAYS_PER_CORNER);
 
     for (ssize i = 0; i < edge_pool.count; ++i) {
         EdgeLine edge = edge_pool.items[i];
@@ -122,8 +121,8 @@ TriangleFan get_visibility_polygon(Vector2 origin, Tilemap *tilemap, LinearArena
     }
 
     // Sort the ray hits in clockwise order around player to allow connecting them in triangle fan
-    qsort_r(ray_hits.items, (usize)ray_hits.count, sizeof(*ray_hits.items),
-        sort_points_cmp, 0);
+    qsort_r(ray_hits.items, (usize)ray_hits.count, sizeof(*ray_hits.items), sort_points_cmp,
+        0);
 
     TriangleFan result = {0};
     result.center = origin;
@@ -154,8 +153,8 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
         if (light.fade_duration == 0.0f) {
             color.a = 0.0f;
         } else {
-            color.a = light.color.a
-                      * (1.0f - MIN(light.time_elapsed / light.fade_duration, 1.0f));
+            color.a =
+                light.color.a * (1.0f - MIN(light.time_elapsed / light.fade_duration, 1.0f));
         }
     }
 
@@ -164,14 +163,13 @@ void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 or
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (light.kind) {
         case LIGHT_REGULAR: {
-            entry = draw_circle(
-                rb, arena, origin, color, light.radius, shader_handle(LIGHT_SHADER), 0);
+            entry = draw_circle(rb, arena, origin, color, light.radius,
+                shader_handle(LIGHT_SHADER), 0);
         } break;
 
         case LIGHT_RAYCASTED: {
             TriangleFan fan = get_visibility_polygon(origin, &world->tilemap, arena);
-            entry =
-                draw_triangle_fan(rb, arena, fan, color, shader_handle(LIGHT_SHADER), 0);
+            entry = draw_triangle_fan(rb, arena, fan, color, shader_handle(LIGHT_SHADER), 0);
         } break;
 
             INVALID_DEFAULT_CASE;

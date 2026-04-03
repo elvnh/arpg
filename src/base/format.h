@@ -72,8 +72,7 @@ static inline String f32_to_string(f32 number, s32 precision, Allocator allocato
 {
     s64 as_int = (s64)number;
     b32 is_negative = number < 0.0f;
-    ssize num_chars =
-        digit_count_s64(as_int) + (precision != 0) + precision + is_negative;
+    ssize num_chars = digit_count_s64(as_int) + (precision != 0) + precision + is_negative;
 
     ssize alloc_size = num_chars + 1;
     String result = str_allocate(alloc_size, allocator);
@@ -86,8 +85,7 @@ static inline String f32_to_string(f32 number, s32 precision, Allocator allocato
     return result;
 }
 
-FORMAT_ATTRIBUTE(2, 3)
-static inline String format(LinearArena *arena, const char *fmt, ...)
+FORMAT_ATTRIBUTE(2, 3) static inline String format(LinearArena *arena, const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);

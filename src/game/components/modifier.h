@@ -27,8 +27,8 @@ static inline void add_item_modifier(ItemModifiers *mods, Modifier mod)
     mods->modifiers[mods->modifier_count++] = mod;
 }
 
-static inline Modifier create_modifier(
-    Stat stat, StatValue value, NumericModifierType mod_type)
+static inline Modifier create_modifier(Stat stat, StatValue value,
+    NumericModifierType mod_type)
 {
     Modifier result = {0};
 

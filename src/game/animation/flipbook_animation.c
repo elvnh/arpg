@@ -129,8 +129,8 @@ void update_flipbook_animation(World *world, Entity *entity, PhysicsComponent *p
                 } break;
 
                 case ANIM_ON_END_TRANSITION_TO_STATE: {
-                    entity_force_transition_to_state(
-                        world, entity, physics, anim->on_end_behaviour.as.state_transition);
+                    entity_force_transition_to_state(world, entity, physics,
+                        anim->on_end_behaviour.as.state_transition);
                 } break;
 
                 case ANIM_ON_END_REMOVE_COMPONENT: {
@@ -171,8 +171,8 @@ f32 get_animation_duration(FlipbookID anim)
     return result;
 }
 
-FlipbookInstance begin_flipbook_animation_with_duration(
-    FlipbookID anim, f32 duration, f32 speed_factor)
+FlipbookInstance begin_flipbook_animation_with_duration(FlipbookID anim, f32 duration,
+    f32 speed_factor)
 {
     f32 anim_duration = get_animation_duration(anim);
     f32 total_speed_factor = (anim_duration / duration) * speed_factor;

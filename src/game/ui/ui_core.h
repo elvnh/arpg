@@ -42,16 +42,16 @@ typedef struct {
 typedef struct UIStyle {
     FontHandle font;
 
-	RGBA32 text_color;
-	RGBA32 background_color;
-	RGBA32 background_shadow_color;
-	RGBA32 context_menu_color;
-	RGBA32 accent_color;
-	RGBA32 active_color;
-	RGBA32 hot_color;
+    RGBA32 text_color;
+    RGBA32 background_color;
+    RGBA32 background_shadow_color;
+    RGBA32 context_menu_color;
+    RGBA32 accent_color;
+    RGBA32 active_color;
+    RGBA32 hot_color;
 
-	struct UIStyle *next_style_in_stack;
-	b32 pop_after_one_use;
+    struct UIStyle *next_style_in_stack;
+    b32 pop_after_one_use;
 } UIStyle;
 
 typedef struct {
@@ -74,7 +74,7 @@ typedef struct UIState {
     UIAlignment current_alignment[AXIS_COUNT];
 
     UIStyle default_style;
-	UIStyle *style_stack;
+    UIStyle *style_stack;
 
     // TODO: push container that contains entire viewport on beginning of each frame
     Widget *root_widget;

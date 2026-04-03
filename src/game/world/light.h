@@ -34,8 +34,8 @@ typedef struct {
     f32 time_elapsed;
 } LightSource;
 
-TriangleFan get_visibility_polygon(
-    Vector2 origin, struct Tilemap *tilemap, struct LinearArena *arena);
+TriangleFan get_visibility_polygon(Vector2 origin, struct Tilemap *tilemap,
+    struct LinearArena *arena);
 void render_light_source(struct World *world, struct RenderBatch *rb, Vector2 origin,
     LightSource light, f32 intensity, struct LinearArena *arena);
 

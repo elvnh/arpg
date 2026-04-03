@@ -148,8 +148,8 @@ void world_drop_item_from_position(Vector2 position, Entity *item_entity)
 // Handles anything that needs to be handled before removing an entity,
 // such as transferring components that need to stay alive a little longer
 // over to a new entity.
-static void handle_entity_removal_side_effects(
-    World *world, EntityID id, LinearArena *frame_arena)
+static void handle_entity_removal_side_effects(World *world, EntityID id,
+    LinearArena *frame_arena)
 {
     Entity *dying_entity = es_get_entity(&world->entity_system, id);
     PhysicsComponent *dying_entity_physics =
@@ -240,8 +240,8 @@ static void handle_entity_removal_side_effects(
     }
 }
 
-static void world_remove_entity(
-    World *world, ssize alive_entity_index, LinearArena *frame_arena)
+static void world_remove_entity(World *world, ssize alive_entity_index,
+    LinearArena *frame_arena)
 {
     ASSERT(alive_entity_index < world->active_entity_count);
 
@@ -289,8 +289,8 @@ Vector2 tile_to_world_coords(Vector2i tile_coords)
     return result;
 }
 
-static void deal_damage_to_entity(
-    World *world, Entity *entity, HealthComponent *hp, DamageInstance damage)
+static void deal_damage_to_entity(World *world, Entity *entity, HealthComponent *hp,
+    DamageInstance damage)
 {
     Damage damage_taken = calculate_damage_received(&world->entity_system, entity, damage);
     StatValue dmg_sum = calculate_damage_sum(damage_taken);
@@ -307,8 +307,8 @@ static void deal_damage_to_entity(
     }
 }
 
-static void try_deal_damage_to_entity(
-    World *world, Entity *receiver, Entity *sender, DamageInstance damage)
+static void try_deal_damage_to_entity(World *world, Entity *receiver, Entity *sender,
+    DamageInstance damage)
 {
     (void)sender;
 
@@ -357,14 +357,14 @@ void world_make_entity_non_spatial(World *world, Entity *entity)
     es_remove_component(entity, PhysicsComponent);
 }
 
-static void entity_update(
-    World *world, ssize alive_entity_index, f32 dt, LinearArena *frame_arena)
+static void entity_update(World *world, ssize alive_entity_index, f32 dt,
+    LinearArena *frame_arena)
 {
     EntityID id = world->active_entity_ids[alive_entity_index];
     Entity *entity = es_get_entity(&world->entity_system, id);
 
-    if (es_has_components(
-            entity, component_id(ArcingComponent) | component_id(PhysicsComponent))) {
+    if (es_has_components(entity,
+            component_id(ArcingComponent) | component_id(PhysicsComponent))) {
         ArcingComponent *arcing = es_get_component(entity, ArcingComponent);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
         Vector2 entity_center = rect_center(world_get_entity_bounding_box(entity, physics));
@@ -401,8 +401,8 @@ static void entity_update(
             physics->velocity = V2_ZERO;
 
             if (target) {
-                try_deal_damage_to_entity(
-                    world, target, entity, arcing->damage_on_target_reached);
+                try_deal_damage_to_entity(world, target, entity,
+                    arcing->damage_on_target_reached);
             }
 
             es_remove_component(entity, ArcingComponent);
@@ -425,8 +425,8 @@ static void entity_update(
         entity_update_ai(world, entity, ai);
     }
 
-    if (es_has_components(
-            entity, component_id(ParticleSpawner) | component_id(PhysicsComponent))) {
+    if (es_has_components(entity,
+            component_id(ParticleSpawner) | component_id(PhysicsComponent))) {
         ParticleSpawner *ps = es_get_component(entity, ParticleSpawner);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
@@ -444,22 +444,22 @@ static void entity_update(
         update_status_effects(status_effects, dt);
     }
 
-    if (es_has_components(
-            entity, component_id(AnimationComponent) | component_id(PhysicsComponent))) {
+    if (es_has_components(entity,
+            component_id(AnimationComponent) | component_id(PhysicsComponent))) {
         AnimationComponent *anim = es_get_component(entity, AnimationComponent);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
         update_procedural_animation(world, &anim->animation, physics, dt);
     }
 
-    if (es_has_components(
-            entity, component_id(FlipbookComponent) | component_id(PhysicsComponent))) {
+    if (es_has_components(entity,
+            component_id(FlipbookComponent) | component_id(PhysicsComponent))) {
         FlipbookComponent *anim_component = es_get_component(entity, FlipbookComponent);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
         ASSERT(anim_component->current_animation.animation_id != FLIPBOOK_NULL);
 
-        update_flipbook_animation(
-            world, entity, physics, &anim_component->current_animation, dt);
+        update_flipbook_animation(world, entity, physics, &anim_component->current_animation,
+            dt);
     }
 
     if (es_has_component(entity, LightEmitter)) {
@@ -610,12 +610,12 @@ static void swap_and_reset_collision_tables(World *world)
 void world_add_trigger_cooldown(World *world, EntityID a, EntityID b,
     ComponentBitset component, RetriggerBehaviour retrigger_behaviour)
 {
-    add_trigger_cooldown(
-        &world->trigger_cooldowns, a, b, component, retrigger_behaviour, &world->world_arena);
+    add_trigger_cooldown(&world->trigger_cooldowns, a, b, component, retrigger_behaviour,
+        &world->world_arena);
 }
 
-static Rectangle get_entity_collider_rectangle(
-    ColliderComponent *collider, PhysicsComponent *physics)
+static Rectangle get_entity_collider_rectangle(ColliderComponent *collider,
+    PhysicsComponent *physics)
 {
     Rectangle result = {physics->position, collider->size};
 
@@ -623,8 +623,8 @@ static Rectangle get_entity_collider_rectangle(
 }
 
 // TODO: move to trigger file?
-static void invoke_entity_vs_entity_collision_triggers(
-    World *world, Entity *self, Entity *other)
+static void invoke_entity_vs_entity_collision_triggers(World *world, Entity *self,
+    Entity *other)
 {
     EntityID self_id = es_get_id_of_entity(&world->entity_system, self);
     EntityID other_id = es_get_id_of_entity(&world->entity_system, other);
@@ -667,8 +667,8 @@ static f32 entity_vs_entity_collision(World *world, Entity *a, ColliderComponent
     Rectangle rect_a = get_entity_collider_rectangle(collider_a, physics_a);
     Rectangle rect_b = get_entity_collider_rectangle(collider_b, physics_b);
 
-    CollisionInfo collision = collision_rect_vs_rect(
-        movement_fraction_left, rect_a, rect_b, physics_a->velocity, physics_b->velocity, dt);
+    CollisionInfo collision = collision_rect_vs_rect(movement_fraction_left, rect_a, rect_b,
+        physics_a->velocity, physics_b->velocity, dt);
 
     b32 same_collision_group = (collider_a->collision_group == collider_b->collision_group)
                                && (collider_a->collision_group != COLLISION_GROUP_NONE);
@@ -676,10 +676,10 @@ static f32 entity_vs_entity_collision(World *world, Entity *a, ColliderComponent
     if ((collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) && !same_collision_group
         && !entities_intersected_this_frame(world, id_a, id_b)) {
         b32 neither_collider_on_cooldown =
-            !trigger_is_on_cooldown(
-                &world->trigger_cooldowns, id_a, id_b, component_id(ColliderComponent))
-            && !trigger_is_on_cooldown(
-                &world->trigger_cooldowns, id_b, id_a, component_id(ColliderComponent));
+            !trigger_is_on_cooldown(&world->trigger_cooldowns, id_a, id_b,
+                component_id(ColliderComponent))
+            && !trigger_is_on_cooldown(&world->trigger_cooldowns, id_b, id_a,
+                component_id(ColliderComponent));
 
         if (neither_collider_on_cooldown) {
             execute_entity_vs_entity_collision_policy(world, a, physics_a, collider_a, b,
@@ -707,8 +707,8 @@ static f32 entity_vs_entity_collision(World *world, Entity *a, ColliderComponent
     return movement_fraction_left;
 }
 
-static Rectangle get_entity_collision_area(
-    ColliderComponent *collider, PhysicsComponent *physics, f32 dt)
+static Rectangle get_entity_collision_area(ColliderComponent *collider,
+    PhysicsComponent *physics, f32 dt)
 {
     Vector2 next_pos = v2_add(physics->position, v2_mul_s(physics->velocity, dt));
 
@@ -766,8 +766,8 @@ static f32 entity_vs_tilemap_collision(Entity *entity, ColliderComponent *collid
                 if (collision.collision_status != COLLISION_STATUS_NOT_COLLIDING) {
                     movement_fraction_left = collision.movement_fraction_left;
 
-                    execute_entity_vs_tilemap_collision_policy(
-                        world, entity, physics, collider, collision, frame_arena);
+                    execute_entity_vs_tilemap_collision_policy(world, entity, physics,
+                        collider, collision, frame_arena);
 
                     EventData event_data = event_data_tilemap_collision(collision_coords);
                     send_event_to_entity(entity, event_data, world, frame_arena);
@@ -797,8 +797,8 @@ static void handle_collision_and_movement(World *world, f32 dt, LinearArena *fra
         f32 movement_fraction_left = 1.0f;
 
         if (collider_a && physics_a) {
-            movement_fraction_left = entity_vs_tilemap_collision(
-                a, collider_a, physics_a, world, movement_fraction_left, dt, frame_arena);
+            movement_fraction_left = entity_vs_tilemap_collision(a, collider_a, physics_a,
+                world, movement_fraction_left, dt, frame_arena);
             ASSERT(movement_fraction_left >= 0.0f);
 
             Rectangle collision_area = get_entity_collision_area(collider_a, physics_a, dt);
@@ -975,8 +975,8 @@ static void render_tilemap(World *world, RenderBatches rb_list, Vector2i viewpor
                     draw_sprite(rb_list.world_rb, frame_arena, texture, tile_rect,
                         (SpriteModifiers){0}, shader_handle(TEXTURE_SHADER), layer);
                 } else if (tile->type == TILE_WALL) {
-                    Tile *tile_above = tilemap_get_tile(
-                        &world->tilemap, (Vector2i){tile_coords.x, tile_coords.y + 1});
+                    Tile *tile_above = tilemap_get_tile(&world->tilemap,
+                        (Vector2i){tile_coords.x, tile_coords.y + 1});
                     b32 can_walk_behind_tile = tile_above && (tile_above->type == TILE_FLOOR);
 
                     Rectangle bottom_segment = {
@@ -1132,16 +1132,16 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     {
         for (s32 x = 0; x < world_width; ++x) {
-            tilemap_insert_tile(
-                &world->tilemap, (Vector2i){x, 0}, TILE_WALL, &world->world_arena);
+            tilemap_insert_tile(&world->tilemap, (Vector2i){x, 0}, TILE_WALL,
+                &world->world_arena);
 
             tilemap_insert_tile(&world->tilemap, (Vector2i){x, world_height - 1}, TILE_WALL,
                 &world->world_arena);
         }
 
         for (s32 y = 1; y < world_height - 1; ++y) {
-            tilemap_insert_tile(
-                &world->tilemap, (Vector2i){0, y}, TILE_WALL, &world->world_arena);
+            tilemap_insert_tile(&world->tilemap, (Vector2i){0, y}, TILE_WALL,
+                &world->world_arena);
 
             tilemap_insert_tile(&world->tilemap, (Vector2i){world_width - 1, y}, TILE_WALL,
                 &world->world_arena);
@@ -1149,8 +1149,8 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
         for (s32 y = 1; y < world_height - 1; ++y) {
             for (s32 x = 1; x < world_width - 1; ++x) {
-                tilemap_insert_tile(
-                    &world->tilemap, (Vector2i){x, y}, TILE_FLOOR, &world->world_arena);
+                tilemap_insert_tile(&world->tilemap, (Vector2i){x, y}, TILE_FLOOR,
+                    &world->world_arena);
             }
         }
     }
@@ -1292,8 +1292,8 @@ void world_initialize(World *world, FreeListArena *parent_arena)
                 equippable->equippable_in_slot = EQUIP_SLOT_WEAPON;
 
                 ItemModifiers *mods = es_add_component(entity, ItemModifiers);
-                add_item_modifier(
-                    mods, create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE));
+                add_item_modifier(mods,
+                    create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE));
 
                 NameComponent *name = es_add_component(entity, NameComponent);
                 *name = name_component(str("Item name"));

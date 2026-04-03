@@ -66,8 +66,8 @@ static b32 entity_id_is_valid(EntitySystem *es, EntityID id)
         && (id_slot->generation == id.generation);
 
     ASSERT((!result
-               || ((id_slot->next_free_id_index == -1)
-                   && (id_slot->prev_free_id_index == -1) && (id_slot->is_active)))
+               || ((id_slot->next_free_id_index == -1) && (id_slot->prev_free_id_index == -1)
+                   && (id_slot->is_active)))
            && "If entity is alive, it's ID slot should be set to the correct state");
 
     return result;
@@ -264,10 +264,9 @@ Entity *es_impl_get_component_owner(EntitySystem *es, void *component, Component
     ssize offset = get_component_offset(type);
     Entity *result = byte_offset(component, -offset);
 
-    ASSERT(
-        ((Entity *)component >= es->entities)
-        && ((Entity *)component < (es->entities + MAX_ENTITIES))
-        && "A pointer that doesn't point to an actual component in an entity was passed");
+    ASSERT(((Entity *)component >= es->entities)
+           && ((Entity *)component < (es->entities + MAX_ENTITIES))
+           && "A pointer that doesn't point to an actual component in an entity was passed");
     ASSERT(entity_id_is_valid(es, result->id));
     ASSERT(es_has_components(result, ES_IMPL_COMP_ENUM_BIT_VALUE(type)));
 
@@ -291,8 +290,8 @@ EntityWithID es_clone_entity(EntitySystem *destination_es, Entity *entity)
     return result;
 }
 
-EntityWithID es_clone_entity_into_other_es_and_keep_id(
-    EntitySystem *destination_es, Entity *entity)
+EntityWithID es_clone_entity_into_other_es_and_keep_id(EntitySystem *destination_es,
+    Entity *entity)
 {
     ASSERT(!es_entity_exists(destination_es, entity->id)
            && "Did you try to move the entity into the same entity system?");

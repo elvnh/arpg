@@ -19,8 +19,7 @@ CollisionEventTable collision_event_table_create(LinearArena *parent_arena)
     return result;
 }
 
-CollisionEvent *collision_event_table_find(
-    CollisionEventTable *table, EntityID a, EntityID b)
+CollisionEvent *collision_event_table_find(CollisionEventTable *table, EntityID a, EntityID b)
 {
     EntityPair searched_pair = unordered_entity_pair(a, b);
     u64 hash = entity_pair_hash(searched_pair);

@@ -24,7 +24,7 @@ void la_reset(LinearArena *arena);
 Allocator la_allocator(LinearArena *arena);
 ssize la_get_memory_usage(LinearArena *arena);
 void la_pop_to(LinearArena *arena, void *ptr);
-void *la_copy_allocation(
-    void *context, void *arr, ssize item_count, ssize item_size, ssize alignment);
+void *la_copy_allocation(void *context, void *arr, ssize item_count, ssize item_size,
+    ssize alignment);
 
 #endif //LINEAR_ARENA_H

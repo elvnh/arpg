@@ -17,8 +17,7 @@ static ChainComponent *get_next_link_in_chain(EntitySystem *es, ChainComponent *
     return result;
 }
 
-static ChainComponent *get_previous_link_in_chain(
-    EntitySystem *es, ChainComponent *current)
+static ChainComponent *get_previous_link_in_chain(EntitySystem *es, ChainComponent *current)
 {
     Entity *entity = get_previous_entity_in_chain(es, current);
     ChainComponent *result = 0;
@@ -31,12 +30,11 @@ static ChainComponent *get_previous_link_in_chain(
     return result;
 }
 
-void push_link_to_front_of_chain(
-    EntitySystem *es, ChainComponent *root, ChainComponent *link_to_push)
+void push_link_to_front_of_chain(EntitySystem *es, ChainComponent *root,
+    ChainComponent *link_to_push)
 {
     Entity *root_entity = es_get_component_owner(es, root, ChainComponent);
-    Entity *link_to_push_entity =
-        es_get_component_owner(es, link_to_push, ChainComponent);
+    Entity *link_to_push_entity = es_get_component_owner(es, link_to_push, ChainComponent);
     ASSERT(root_entity != link_to_push_entity);
 
     ChainComponent *next = get_next_link_in_chain(es, root);

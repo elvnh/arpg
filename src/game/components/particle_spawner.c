@@ -6,14 +6,14 @@ b32 particle_spawner_is_finished(ParticleSpawner *ps)
 {
     // NOTE: particle spawners no longer need to stay alive while particles are in flight
     // since the particles are stored in chunk particle buffers
-    b32 result = !has_flag(ps->config.flags, PS_FLAG_INFINITE)
-                 && (ps->particles_left_to_spawn <= 0);
+    b32 result =
+        !has_flag(ps->config.flags, PS_FLAG_INFINITE) && (ps->particles_left_to_spawn <= 0);
 
     return result;
 }
 
-void initialize_particle_spawner(
-    ParticleSpawner *ps, ParticleSpawnerConfig config, s32 particle_count)
+void initialize_particle_spawner(ParticleSpawner *ps, ParticleSpawnerConfig config,
+    s32 particle_count)
 {
     ps->config = config;
     ps->particles_left_to_spawn = particle_count;
@@ -44,18 +44,17 @@ static s32 calculate_particles_to_spawn_this_frame(ParticleSpawner *ps, f32 dt)
     return result;
 }
 
-void spawn_particles_in_chunk(
-    Chunk *chunk, Rectangle spawn_area, ParticleSpawnerConfig config, s32 particle_count)
+void spawn_particles_in_chunk(Chunk *chunk, Rectangle spawn_area, ParticleSpawnerConfig config,
+    s32 particle_count)
 {
     ASSERT(config.particle_size > 0.0f);
     ASSERT(config.particle_speed > 0.0f);
     ASSERT(config.particles_per_second > 0);
     ASSERT(config.particle_color.a > 0);
 
-    ParticleBuffer *particle_buffer =
-        has_flag(config.flags, PS_FLAG_EMITS_LIGHT)
-            ? &chunk->particle_buffers.light_emitting_particles
-            : &chunk->particle_buffers.normal_particles;
+    ParticleBuffer *particle_buffer = has_flag(config.flags, PS_FLAG_EMITS_LIGHT)
+                                          ? &chunk->particle_buffers.light_emitting_particles
+                                          : &chunk->particle_buffers.normal_particles;
 
     for (s32 i = 0; i < particle_count; ++i) {
         Vector2 dir = rng_direction(PI * 2);
@@ -86,8 +85,8 @@ void spawn_particles_in_chunk(
     }
 }
 
-void update_particle_spawner(
-    World *world, Entity *entity, ParticleSpawner *ps, PhysicsComponent *physics, f32 dt)
+void update_particle_spawner(World *world, Entity *entity, ParticleSpawner *ps,
+    PhysicsComponent *physics, f32 dt)
 {
     ASSERT(physics);
 

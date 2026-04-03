@@ -56,8 +56,8 @@ static void transition_to_ai_state(World *world, Entity *entity, AIComponent *ai
     END_EXHAUSTIVE_SWITCH;
 }
 
-static void update_ai_state_idle(
-    World *world, Entity *entity, AIComponent *ai, PhysicsComponent *self_physics)
+static void update_ai_state_idle(World *world, Entity *entity, AIComponent *ai,
+    PhysicsComponent *self_physics)
 {
     // TODO: get entities in area around ourselves instead of checking everyone
 
@@ -70,16 +70,16 @@ static void update_ai_state_idle(
             f32 distance = v2_dist(other_physics->position, self_physics->position);
 
             if (distance < AI_CHASE_DISTANCE) {
-                transition_to_ai_state(
-                    world, entity, ai, self_physics, ai_state_chasing(other_id));
+                transition_to_ai_state(world, entity, ai, self_physics,
+                    ai_state_chasing(other_id));
                 break;
             }
         }
     }
 }
 
-static void update_ai_state_chasing(
-    World *world, Entity *entity, AIComponent *ai, PhysicsComponent *self_physics)
+static void update_ai_state_chasing(World *world, Entity *entity, AIComponent *ai,
+    PhysicsComponent *self_physics)
 {
     ASSERT(ai->current_state.kind == AI_STATE_CHASING);
 
@@ -105,16 +105,16 @@ static void update_ai_state_chasing(
             Vector2 direction = v2_sub(target_physics->position, self_physics->position);
             direction = v2_norm(direction);
 
-            entity_try_transition_to_state(
-                world, entity, self_physics, state_walking(direction));
+            entity_try_transition_to_state(world, entity, self_physics,
+                state_walking(direction));
         } else {
             transition_to_ai_state(world, entity, ai, self_physics, ai_state_idle());
         }
     }
 }
 
-static void ai_behaviour_normal_enemy(
-    World *world, Entity *entity, AIComponent *ai, PhysicsComponent *physics)
+static void ai_behaviour_normal_enemy(World *world, Entity *entity, AIComponent *ai,
+    PhysicsComponent *physics)
 {
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (ai->current_state.kind) {

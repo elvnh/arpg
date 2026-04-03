@@ -133,12 +133,12 @@ QuadTreeLocation qt_remove_entity(QuadTree *qt, EntityID id, QuadTreeLocation lo
     return QT_NULL_LOCATION;
 }
 
-static void qt_get_entities_in_area_recursive(
-    QuadTreeNode *node, Rectangle area, EntityIDList *list, LinearArena *arena)
+static void qt_get_entities_in_area_recursive(QuadTreeNode *node, Rectangle area,
+    EntityIDList *list, LinearArena *arena)
 {
     if (node && rect_intersects(node->area, area)) {
         for (QuadTreeElement *elem = list_head(&node->entities_in_node); elem;
-             elem = list_next(elem)) {
+            elem = list_next(elem)) {
             if (rect_intersects(elem->area, area)) {
                 EntityIDNode *id_node = la_allocate_item(arena, EntityIDNode);
                 id_node->id = elem->entity_id;

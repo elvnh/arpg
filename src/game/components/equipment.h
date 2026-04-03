@@ -35,7 +35,7 @@ typedef struct {
 } Equippable;
 
 typedef struct {
-    b32      ok;
+    b32 ok;
     EntityID replaced_item;
 } EquipResult;
 

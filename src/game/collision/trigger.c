@@ -6,8 +6,8 @@
 #include "entity/entity_id.h"
 #include "world/world.h"
 
-static inline ssize trigger_cooldown_hashed_index(
-    TriggerCooldownTable *table, EntityID self, EntityID other)
+static inline ssize trigger_cooldown_hashed_index(TriggerCooldownTable *table, EntityID self,
+    EntityID other)
 {
     // TODO: better hash
     u64 hash = entity_id_hash(self) ^ entity_id_hash(other);
@@ -16,8 +16,8 @@ static inline ssize trigger_cooldown_hashed_index(
     return result;
 }
 
-static TriggerCooldown *find_trigger_cooldown(
-    TriggerCooldownTable *table, EntityID self, EntityID other, ComponentID component_id)
+static TriggerCooldown *find_trigger_cooldown(TriggerCooldownTable *table, EntityID self,
+    EntityID other, ComponentID component_id)
 {
     ASSERT(!entity_id_equal(self, other));
 
@@ -74,8 +74,7 @@ void update_trigger_cooldowns(World *world, f32 dt)
             TriggerCooldown *next_cd = curr_cd->next;
 
             Entity *owning = es_get_entity(&world->entity_system, curr_cd->owning_entity);
-            Entity *other =
-                es_get_entity(&world->entity_system, curr_cd->collided_entity);
+            Entity *other = es_get_entity(&world->entity_system, curr_cd->collided_entity);
             ASSERT(owning);
             ASSERT(other);
 
@@ -108,8 +107,8 @@ void update_trigger_cooldowns(World *world, f32 dt)
     }
 }
 
-b32 trigger_is_on_cooldown(
-    TriggerCooldownTable *table, EntityID a, EntityID b, ComponentID component)
+b32 trigger_is_on_cooldown(TriggerCooldownTable *table, EntityID a, EntityID b,
+    ComponentID component)
 {
     b32 result = find_trigger_cooldown(table, a, b, component) != 0;
 

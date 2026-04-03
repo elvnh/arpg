@@ -77,8 +77,8 @@ void set_damage_value(Damage *damage, DamageType type, StatValue new_value)
     damage->type_values[type] = new_value;
 }
 
-void set_damage_range_for_type(
-    DamageRange *range, DamageType type, StatValue low, StatValue high)
+void set_damage_range_for_type(DamageRange *range, DamageType type, StatValue low,
+    StatValue high)
 {
     set_damage_value(&range->low_roll, type, low);
     set_damage_value(&range->high_roll, type, high);
@@ -101,12 +101,10 @@ Damage calculate_damage_dealt(EntitySystem *es, struct Entity *entity, Damage ba
     for (DamageType dmg_type = 0; dmg_type < DMG_TYPE_COUNT; ++dmg_type) {
         Stat stat = get_stat_affecting_damage_type(dmg_type);
 
-        for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT;
-             ++mod_type) {
+        for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT; ++mod_type) {
             // TODO: if stats etc can modify base damage, make sure to to change this to
             // get_total_stat_value_of_type
-            StatValue total_mods =
-                get_total_stat_modifier_of_type(es, entity, stat, mod_type);
+            StatValue total_mods = get_total_stat_modifier_of_type(es, entity, stat, mod_type);
 
             StatValue current_value = get_damage_value(result, dmg_type);
             StatValue new_value = apply_modifier(current_value, total_mods, mod_type);
@@ -117,8 +115,7 @@ Damage calculate_damage_dealt(EntitySystem *es, struct Entity *entity, Damage ba
     return result;
 }
 
-Damage calculate_damage_received(
-    EntitySystem *es, struct Entity *entity, DamageInstance dmg)
+Damage calculate_damage_received(EntitySystem *es, struct Entity *entity, DamageInstance dmg)
 {
     Damage result = dmg.damage;
 

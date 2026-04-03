@@ -61,8 +61,8 @@ typedef enum {
     GRID_COORD_ROUND_TO_NEAREST,
 } GridCoordRounding;
 
-static inline Vector2i screen_to_inventory_grid_coords(
-    Vector2 position, Rectangle inventory_grid_rect, GridCoordRounding rounding)
+static inline Vector2i screen_to_inventory_grid_coords(Vector2 position,
+    Rectangle inventory_grid_rect, GridCoordRounding rounding)
 {
     Vector2 screen_offset = v2_sub(position, inventory_grid_rect.position);
     Vector2 floating_grid_pos = v2_div_s(screen_offset, INVENTORY_GRID_UI_CELL_SIZE);
@@ -85,8 +85,8 @@ static inline Vector2 inventory_grid_to_screen_vector(Vector2i grid_pos)
     return result;
 }
 
-static inline Vector2 inventory_grid_to_screen_coords(
-    Vector2i position, Rectangle inventory_grid_rect)
+static inline Vector2 inventory_grid_to_screen_coords(Vector2i position,
+    Rectangle inventory_grid_rect)
 {
     Vector2 result = inventory_grid_to_screen_vector(position);
     result = v2_add(result, inventory_grid_rect.position);
@@ -94,19 +94,19 @@ static inline Vector2 inventory_grid_to_screen_coords(
     return result;
 }
 
-static Vector2i get_cursor_item_grid_coords(
-    InventoryMenu *inv_menu, InventoryStorable *item, Vector2 mouse_pos)
+static Vector2i get_cursor_item_grid_coords(InventoryMenu *inv_menu, InventoryStorable *item,
+    Vector2 mouse_pos)
 {
-    Vector2 top_left = v2_sub(
-        mouse_pos, v2_div_s(inventory_grid_to_screen_vector(item->inventory_grid_size), 2.0f));
-    Vector2i result = screen_to_inventory_grid_coords(
-        top_left, inv_menu->inventory_grid_rect, GRID_COORD_ROUND_TO_NEAREST);
+    Vector2 top_left = v2_sub(mouse_pos,
+        v2_div_s(inventory_grid_to_screen_vector(item->inventory_grid_size), 2.0f));
+    Vector2i result = screen_to_inventory_grid_coords(top_left, inv_menu->inventory_grid_rect,
+        GRID_COORD_ROUND_TO_NEAREST);
 
     return result;
 }
 
-static void render_inventory_grid_overlay(
-    InventoryHookContext *context, RenderBatch *rb, LinearArena *scratch)
+static void render_inventory_grid_overlay(InventoryHookContext *context, RenderBatch *rb,
+    LinearArena *scratch)
 {
     f32 grid_thickness = 2.0f;
     RGBA32 grid_color = rgba32_mono(0.5f, 1.0f);
@@ -134,8 +134,8 @@ static void render_inventory_grid_overlay(
     }
 }
 
-static void render_inventory_items(
-    InventoryHookContext *context, RenderBatch *rb, LinearArena *scratch)
+static void render_inventory_items(InventoryHookContext *context, RenderBatch *rb,
+    LinearArena *scratch)
 {
     EntitySystem *es = &context->world->entity_system;
     EntityID curr_item = context->inventory->first_item_in_inventory;
@@ -203,8 +203,8 @@ static void render_cursor_item_background(InventoryMenu *inv_menu, Inventory *in
         }
 
         Vector2 bg_screen_size = inventory_grid_to_screen_vector(clamped_item_grid_size);
-        Vector2 bg_screen_pos = inventory_grid_to_screen_coords(
-            clamped_item_grid_pos, inv_menu->inventory_grid_rect);
+        Vector2 bg_screen_pos = inventory_grid_to_screen_coords(clamped_item_grid_pos,
+            inv_menu->inventory_grid_rect);
         Rectangle bg_rect = {bg_screen_pos, bg_screen_size};
 
         draw_rectangle(rb, arena, bg_rect, bg_color, shader_handle(SHAPE_SHADER),
@@ -232,8 +232,8 @@ void render_item_on_cursor(InventoryMenu *inv_menu, World *world, RenderBatch *r
     ASSERT(sprite);
 
     if (inv_menu->can_interact_with_inventory) {
-        render_cursor_item_background(
-            inv_menu, inventory, item, mouse_pos, &world->entity_system, rb, arena);
+        render_cursor_item_background(inv_menu, inventory, item, mouse_pos,
+            &world->entity_system, rb, arena);
     }
 
     if (sprite) {
@@ -252,8 +252,8 @@ void render_item_on_cursor(InventoryMenu *inv_menu, World *world, RenderBatch *r
  * we can't call any UI functions in it since the frame is over as far as the UI
  * is concerned.
  */
-static void inventory_grid_hook(
-    void *user_data, RenderBatch *rb, Widget *parent, LinearArena *frame_arena)
+static void inventory_grid_hook(void *user_data, RenderBatch *rb, Widget *parent,
+    LinearArena *frame_arena)
 {
     InventoryHookContext *context = user_data;
     InventoryMenu *menu = context->inventory_menu;

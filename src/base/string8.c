@@ -28,8 +28,7 @@ bool str_equal(String a, String b)
         return false;
     }
 
-    return (!a.data && !b.data)
-           || (memcmp(a.data, b.data, ssize_to_usize(a.length)) == 0);
+    return (!a.data && !b.data) || (memcmp(a.data, b.data, ssize_to_usize(a.length)) == 0);
 }
 
 String str_null_terminate(String str, Allocator alloc)

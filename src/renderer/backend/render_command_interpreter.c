@@ -49,8 +49,8 @@ static b32 renderer_state_change_needed(RendererState lhs, RendererState rhs)
     return (lhs.shader.id != rhs.shader.id) || (lhs.texture.id != rhs.texture.id);
 }
 
-static RendererState switch_renderer_state(
-    RendererState new_state, RendererState old_state, RendererBackend *backend)
+static RendererState switch_renderer_state(RendererState new_state, RendererState old_state,
+    RendererBackend *backend)
 {
     (void)backend;
 
@@ -70,8 +70,8 @@ static RendererState switch_renderer_state(
     return new_state;
 }
 
-static void render_line(
-    RendererBackend *backend, Vector2 start, Vector2 end, f32 thickness, RGBA32 color)
+static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f32 thickness,
+    RGBA32 color)
 {
     Vector2 dir_r = v2_mul_s(v2_norm(v2_sub(end, start)), thickness / 2.0f);
     Vector2 dir_l = v2_neg(dir_r);
@@ -127,16 +127,16 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
                 SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
                 ShaderAsset *shader = assets_get_shader(current_state->shader);
 
-                renderer_backend_set_uniform_vec4(
-                    shader, cmd->header.uniform_name, cmd->value, scratch);
+                renderer_backend_set_uniform_vec4(shader, cmd->header.uniform_name, cmd->value,
+                    scratch);
             } break;
 
             case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformFloat): {
                 SetupCmdUniformFloat *cmd = (SetupCmdUniformFloat *)setup_cmd;
                 ShaderAsset *shader = assets_get_shader(current_state->shader);
 
-                renderer_backend_set_uniform_float(
-                    shader, cmd->header.uniform_name, cmd->value, scratch);
+                renderer_backend_set_uniform_float(shader, cmd->header.uniform_name,
+                    cmd->value, scratch);
             } break;
 
                 INVALID_DEFAULT_CASE;
@@ -329,8 +329,8 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
                         cursor.y += newline_advance;
                     }
                 } else if (glyph == '\t') {
-                    RenderedGlyphInfo verts = font_get_glyph_vertices(
-                        font_asset, ' ', cursor, text_size, color, rb->y_direction);
+                    RenderedGlyphInfo verts = font_get_glyph_vertices(font_asset, ' ', cursor,
+                        text_size, color, rb->y_direction);
 
                     cursor.x += verts.advance_x * 4;
                 } else {
@@ -340,8 +340,8 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
                         verts = font_get_clipped_glyph_vertices(font_asset, glyph, cursor,
                             clip_rect, text_size, color, rb->y_direction);
                     } else {
-                        verts = font_get_glyph_vertices(
-                            font_asset, glyph, cursor, text_size, color, rb->y_direction);
+                        verts = font_get_glyph_vertices(font_asset, glyph, cursor, text_size,
+                            color, rb->y_direction);
                     }
 
                     if (verts.is_visible) {
@@ -448,13 +448,13 @@ void execute_render_commands(RenderBatch *rb, RendererBackend *backend, LinearAr
         renderer_backend_disable_stencil_writes();
         renderer_backend_enable_color_buffer_writes(backend);
 
-        renderer_backend_set_stencil_function(
-            backend, stencil->stencil_func, stencil->stencil_func_arg);
+        renderer_backend_set_stencil_function(backend, stencil->stencil_func,
+            stencil->stencil_func_arg);
     } else {
         // Either we are a stencil batch or a batch without a stencil pass, either way we should
         // always pass stencil test
-        renderer_backend_set_stencil_function(
-            backend, STENCIL_FUNCTION_ALWAYS, rb->stencil_func_arg);
+        renderer_backend_set_stencil_function(backend, STENCIL_FUNCTION_ALWAYS,
+            rb->stencil_func_arg);
 
         // If we are a stencil batch, stencil buffer writes will be enabled. If not, they're disabled
         // so this won't affect anything

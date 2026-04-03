@@ -29,8 +29,8 @@ StatValue modify_stat_by_percentage(StatValue lhs, StatValue percentage)
     return result;
 }
 
-static StatValue accumulate_modifier_value(
-    StatValue lhs, StatValue rhs, NumericModifierType mod_type)
+static StatValue accumulate_modifier_value(StatValue lhs, StatValue rhs,
+    NumericModifierType mod_type)
 {
     StatValue result = lhs;
 
@@ -94,8 +94,8 @@ static StatusEffectCallbackResult sum_status_effect_mods_callback(
 {
     SumStatusEffectContext *context = user_data;
 
-    if (status_effect_modifies_stat(
-            params.status_effect_id, context->stat, context->mod_type)) {
+    if (status_effect_modifies_stat(params.status_effect_id, context->stat,
+            context->mod_type)) {
         Modifier mod = get_status_effect_stat_modifier(params.status_effect_id);
 
         context->result =
@@ -105,8 +105,8 @@ static StatusEffectCallbackResult sum_status_effect_mods_callback(
     return STATUS_EFFECT_CALLBACK_PROCEED;
 }
 
-static StatValue sum_status_effect_modifiers_of_type(
-    Entity *entity, Stat stat, NumericModifierType mod_type)
+static StatValue sum_status_effect_modifiers_of_type(Entity *entity, Stat stat,
+    NumericModifierType mod_type)
 {
     SumStatusEffectContext context = {0};
     context.stat = stat;
@@ -117,8 +117,8 @@ static StatValue sum_status_effect_modifiers_of_type(
         es_try_get_component(entity, StatusEffectComponent);
 
     if (status_effects) {
-        for_each_active_status_effect(
-            status_effects, sum_status_effect_mods_callback, &context);
+        for_each_active_status_effect(status_effects, sum_status_effect_mods_callback,
+            &context);
     }
 
     return context.result;
@@ -147,8 +147,8 @@ static StatValue sum_modifiers_in_slot(Equipment *eq, Stat stat, EquipmentSlot s
     return result;
 }
 
-static StatValue sum_equipment_modifiers_of_type(
-    Entity *entity, Stat stat, NumericModifierType mod_type, EntitySystem *es)
+static StatValue sum_equipment_modifiers_of_type(Entity *entity, Stat stat,
+    NumericModifierType mod_type, EntitySystem *es)
 {
     StatValue result = initialize_stat_value(mod_type);
 
@@ -156,8 +156,7 @@ static StatValue sum_equipment_modifiers_of_type(
 
     if (equipment) {
         for (EquipmentSlot slot = 0; slot < EQUIP_SLOT_COUNT; ++slot) {
-            StatValue slot_mods =
-                sum_modifiers_in_slot(equipment, stat, slot, mod_type, es);
+            StatValue slot_mods = sum_modifiers_in_slot(equipment, stat, slot, mod_type, es);
 
             result = accumulate_modifier_value(result, slot_mods, mod_type);
         }
@@ -204,10 +203,8 @@ StatValue get_total_stat_value(struct EntitySystem *es, struct Entity *entity, S
         result = get_default_stat_value(stat);
     }
 
-    for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT;
-         ++mod_type) {
-        StatValue total_mods =
-            get_total_stat_modifier_of_type(es, entity, stat, mod_type);
+    for (NumericModifierType mod_type = 0; mod_type < NUMERIC_MOD_TYPE_COUNT; ++mod_type) {
+        StatValue total_mods = get_total_stat_modifier_of_type(es, entity, stat, mod_type);
 
         result = apply_modifier(result, total_mods, mod_type);
     }
@@ -215,11 +212,10 @@ StatValue get_total_stat_value(struct EntitySystem *es, struct Entity *entity, S
     return result;
 }
 
-StatValue get_total_stat_modifier_of_type(
-    EntitySystem *es, Entity *entity, Stat stat, NumericModifierType mod_type)
+StatValue get_total_stat_modifier_of_type(EntitySystem *es, Entity *entity, Stat stat,
+    NumericModifierType mod_type)
 {
-    StatValue equipment_mods =
-        sum_equipment_modifiers_of_type(entity, stat, mod_type, es);
+    StatValue equipment_mods = sum_equipment_modifiers_of_type(entity, stat, mod_type, es);
     StatValue status_mods = sum_status_effect_modifiers_of_type(entity, stat, mod_type);
 
     StatValue result = initialize_stat_value(mod_type);

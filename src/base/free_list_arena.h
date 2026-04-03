@@ -27,8 +27,8 @@ FreeListArena fl_create(Allocator parent, ssize capacity);
 void fl_destroy(FreeListArena *arena);
 void *fl_allocate(void *context, ssize item_count, ssize item_size, ssize alignment);
 void fl_deallocate(void *context, void *ptr);
-void *fl_reallocate(
-    void *context, void *ptr, ssize new_count, ssize item_size, ssize alignment);
+void *fl_reallocate(void *context, void *ptr, ssize new_count, ssize item_size,
+    ssize alignment);
 ssize fl_get_memory_usage(FreeListArena *arena);
 ssize fl_get_available_memory(FreeListArena *arena);
 Allocator fl_allocator(FreeListArena *arena);

@@ -23,8 +23,8 @@ typedef struct {
     SpriteRotationBehaviour rotation_behaviour;
 } Sprite;
 
-static inline Sprite sprite_create(
-    TextureHandle texture, Vector2 size, SpriteRotationBehaviour rot_behaviour)
+static inline Sprite sprite_create(TextureHandle texture, Vector2 size,
+    SpriteRotationBehaviour rot_behaviour)
 {
     Sprite result = {0};
     result.texture = texture;
@@ -44,8 +44,8 @@ static inline Sprite sprite_create_colored(TextureHandle texture, Vector2 size,
     return result;
 }
 
-static inline SpriteModifiers sprite_get_modifiers(
-    Vector2 direction, SpriteRotationBehaviour rotation_behaviour)
+static inline SpriteModifiers sprite_get_modifiers(Vector2 direction,
+    SpriteRotationBehaviour rotation_behaviour)
 {
     f32 rotation = 0.0f;
     f32 dir_angle = (f32)atan2f(direction.y, direction.x);

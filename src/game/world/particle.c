@@ -30,8 +30,8 @@ void update_particle_buffers(ParticleBuffers *buffers, f32 dt)
     update_particle_buffer(&buffers->light_emitting_particles, dt);
 }
 
-void render_particle_buffers(
-    ParticleBuffers *buffers, RenderBatches rbs, struct LinearArena *arena)
+void render_particle_buffers(ParticleBuffers *buffers, RenderBatches rbs,
+    struct LinearArena *arena)
 {
     if (ring_length(&buffers->normal_particles) > 0) {
         draw_particles(rbs.world_rb, arena, &buffers->normal_particles,

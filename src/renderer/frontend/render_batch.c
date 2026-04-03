@@ -159,8 +159,8 @@ static void merge_sort_render_entries(RenderEntry *entries, ssize count, LinearA
         merge_sort_render_entries(left_half, left_half_count, scratch);
         merge_sort_render_entries(right_half, right_half_count, scratch);
 
-        merge_render_entry_arrays(
-            entries, left_half, left_half_count, right_half, right_half_count);
+        merge_render_entry_arrays(entries, left_half, left_half_count, right_half,
+            right_half_count);
     }
 }
 
@@ -223,8 +223,8 @@ RenderEntry *draw_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHan
     cmd->flip = mods.flip;
 
     // TODO: make push_render_entry call render_key_create
-    RenderKey key = render_key_create(
-        rb, (s32)layer, shader, texture, NULL_FONT, (s32)rectangle.position.y);
+    RenderKey key = render_key_create(rb, (s32)layer, shader, texture, NULL_FONT,
+        (s32)rectangle.position.y);
     RenderEntry *result = push_render_entry(rb, key, cmd);
 
     return result;
@@ -233,15 +233,15 @@ RenderEntry *draw_colored_sprite(RenderBatch *rb, LinearArena *arena, TextureHan
 RenderEntry *draw_sprite(RenderBatch *rb, LinearArena *arena, TextureHandle texture,
     Rectangle rectangle, SpriteModifiers mods, ShaderHandle shader, RenderLayer layer)
 {
-    return draw_colored_sprite(
-        rb, arena, texture, rectangle, mods, RGBA32_WHITE, shader, layer);
+    return draw_colored_sprite(rb, arena, texture, rectangle, mods, RGBA32_WHITE, shader,
+        layer);
 }
 
 RenderEntry *draw_rectangle(RenderBatch *rb, LinearArena *arena, Rectangle rect, RGBA32 color,
     ShaderHandle shader, RenderLayer layer)
 {
-    return draw_colored_sprite(
-        rb, arena, NULL_TEXTURE, rect, (SpriteModifiers){0}, color, shader, layer);
+    return draw_colored_sprite(rb, arena, NULL_TEXTURE, rect, (SpriteModifiers){0}, color,
+        shader, layer);
 }
 
 RenderEntry *draw_triangle(RenderBatch *rb, LinearArena *arena, Triangle triangle,
@@ -320,8 +320,8 @@ RenderEntry *draw_textured_circle(RenderBatch *rb, LinearArena *arena, TextureHa
 RenderEntry *draw_circle(RenderBatch *rb, LinearArena *arena, Vector2 position, RGBA32 color,
     f32 radius, ShaderHandle shader, RenderLayer layer)
 {
-    return draw_textured_circle(
-        rb, arena, NULL_TEXTURE, position, color, radius, shader, layer);
+    return draw_textured_circle(rb, arena, NULL_TEXTURE, position, color, radius, shader,
+        layer);
 }
 
 RenderEntry *draw_line(RenderBatch *rb, LinearArena *arena, Vector2 start, Vector2 end,
@@ -415,8 +415,8 @@ RenderEntry *draw_triangle_fan(RenderBatch *rb, LinearArena *arena, TriangleFan 
     (type *)(allocate_render_setup_cmd_impl(                                             \
         (arena), entry, RENDER_SETUP_COMMAND_ENUM_NAME(type), uniform_name))
 
-static void *allocate_render_setup_cmd_impl(
-    LinearArena *arena, RenderEntry *re, SetupCmdKind kind, String uniform_name)
+static void *allocate_render_setup_cmd_impl(LinearArena *arena, RenderEntry *re,
+    SetupCmdKind kind, String uniform_name)
 {
     void *result = 0;
 

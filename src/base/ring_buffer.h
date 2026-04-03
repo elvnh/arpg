@@ -144,8 +144,8 @@ static inline void ring_impl_pop_tail(ssize *head, ssize *tail, ssize capacity)
     }
 }
 
-static inline void ring_impl_push(
-    void *items, ssize *head, ssize *tail, ssize capacity, ssize item_size, void *item)
+static inline void ring_impl_push(void *items, ssize *head, ssize *tail, ssize capacity,
+    ssize item_size, void *item)
 {
     ASSERT(items);
     ASSERT(capacity);
@@ -160,8 +160,8 @@ static inline void ring_impl_push(
     *tail = (*tail + 1) % capacity;
 }
 
-static inline void ring_impl_push_overwrite(
-    void *items, ssize *head, ssize *tail, ssize capacity, ssize item_size, void *item)
+static inline void ring_impl_push_overwrite(void *items, ssize *head, ssize *tail,
+    ssize capacity, ssize item_size, void *item)
 {
     ASSERT(items);
     ASSERT(capacity);

@@ -3,15 +3,14 @@
 #include "base/linear_arena.h"
 #include "world/world.h"
 
-void callback_spawn_particles(
-    CallbackUserData *user_data, EventData event_data, LinearArena *frame_arena)
+void callback_spawn_particles(CallbackUserData *user_data, EventData event_data,
+    LinearArena *frame_arena)
 {
     (void)frame_arena;
 
     ParticleSpawnerSetup *setup = &user_data->particle_spawner_data;
 
-    Entity *self =
-        es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
+    Entity *self = es_get_entity(&event_data.world->entity_system, event_data.receiver_id);
 
     PhysicsComponent *self_physics = es_try_get_component(self, PhysicsComponent);
     ASSERT(self_physics
@@ -25,14 +24,14 @@ void callback_spawn_particles(
             get_chunk_at_position(&event_data.world->map_chunks, self_physics->position);
         ASSERT(chunk);
 
-        spawn_particles_in_chunk(
-            chunk, self_bounds, setup->config, setup->total_particle_count);
+        spawn_particles_in_chunk(chunk, self_bounds, setup->config,
+            setup->total_particle_count);
     }
 }
 
-static Entity *try_get_chain_target(World *world, Entity *self,
-    ChainComponent *self_chain, Vector2 position, Rectangle search_area,
-    Entity *chained_off_entity, LinearArena *frame_arena)
+static Entity *try_get_chain_target(World *world, Entity *self, ChainComponent *self_chain,
+    Vector2 position, Rectangle search_area, Entity *chained_off_entity,
+    LinearArena *frame_arena)
 {
     EntityIDList nearby_entities =
         qt_get_entities_in_area(&world->quad_tree, search_area, frame_arena);
@@ -53,10 +52,8 @@ static Entity *try_get_chain_target(World *world, Entity *self,
             es_get_component(curr_entity, PhysicsComponent);
 
         // TODO: clean this up
-        if ((curr_entity->faction == hostile_faction)
-            && (curr_entity != chained_off_entity)) {
-            if (!has_chained_off_entity(
-                    &world->entity_system, self_chain, curr_entity->id)) {
+        if ((curr_entity->faction == hostile_faction) && (curr_entity != chained_off_entity)) {
+            if (!has_chained_off_entity(&world->entity_system, self_chain, curr_entity->id)) {
                 f32 dist = v2_dist(curr_entity_physics->position, position);
 
                 if (dist < closest_entity_dist) {
@@ -70,8 +67,8 @@ static Entity *try_get_chain_target(World *world, Entity *self,
     return closest_entity;
 }
 
-void chain_collision_callback(
-    CallbackUserData *user_data, EventData event_data, LinearArena *frame_arena)
+void chain_collision_callback(CallbackUserData *user_data, EventData event_data,
+    LinearArena *frame_arena)
 {
     SpellCallbackData *cb_data = &user_data->spell_data;
     ASSERT(cb_data->as.chain.chains_remaining >= 0);
@@ -79,8 +76,7 @@ void chain_collision_callback(
     EntitySystem *es = &event_data.world->entity_system;
     Entity *self = es_get_entity(es, event_data.receiver_id);
 
-    Entity *collide_target =
-        es_get_entity(es, event_data.as.hostile_collision.collided_with);
+    Entity *collide_target = es_get_entity(es, event_data.as.hostile_collision.collided_with);
     PhysicsComponent *self_physics = es_get_component(self, PhysicsComponent);
 
     // NOTE: the spell must be the root of the chain

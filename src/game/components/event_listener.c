@@ -26,8 +26,8 @@ void add_event_callback(Entity *entity, EventType event_type, CallbackFunction f
     }
 }
 
-void send_event_to_entity(
-    Entity *entity, EventData event_data, World *world, LinearArena *frame_arena)
+void send_event_to_entity(Entity *entity, EventData event_data, World *world,
+    LinearArena *frame_arena)
 {
     ASSERT(event_data.event_type >= 0);
     ASSERT(event_data.event_type < EVENT_COUNT);
@@ -38,8 +38,7 @@ void send_event_to_entity(
         event_data.receiver_id = es_get_id_of_entity(&world->entity_system, entity);
         event_data.world = world;
 
-        PerEventTypeCallbacks *cb_list =
-            &comp->per_event_callbacks[event_data.event_type];
+        PerEventTypeCallbacks *cb_list = &comp->per_event_callbacks[event_data.event_type];
 
         for (s32 i = 0; i < cb_list->count; ++i) {
             EventCallback *current_cb = &cb_list->callbacks[i];

@@ -47,8 +47,8 @@ void initialize_flipbook_animations(void);
 void update_flipbook_animation(struct World *world, struct Entity *entity,
     struct PhysicsComponent *physics, FlipbookInstance *instance, f32 dt);
 FlipbookInstance begin_flipbook_animation(FlipbookID next_anim, f32 speed_factor);
-FlipbookInstance begin_flipbook_animation_with_duration(
-    FlipbookID anim, f32 duration, f32 speed_factor);
+FlipbookInstance begin_flipbook_animation_with_duration(FlipbookID anim, f32 duration,
+    f32 speed_factor);
 FlipbookFrame get_current_flipbook_frame(FlipbookInstance *anim_instance);
 
 #endif //FLIPBOOK_ANIMATION_H

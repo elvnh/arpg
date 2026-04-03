@@ -45,8 +45,7 @@ static StatusEffect status_effect_chilled(void)
 
     result.base_duration = 10.0f;
     result.properties = EFFECT_PROP_STAT_MODIFIER;
-    result.stat_modifier =
-        create_modifier(STAT_ACTION_SPEED, -75, NUMERIC_MOD_FLAT_ADDITIVE);
+    result.stat_modifier = create_modifier(STAT_ACTION_SPEED, -75, NUMERIC_MOD_FLAT_ADDITIVE);
 
     return result;
 }
@@ -93,8 +92,8 @@ void try_apply_status_effect_to_entity(Entity *entity, StatusEffectID effect_id)
     apply_status_effect(comp, effect_id);
 }
 
-static void remove_status_effects_of_type(
-    StatusEffectComponent *status_effects, StatusEffectID type)
+static void remove_status_effects_of_type(StatusEffectComponent *status_effects,
+    StatusEffectID type)
 {
     u64 bit = FLAG(type);
     status_effects->active_effects_bitset &= ~bit;
@@ -121,8 +120,8 @@ void update_status_effects(StatusEffectComponent *status_effects, f32 dt)
     for_each_active_status_effect(status_effects, update_status_effects_callback, &dt);
 }
 
-b32 status_effect_modifies_stat(
-    StatusEffectID effect_id, Stat stat, NumericModifierType mod_type)
+b32 status_effect_modifies_stat(StatusEffectID effect_id, Stat stat,
+    NumericModifierType mod_type)
 {
     b32 result = false;
 
@@ -179,8 +178,8 @@ b32 status_effect_is_stackable(StatusEffectID id)
     return result;
 }
 
-void for_each_active_status_effect(
-    StatusEffectComponent *comp, StatusEffectCallback fn, void *data)
+void for_each_active_status_effect(StatusEffectComponent *comp, StatusEffectCallback fn,
+    void *data)
 {
     StatusEffectCallbackParams params = {0};
     params.status_effects_component = comp;

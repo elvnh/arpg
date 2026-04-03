@@ -149,8 +149,8 @@ static inline Rectangle rect_overlap_area(Rectangle a, Rectangle b)
     return result;
 }
 
-static inline RectangleVertices rect_get_vertices(
-    Rectangle rect, RGBA32 color, YDirection y_direction)
+static inline RectangleVertices rect_get_vertices(Rectangle rect, RGBA32 color,
+    YDirection y_direction)
 {
     ASSERT(rect_is_valid(rect));
 
@@ -178,8 +178,10 @@ static inline RectangleVertices rect_get_vertices(
         .uv = {0, (y_direction == Y_IS_UP) ? 1 : 0}
     };
 
-    RectangleVertices result = {
-        .top_left = tl, .top_right = tr, .bottom_right = br, .bottom_left = bl};
+    RectangleVertices result = {.top_left = tl,
+        .top_right = tr,
+        .bottom_right = br,
+        .bottom_left = bl};
 
     return result;
 }
@@ -265,8 +267,8 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices_with_uvs(Rectan
     return result;
 }
 
-static inline ClippedRectangleVertices rect_get_clipped_vertices(
-    Rectangle rect, Rectangle bounds, RGBA32 color, YDirection y_dir)
+static inline ClippedRectangleVertices rect_get_clipped_vertices(Rectangle rect,
+    Rectangle bounds, RGBA32 color, YDirection y_dir)
 {
     RectangleUVCoords default_uvs = rect_default_uvs(y_dir);
     ClippedRectangleVertices result =
@@ -275,8 +277,7 @@ static inline ClippedRectangleVertices rect_get_clipped_vertices(
     return result;
 }
 
-static inline RectanglePoint rect_bounds_point_closest_to_point(
-    Rectangle rect, Vector2 point)
+static inline RectanglePoint rect_bounds_point_closest_to_point(Rectangle rect, Vector2 point)
 {
     f32 min_x = rect.position.x;
     f32 max_x = min_x + rect.size.x;
@@ -367,8 +368,8 @@ static inline RectangleLines rect_line_segments(Rectangle rect)
     return result;
 }
 
-static inline RectRayIntersection rect_shortest_ray_intersection(
-    Rectangle rect, Line ray_line, f32 epsilon)
+static inline RectRayIntersection rect_shortest_ray_intersection(Rectangle rect, Line ray_line,
+    f32 epsilon)
 {
     RectangleLines rect_lines = rect_line_segments(rect);
 
@@ -488,18 +489,17 @@ static inline RectangleQuadrants rect_quadrants(Rectangle rect)
     f32 half_height = rect.size.y / 2.0f;
     Vector2 size = v2(half_width, half_height);
 
-    Rectangle top_left = {
-        .position = v2(rect.position.x, rect.position.y + half_height), .size = size};
-
-    Rectangle top_right = {
-        .position = v2(rect.position.x + half_width, rect.position.y + half_height),
+    Rectangle top_left = {.position = v2(rect.position.x, rect.position.y + half_height),
         .size = size};
 
-    Rectangle bottom_right = {
-        .position = v2(rect.position.x + half_width, rect.position.y), .size = size};
+    Rectangle top_right = {.position =
+                               v2(rect.position.x + half_width, rect.position.y + half_height),
+        .size = size};
 
-    Rectangle bottom_left = {
-        .position = v2(rect.position.x, rect.position.y), .size = size};
+    Rectangle bottom_right = {.position = v2(rect.position.x + half_width, rect.position.y),
+        .size = size};
+
+    Rectangle bottom_left = {.position = v2(rect.position.x, rect.position.y), .size = size};
 
     RectangleQuadrants result = {.top_left = top_left,
         .top_right = top_right,
@@ -511,8 +511,8 @@ static inline RectangleQuadrants rect_quadrants(Rectangle rect)
 
 static inline Vector2 rect_center(Rectangle rect)
 {
-    Vector2 result = {
-        rect.position.x + rect.size.x / 2.0f, rect.position.y + rect.size.y / 2.0f};
+    Vector2 result = {rect.position.x + rect.size.x / 2.0f,
+        rect.position.y + rect.size.y / 2.0f};
 
     return result;
 }

@@ -33,7 +33,7 @@ typedef struct {
 } ParticleBuffers;
 
 void update_particle_buffers(ParticleBuffers *buffer, f32 dt);
-void render_particle_buffers(
-    ParticleBuffers *buffer, RenderBatches rbs, struct LinearArena *arena);
+void render_particle_buffers(ParticleBuffers *buffer, RenderBatches rbs,
+    struct LinearArena *arena);
 
 #endif //PARTICLE_H

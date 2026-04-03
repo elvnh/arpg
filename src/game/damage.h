@@ -53,10 +53,10 @@ typedef struct {
     Damage penetration;
 } DamageInstance;
 
-Damage calculate_damage_dealt(
-    struct EntitySystem *es, struct Entity *entity, Damage base_damage);
-Damage calculate_damage_received(
-    struct EntitySystem *es, struct Entity *entity, DamageInstance dmg);
+Damage calculate_damage_dealt(struct EntitySystem *es, struct Entity *entity,
+    Damage base_damage);
+Damage calculate_damage_received(struct EntitySystem *es, struct Entity *entity,
+    DamageInstance dmg);
 
 StatValue calculate_damage_sum(Damage damage);
 Damage roll_damage_in_range(DamageRange damage_range);
@@ -64,8 +64,8 @@ DamagePreset make_damage_preset(struct EntitySystem *es, struct Entity *damage_d
     DamageRange range, Damage penetration);
 DamageInstance roll_damage_from_preset(DamagePreset damage);
 void set_damage_value(Damage *damage, DamageType type, StatValue new_value);
-void set_damage_range_for_type(
-    DamageRange *range, DamageType type, StatValue low, StatValue high);
+void set_damage_range_for_type(DamageRange *range, DamageType type, StatValue low,
+    StatValue high);
 StatValue get_damage_value(Damage damage, DamageType type);
 
 static inline String damage_type_to_string(DamageType type)

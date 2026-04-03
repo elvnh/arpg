@@ -42,8 +42,8 @@ typedef struct {
 void update_particle_spawner(struct World *world, struct Entity *entity, ParticleSpawner *ps,
     struct PhysicsComponent *physics, f32 dt);
 b32 particle_spawner_is_finished(ParticleSpawner *ps);
-void initialize_particle_spawner(
-    ParticleSpawner *ps, ParticleSpawnerConfig config, s32 particle_count);
+void initialize_particle_spawner(ParticleSpawner *ps, ParticleSpawnerConfig config,
+    s32 particle_count);
 void spawn_particles_in_chunk(struct Chunk *chunk, Rectangle spawn_area,
     ParticleSpawnerConfig config, s32 particle_count);
 

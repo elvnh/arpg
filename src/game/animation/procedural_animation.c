@@ -5,8 +5,8 @@
 #include "entity/entity_system.h"
 #include "world/world.h"
 
-static Vector2 dispatch_position_animation(
-    PositionAnimation func, Vector2 start, PositionAnimationArgs args, f32 t)
+static Vector2 dispatch_position_animation(PositionAnimation func, Vector2 start,
+    PositionAnimationArgs args, f32 t)
 {
     Vector2 result = {0};
 
@@ -33,8 +33,8 @@ static Vector2 dispatch_position_animation(
     return result;
 }
 
-static f32 dispatch_rotation_animation(
-    RotationAnimation func, f32 start, RotationAnimationArgs args, f32 t)
+static f32 dispatch_rotation_animation(RotationAnimation func, f32 start,
+    RotationAnimationArgs args, f32 t)
 {
     f32 result = 0.0f;
 
@@ -53,8 +53,8 @@ static f32 dispatch_rotation_animation(
     return result;
 }
 
-void update_procedural_animation(
-    World *world, ProceduralAnimation *anim, PhysicsComponent *physics, f32 dt)
+void update_procedural_animation(World *world, ProceduralAnimation *anim,
+    PhysicsComponent *physics, f32 dt)
 {
     Entity *owning_entity =
         es_get_component_owner(&world->entity_system, physics, PhysicsComponent);
@@ -69,13 +69,13 @@ void update_procedural_animation(
     if (anim->position_function != POSITION_ANIMATION_NONE) {
         Vector2 start = anim->start_position;
 
-        physics->visual_position_offset = dispatch_position_animation(
-            anim->position_function, start, anim->position_args, t);
+        physics->visual_position_offset = dispatch_position_animation(anim->position_function,
+            start, anim->position_args, t);
     }
 
     if (anim->rotation_animation != ROTATION_ANIMATION_NONE) {
-        physics->visual_rotation = dispatch_rotation_animation(
-            anim->rotation_animation, anim->start_rotation, anim->rotation_args, t);
+        physics->visual_rotation = dispatch_rotation_animation(anim->rotation_animation,
+            anim->start_rotation, anim->rotation_args, t);
     }
 
     if (anim->elapsed_time >= anim->duration) {
@@ -89,8 +89,8 @@ void update_procedural_animation(
             } break;
 
             case ANIM_ON_END_TRANSITION_TO_STATE: {
-                entity_force_transition_to_state(
-                    world, owning_entity, physics, anim->on_end_behaviour.as.state_transition);
+                entity_force_transition_to_state(world, owning_entity, physics,
+                    anim->on_end_behaviour.as.state_transition);
             } break;
 
             case ANIM_ON_END_REMOVE_COMPONENT: {

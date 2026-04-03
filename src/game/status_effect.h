@@ -38,8 +38,7 @@ typedef struct {
     StatusEffectInstance *instance;
 } StatusEffectCallbackParams;
 
-typedef StatusEffectCallbackResult (*StatusEffectCallback)(
-    StatusEffectCallbackParams, void *);
+typedef StatusEffectCallbackResult (*StatusEffectCallback)(StatusEffectCallbackParams, void *);
 
 void initialize_status_effect_system(void);
 void update_status_effects(struct StatusEffectComponent *status_effects, f32 dt);
@@ -49,9 +48,9 @@ String status_effect_to_string(StatusEffectID effect_id);
 b32 has_status_effect(struct StatusEffectComponent *comp, StatusEffectID id);
 b32 status_effect_is_stackable(StatusEffectID id);
 Modifier get_status_effect_stat_modifier(StatusEffectID effect_id);
-b32 status_effect_modifies_stat(
-    StatusEffectID effect_id, Stat stat, NumericModifierType mod_type);
-void for_each_active_status_effect(
-    struct StatusEffectComponent *comp, StatusEffectCallback fn, void *data);
+b32 status_effect_modifies_stat(StatusEffectID effect_id, Stat stat,
+    NumericModifierType mod_type);
+void for_each_active_status_effect(struct StatusEffectComponent *comp, StatusEffectCallback fn,
+    void *data);
 
 #endif //STATUS_EFFECT_H

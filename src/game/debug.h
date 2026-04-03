@@ -51,9 +51,8 @@ static inline void print_v2(Vector2 v)
 
 void debug_update(struct Game *game, FrameInput *frame_input);
 void debug_ui(UIState *ui, struct Game *game, struct LinearArena *scratch, f32 dt);
-void debug_render_quad_tree(
-    struct QuadTreeNode *tree, struct RenderBatch *rb, LinearArena *arena, ssize depth);
-void debug_render_chunks(
-    struct Game *game, struct RenderBatch *rb, struct LinearArena *arena);
+void debug_render_quad_tree(struct QuadTreeNode *tree, struct RenderBatch *rb,
+    LinearArena *arena, ssize depth);
+void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct LinearArena *arena);
 
 #endif //DEBUG_H

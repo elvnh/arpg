@@ -33,8 +33,7 @@ static inline LineIntersection line_intersection(Line a, Line b, f32 epsilon)
         f32 t = v2_cross(v2_sub(b.start, a.start), s) / denominator;
         f32 u = numerator / denominator;
 
-        if (f32_in_range(u, 0.0f, 1.0f, epsilon)
-            && f32_in_range(t, 0.0f, 1.0f, epsilon)) {
+        if (f32_in_range(u, 0.0f, 1.0f, epsilon) && f32_in_range(t, 0.0f, 1.0f, epsilon)) {
             Vector2 intersection = {
                 a.start.x + r.x * t,
                 b.start.y + s.y * u,
@@ -66,8 +65,8 @@ static inline f32 line_intersect_fraction(Line a, Line b, f32 epsilon)
 
 // https://ncase.me/sight-and-light/
 // https://github.com/OneLoneCoder/Javidx9/blob/master/PixelGameEngine/SmallerProjects/OneLoneCoder_PGE_ShadowCasting2D.cpp
-static inline LineIntersection ray_vs_line_intersection(
-    Vector2 ray_origin, Vector2 ray_dir, Line line)
+static inline LineIntersection ray_vs_line_intersection(Vector2 ray_origin, Vector2 ray_dir,
+    Line line)
 {
     LineIntersection result = {0};
 

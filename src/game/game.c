@@ -39,6 +39,29 @@ static void set_global_state(Game *game)
     initialize_flipbook_animations();
 }
 
+World *get_active_world(Game *game)
+{
+    ASSERT(game->world_array.current_world_index >= 0);
+    ASSERT(game->world_array.current_world_index < ARRAY_COUNT(game->world_array.data));
+
+    World *result = &game->world_array.data[game->world_array.current_world_index];
+
+    return result;
+}
+
+Camera *get_active_camera(Game *game)
+{
+    Camera *result = 0;
+
+    if (game->debug_state.debug_camera_active) {
+        result = &game->debug_state.debug_camera;
+    } else {
+        result = &get_active_world(game)->camera;
+    }
+
+    return result;
+}
+
 // TODO: make this return a CommandQueue instead
 static void process_input(World *world, FrameInput *frame_input, GameUI *game_ui,
     Camera active_camera, CommandQueue *commands, LinearArena *arena)
@@ -109,11 +132,7 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
     f32 x = 0.2f;
     RGBA32 ambient_light = {x, x, x + 0.1f, 1.0f};
 
-    Camera active_camera = game->world.camera;
-
-    if (game->debug_state.debug_camera_active) {
-        active_camera = game->debug_state.debug_camera;
-    }
+    Camera active_camera = *get_active_camera(game);
 
     result.world_rb =
         push_new_render_batch(rbs, active_camera, frame_input->window_size, Y_IS_UP,
@@ -139,6 +158,8 @@ static RenderBatches create_render_batches(Game *game, RenderBatchList *rbs,
 static void render_ui(Game *game, RenderBatches rbs, FrameInput *frame_input,
     LinearArena *frame_arena)
 {
+    World *world = get_active_world(game);
+
     ui_render(&game->game_ui.backend_state, frame_input, rbs.overlay_rb);
 
     if (game->debug_state.debug_menu_active) {
@@ -146,8 +167,7 @@ static void render_ui(Game *game, RenderBatches rbs, FrameInput *frame_input,
     }
 
     if (game->debug_state.quad_tree_overlay) {
-        debug_render_quad_tree(&game->world.quad_tree.root, rbs.worldspace_ui_rb, frame_arena,
-            0);
+        debug_render_quad_tree(&world->quad_tree.root, rbs.worldspace_ui_rb, frame_arena, 0);
     }
 
     if (game->debug_state.render_origin) {
@@ -191,16 +211,17 @@ static void update_overlay_ui(UIState *ui, Game *game, UIOverlayType overlay,
 static void update_ui(Game *game, FrameInput *frame_input, CommandQueue *commands,
     LinearArena *frame_arena, PlatformCode platform_code)
 {
+    World *world = get_active_world(game);
     Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
     Vector2 hovered_coords =
-        screen_to_world_coords(game->world.camera, mouse_pos, frame_input->window_size);
+        screen_to_world_coords(world->camera, mouse_pos, frame_input->window_size);
 
     Rectangle hovered_rect = {
         hovered_coords, {1, 1}
     };
 
     EntityIDList hovered_entities =
-        qt_get_entities_in_area(&game->world.quad_tree, hovered_rect, frame_arena);
+        qt_get_entities_in_area(&world->quad_tree, hovered_rect, frame_arena);
 
     if (!list_is_empty(&hovered_entities)) {
         game->game_ui.hovered_entity = list_head(&hovered_entities)->id;
@@ -220,9 +241,11 @@ static void update_ui(Game *game, FrameInput *frame_input, CommandQueue *command
 static void game_render(Game *game, RenderBatchList *rb_list, FrameInput *frame_input,
     LinearArena *frame_arena)
 {
+    World *world = get_active_world(game);
+
     RenderBatches rbs = create_render_batches(game, rb_list, frame_input, frame_arena);
 
-    world_render(&game->world, rbs, frame_input->window_size, frame_arena, &game->debug_state);
+    world_render(world, rbs, frame_input->window_size, frame_arena, &game->debug_state);
 
     render_ui(game, rbs, frame_input, frame_arena);
 
@@ -240,17 +263,13 @@ static void game_update(Game *game, FrameInput *frame_input, PlatformCode platfo
     debug_update(game, frame_input);
     update_ui(game, frame_input, &cmds, frame_arena, platform_code);
 
-    Camera *active_camera = &game->world.camera;
-
-    if (game->debug_state.debug_camera_active) {
-        active_camera = &game->debug_state.debug_camera;
-        camera_update(active_camera, frame_input->dt);
-    }
+    World *world = get_active_world(game);
+    Camera *active_camera = get_active_camera(game);
 
     camera_zoom(active_camera, (s32)consume_scroll_delta(&frame_input->input_events));
 
     // NOTE: normal camera is always updated too even if debug camera is active
-    camera_update(&game->world.camera, frame_input->dt);
+    camera_update(&world->camera, frame_input->dt);
 
     frame_input->dt *= game->debug_state.timestep_modifier;
 
@@ -264,11 +283,10 @@ static void game_update(Game *game, FrameInput *frame_input, PlatformCode platfo
             frame_input->dt = 0.016f;
         }
 
-        process_input(&game->world, frame_input, &game->game_ui, *active_camera, &cmds,
-            frame_arena);
-        execute_command_queue(&cmds, &game->world, &game->game_ui);
+        process_input(world, frame_input, &game->game_ui, *active_camera, &cmds, frame_arena);
+        execute_command_queue(&cmds, world, &game->game_ui);
 
-        world_update(&game->world, frame_input->dt, frame_input->window_size, frame_arena);
+        world_update(world, frame_input->dt, frame_input->window_size, frame_arena);
     }
 }
 
@@ -290,11 +308,12 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     // NOTE: These stats are set at end of frame since debug UI is drawn before the arenas
     // have had time to be used during the frame. This means that the stats have 1 frame delay
     // but that really doesn't matter
+    World *world = get_active_world(game);
     game->debug_state.scratch_arena_memory_usage =
         la_get_memory_usage(&game_memory->temporary_memory);
     game->debug_state.permanent_arena_memory_usage =
         la_get_memory_usage(&game_memory->permanent_memory);
-    game->debug_state.world_arena_memory_usage = la_get_memory_usage(&game->world.world_arena);
+    game->debug_state.world_arena_memory_usage = la_get_memory_usage(&world->world_arena);
 }
 
 void game_initialize(Game *game, GameMemory *game_memory)
@@ -305,7 +324,10 @@ void game_initialize(Game *game, GameMemory *game_memory)
     initialize_flipbook_animations();
     initialize_status_effect_system();
 
-    world_initialize(&game->world, &game_memory->free_list_memory);
+    for (ssize i = 0; i < LEVEL_COUNT; ++i) {
+        World *world = &game->world_array.data[i];
+        world_initialize(world, &game_memory->free_list_memory);
+    }
 
     game->debug_state.average_fps = 60.0f;
     game->debug_state.timestep_modifier = 1.0f;

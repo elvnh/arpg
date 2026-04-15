@@ -25,7 +25,7 @@
 struct RenderBatchList;
 
 typedef struct Game {
-    World world; // Currently loaded world
+    WorldArray world_array;
     AssetTable asset_table;
     DebugState debug_state;
     RNGState rng_state;
@@ -47,5 +47,7 @@ typedef struct GameMemory {
 void game_update_and_render(Game *game_state, PlatformCode platform_code,
     struct RenderBatchList *rbs, FrameInput *frame_input, GameMemory *game_memory);
 void game_initialize(Game *game_state, GameMemory *game_memory);
+World *get_active_world(Game *game);
+Camera *get_active_camera(Game *game);
 
 #endif //GAME_H

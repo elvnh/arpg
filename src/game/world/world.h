@@ -19,6 +19,8 @@
   - Copying over entities and items when switching world
  */
 
+#define LEVEL_COUNT 3
+
 struct DebugState;
 struct RenderBatch;
 struct RenderBatchList;
@@ -49,6 +51,11 @@ typedef struct World {
     QuadTreeLocation active_entity_quad_tree_locations[MAX_ENTITIES];
     QuadTree quad_tree;
 } World;
+
+typedef struct {
+    World data[LEVEL_COUNT];
+    s32 current_world_index;
+} WorldArray;
 
 void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);

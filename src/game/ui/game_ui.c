@@ -30,7 +30,8 @@ static void spellbook_menu(GameUI *ui_state, Game *game)
 
         ui_begin_list(ui, str("spellbook_list"));
         {
-            Entity *player = world_get_player_entity(&game->world);
+            World *world = get_active_world(game);
+            Entity *player = world_get_player_entity(world);
             SpellCasterComponent *spellcaster = es_get_component(player, SpellCasterComponent);
 
             for (ssize i = 0; i < spellcaster->spell_count; ++i) {
@@ -50,7 +51,8 @@ static void spellbook_menu(GameUI *ui_state, Game *game)
 
 void game_ui(Game *game, LinearArena *scratch, InputEvents *input, CommandQueue *commands)
 {
-    Entity *player = world_get_player_entity(&game->world);
+    World *world = get_active_world(game);
+    Entity *player = world_get_player_entity(world);
     UIState *ui = &game->game_ui.backend_state;
     ASSERT(player);
 
@@ -76,8 +78,7 @@ void game_ui(Game *game, LinearArena *scratch, InputEvents *input, CommandQueue 
 
         ui_push_style(ui, style);
 
-        inventory_menu(ui, &game->game_ui.inventory_menu, &game->world, input, commands,
-            scratch);
+        inventory_menu(ui, &game->game_ui.inventory_menu, world, input, commands, scratch);
 
         /* ui_core_same_line(ui); */
 

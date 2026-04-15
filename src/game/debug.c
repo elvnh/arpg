@@ -65,8 +65,10 @@ static StatusEffectCallbackResult status_effect_list_callback(
 static void inspected_entity_debug_ui(UIState *ui, Game *game, LinearArena *scratch)
 {
     // TODO: allow locking on to entity
+    World *world = get_active_world(game);
+
     EntityID inspected_entity_id = game->game_ui.hovered_entity;
-    Entity *entity = es_try_get_entity(&game->world.entity_system, inspected_entity_id);
+    Entity *entity = es_try_get_entity(&world->entity_system, inspected_entity_id);
 
     if (!entity) {
         return;
@@ -147,6 +149,8 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
     debug_ui_style.active_color = rgba32(1.0f, 0.0f, 0.0f, 1.0f);
     debug_ui_style.hot_color = rgba32(0.0f, 1.0f, 0.0f, 1.0f);
 
+    World *world = get_active_world(game);
+
     ui_push_style(ui, debug_ui_style);
 
     ui_begin_container(ui, V2_ZERO, UI_SIZE_KIND_SUM_OF_CHILDREN, 8.0f);
@@ -165,11 +169,11 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
     String world_arena_str =
         dbg_arena_usage_string(str("World arena"), world_arena_memory_usage, scratch);
 
-    ssize qt_nodes = qt_get_node_count(&game->world.quad_tree);
+    ssize qt_nodes = qt_get_node_count(&world->quad_tree);
     String node_string = format(scratch, "Quad tree nodes: %ld", qt_nodes);
 
     String entity_string =
-        format(scratch, "Alive entity count: %d", game->world.active_entity_count);
+        format(scratch, "Alive entity count: %d", world->active_entity_count);
 
     f32 timestep = game->debug_state.timestep_modifier;
     String timestep_value_str = {0};
@@ -215,9 +219,9 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
                                 ? str("DEBUG CAMERA ACTIVE")
                                 : str("NORMAL CAMERA ACTIVE");
 
-        String camera_pos_str = format(scratch, "Camera position: " FMT_V2,
-            FMT_V2_ARG(game->world.camera.position));
-        String zoom_str = format(scratch, "Zoom: %.2f", (f64)game->world.camera.zoom);
+        String camera_pos_str =
+            format(scratch, "Camera position: " FMT_V2, FMT_V2_ARG(world->camera.position));
+        String zoom_str = format(scratch, "Zoom: %.2f", (f64)world->camera.zoom);
 
         ui_text(ui, camera_str);
         ui_text(ui, camera_pos_str);
@@ -234,11 +238,13 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
 
 void debug_update(Game *game, FrameInput *frame_input)
 {
+    World *world = get_active_world(game);
+
     f32 curr_fps = 1.0f / frame_input->dt;
     f32 avg_fps = game->debug_state.average_fps;
 
     Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
-    Camera active_camera = game->world.camera;
+    Camera active_camera = world->camera;
 
     if (game->debug_state.debug_menu_active) {
         active_camera = game->debug_state.debug_camera;
@@ -252,7 +258,7 @@ void debug_update(Game *game, FrameInput *frame_input)
         screen_to_world_coords(active_camera, mouse_pos, frame_input->window_size);
 
     game->debug_state.hovered_chunk =
-        get_chunk_at_position(&game->world.map_chunks, mouse_world_pos);
+        get_chunk_at_position(&world->map_chunks, mouse_world_pos);
 
     // NOTE: lower alpha value means more smoothing
     game->debug_state.average_fps = exponential_moving_avg(avg_fps, curr_fps, 0.9f);
@@ -267,7 +273,7 @@ void debug_update(Game *game, FrameInput *frame_input)
     if (consume_key_pressed(&frame_input->input_events, KEY_Y)) {
         if (check_key_down(&frame_input->input_events, KEY_LEFT_SHIFT)) {
             // If shift is held, reset debug camera position to normal camera position
-            game->debug_state.debug_camera = game->world.camera;
+            game->debug_state.debug_camera = world->camera;
         } else {
             // Otherwise, just toggle between debug camera and normal camera
             game->debug_state.debug_camera_active = !game->debug_state.debug_camera_active;
@@ -275,7 +281,7 @@ void debug_update(Game *game, FrameInput *frame_input)
     }
 
     if (!game->debug_state.debug_camera_active) {
-        game->debug_state.debug_camera = game->world.camera;
+        game->debug_state.debug_camera = world->camera;
     } else {
         Vector2 debug_camera_delta = {0};
 
@@ -328,7 +334,8 @@ void debug_update(Game *game, FrameInput *frame_input)
 void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct LinearArena *arena)
 {
 #if 1
-    Chunks *chunks = &game->world.map_chunks;
+    World *world = get_active_world(game);
+    Chunks *chunks = &world->map_chunks;
 
     s32 chunk_size = CHUNK_SIZE_IN_TILES;
     Vector2 chunk_world_dims = tile_to_world_coords(v2i(chunk_size, chunk_size));
@@ -361,7 +368,7 @@ void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct Linea
         }
     }
 #else
-    // NOTE: debugging code, can be removed
+    // TODO: debugging code, can be removed
     Vector2 mouse_pos =
         input_get_mouse_pos(&frame_input->input, Y_IS_DOWN, frame_input->window_size);
     mouse_pos =
@@ -411,6 +418,5 @@ void debug_render_chunks(struct Game *game, struct RenderBatch *rb, struct Linea
             }
         }
     }
-
 #endif
 }

@@ -1152,9 +1152,9 @@ void world_render(World *world, RenderBatches rb_list, Camera camera, Vector2i v
     }
 }
 
-void world_initialize(World *world, FreeListArena *parent_arena)
+void world_initialize(World *world, LinearArena *parent_arena)
 {
-    world->world_arena = la_create(fl_allocator(parent_arena), WORLD_ARENA_SIZE);
+    world->world_arena = la_create(la_allocator(parent_arena), WORLD_ARENA_SIZE);
 
     es_initialize(&world->entity_system);
 

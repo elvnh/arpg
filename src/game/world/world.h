@@ -56,7 +56,7 @@ typedef struct {
     s32 current_world_index;
 } WorldArray;
 
-void world_initialize(World *world, FreeListArena *parent_arena);
+void world_initialize(World *world, LinearArena *parent_arena);
 void world_destroy(World *world);
 void world_make_inactive(World *world, LinearArena *frame_arena);
 void world_update(World *world, f32 dt, Camera camera, Vector2i viewport_size,

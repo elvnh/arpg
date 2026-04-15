@@ -38,8 +38,6 @@ int main(void)
 
     game_memory.permanent_memory = la_create(la_allocator(&main_arena), PERMANENT_ARENA_SIZE);
     game_memory.temporary_memory = la_create(la_allocator(&main_arena), FRAME_ARENA_SIZE);
-    game_memory.free_list_memory =
-        fl_create(la_allocator(&game_memory.permanent_memory), FREE_LIST_ARENA_SIZE);
 
     Game *game_state = la_allocate_item(&game_memory.permanent_memory, Game);
 

@@ -420,7 +420,7 @@ void game_initialize(Game *game, GameMemory *game_memory)
 
     for (ssize i = 0; i < LEVEL_COUNT; ++i) {
         World *world = &game->world_array.data[i];
-        world_initialize(world, &game_memory->free_list_memory);
+        world_initialize(world, &game_memory->permanent_memory);
     }
 
     World *active_world = get_active_world(game);

@@ -220,8 +220,8 @@ void debug_ui(UIState *ui, Game *game, LinearArena *scratch, f32 dt)
                                 : str("NORMAL CAMERA ACTIVE");
 
         String camera_pos_str =
-            format(scratch, "Camera position: " FMT_V2, FMT_V2_ARG(world->camera.position));
-        String zoom_str = format(scratch, "Zoom: %.2f", (f64)world->camera.zoom);
+            format(scratch, "Camera position: " FMT_V2, FMT_V2_ARG(game->camera.position));
+        String zoom_str = format(scratch, "Zoom: %.2f", (f64)game->camera.zoom);
 
         ui_text(ui, camera_str);
         ui_text(ui, camera_pos_str);
@@ -244,11 +244,7 @@ void debug_update(Game *game, FrameInput *frame_input)
     f32 avg_fps = game->debug_state.average_fps;
 
     Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
-    Camera active_camera = world->camera;
-
-    if (game->debug_state.debug_menu_active) {
-        active_camera = game->debug_state.debug_camera;
-    }
+    Camera active_camera = *get_active_camera(game);
 
     /* if (game->debug_state.hovered_chunk) { */
     /*     printf("%ld\n", ring_length(&game->debug_state.hovered_chunk->particles)); */
@@ -273,7 +269,7 @@ void debug_update(Game *game, FrameInput *frame_input)
     if (consume_key_pressed(&frame_input->input_events, KEY_Y)) {
         if (check_key_down(&frame_input->input_events, KEY_LEFT_SHIFT)) {
             // If shift is held, reset debug camera position to normal camera position
-            game->debug_state.debug_camera = world->camera;
+            game->debug_state.debug_camera = game->camera;
         } else {
             // Otherwise, just toggle between debug camera and normal camera
             game->debug_state.debug_camera_active = !game->debug_state.debug_camera_active;
@@ -281,7 +277,7 @@ void debug_update(Game *game, FrameInput *frame_input)
     }
 
     if (!game->debug_state.debug_camera_active) {
-        game->debug_state.debug_camera = world->camera;
+        game->debug_state.debug_camera = game->camera;
     } else {
         Vector2 debug_camera_delta = {0};
 

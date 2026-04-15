@@ -31,8 +31,6 @@ typedef struct World {
     // TODO: split up arena into a linear arena and free list arena
     LinearArena world_arena;
 
-    // TODO: camera shouldn't live here, each world doesn't need a separate camera
-    Camera camera;
     Tilemap tilemap;
 
     TriggerCooldownTable trigger_cooldowns;
@@ -60,8 +58,9 @@ typedef struct {
 
 void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);
-void world_update(World *world, f32 dt, Vector2i viewport_size, LinearArena *frame_arena);
-void world_render(World *world, RenderBatches rb_list, Vector2i viewport_size,
+void world_update(World *world, f32 dt, Camera camera, Vector2i viewport_size,
+    LinearArena *frame_arena);
+void world_render(World *world, RenderBatches rb_list, Camera camera, Vector2i viewport_size,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction);
 EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction);

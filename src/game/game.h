@@ -3,6 +3,7 @@
 
 #include "animation/flipbook_animation.h"
 #include "asset_table.h"
+#include "camera.h"
 #include "debug.h"
 #include "game/magic.h"
 #include "platform/input_event.h"
@@ -26,6 +27,7 @@ struct RenderBatchList;
 
 typedef struct Game {
     WorldArray world_array;
+    Camera camera;
     AssetTable asset_table;
     DebugState debug_state;
     RNGState rng_state;

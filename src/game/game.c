@@ -9,6 +9,7 @@
 #include "base/utils.h"
 #include "command.h"
 #include "components/component.h"
+#include "entity/entity_id.h"
 #include "entity/entity_system.h"
 #include "platform/input_event.h"
 #include "renderer/backend/renderer_backend.h"
@@ -49,7 +50,7 @@ Camera *get_active_camera(Game *game)
     if (game->debug_state.debug_camera_active) {
         result = &game->debug_state.debug_camera;
     } else {
-        result = &get_active_world(game)->camera;
+        result = &game->camera;
     }
 
     return result;
@@ -58,10 +59,15 @@ Camera *get_active_camera(Game *game)
 // TODO: take position as parameter
 static void move_player_to_level(Game *game, s32 index, LinearArena *frame_arena)
 {
+    /* TODO: things to do when changing level
+	   - Remove entities such as projectiles in flight etc from old world
+	   - Clear hitsplats
+	   - Reset entity velocity?
+	   - Move camera to new position without panning
+	 */
+
     ASSERT(VALID_INDEX_FOR(index, game->world_array.data));
 
-    // TODO: remove projectiles in flight etc. and hitsplats so they're not active next time
-    // this level is loaded
     World *old_world = get_active_world(game);
     Entity *old_player = world_get_player_entity(old_world);
     EntityID old_player_id = es_get_id_of_entity(&old_world->entity_system, old_player);
@@ -80,7 +86,7 @@ static void move_player_to_level(Game *game, s32 index, LinearArena *frame_arena
 }
 
 // TODO: make this return a CommandQueue instead
-static void process_input(World *world, FrameInput *frame_input, GameUI *game_ui,
+static void process_input(Game *game, World *world, FrameInput *frame_input, GameUI *game_ui,
     Camera active_camera, CommandQueue *commands, LinearArena *arena)
 {
     Entity *player = world_get_player_entity(world);
@@ -88,7 +94,7 @@ static void process_input(World *world, FrameInput *frame_input, GameUI *game_ui
     PhysicsComponent *physics = es_get_component(player, PhysicsComponent);
 
     Vector2 camera_target = rect_center(world_get_entity_bounding_box(player, physics));
-    camera_set_target(&world->camera, camera_target);
+    camera_set_target(&game->camera, camera_target);
 
     Vector2 direction = {0};
     if (consume_key_down(&frame_input->input_events, KEY_W)) {
@@ -229,9 +235,10 @@ static void update_ui(Game *game, FrameInput *frame_input, CommandQueue *command
     LinearArena *frame_arena, PlatformCode platform_code)
 {
     World *world = get_active_world(game);
+    Camera active_camera = *get_active_camera(game);
     Vector2 mouse_pos = get_mouse_pos(&frame_input->input_events);
     Vector2 hovered_coords =
-        screen_to_world_coords(world->camera, mouse_pos, frame_input->window_size);
+        screen_to_world_coords(active_camera, mouse_pos, frame_input->window_size);
 
     Rectangle hovered_rect = {
         hovered_coords, {1, 1}
@@ -262,7 +269,8 @@ static void game_render(Game *game, RenderBatchList *rb_list, FrameInput *frame_
 
     RenderBatches rbs = create_render_batches(game, rb_list, frame_input, frame_arena);
 
-    world_render(world, rbs, frame_input->window_size, frame_arena, &game->debug_state);
+    world_render(world, rbs, game->camera, frame_input->window_size, frame_arena,
+        &game->debug_state);
 
     render_ui(game, rbs, frame_input, frame_arena);
 
@@ -286,7 +294,7 @@ static void game_update(Game *game, FrameInput *frame_input, PlatformCode platfo
     camera_zoom(active_camera, (s32)consume_scroll_delta(&frame_input->input_events));
 
     // NOTE: normal camera is always updated too even if debug camera is active
-    camera_update(&world->camera, frame_input->dt);
+    camera_update(&game->camera, frame_input->dt);
 
     frame_input->dt *= game->debug_state.timestep_modifier;
 
@@ -300,10 +308,12 @@ static void game_update(Game *game, FrameInput *frame_input, PlatformCode platfo
             frame_input->dt = 0.016f;
         }
 
-        process_input(world, frame_input, &game->game_ui, *active_camera, &cmds, frame_arena);
+        process_input(game, world, frame_input, &game->game_ui, *active_camera, &cmds,
+            frame_arena);
         execute_command_queue(&cmds, world, &game->game_ui);
 
-        world_update(world, frame_input->dt, frame_input->window_size, frame_arena);
+        world_update(world, frame_input->dt, game->camera, frame_input->window_size,
+            frame_arena);
     }
 }
 
@@ -337,6 +347,8 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
 
 static void spawn_player_entity(World *world)
 {
+    ASSERT(entity_id_is_null(world->player_entity));
+
     EntityWithID entity_with_id = world_spawn_entity(world, v2(128, 128), FACTION_PLAYER);
     Entity *entity = entity_with_id.entity;
 

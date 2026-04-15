@@ -7,6 +7,7 @@
 #include "base/random.h"
 #include "base/rgba.h"
 #include "base/utils.h"
+#include "camera.h"
 #include "command.h"
 #include "components/component.h"
 #include "entity/entity.h"
@@ -57,29 +58,35 @@ Camera *get_active_camera(Game *game)
     return result;
 }
 
-// TODO: take position as parameter
-static void move_player_to_level(Game *game, s32 index, LinearArena *frame_arena)
+static void move_player_to_level(Game *game, s32 index, Vector2 position,
+    LinearArena *frame_arena)
 {
-    // TODO: Move camera to new position without panning
     ASSERT(VALID_INDEX_FOR(index, game->world_array.data));
 
     World *old_world = get_active_world(game);
+
     Entity *old_player = world_get_player_entity(old_world);
     EntityID old_player_id = es_get_id_of_entity(&old_world->entity_system, old_player);
+    PhysicsComponent *old_physics = es_get_component(old_player, PhysicsComponent);
+    old_physics->position = position;
 
     game->world_array.current_world_index = index;
 
     World *new_world = get_active_world(game);
 
-    PhysicsComponent *physics = es_get_component(old_player, PhysicsComponent);
-    EntityWithID new_player = world_spawn_entity(new_world, physics->position, FACTION_PLAYER,
-        ENTITY_KIND_PERSISTENT);
+    EntityWithID new_player =
+        world_spawn_entity(new_world, V2_ZERO, FACTION_PLAYER, ENTITY_KIND_PERSISTENT);
 
     es_copy_entity_into_other(new_player.entity, old_player);
     world_set_player_entity(new_world, new_player.id);
 
     world_remove_entity_by_id(old_world, old_player_id, frame_arena);
     world_make_inactive(old_world, frame_arena);
+
+    Vector2 new_camera_pos =
+        rect_center(world_get_entity_bounding_box(old_player, old_physics));
+    camera_set_position(&game->camera, new_camera_pos);
+    camera_set_target(&game->camera, new_camera_pos);
 }
 
 // TODO: make this return a CommandQueue instead
@@ -325,7 +332,7 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     if (consume_key_pressed(&frame_input->input_events, KEY_ESCAPE)) {
         /* DEBUG_BREAK; */
         move_player_to_level(game, (game->world_array.current_world_index + 1) % LEVEL_COUNT,
-            &game_memory->temporary_memory);
+            v2(256, 256), &game_memory->temporary_memory);
     }
 
     game_update(game, frame_input, platform_code, &game_memory->temporary_memory);

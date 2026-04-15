@@ -50,6 +50,11 @@ static inline void camera_update(Camera *cam, f32 dt)
         MIN(dt * CAMERA_FOLLOW_SPEED, 1.0f));
 }
 
+static inline void camera_set_position(Camera *cam, Vector2 pos)
+{
+    cam->position = pos;
+}
+
 static inline void camera_set_target(Camera *cam, Vector2 target)
 {
     cam->target_position = target;

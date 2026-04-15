@@ -10,6 +10,7 @@
 #include "collision/collision.h"
 #include "collision/collision_event.h"
 #include "components/component.h"
+#include "entity/entity_id.h"
 #include "entity/entity_system.h"
 #include "game.h"
 #include "renderer/frontend/render_batch.h"
@@ -118,32 +119,10 @@ EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction fa
     return result;
 }
 
-void world_drop_item_from_position(Vector2 position, Entity *item_entity)
-{
-    // TODO: randomly choose a position in radius around position, randomize drop
-    // height and rotations etc
-    // TODO: ensure that invalid position isn't picked
-
-    Vector2 origin = position;
-    Vector2 target_pos = v2_add(position, v2(50, 0));
-
-    PhysicsComponent *physics = es_get_or_add_component(item_entity, PhysicsComponent);
-    physics->position = target_pos;
-
-    AnimationComponent *anim = es_get_or_add_component(item_entity, AnimationComponent);
-    *anim = zero_struct(AnimationComponent);
-    anim->animation.position_function = POSITION_ANIMATION_PARABOLA;
-    anim->animation.start_position = v2_sub(origin, target_pos);
-    anim->animation.position_args.parabola.middle = v2(0, -200);
-    anim->animation.position_args.parabola.end = V2_ZERO;
-
-    anim->animation.rotation_animation = ROTATION_ANIMATION_LERP;
-    anim->animation.rotation_args.lerp.rotations_in_radians = deg_to_rad(360);
-
-    anim->animation.on_end_behaviour.kind = ANIM_ON_END_REMOVE_COMPONENT;
-
-    anim->animation.duration = 0.5f;
-}
+typedef enum {
+    ENTITY_REMOVAL_NO_SIDE_EFFECTS,
+    ENTITY_REMOVAL_WITH_SIDE_EFFECTS,
+} EntityRemovalSideEffects;
 
 // Handles anything that needs to be handled before removing an entity,
 // such as transferring components that need to stay alive a little longer
@@ -241,13 +220,15 @@ static void handle_entity_removal_side_effects(World *world, EntityID id,
 }
 
 static void world_remove_entity(World *world, ssize alive_entity_index,
-    LinearArena *frame_arena)
+    EntityRemovalSideEffects side_effects, LinearArena *frame_arena)
 {
     ASSERT(alive_entity_index < world->active_entity_count);
 
     EntityID *id = &world->active_entity_ids[alive_entity_index];
 
-    handle_entity_removal_side_effects(world, *id, frame_arena);
+    if (side_effects == ENTITY_REMOVAL_WITH_SIDE_EFFECTS) {
+        handle_entity_removal_side_effects(world, *id, frame_arena);
+    }
 
     es_remove_entity(&world->entity_system, *id);
 
@@ -264,6 +245,58 @@ static void world_remove_entity(World *world, ssize alive_entity_index,
     *id = world->active_entity_ids[last_index];
 
     --world->active_entity_count;
+}
+
+void world_remove_entity_by_id(World *world, EntityID id, LinearArena *frame_arena)
+{
+    /* NOTE: This function is inefficient as it has to loop through all active
+	 entities to find the entities index in the alive entity id array, but it
+	 shouldn't be called very often, probably only when moving player between
+	 levels */
+
+    ssize index = 0;
+    for (; index < world->active_entity_count; ++index) {
+        EntityID active_id = world->active_entity_ids[index];
+
+        if (entity_id_equal(id, active_id)) {
+            break;
+        }
+    }
+
+    ASSERT(index < world->active_entity_count);
+
+    world_remove_entity(world, index, ENTITY_REMOVAL_NO_SIDE_EFFECTS, frame_arena);
+
+    if (entity_id_equal(id, world->player_entity)) {
+        world->player_entity = NULL_ENTITY_ID;
+    }
+}
+
+void world_drop_item_from_position(Vector2 position, Entity *item_entity)
+{
+    // TODO: randomly choose a position in radius around position, randomize drop
+    // height and rotations etc
+    // TODO: ensure that invalid position isn't picked
+
+    Vector2 origin = position;
+    Vector2 target_pos = v2_add(position, v2(50, 0));
+
+    PhysicsComponent *physics = es_get_or_add_component(item_entity, PhysicsComponent);
+    physics->position = target_pos;
+
+    AnimationComponent *anim = es_get_or_add_component(item_entity, AnimationComponent);
+    *anim = zero_struct(AnimationComponent);
+    anim->animation.position_function = POSITION_ANIMATION_PARABOLA;
+    anim->animation.start_position = v2_sub(origin, target_pos);
+    anim->animation.position_args.parabola.middle = v2(0, -200);
+    anim->animation.position_args.parabola.end = V2_ZERO;
+
+    anim->animation.rotation_animation = ROTATION_ANIMATION_LERP;
+    anim->animation.rotation_args.lerp.rotations_in_radians = deg_to_rad(360);
+
+    anim->animation.on_end_behaviour.kind = ANIM_ON_END_REMOVE_COMPONENT;
+
+    anim->animation.duration = 0.5f;
 }
 
 void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena)
@@ -907,7 +940,7 @@ void world_update(World *world, f32 dt, Vector2i viewport_size, LinearArena *fra
         Entity *entity = es_get_entity(&world->entity_system, *id);
 
         if (es_entity_is_inactive(entity)) {
-            world_remove_entity(world, i, frame_arena);
+            world_remove_entity(world, i, ENTITY_REMOVAL_WITH_SIDE_EFFECTS, frame_arena);
             --i;
         }
     }
@@ -1164,17 +1197,16 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 
     qt_initialize(&world->quad_tree, tilemap_area);
 
-    for (s32 i = 0; i < 5; ++i) {
+    for (s32 i = 0; i < 1; ++i) {
 #if 1
-        EntityWithID entity_with_id =
-            world_spawn_entity(world, v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)),
-                i == 0 ? FACTION_PLAYER : FACTION_ENEMY);
+        EntityWithID entity_with_id = world_spawn_entity(world,
+            v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)), FACTION_ENEMY);
         Entity *entity = entity_with_id.entity;
 
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
         if (i == 0) {
-            world_set_player_entity(world, entity_with_id.id);
+            /* world_set_player_entity(world, entity_with_id.id); */
         }
 
         ASSERT(!es_has_component(entity, ColliderComponent));

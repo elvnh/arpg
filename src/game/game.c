@@ -9,17 +9,10 @@
 #include "base/utils.h"
 #include "command.h"
 #include "components/component.h"
-#include "components/inventory.h"
-#include "components/modifier.h"
-#include "entity/entity_id.h"
 #include "entity/entity_system.h"
-#include "platform/input.h"
 #include "platform/input_event.h"
 #include "renderer/backend/renderer_backend.h"
 #include "renderer/frontend/render_batch.h"
-#include "renderer/frontend/render_key.h"
-#include "renderer/frontend/render_target.h"
-#include "status_effect.h"
 #include "ui/game_ui.h"
 #include "ui/ui_builder.h"
 #include "ui/widget.h"
@@ -60,6 +53,30 @@ Camera *get_active_camera(Game *game)
     }
 
     return result;
+}
+
+// TODO: take position as parameter
+static void move_player_to_level(Game *game, s32 index, LinearArena *frame_arena)
+{
+    ASSERT(VALID_INDEX_FOR(index, game->world_array.data));
+
+    // TODO: remove projectiles in flight etc. and hitsplats so they're not active next time
+    // this level is loaded
+    World *old_world = get_active_world(game);
+    Entity *old_player = world_get_player_entity(old_world);
+    EntityID old_player_id = es_get_id_of_entity(&old_world->entity_system, old_player);
+
+    game->world_array.current_world_index = index;
+
+    World *new_world = get_active_world(game);
+
+    PhysicsComponent *physics = es_get_component(old_player, PhysicsComponent);
+    EntityWithID new_player = world_spawn_entity(new_world, physics->position, FACTION_PLAYER);
+
+    es_copy_entity_into_other(new_player.entity, old_player);
+    world_set_player_entity(new_world, new_player.id);
+
+    world_remove_entity_by_id(old_world, old_player_id, frame_arena);
 }
 
 // TODO: make this return a CommandQueue instead
@@ -299,7 +316,9 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
 #endif
 
     if (consume_key_pressed(&frame_input->input_events, KEY_ESCAPE)) {
-        DEBUG_BREAK;
+        /* DEBUG_BREAK; */
+        move_player_to_level(game, (game->world_array.current_world_index + 1) % LEVEL_COUNT,
+            &game_memory->temporary_memory);
     }
 
     game_update(game, frame_input, platform_code, &game_memory->temporary_memory);
@@ -316,6 +335,64 @@ void game_update_and_render(Game *game, PlatformCode platform_code, RenderBatchL
     game->debug_state.world_arena_memory_usage = la_get_memory_usage(&world->world_arena);
 }
 
+static void spawn_player_entity(World *world)
+{
+    EntityWithID entity_with_id = world_spawn_entity(world, v2(128, 128), FACTION_PLAYER);
+    Entity *entity = entity_with_id.entity;
+
+    PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+
+    ColliderComponent *collider = es_add_component(entity, ColliderComponent);
+    collider->size = v2(16.0f, 16.0f);
+    set_collision_policy_vs_entities(collider, COLLISION_POLICY_STOP);
+    set_collision_policy_vs_tilemaps(collider, COLLISION_POLICY_STOP);
+
+    ASSERT(es_has_component(entity, ColliderComponent));
+
+    SpellCasterComponent *spellcaster = es_add_component(entity, SpellCasterComponent);
+    for (SpellID spell = 0; spell < SPELL_COUNT; ++spell) {
+        magic_add_to_spellbook(spellcaster, spell);
+    }
+
+    FlipbookComponent *anim = es_add_component(entity, FlipbookComponent);
+    anim->state_animations[ENTITY_STATE_IDLE] = FLIPBOOK_PLAYER_IDLE;
+    anim->state_animations[ENTITY_STATE_WALKING] = FLIPBOOK_PLAYER_WALKING;
+    anim->state_animations[ENTITY_STATE_ATTACKING] = FLIPBOOK_PLAYER_ATTACKING;
+
+    entity_try_transition_to_state(world, entity, physics, state_idle());
+
+    StatsComponent *stats = es_add_component(entity, StatsComponent);
+    stats->stats = create_base_stats();
+    set_stat_value(&stats->stats, STAT_HEALTH, 10000000);
+
+    HealthComponent *hp = es_add_component(entity, HealthComponent);
+    hp->health = create_health_instance(world, entity);
+
+    LightEmitter *light = es_add_component(entity, LightEmitter);
+    light->light.radius = 500.0f;
+    light->light.kind = LIGHT_RAYCASTED;
+
+    light->light.color = RGBA32_BLUE;
+
+    {
+        /*Inventory *inv = */ es_add_component(entity, Inventory);
+        /*Inventory *inv_storable = */ es_add_component(entity, InventoryStorable);
+        Equippable *equippable = es_add_component(entity, Equippable);
+        equippable->equippable_in_slot = EQUIP_SLOT_WEAPON;
+
+        ItemModifiers *mods = es_add_component(entity, ItemModifiers);
+        add_item_modifier(mods,
+            create_modifier(STAT_FIRE_DAMAGE, 1000, NUMERIC_MOD_FLAT_ADDITIVE));
+
+        NameComponent *name = es_add_component(entity, NameComponent);
+        *name = name_component(str("Item name"));
+
+        /*Equipment *eq =*/es_add_component(entity, Equipment);
+    }
+
+    world_set_player_entity(world, entity_with_id.id);
+}
+
 void game_initialize(Game *game, GameMemory *game_memory)
 {
     set_global_state(game);
@@ -328,6 +405,9 @@ void game_initialize(Game *game, GameMemory *game_memory)
         World *world = &game->world_array.data[i];
         world_initialize(world, &game_memory->free_list_memory);
     }
+
+    World *active_world = get_active_world(game);
+    spawn_player_entity(active_world);
 
     game->debug_state.average_fps = 60.0f;
     game->debug_state.timestep_modifier = 1.0f;

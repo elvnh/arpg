@@ -273,7 +273,7 @@ Entity *es_impl_get_component_owner(EntitySystem *es, void *component, Component
     return result;
 }
 
-static void copy_entity_and_keep_destination_id(Entity *dst, Entity *src)
+void es_copy_entity_into_other(Entity *dst, Entity *src)
 {
     ASSERT(dst != src);
 
@@ -285,7 +285,7 @@ static void copy_entity_and_keep_destination_id(Entity *dst, Entity *src)
 EntityWithID es_clone_entity(EntitySystem *destination_es, Entity *entity)
 {
     EntityWithID result = es_create_entity(destination_es, entity->faction);
-    copy_entity_and_keep_destination_id(result.entity, entity);
+    es_copy_entity_into_other(result.entity, entity);
 
     return result;
 }
@@ -304,7 +304,7 @@ EntityWithID es_clone_entity_into_other_es_and_keep_id(EntitySystem *destination
     Entity *clone = create_entity_at_index(destination_es, entity->id.index);
     clone->id = entity->id;
 
-    copy_entity_and_keep_destination_id(clone, entity);
+    es_copy_entity_into_other(clone, entity);
 
     EntityWithID result = {clone, clone->id};
 

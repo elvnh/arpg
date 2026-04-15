@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #define ARRAY_COUNT(arr) (ssize)(sizeof(arr) / sizeof(*arr))
+#define VALID_INDEX_FOR(index, array) ((index >= 0) && (index < ARRAY_COUNT(array)))
 #define INVALID_DEFAULT_CASE                                                             \
     default:                                                                             \
         ASSERT(0);                                                                       \

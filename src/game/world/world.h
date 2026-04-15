@@ -31,6 +31,7 @@ typedef struct World {
     // TODO: split up arena into a linear arena and free list arena
     LinearArena world_arena;
 
+    // TODO: camera shouldn't live here, each world doesn't need a separate camera
     Camera camera;
     Tilemap tilemap;
 
@@ -64,6 +65,7 @@ void world_render(World *world, RenderBatches rb_list, Vector2i viewport_size,
     LinearArena *frame_arena, struct DebugState *debug_state);
 EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction);
 EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction);
+void world_remove_entity_by_id(World *world, EntityID id, LinearArena *frame_arena);
 void world_make_entity_non_spatial(World *world, Entity *entity);
 void world_drop_item_from_position(Vector2 position, Entity *item_entity);
 Rectangle world_get_entity_bounding_box(Entity *entity, PhysicsComponent *physics);

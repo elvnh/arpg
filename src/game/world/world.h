@@ -58,12 +58,15 @@ typedef struct {
 
 void world_initialize(World *world, FreeListArena *parent_arena);
 void world_destroy(World *world);
+void world_make_inactive(World *world, LinearArena *frame_arena);
 void world_update(World *world, f32 dt, Camera camera, Vector2i viewport_size,
     LinearArena *frame_arena);
 void world_render(World *world, RenderBatches rb_list, Camera camera, Vector2i viewport_size,
     LinearArena *frame_arena, struct DebugState *debug_state);
-EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction);
-EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction);
+EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction,
+    EntityKind kind);
+EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction,
+    EntityKind kind);
 void world_remove_entity_by_id(World *world, EntityID id, LinearArena *frame_arena);
 void world_make_entity_non_spatial(World *world, Entity *entity);
 void world_drop_item_from_position(Vector2 position, Entity *item_entity);

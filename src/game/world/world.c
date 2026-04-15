@@ -10,12 +10,14 @@
 #include "collision/collision.h"
 #include "collision/collision_event.h"
 #include "components/component.h"
+#include "entity/entity.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
 #include "game.h"
 #include "renderer/frontend/render_batch.h"
 #include "stats.h"
 #include "world/chunk.h"
+#include "world/particle.h"
 
 #define WORLD_ARENA_SIZE FREE_LIST_ARENA_SIZE / 4
 
@@ -95,26 +97,28 @@ static void world_update_entity_quad_tree_location(World *world, ssize alive_ent
     }
 }
 
-EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction)
+EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction,
+    EntityKind kind)
+{
+    EntityWithID result = world_spawn_non_spatial_entity(world, faction, kind);
+    PhysicsComponent *physics = es_add_component(result.entity, PhysicsComponent);
+    physics->position = position;
+
+    return result;
+}
+
+EntityWithID world_spawn_non_spatial_entity(World *world, EntityFaction faction,
+    EntityKind kind)
 {
     ASSERT(faction >= 0);
     ASSERT(faction < FACTION_COUNT);
     ASSERT(world->active_entity_count < MAX_ENTITIES);
 
-    EntityWithID result = es_create_entity(&world->entity_system, faction);
+    EntityWithID result = es_create_entity(&world->entity_system, faction, kind);
 
     ssize alive_index = world->active_entity_count++;
     world->active_entity_ids[alive_index] = result.id;
     world->active_entity_quad_tree_locations[alive_index] = QT_NULL_LOCATION;
-
-    return result;
-}
-
-EntityWithID world_spawn_entity(World *world, Vector2 position, EntityFaction faction)
-{
-    EntityWithID result = world_spawn_non_spatial_entity(world, faction);
-    PhysicsComponent *physics = es_add_component(result.entity, PhysicsComponent);
-    physics->position = position;
 
     return result;
 }
@@ -165,8 +169,9 @@ static void handle_entity_removal_side_effects(World *world, EntityID id,
                         v2_sub(closest_point.point, v2_norm(dying_entity_physics->velocity));
                 }
 
-                Entity *new_entity =
-                    world_spawn_entity(world, new_entity_pos, FACTION_NEUTRAL).entity;
+                Entity *new_entity = world_spawn_entity(world, new_entity_pos, FACTION_NEUTRAL,
+                    ENTITY_KIND_TRANSIENT)
+                                         .entity;
                 LightEmitter *new_light = es_add_component(new_entity, LightEmitter);
                 *new_light = *old_light;
 
@@ -1201,7 +1206,7 @@ void world_initialize(World *world, FreeListArena *parent_arena)
     for (s32 i = 0; i < 1; ++i) {
 #if 1
         EntityWithID entity_with_id = world_spawn_entity(world,
-            v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)), FACTION_ENEMY);
+            v2(128 * (f32)(i + 1), 128 * (f32)(i + 1)), FACTION_ENEMY, ENTITY_KIND_PERSISTENT);
         Entity *entity = entity_with_id.entity;
 
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
@@ -1344,4 +1349,24 @@ void world_initialize(World *world, FreeListArena *parent_arena)
 void world_destroy(World *world)
 {
     la_destroy(&world->world_arena);
+}
+
+void world_make_inactive(World *world, LinearArena *frame_arena)
+{
+    for (ssize i = 0; i < world->active_entity_count; ++i) {
+        EntityID entity_id = world->active_entity_ids[i];
+        Entity *entity = es_get_entity(&world->entity_system, entity_id);
+
+        if ((entity->kind == ENTITY_KIND_TRANSIENT) || es_entity_is_inactive(entity)) {
+            world_remove_entity(world, i, ENTITY_REMOVAL_NO_SIDE_EFFECTS, frame_arena);
+            --i;
+        }
+    }
+
+    for (ssize i = 0; i < world->map_chunks.chunk_count; ++i) {
+        Chunk *chunk = &world->map_chunks.chunks[i];
+        clear_particle_buffers(&chunk->particle_buffers);
+    }
+
+    hitsplats_clear(world);
 }

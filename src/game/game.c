@@ -9,6 +9,7 @@
 #include "base/utils.h"
 #include "command.h"
 #include "components/component.h"
+#include "entity/entity.h"
 #include "entity/entity_id.h"
 #include "entity/entity_system.h"
 #include "platform/input_event.h"
@@ -59,13 +60,7 @@ Camera *get_active_camera(Game *game)
 // TODO: take position as parameter
 static void move_player_to_level(Game *game, s32 index, LinearArena *frame_arena)
 {
-    /* TODO: things to do when changing level
-	   - Remove entities such as projectiles in flight etc from old world
-	   - Clear hitsplats
-	   - Reset entity velocity?
-	   - Move camera to new position without panning
-	 */
-
+    // TODO: Move camera to new position without panning
     ASSERT(VALID_INDEX_FOR(index, game->world_array.data));
 
     World *old_world = get_active_world(game);
@@ -77,12 +72,14 @@ static void move_player_to_level(Game *game, s32 index, LinearArena *frame_arena
     World *new_world = get_active_world(game);
 
     PhysicsComponent *physics = es_get_component(old_player, PhysicsComponent);
-    EntityWithID new_player = world_spawn_entity(new_world, physics->position, FACTION_PLAYER);
+    EntityWithID new_player = world_spawn_entity(new_world, physics->position, FACTION_PLAYER,
+        ENTITY_KIND_PERSISTENT);
 
     es_copy_entity_into_other(new_player.entity, old_player);
     world_set_player_entity(new_world, new_player.id);
 
     world_remove_entity_by_id(old_world, old_player_id, frame_arena);
+    world_make_inactive(old_world, frame_arena);
 }
 
 // TODO: make this return a CommandQueue instead
@@ -349,7 +346,8 @@ static void spawn_player_entity(World *world)
 {
     ASSERT(entity_id_is_null(world->player_entity));
 
-    EntityWithID entity_with_id = world_spawn_entity(world, v2(128, 128), FACTION_PLAYER);
+    EntityWithID entity_with_id =
+        world_spawn_entity(world, v2(128, 128), FACTION_PLAYER, ENTITY_KIND_PERSISTENT);
     Entity *entity = entity_with_id.entity;
 
     PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);

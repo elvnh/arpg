@@ -1,8 +1,9 @@
+#include "components/component.h"
+#include "entity/entity.h"
 #include "entity/entity_id.h"
+#include "entity/entity_system.h"
 #include "test_macros.h"
 #include "testing_utils.h"
-#include "entity/entity_system.h"
-#include "components/component.h"
 
 /*
   TODO:
@@ -17,7 +18,7 @@ typedef struct {
 
 static ItemEntity create_item_entity(EntitySystem *es)
 {
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     InventoryStorable *item = es_add_component(e.entity, InventoryStorable);
 
     ItemEntity result = {e.entity, item};
@@ -28,7 +29,7 @@ static ItemEntity create_item_entity(EntitySystem *es)
 TEST_CASE(inventory_append_basic) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     REQUIRE(inventory_is_empty(inv));
@@ -49,7 +50,7 @@ TEST_CASE(inventory_append_basic) {
 TEST_CASE(inventory_append_empty) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item_entity = create_item_entity(es);
@@ -64,7 +65,7 @@ TEST_CASE(inventory_append_empty) {
 TEST_CASE(inventory_append_should_remove_position_component) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item_entity = create_item_entity(es);
@@ -79,7 +80,7 @@ TEST_CASE(inventory_append_should_remove_position_component) {
 TEST_CASE(inventory_append_when_one_element) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity first_item = create_item_entity(es);
@@ -103,7 +104,7 @@ TEST_CASE(inventory_append_when_one_element) {
 TEST_CASE(inventory_append_when_two_elements) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity first_item = create_item_entity(es);
@@ -128,7 +129,7 @@ TEST_CASE(inventory_append_when_two_elements) {
 TEST_CASE(inventory_remove_when_one_item) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item = create_item_entity(es);
@@ -145,7 +146,7 @@ TEST_CASE(inventory_remove_when_one_item) {
 TEST_CASE(inventory_remove_first_when_two_items) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item1 = create_item_entity(es);
@@ -167,7 +168,7 @@ TEST_CASE(inventory_remove_first_when_two_items) {
 TEST_CASE(inventory_remove_last_when_two_items) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item1 = create_item_entity(es);
@@ -188,7 +189,7 @@ TEST_CASE(inventory_remove_last_when_two_items) {
 TEST_CASE(inventory_remove_first_when_three_items) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item1 = create_item_entity(es);
@@ -218,7 +219,7 @@ TEST_CASE(inventory_remove_first_when_three_items) {
 TEST_CASE(inventory_remove_middle_when_three_items) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item1 = create_item_entity(es);
@@ -247,7 +248,7 @@ TEST_CASE(inventory_remove_middle_when_three_items) {
 TEST_CASE(inventory_remove_last_when_three_items) {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Inventory *inv = es_add_component(e.entity, Inventory);
 
     ItemEntity item1 = create_item_entity(es);

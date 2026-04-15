@@ -1,6 +1,7 @@
 #include "callback_functions.h"
 
 #include "base/linear_arena.h"
+#include "entity/entity.h"
 #include "world/world.h"
 
 void callback_spawn_particles(CallbackUserData *user_data, EventData event_data,
@@ -115,8 +116,8 @@ void chain_collision_callback(CallbackUserData *user_data, EventData event_data,
 
         self_physics->velocity = v2_mul_s(target_dir, current_speed);
 
-        EntityWithID chain_link_entity =
-            world_spawn_entity(event_data.world, self_physics->position, self->faction);
+        EntityWithID chain_link_entity = world_spawn_entity(event_data.world,
+            self_physics->position, self->faction, ENTITY_KIND_TRANSIENT);
         ChainComponent *chain_link =
             es_add_component(chain_link_entity.entity, ChainComponent);
         chain_link->chained_off_entity_id = collide_target->id;

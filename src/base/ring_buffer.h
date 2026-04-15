@@ -61,6 +61,7 @@
 #define ring_pop_tail(buf) ring_impl_pop_tail(&(buf)->head, &(buf)->tail, (buf)->capacity)
 #define ring_swap_remove(buf, index)                                                     \
     (*ring_at(buf, index) = *ring_peek_tail(buf), ring_pop_tail(buf))
+#define ring_clear(buf) (ring_impl_set_to_empty(&(buf)->head, &(buf)->tail))
 
 /* Access operations */
 #define ring_at(buf, idx)                                                                \

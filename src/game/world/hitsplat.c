@@ -85,3 +85,8 @@ void hitsplats_create(World *world, Vector2 position, Damage damage)
         }
     }
 }
+
+void hitsplats_clear(World *world)
+{
+    ring_clear(&world->active_hitsplats);
+}

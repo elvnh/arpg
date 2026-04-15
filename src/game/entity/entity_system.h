@@ -59,7 +59,7 @@ typedef struct EntitySystem {
 } EntitySystem;
 
 void es_initialize(EntitySystem *es);
-EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction);
+EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction, EntityKind kind);
 void es_remove_entity(EntitySystem *es, EntityID id);
 b32 es_has_no_components(Entity *entity);
 Entity *es_get_entity(EntitySystem *es, EntityID id);

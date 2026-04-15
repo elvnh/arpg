@@ -6,6 +6,7 @@
 #include "collision/trigger.h"
 #include "components/component.h"
 #include "components/event_listener.h"
+#include "entity/entity.h"
 #include "entity/entity_system.h"
 #include "world/world.h"
 
@@ -128,7 +129,8 @@ static void fork_collision_callback(CallbackUserData *user_data, EventData event
 static void spawn_spell_entity(World *world, const Spell *spell, Entity *caster,
     Vector2 spell_start_position, Vector2 dir, CastSpellParams params)
 {
-    EntityWithID spell_entity_with_id = world_spawn_non_spatial_entity(world, caster->faction);
+    EntityWithID spell_entity_with_id =
+        world_spawn_non_spatial_entity(world, caster->faction, ENTITY_KIND_TRANSIENT);
     Entity *spell_entity = spell_entity_with_id.entity;
 
     ColliderComponent *spell_collider =

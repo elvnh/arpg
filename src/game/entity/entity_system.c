@@ -129,12 +129,13 @@ EntityIndex pop_from_free_entity_id_list(EntitySystem *es)
     return result;
 }
 
-EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction)
+EntityWithID es_create_entity(EntitySystem *es, EntityFaction faction, EntityKind kind)
 {
     EntityIndex item_index = pop_from_free_entity_id_list(es);
 
     Entity *entity = create_entity_at_index(es, item_index);
     entity->faction = faction;
+    entity->kind = kind;
 
     ASSERT(!entity_id_is_null(entity->id));
 
@@ -284,7 +285,7 @@ void es_copy_entity_into_other(Entity *dst, Entity *src)
 
 EntityWithID es_clone_entity(EntitySystem *destination_es, Entity *entity)
 {
-    EntityWithID result = es_create_entity(destination_es, entity->faction);
+    EntityWithID result = es_create_entity(destination_es, entity->faction, entity->kind);
     es_copy_entity_into_other(result.entity, entity);
 
     return result;

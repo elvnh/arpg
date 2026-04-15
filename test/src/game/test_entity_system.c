@@ -1,9 +1,10 @@
 #include "components/component.h"
+#include "entity/entity.h"
 #include "entity/entity_faction.h"
 #include "entity/entity_id.h"
+#include "game/entity/entity_system.h"
 #include "test_macros.h"
 #include "testing_utils.h"
-#include "game/entity/entity_system.h"
 
 #include <stdlib.h>
 
@@ -16,7 +17,8 @@
 TEST_CASE(es_basics)
 {
     EntitySystem *entity_sys = allocate_entity_system();
-    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     REQUIRE(es_entity_exists(entity_sys, entity_with_id.id));
 
@@ -35,7 +37,8 @@ TEST_CASE(es_basics)
 TEST_CASE(es_schedule_for_removal)
 {
     EntitySystem *entity_sys = allocate_entity_system();
-    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     es_schedule_entity_for_removal(entity_with_id.entity);
 
@@ -48,7 +51,8 @@ TEST_CASE(es_adding_components_single)
 {
     EntitySystem *entity_sys = allocate_entity_system();
 
-    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Entity *entity = entity_with_id.entity;
 
     REQUIRE(!es_has_component(entity, LifetimeComponent));
@@ -63,7 +67,7 @@ TEST_CASE(es_adding_components_single)
 TEST_CASE(es_get_component)
 {
     EntitySystem *es = allocate_entity_system();
-    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     PhysicsComponent *comp1 = es_add_component(e1.entity, PhysicsComponent);
     PhysicsComponent *comp2 = es_get_component(e1.entity, PhysicsComponent);
@@ -80,7 +84,7 @@ TEST_CASE(es_try_get_component)
 {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     LightEmitter *comp = es_try_get_component(e1.entity, LightEmitter);
     REQUIRE(!comp);
@@ -144,7 +148,8 @@ TEST_CASE(es_adding_components_multiple)
 {
     EntitySystem *entity_sys = allocate_entity_system();
 
-    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Entity *entity = entity_with_id.entity;
 
     REQUIRE(!es_has_component(entity, LifetimeComponent));
@@ -166,7 +171,8 @@ TEST_CASE(es_removing_components_single)
 {
     EntitySystem *entity_sys = allocate_entity_system();
 
-    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Entity *entity = entity_with_id.entity;
 
     es_add_component(entity, LifetimeComponent);
@@ -181,7 +187,8 @@ TEST_CASE(es_removing_components_multiple)
 {
     EntitySystem *entity_sys = allocate_entity_system();
 
-    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Entity *entity = entity_with_id.entity;
 
     es_add_component(entity, LifetimeComponent);
@@ -204,7 +211,8 @@ TEST_CASE(es_components_zeroed)
 {
     EntitySystem *entity_sys = allocate_entity_system();
 
-    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Entity *entity = entity_with_id.entity;
 
     LifetimeComponent *lt = es_add_component(entity, LifetimeComponent);
@@ -222,7 +230,8 @@ TEST_CASE(es_removing_entities)
 {
     EntitySystem *entity_sys = allocate_entity_system();
 
-    EntityWithID entity_with_id = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     es_remove_entity(entity_sys, entity_with_id.id);
     REQUIRE(!es_entity_exists(entity_sys, entity_with_id.id));
@@ -235,8 +244,10 @@ TEST_CASE(es_create_multiple)
 {
     EntitySystem *entity_sys = allocate_entity_system();
 
-    EntityWithID entity_with_id1 = es_create_entity(entity_sys, FACTION_NEUTRAL);
-    EntityWithID entity_with_id2 = es_create_entity(entity_sys, FACTION_NEUTRAL);
+    EntityWithID entity_with_id1 =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
+    EntityWithID entity_with_id2 =
+        es_create_entity(entity_sys, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     EntityID id1 = entity_with_id1.id;
     EntityID id2 = entity_with_id2.id;
@@ -264,7 +275,7 @@ TEST_CASE(es_create_lots)
     EntityID ids[MAX_ENTITIES] = {0};
 
     for (ssize i = 0; i < MAX_ENTITIES; ++i) {
-        ids[i] = es_create_entity(es, FACTION_NEUTRAL).id;
+        ids[i] = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT).id;
     }
 
     for (ssize i = 0; i < MAX_ENTITIES; ++i) {
@@ -286,7 +297,7 @@ TEST_CASE(es_create_lots_remove_in_order)
         EntityID ids[MAX_ENTITIES] = {0};
 
         for (ssize i = 0; i < MAX_ENTITIES; ++i) {
-            ids[i] = es_create_entity(es, FACTION_NEUTRAL).id;
+            ids[i] = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT).id;
         }
 
         for (ssize i = 0; i < MAX_ENTITIES; ++i) {
@@ -312,7 +323,7 @@ TEST_CASE(es_create_lots_remove_reverse_order)
         EntityID ids[MAX_ENTITIES] = {0};
 
         for (ssize i = 0; i < MAX_ENTITIES; ++i) {
-            ids[i] = es_create_entity(es, FACTION_NEUTRAL).id;
+            ids[i] = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT).id;
         }
 
         for (ssize i = MAX_ENTITIES - 1; i >= 0; --i) {
@@ -339,7 +350,7 @@ TEST_CASE(es_create_lots_remove_unordered)
         EntityID ids[MAX_ENTITIES] = {0};
 
         for (ssize i = 0; i < MAX_ENTITIES; ++i) {
-            ids[i] = es_create_entity(es, FACTION_NEUTRAL).id;
+            ids[i] = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT).id;
         }
 
         for (ssize i = 0; i < batch_size; ++i) {
@@ -373,7 +384,7 @@ TEST_CASE(es_clone_entity_same_es)
 {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID first = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID first = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     es_add_component(first.entity, LifetimeComponent);
     es_add_component(first.entity, SpriteComponent);
@@ -402,7 +413,7 @@ TEST_CASE(es_clone_entity_different_es)
     EntitySystem *es1 = allocate_entity_system();
     EntitySystem *es2 = allocate_entity_system();
 
-    EntityWithID first = es_create_entity(es1, FACTION_NEUTRAL);
+    EntityWithID first = es_create_entity(es1, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     es_add_component(first.entity, LifetimeComponent);
     es_add_component(first.entity, SpriteComponent);
@@ -435,7 +446,7 @@ TEST_CASE(es_move_entity_into_different_es)
     EntitySystem *es1 = allocate_entity_system();
     EntitySystem *es2 = allocate_entity_system();
 
-    EntityWithID first = es_create_entity(es1, FACTION_NEUTRAL);
+    EntityWithID first = es_create_entity(es1, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     es_add_component(first.entity, LifetimeComponent);
     es_add_component(first.entity, SpriteComponent);
@@ -469,7 +480,7 @@ TEST_CASE(es_move_entity_into_different_es_many)
     EntityID ids_in_first_es[MAX_ENTITIES] = {0};
 
     for (ssize i = 0; i < MAX_ENTITIES; ++i) {
-        EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL);
+        EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
         es_add_component(e.entity, LifetimeComponent);
         es_add_component(e.entity, SpriteComponent);
@@ -523,7 +534,7 @@ TEST_CASE(es_move_entities_into_different_es_multiple_generations)
     // Make several generations pass in first ES
     for (ssize gen = 0; gen < 5; ++gen) {
         for (ssize i = 0; i < MAX_ENTITIES; ++i) {
-            EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL);
+            EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
             ids_in_first_es[i] = e.id;
         }
 
@@ -534,7 +545,7 @@ TEST_CASE(es_move_entities_into_different_es_multiple_generations)
 
     // Create the final set of entities in first ES
     for (ssize i = 0; i < MAX_ENTITIES; ++i) {
-        EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL);
+        EntityWithID e = es_create_entity(es1, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
         ids_in_first_es[i] = e.id;
     }
 
@@ -543,7 +554,7 @@ TEST_CASE(es_move_entities_into_different_es_multiple_generations)
 
     for (ssize gen = 0; gen < 3; ++gen) {
         for (ssize i = 0; i < MAX_ENTITIES; ++i) {
-            EntityWithID e = es_create_entity(es2, FACTION_NEUTRAL);
+            EntityWithID e = es_create_entity(es2, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
             ids_in_second_es[i] = e.id;
         }
 
@@ -568,8 +579,8 @@ TEST_CASE(es_get_component_owner)
 {
     EntitySystem *es = allocate_entity_system();
 
-    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL);
-    EntityWithID e2 = es_create_entity(es, FACTION_NEUTRAL);
+    EntityWithID e1 = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
+    EntityWithID e2 = es_create_entity(es, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
 
     LightEmitter *c1 = es_add_component(e1.entity, LightEmitter);
     LightEmitter *c2 = es_add_component(e2.entity, LightEmitter);

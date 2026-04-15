@@ -8,6 +8,11 @@
 #include "entity/entity_arena.h"
 #include "entity_faction.h"
 
+typedef enum {
+    ENTITY_KIND_PERSISTENT, // Stays when world is set to inactive
+    ENTITY_KIND_TRANSIENT,  // Gets removed when world is set to inactive
+} EntityKind;
+
 typedef struct Entity {
     EntityID id;
 
@@ -16,6 +21,7 @@ typedef struct Entity {
 
     EntityFaction faction;
     EntityState state;
+    EntityKind kind;
 
 #define COMPONENT(type) type ES_IMPL_COMP_FIELD_NAME(type);
     COMPONENT_LIST

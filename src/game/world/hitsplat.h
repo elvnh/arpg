@@ -26,5 +26,6 @@ void hitsplats_update(struct World *world, f32 dt);
 void hitsplats_render(struct World *world, struct RenderBatch *rb,
     struct LinearArena *frame_arena);
 void hitsplats_create(struct World *world, Vector2 position, Damage damage);
+void hitsplats_clear(struct World *world);
 
 #endif //HITSPLAT_H

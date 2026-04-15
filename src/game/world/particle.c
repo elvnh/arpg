@@ -43,3 +43,9 @@ void render_particle_buffers(ParticleBuffers *buffers, RenderBatches rbs,
             shader_handle(SHAPE_SHADER), RENDER_LAYER_PARTICLES);
     }
 }
+
+void clear_particle_buffers(ParticleBuffers *buffers)
+{
+    ring_clear(&buffers->normal_particles);
+    ring_clear(&buffers->light_emitting_particles);
+}

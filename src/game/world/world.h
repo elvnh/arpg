@@ -50,7 +50,7 @@ typedef struct World {
     QuadTree quad_tree;
 } World;
 
-void world_initialize(World *world, FreeListArena *parent_arena);
+void world_initialize(World *world, LinearArena *parent_arena);
 void world_destroy(World *world);
 void world_update(World *world, f32 dt, Vector2i viewport_size, LinearArena *frame_arena);
 void world_render(World *world, RenderBatches rb_list, Vector2i viewport_size,

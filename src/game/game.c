@@ -305,7 +305,7 @@ void game_initialize(Game *game, GameMemory *game_memory)
     initialize_flipbook_animations();
     initialize_status_effect_system();
 
-    world_initialize(&game->world, &game_memory->free_list_memory);
+    world_initialize(&game->world, &game_memory->permanent_memory);
 
     game->debug_state.average_fps = 60.0f;
     game->debug_state.timestep_modifier = 1.0f;

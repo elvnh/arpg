@@ -33,15 +33,11 @@ typedef struct Game {
 } Game;
 
 typedef struct GameMemory {
-    // For allocations will live for the entire program
+    // For allocations that will live for the entire program
     LinearArena permanent_memory;
 
     // For allocations that are cleared each frame
     LinearArena temporary_memory;
-
-    // For allocations that will need to be allocated and freed randomly, is a subarena of permanent_memory
-    // TODO: this is only used for creating multiple World isntances, instead create a World pool
-    FreeListArena free_list_memory;
 } GameMemory;
 
 void game_update_and_render(Game *game_state, PlatformCode platform_code,

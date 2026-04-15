@@ -9,7 +9,6 @@
 #include "renderer/frontend/render_batch.h"
 #include "world/world.h"
 
-/// TODO: this shouldn't take frame data as parameter
 void hitsplats_update(World *world, f32 dt)
 {
     for (s32 i = 0; i < ring_length(&world->active_hitsplats); ++i) {
@@ -57,7 +56,7 @@ void hitsplats_render(World *world, RenderBatch *rb, LinearArena *frame_arena)
 
         color.a = alpha;
 
-        draw_text(rb, frame_arena, damage_str, hitsplat->position, color, 28,
+        draw_text(rb, frame_arena, damage_str, hitsplat->position, color, 22,
             shader_handle(TEXTURE_SHADER), font_handle(DEFAULT_FONT), 5);
     }
 }

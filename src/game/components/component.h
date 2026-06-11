@@ -16,6 +16,7 @@
 #include "event_listener.h"
 #include "health.h"
 #include "inventory.h"
+#include "loot.h"
 #include "magic.h"
 #include "name.h"
 #include "particle_spawner.h"
@@ -48,7 +49,9 @@
     COMPONENT(Equipment)                                                                 \
     COMPONENT(NameComponent)                                                             \
     COMPONENT(ArcingComponent)                                                           \
-    COMPONENT(ChainComponent)
+    COMPONENT(ChainComponent)                                           \
+    COMPONENT(LootDropper)                                              \
+    COMPONENT(LootSpawner)
 
 #define ES_IMPL_COMP_ENUM_NAME(type)  COMP_##type
 #define ES_IMPL_COMP_FIELD_NAME(type) component_##type
@@ -126,6 +129,17 @@ typedef struct {
 typedef struct {
     ProceduralAnimation animation;
 } AnimationComponent;
+
+typedef struct {
+    LootTableID loot_table;
+    // NOTE: For now, everyone always drops one item
+} LootDropper;
+
+// Continually spawns loot until ran out
+typedef struct {
+    LootTableID loot_table;
+    // TODO: multiple items to spawn, item quantities
+} LootSpawner;
 
 static inline String component_id_to_string(ComponentID id)
 {

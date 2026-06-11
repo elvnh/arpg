@@ -309,6 +309,17 @@ void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena)
     EventData death_event = event_data_death();
     send_event_to_entity(entity, death_event, world, frame_arena);
 
+    if (es_has_components(entity,
+            component_id(LootDropper) | component_id(PhysicsComponent))) {
+        LootDropper *loot_gen = es_get_component(entity, LootDropper);
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+
+        EntityWithID loot_spawner_entity = world_spawn_entity(world, physics->position,
+            FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
+        LootSpawner *loot_spawner = es_add_component(loot_spawner_entity.entity, LootSpawner);
+        loot_spawner->loot_table = loot_gen->loot_table;
+    }
+
     es_schedule_entity_for_removal(entity);
 }
 
@@ -507,6 +518,20 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt,
             ASSERT(light->light.fade_duration > 0.0f);
             light->light.time_elapsed += dt;
         }
+    }
+
+    if (es_has_components(entity,
+            component_id(LootSpawner) | component_id(PhysicsComponent))) {
+        LootSpawner *loot_spawner = es_get_component(entity, LootSpawner);
+        PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
+
+        Item item_spawned = roll_loot_from_table(loot_spawner->loot_table);
+        Entity *item_entity = make_entity_from_item(world, item_spawned);
+        world_drop_item_from_position(physics->position, item_entity);
+
+        // TODO: perhaps we shouldn't remove mid-update, could cause trouble on later component updates.
+        // Maybe we could just make sure that es_has_component returns false if entity is inactive
+        world_kill_entity(world, entity, frame_arena);
     }
 
     if (entity_should_die(entity)) {
@@ -1273,12 +1298,12 @@ void world_initialize(World *world, LinearArena *parent_arena)
 
         StatsComponent *stats = es_add_component(entity, StatsComponent);
         stats->stats = create_base_stats();
-        set_stat_value(&stats->stats, STAT_HEALTH, 10000000);
+        set_stat_value(&stats->stats, STAT_HEALTH, 10);
 
         HealthComponent *hp = es_add_component(entity, HealthComponent);
         hp->health = create_health_instance(world, entity);
 
-#    if 1
+#    if 0
         LightEmitter *light = es_add_component(entity, LightEmitter);
         light->light.radius = 500.0f;
         light->light.kind = LIGHT_RAYCASTED;
@@ -1289,6 +1314,9 @@ void world_initialize(World *world, LinearArena *parent_arena)
             light->light.color = RGBA32_BLUE;
         }
 #    endif
+
+        LootDropper *dropper = es_add_component(entity, LootDropper);
+        dropper->loot_table = LOOT_TABLE_GENERIC;
 
 #    if 0
         if (i == 0) {
@@ -1322,6 +1350,7 @@ void world_initialize(World *world, LinearArena *parent_arena)
         }
 
 #    endif
+#    if 0
         {
             /*Inventory *inv = */ es_add_component(entity, Inventory);
             if (i != 0) {
@@ -1339,6 +1368,7 @@ void world_initialize(World *world, LinearArena *parent_arena)
 
             /*Equipment *eq =*/es_add_component(entity, Equipment);
         }
+#    endif
 #endif
     }
 

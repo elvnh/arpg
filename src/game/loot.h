@@ -1,0 +1,26 @@
+#ifndef LOOT_H
+#define LOOT_H
+
+#include "base/typedefs.h"
+#include "item.h"
+
+struct LinearArena;
+
+typedef struct {
+    Item item;
+    ssize weight;
+} LootItem;
+
+typedef enum {
+    LOOT_TABLE_GENERIC,
+    LOOT_TABLE_COUNT,
+} LootTableID;
+
+typedef struct {
+    Item *data;
+    ssize count;
+} LootList;
+
+Item roll_loot_from_table(LootTableID table_id);
+
+#endif // LOOT_H

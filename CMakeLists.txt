@@ -53,7 +53,9 @@ set(
   src/game/entity/entity_system.c
   src/game/entity/entity_state.c
   src/game/entity/entity_arena.c
+  src/game/item.c
   src/game/magic.c
+  src/game/loot.c
   src/game/stats.c
   src/base/polygon.c
   src/game/ui/game_ui.c

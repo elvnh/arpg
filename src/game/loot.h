@@ -4,6 +4,8 @@
 #include "base/typedefs.h"
 #include "item.h"
 
+#define LOOT_TIME_BETWEEN_DROPS 0.2f
+
 struct LinearArena;
 
 typedef struct {

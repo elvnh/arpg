@@ -527,21 +527,27 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt,
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
         if (loot_spawner->item_quantity_left_in_percent > 0) {
-            b32 should_spawn = loot_spawner->item_quantity_left_in_percent >= 100;
+            loot_spawner->time_to_next_drop -= dt;
 
-            if (loot_spawner->item_quantity_left_in_percent < 100) {
-                s64 roll = rng_s64(1, 100);
-                should_spawn = roll <= loot_spawner->item_quantity_left_in_percent;
+            if (loot_spawner->time_to_next_drop <= 0.0f) {
+                b32 should_spawn = loot_spawner->item_quantity_left_in_percent >= 100;
+
+                if (loot_spawner->item_quantity_left_in_percent < 100) {
+                    s64 roll = rng_s64(1, 100);
+                    should_spawn = roll <= loot_spawner->item_quantity_left_in_percent;
+                }
+
+                if (should_spawn) {
+                    Item item_spawned = roll_loot_from_table(loot_spawner->loot_table);
+                    Entity *item_entity = make_entity_from_item(world, item_spawned);
+
+                    world_drop_item_from_position(physics->position, item_entity);
+                }
+
+                loot_spawner->item_quantity_left_in_percent -= 100;
+                loot_spawner->time_to_next_drop = LOOT_TIME_BETWEEN_DROPS;
             }
 
-            if (should_spawn) {
-                Item item_spawned = roll_loot_from_table(loot_spawner->loot_table);
-                Entity *item_entity = make_entity_from_item(world, item_spawned);
-
-                world_drop_item_from_position(physics->position, item_entity);
-            }
-
-            loot_spawner->item_quantity_left_in_percent -= 100;
         } else {
             // TODO: perhaps we shouldn't remove mid-update, could cause trouble on later component updates.
             // Maybe we could just make sure that es_has_component returns false if entity is inactive
@@ -1332,7 +1338,7 @@ void world_initialize(World *world, LinearArena *parent_arena)
 
         LootDropper *dropper = es_add_component(entity, LootDropper);
         dropper->loot_table = LOOT_TABLE_GENERIC;
-        dropper->item_quantity_in_percent = 150;
+        dropper->item_quantity_in_percent = 500;
 
 #    if 0
         if (i == 0) {

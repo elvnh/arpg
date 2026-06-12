@@ -140,6 +140,8 @@ typedef struct {
 typedef struct {
     LootTableID loot_table;
     s64 item_quantity_left_in_percent;
+
+    f32 time_to_next_drop;
     // TODO: multiple items to spawn, item quantities
 } LootSpawner;
 

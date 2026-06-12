@@ -284,7 +284,9 @@ void world_drop_item_from_position(Vector2 position, Entity *item_entity)
     // TODO: ensure that invalid position isn't picked
 
     Vector2 origin = position;
-    Vector2 target_pos = v2_add(position, v2(50, 0));
+    Vector2 direction = rng_direction(PI * 2);
+    f32 length = rng_f32(10.0f, 50.0f);
+    Vector2 target_pos = v2_add(position, v2_mul_s(direction, length));
 
     PhysicsComponent *physics = es_get_or_add_component(item_entity, PhysicsComponent);
     physics->position = target_pos;

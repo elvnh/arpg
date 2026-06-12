@@ -294,7 +294,9 @@ void world_drop_item_from_position(Vector2 position, Entity *item_entity)
     *anim = zero_struct(AnimationComponent);
     anim->animation.position_function = POSITION_ANIMATION_PARABOLA;
     anim->animation.start_position = v2_sub(origin, target_pos);
-    anim->animation.position_args.parabola.middle = v2(0, -200);
+
+    s32 parabola_height = rng_s32(200, 300);
+    anim->animation.position_args.parabola.middle = v2(0, (f32)-parabola_height);
     anim->animation.position_args.parabola.end = V2_ZERO;
 
     anim->animation.rotation_animation = ROTATION_ANIMATION_LERP;

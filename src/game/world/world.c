@@ -279,8 +279,7 @@ void world_remove_entity_by_id(World *world, EntityID id, LinearArena *frame_are
 
 void world_drop_item_from_position(Vector2 position, Entity *item_entity)
 {
-    // TODO: randomly choose a position in radius around position, randomize drop
-    // height and rotations etc
+    // TODO: Randomize drop height and rotations etc
     // TODO: ensure that invalid position isn't picked
 
     Vector2 origin = position;
@@ -966,12 +965,28 @@ void world_update(World *world, f32 dt, Camera camera, Vector2i viewport_size,
     // TODO: only update in certain area around player
     handle_collision_and_movement(world, dt, frame_arena);
 
-    // TODO: should any newly spawned entities be updated this frame?
+#if 0
     EntityIndex entity_count = world->active_entity_count;
 
     for (EntityIndex i = 0; i < entity_count; ++i) {
         entity_update(world, i, dt, frame_arena);
     }
+#else
+    /* NOTE: We now update entities the same frame they are spawned. The reason
+       for this change was a visual bug caused when spawning new entities with
+       an AnimationComponent, for example when dropping loot. These entities
+       didn't have their AnimationComponent updated for their first frame of
+       existence, but were still rendered that frame. Since their visual offset
+       in their PhysicsComponent isn't set until update_procedural_animation is
+       ran for the first time, this caused them to be rendered as if they didn't
+       have an AnimationComponent for one frame.
+
+       If this causes any problems, solve this in a different way.
+     */
+    for (EntityIndex i = 0; i < world->active_entity_count; ++i) {
+        entity_update(world, i, dt, frame_arena);
+    }
+#endif
 
     hitsplats_update(world, dt);
 

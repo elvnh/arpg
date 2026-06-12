@@ -7,11 +7,8 @@
 
 Entity *make_entity_from_item(World *world, Item item)
 {
-    // NOTE: we don't set a particular position, this function just handles
-    // creating item, not dropping it into world
-    // TODO: spawn as non-spatial?
     EntityWithID entity_with_id =
-        world_spawn_entity(world, V2_ZERO, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
+        world_spawn_non_spatial_entity(world, FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
     Entity *e = entity_with_id.entity;
 
     BEGIN_EXHAUSTIVE_SWITCH;

@@ -1,5 +1,6 @@
 #include "item.h"
 
+#include "asset_table.h"
 #include "world/world.h"
 
 // TODO: make this system similar to spells
@@ -16,8 +17,13 @@ Entity *make_entity_from_item(World *world, Item item)
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (item) {
         case ITEM_SWORD: {
-            // TODO: add all components
-            ASSERT(0);
+            SpriteComponent *sprite = es_add_component(e, SpriteComponent);
+            sprite->sprite.texture = texture_handle(ICE_SHARD_TEXTURE);
+            sprite->sprite.color = RGBA32_WHITE;
+            sprite->sprite.size = v2(32, 32);
+
+            InventoryStorable *inv_item = es_add_component(e, InventoryStorable);
+
         } break;
 
         case ITEM_SHIELD: {

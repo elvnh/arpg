@@ -132,12 +132,14 @@ typedef struct {
 
 typedef struct {
     LootTableID loot_table;
+    s64 item_quantity_in_percent;
     // NOTE: For now, everyone always drops one item
 } LootDropper;
 
 // Continually spawns loot until ran out
 typedef struct {
     LootTableID loot_table;
+    s64 item_quantity_left_in_percent;
     // TODO: multiple items to spawn, item quantities
 } LootSpawner;
 

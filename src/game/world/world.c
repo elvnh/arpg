@@ -318,6 +318,7 @@ void world_kill_entity(World *world, Entity *entity, LinearArena *frame_arena)
             FACTION_NEUTRAL, ENTITY_KIND_PERSISTENT);
         LootSpawner *loot_spawner = es_add_component(loot_spawner_entity.entity, LootSpawner);
         loot_spawner->loot_table = loot_gen->loot_table;
+        loot_spawner->item_quantity_left_in_percent = loot_gen->item_quantity_in_percent;
     }
 
     es_schedule_entity_for_removal(entity);
@@ -525,13 +526,27 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt,
         LootSpawner *loot_spawner = es_get_component(entity, LootSpawner);
         PhysicsComponent *physics = es_get_component(entity, PhysicsComponent);
 
-        Item item_spawned = roll_loot_from_table(loot_spawner->loot_table);
-        Entity *item_entity = make_entity_from_item(world, item_spawned);
-        world_drop_item_from_position(physics->position, item_entity);
+        if (loot_spawner->item_quantity_left_in_percent > 0) {
+            b32 should_spawn = loot_spawner->item_quantity_left_in_percent >= 100;
 
-        // TODO: perhaps we shouldn't remove mid-update, could cause trouble on later component updates.
-        // Maybe we could just make sure that es_has_component returns false if entity is inactive
-        world_kill_entity(world, entity, frame_arena);
+            if (loot_spawner->item_quantity_left_in_percent < 100) {
+                s64 roll = rng_s64(1, 100);
+                should_spawn = roll <= loot_spawner->item_quantity_left_in_percent;
+            }
+
+            if (should_spawn) {
+                Item item_spawned = roll_loot_from_table(loot_spawner->loot_table);
+                Entity *item_entity = make_entity_from_item(world, item_spawned);
+
+                world_drop_item_from_position(physics->position, item_entity);
+            }
+
+            loot_spawner->item_quantity_left_in_percent -= 100;
+        } else {
+            // TODO: perhaps we shouldn't remove mid-update, could cause trouble on later component updates.
+            // Maybe we could just make sure that es_has_component returns false if entity is inactive
+            world_kill_entity(world, entity, frame_arena);
+        }
     }
 
     if (entity_should_die(entity)) {
@@ -1317,6 +1332,7 @@ void world_initialize(World *world, LinearArena *parent_arena)
 
         LootDropper *dropper = es_add_component(entity, LootDropper);
         dropper->loot_table = LOOT_TABLE_GENERIC;
+        dropper->item_quantity_in_percent = 150;
 
 #    if 0
         if (i == 0) {

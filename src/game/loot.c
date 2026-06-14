@@ -5,7 +5,7 @@
 #include "components/modifier.h"
 
 typedef struct {
-    ItemID item;
+    BaseItemID item;
     ssize weight;
 } LootTableRow;
 
@@ -61,7 +61,7 @@ static LootTable get_loot_table(LootTableID id, LinearArena *arena)
     return result;
 }
 
-static ModifierTable get_modifier_table_for_item(ItemID item_id, LinearArena *arena)
+static ModifierTable get_modifier_table_for_item(BaseItemID item_id, LinearArena *arena)
 {
     ASSERT(item_id >= 0);
     ASSERT(item_id < ITEM_COUNT);
@@ -77,7 +77,7 @@ static ModifierTable get_modifier_table_for_item(ItemID item_id, LinearArena *ar
     return result;
 }
 
-static ItemModifiers roll_modifiers_for_item(ItemID item_id)
+static ItemModifiers roll_modifiers_for_item(BaseItemID item_id)
 {
     ASSERT(item_id >= 0);
     ASSERT(item_id < ITEM_COUNT);
@@ -123,7 +123,7 @@ Item roll_loot_from_table(LootTableID table_id)
 
     s64 roll = rng_s64(0, table.total_weight);
 
-    ItemID base_item = 0;
+    BaseItemID base_item = 0;
 
     s64 x = 0;
     for (ssize i = 0; i < table.count; ++i) {

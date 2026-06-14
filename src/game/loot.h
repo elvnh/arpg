@@ -14,7 +14,7 @@ typedef enum {
 } LootTableID;
 
 typedef struct {
-    ItemID *data;
+    BaseItemID *data;
     ssize count;
 } LootList;
 

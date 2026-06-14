@@ -10,10 +10,10 @@ struct Entity;
 typedef enum {
     ITEM_SWORD,
     ITEM_COUNT,
-} ItemID;
+} BaseItemID;
 
 typedef struct {
-    ItemID base_item;
+    BaseItemID base_item;
     ItemModifiers modifiers;
 } Item;
 

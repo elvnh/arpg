@@ -541,7 +541,8 @@ static void entity_update(World *world, ssize alive_entity_index, f32 dt,
                 }
 
                 if (should_spawn) {
-                    Item item_spawned = roll_loot_from_table(loot_spawner->loot_table);
+                    Item item_spawned =
+                        roll_loot_from_table(loot_spawner->loot_table, frame_arena);
                     Entity *item_entity = make_entity_from_item(world, item_spawned);
 
                     world_drop_item_from_position(physics->position, item_entity);

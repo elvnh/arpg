@@ -13,11 +13,6 @@ typedef enum {
     LOOT_TABLE_COUNT,
 } LootTableID;
 
-typedef struct {
-    BaseItemID *data;
-    ssize count;
-} LootList;
-
-Item roll_loot_from_table(LootTableID table_id);
+Item roll_loot_from_table(LootTableID table_id, struct LinearArena *scratch);
 
 #endif // LOOT_H

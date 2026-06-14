@@ -159,6 +159,13 @@ static inline s64 align(s64 value, s64 alignment)
     return result;
 }
 
+static inline ssize usize_to_ssize(usize value)
+{
+    ASSERT(value <= (usize)S_SIZE_MAX);
+
+    return (ssize)value;
+}
+
 static inline usize ssize_to_usize(ssize value)
 {
     ASSERT(value >= 0);

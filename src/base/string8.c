@@ -231,3 +231,11 @@ b32 str_is_empty(String str)
 
     return result;
 }
+
+String str_from_c_str(char *str)
+{
+    size_t length = strlen(str);
+    String result = {str, usize_to_ssize(length)};
+
+    return result;
+}

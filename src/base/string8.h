@@ -52,6 +52,7 @@ ssize str_get_common_prefix_length(String a, String b);
 Cut str_cut(String str, String pattern);
 void str_print(String str);
 b32 str_is_empty(String str);
+String str_from_c_str(char *str);
 
 // TODO: move to different file
 StringBuilder str_builder_allocate(ssize capacity, Allocator allocator);

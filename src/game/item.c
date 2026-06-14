@@ -12,15 +12,14 @@ Entity *make_entity_from_item(World *world, Item item)
     Entity *e = entity_with_id.entity;
 
     BEGIN_EXHAUSTIVE_SWITCH;
-    switch (item) {
+    switch (item.base_item) {
         case ITEM_SWORD: {
             SpriteComponent *sprite = es_add_component(e, SpriteComponent);
             sprite->sprite.texture = texture_handle(ICE_SHARD_TEXTURE);
             sprite->sprite.color = RGBA32_WHITE;
             sprite->sprite.size = v2(32, 32);
 
-            InventoryStorable *inv_item = es_add_component(e, InventoryStorable);
-
+            /*InventoryStorable *inv_item = */ es_add_component(e, InventoryStorable);
         } break;
 
         case ITEM_SHIELD: {
@@ -28,10 +27,13 @@ Entity *make_entity_from_item(World *world, Item item)
             ASSERT(0);
         } break;
 
-            INVALID_CASE(ITEM_NULL);
+            INVALID_CASE(ITEM_COUNT);
             INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
+
+    ItemModifiers *mods = es_add_component(e, ItemModifiers);
+    *mods = item.modifiers;
 
     return e;
 }

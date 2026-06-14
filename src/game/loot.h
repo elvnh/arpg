@@ -8,11 +8,6 @@
 
 struct LinearArena;
 
-typedef struct {
-    ItemID item;
-    ssize weight;
-} LootItem;
-
 typedef enum {
     LOOT_TABLE_GENERIC,
     LOOT_TABLE_COUNT,

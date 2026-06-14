@@ -22,11 +22,6 @@ Entity *make_entity_from_item(World *world, Item item)
             /*InventoryStorable *inv_item = */ es_add_component(e, InventoryStorable);
         } break;
 
-        case ITEM_SHIELD: {
-            // TODO: add all components
-            ASSERT(0);
-        } break;
-
             INVALID_CASE(ITEM_COUNT);
             INVALID_DEFAULT_CASE;
     }

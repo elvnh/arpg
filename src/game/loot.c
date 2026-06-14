@@ -5,6 +5,11 @@
 #include "components/modifier.h"
 
 typedef struct {
+    ItemID item;
+    ssize weight;
+} LootTableRow;
+
+typedef struct {
     s64 weight;
     Stat target_stat;
     NumericModifierType modifier_type;
@@ -12,8 +17,21 @@ typedef struct {
     StatValue max_roll;
 } ModifierTableRow;
 
+typedef struct {
+    LootTableRow *data;
+    ssize count;
+    ssize total_weight;
+} LootTable;
+
+typedef struct {
+    ModifierTableRow *data;
+    ssize count;
+    ssize total_weight;
+} ModifierTable;
+
+// TODO: move these into functions
 // clang-format off
-static LootItem loot_tables[][LOOT_TABLE_COUNT] = {
+static LootTableRow loot_tables[][LOOT_TABLE_COUNT] = {
     [LOOT_TABLE_GENERIC] = {
         {ITEM_SWORD, 100},
     },
@@ -26,35 +44,57 @@ static ModifierTableRow modifier_tables[][ITEM_COUNT] = {
 };
 // clang-format on
 
-static s64 mod_table_total_weight(ItemID item)
+static LootTable get_loot_table(LootTableID id, LinearArena *arena)
 {
-    s64 result = 0;
+    /* ASSERT(arena); */
+    ASSERT(id >= 0);
+    ASSERT(id < LOOT_TABLE_COUNT);
 
-    for (ssize i = 0; i < ARRAY_COUNT(modifier_tables[item]); ++i) {
-        result += modifier_tables[item][i].weight;
+    LootTable result = {0};
+    result.data = loot_tables[id];
+    result.count = ARRAY_COUNT(loot_tables[id]);
+
+    for (ssize i = 0; i < result.count; ++i) {
+        result.total_weight += result.data[i].weight;
     }
 
     return result;
 }
 
-static ItemModifiers roll_modifiers_for_item(ItemID item)
+static ModifierTable get_modifier_table_for_item(ItemID item_id, LinearArena *arena)
 {
-    ASSERT(item >= 0);
-    ASSERT(item < ITEM_COUNT);
+    ASSERT(item_id >= 0);
+    ASSERT(item_id < ITEM_COUNT);
+
+    ModifierTable result = {0};
+    result.data = modifier_tables[item_id];
+    result.count = ARRAY_COUNT(modifier_tables[item_id]);
+
+    for (ssize i = 0; i < result.count; ++i) {
+        result.total_weight += result.data[i].weight;
+    }
+
+    return result;
+}
+
+static ItemModifiers roll_modifiers_for_item(ItemID item_id)
+{
+    ASSERT(item_id >= 0);
+    ASSERT(item_id < ITEM_COUNT);
 
     ItemModifiers result = {0};
 
-    ModifierTableRow *table = modifier_tables[item];
+    ModifierTable table = get_modifier_table_for_item(item_id, 0);
 
     s32 mods_to_roll = rng_s32(1, 6);
 
     for (s32 i = 0; i < mods_to_roll; ++i) {
         s64 x = 0;
-        s64 roll = rng_s64(0, mod_table_total_weight(item));
+        s64 roll = rng_s64(0, table.total_weight);
         ModifierTableRow rolled_row = {0};
 
-        for (ssize j = 0; j < ARRAY_COUNT(modifier_tables[item]); ++j) {
-            ModifierTableRow row = table[j];
+        for (ssize j = 0; j < table.count; ++j) {
+            ModifierTableRow row = table.data[j];
             s64 next = x + row.weight;
 
             // TODO: make sure we can't roll same mods multiple times
@@ -77,40 +117,17 @@ static ItemModifiers roll_modifiers_for_item(ItemID item)
     return result;
 }
 
-static LootItem *get_table_by_id(LootTableID table_id)
-{
-    ASSERT(table_id >= 0);
-    ASSERT(table_id < LOOT_TABLE_COUNT);
-
-    LootItem *result = loot_tables[table_id];
-    return result;
-}
-
-static s64 table_total_weight_count(LootTableID table)
-{
-    s64 result = 0;
-
-    for (ssize i = 0; i < ARRAY_COUNT(loot_tables[table]); ++i) {
-        LootItem item = loot_tables[table][i];
-
-        result += item.weight;
-    }
-
-    ASSERT(result > 0);
-    return result;
-}
-
 Item roll_loot_from_table(LootTableID table_id)
 {
-    LootItem *table = get_table_by_id(table_id);
+    LootTable table = get_loot_table(table_id, 0);
 
-    s64 roll = rng_s64(0, table_total_weight_count(table_id));
+    s64 roll = rng_s64(0, table.total_weight);
 
     ItemID base_item = 0;
 
     s64 x = 0;
-    for (ssize i = 0; i < ARRAY_COUNT(loot_tables[table_id]); ++i) {
-        LootItem item = table[i];
+    for (ssize i = 0; i < table.count; ++i) {
+        LootTableRow item = table.data[i];
 
         s64 next = x + item.weight;
         if ((roll >= x) && (roll < next)) {

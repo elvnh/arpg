@@ -9,7 +9,6 @@ struct Entity;
 // TODO: rename to BaseItemID
 typedef enum {
     ITEM_SWORD,
-    ITEM_SHIELD,
     ITEM_COUNT,
 } ItemID;
 

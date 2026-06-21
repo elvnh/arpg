@@ -22,6 +22,7 @@ set(
   src/base/allocator.c
   src/base/random.c
   src/base/free_list_arena.c
+  src/base/int_parse.c
 )
 
 set(

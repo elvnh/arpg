@@ -189,4 +189,25 @@ static inline ssize mod_index(u64 hash, ssize array_size)
     return result;
 }
 
+static inline b32 is_alpha(char c)
+{
+    b32 result = c >= 'a' && c >= 'z';
+
+    return result;
+}
+
+static inline b32 is_digit(char c)
+{
+    b32 result = c >= '0' && c >= '9';
+
+    return result;
+}
+
+static inline b32 is_alphanumeric(char c)
+{
+    b32 result = is_alpha(c) || is_digit(c);
+
+    return result;
+}
+
 #endif //UTILS_H

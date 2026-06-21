@@ -191,14 +191,14 @@ static inline ssize mod_index(u64 hash, ssize array_size)
 
 static inline b32 is_alpha(char c)
 {
-    b32 result = c >= 'a' && c >= 'z';
+    b32 result = c >= 'a' && c <= 'z';
 
     return result;
 }
 
 static inline b32 is_digit(char c)
 {
-    b32 result = c >= '0' && c >= '9';
+    b32 result = c >= '0' && c <= '9';
 
     return result;
 }
@@ -206,6 +206,24 @@ static inline b32 is_digit(char c)
 static inline b32 is_alphanumeric(char c)
 {
     b32 result = is_alpha(c) || is_digit(c);
+
+    return result;
+}
+
+static inline b32 is_whitespace(char c)
+{
+    b32 result = false;
+    switch (c) {
+        case ' ':
+        case '\n':
+        case '\t':
+        case '\r': {
+            result = true;
+        } break;
+
+        default: {
+        } break;
+    }
 
     return result;
 }

@@ -47,6 +47,14 @@ static b32 parser_match(Parser *p, TokenKind kind)
     return result;
 }
 
+static void parser_expect(Parser *p, TokenKind tok)
+{
+    if (!parser_match(p, tok)) {
+        // TODO: proper errors
+        ASSERT(0 && "Did not receive expected token");
+    }
+}
+
 static b32 parser_is_at_end(Parser *p)
 {
     b32 result = parser_peek(p).kind == TOK_EOF;
@@ -66,10 +74,10 @@ static Attribute *parse_attribute(Parser *p)
     Attribute *result = la_allocate_item(p->arena, Attribute);
     result->name = name.lexeme;
 
-    if (parser_match(p, TOK_COLON)) {
-        Value *value = parse_value(p);
-        result->value = value;
-    }
+    parser_expect(p, TOK_EQUAL);
+
+    Value *value = parse_value(p);
+    result->value = value;
 
     return result;
 }
@@ -90,10 +98,8 @@ static Value *parse_record(Parser *p)
 
     if (parser_is_at_end(p)) {
         ASSERT(0 && "Unterminated record");
-    }
-
-    if (!parser_match(p, TOK_RIGHT_BRACE)) {
-        ASSERT(0 && "Expected recprd end");
+    } else {
+        parser_expect(p, TOK_RIGHT_BRACE);
     }
 
     return 0;

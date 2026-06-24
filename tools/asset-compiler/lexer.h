@@ -19,7 +19,9 @@ typedef enum {
     TOK_LEFT_BRACKET,
     TOK_RIGHT_BRACKET,
     TOK_COLON,
+    TOK_EQUAL,
     TOK_COMMA,
+    TOK_SEMICOLON,
 } TokenKind;
 
 typedef struct {

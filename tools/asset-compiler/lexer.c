@@ -129,6 +129,14 @@ Token lexer_next_token(Lexer *l)
                 kind = TOK_COMMA;
             } break;
 
+            case ';': {
+                kind = TOK_SEMICOLON;
+            } break;
+
+            case '=': {
+                kind = TOK_EQUAL;
+            } break;
+
             case '0':
             case '1':
             case '2':

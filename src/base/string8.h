@@ -53,6 +53,7 @@ Cut str_cut(String str, String pattern);
 void str_print(String str);
 b32 str_is_empty(String str);
 String str_from_c_str(char *s);
+String str_to_upper(String s, Allocator allocator);
 
 // TODO: move to different file
 StringBuilder str_builder_allocate(ssize capacity, Allocator allocator);

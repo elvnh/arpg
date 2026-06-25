@@ -239,3 +239,20 @@ String str_from_c_str(char *s)
 
     return result;
 }
+
+String str_to_upper(String s, Allocator allocator)
+{
+    String result = str_copy(s, allocator);
+
+    for (ssize i = 0; i < result.length; ++i) {
+        char c = result.data[i];
+
+        if (c >= 'a' && c <= 'z') {
+            c = (char)((s32)c - ('a' - 'A'));
+        }
+
+        result.data[i] = c;
+    }
+
+    return result;
+}

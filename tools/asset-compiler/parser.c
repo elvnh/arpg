@@ -87,22 +87,16 @@ static Value *parse_record(Parser *p)
     Value *result = value_make(p->arena, VALUE_RECORD);
 
     do {
-        if (parser_check(p, TOK_RIGHT_BRACE)) {
-            break;
+        if (parser_is_at_end(p)) {
+            ASSERT(0 && "Unterminated list");
         }
 
         Attribute *attr = parse_attribute(p);
 
         sl_list_push_back(&result->as.record, attr);
-    } while (parser_match(p, TOK_COMMA));
+    } while (!parser_match(p, TOK_RIGHT_BRACE));
 
-    if (parser_is_at_end(p)) {
-        ASSERT(0 && "Unterminated record");
-    } else {
-        parser_expect(p, TOK_RIGHT_BRACE);
-    }
-
-    return 0;
+    return result;
 }
 
 static Value *parse_list(Parser *p)
@@ -152,7 +146,12 @@ static Value *parse_value(Parser *p)
         case TOK_STRING: {
             node = value_make(p->arena, VALUE_STRING);
 
-            node->as.string = current_token.lexeme;
+            String string = current_token.lexeme;
+
+            // Remove quotation marks
+            string.data++;
+            string.length -= 2;
+            node->as.string = string;
         } break;
 
         case TOK_IDENTIFIER: {
@@ -177,7 +176,7 @@ static Value *parse_value(Parser *p)
     return node;
 }
 
-Value *parse(String source, LinearArena *arena)
+Record *parse(String source, LinearArena *arena)
 {
     Parser p = {
         .lexer = {source, 0},
@@ -200,5 +199,5 @@ Value *parse(String source, LinearArena *arena)
         }
     }
 
-    return result;
+    return value_as_record(result);
 }

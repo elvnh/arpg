@@ -43,7 +43,7 @@ static TokenKind lexer_tokenize_string(Lexer *l)
     TokenKind result = 0;
 
     while (!lexer_is_at_end(l)) {
-        char c = lexer_peek_char(l);
+        char c = lexer_advance_char(l);
 
         if (c == '"') {
             result = TOK_STRING;

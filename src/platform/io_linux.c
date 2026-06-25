@@ -254,3 +254,15 @@ String platform_get_canonical_path(String path, Allocator allocator,
 
     return canonical;
 }
+
+String platform_make_relative_to(String a, String b, Allocator allocator)
+{
+    if (!str_ends_with(a, str("/"))) {
+        // TODO: free this allocation
+        a = str_concat(a, str("/"), allocator);
+    }
+
+    String result = str_concat(a, b, allocator);
+
+    return result;
+}

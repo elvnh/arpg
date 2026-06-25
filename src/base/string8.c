@@ -231,3 +231,12 @@ b32 str_is_empty(String str)
 
     return result;
 }
+
+String str_from_c_str(char *s, Allocator allocator)
+{
+    ssize length = (ssize)strlen(s);
+    String result = str_allocate(length, allocator);
+    memcpy(result.data, s, (usize)length);
+
+    return result;
+}

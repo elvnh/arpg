@@ -31,6 +31,7 @@ set(
   src/platform/file_watcher.c
   src/platform/font.c
   src/platform/platform_linux.c
+  src/platform/io_linux.c
   src/platform/asset_system.c
   src/platform/stb.c
   src/platform/image_decode.c

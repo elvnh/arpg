@@ -290,20 +290,31 @@ b32 platform_write_to_file(String path, const void *data, ssize count, Allocator
 
     LinearArena scratch = la_create(allocator, 1024);
 
-    String nt_path = str_null_terminate(path, la_allocator(&scratch));
+    String parent_dir = platform_get_relative_parent_path(path);
+    b32 parent_dirs_exist = true;
 
-    int fd = open(nt_path.data, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+    if (parent_dir.data) {
+        // Ensure that any parent directories in the path are created
+        parent_dirs_exist = platform_create_directory(parent_dir, allocator);
+    }
 
-    if (fd != -1) {
-        ssize_t bytes_written = write(fd, data, ssize_to_usize(count));
+    if (parent_dirs_exist) {
+        String nt_path = str_null_terminate(path, la_allocator(&scratch));
 
-        if (bytes_written == count) {
-            result = true;
+        int fd = open(nt_path.data, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+
+        if (fd != -1) {
+            ssize_t bytes_written = write(fd, data, ssize_to_usize(count));
+
+            if (bytes_written == count) {
+                result = true;
+            }
         }
+
+        close(fd);
     }
 
     la_destroy(&scratch);
-    close(fd);
 
     return result;
 }

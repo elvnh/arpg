@@ -67,6 +67,8 @@ CompiledAssetList compile_textures(ValueList *textures, String assets_dir, Linea
 
         Span image_file = platform_read_entire_file(abs_path, allocator, arena);
 
+        u32 next_id = 0;
+
         if (!image_file.data) {
             ASSERT(0 && "Failed to load image file");
         } else {
@@ -78,20 +80,20 @@ CompiledAssetList compile_textures(ValueList *textures, String assets_dir, Linea
                 ASSERT(bitmap.channels == 4);
 
                 ssize bitmap_size = bitmap.width * bitmap.height * 4; // Channels are always 4
-                ssize asset_size = SIZEOF(SerializedTexture) + bitmap_size;
 
-                SerializedTexture *serialized_texture = allocate_with_flexible_array_member(
-                    allocator, SerializedTexture, bitmap_size);
-                serialized_texture->header = (AssetHeader){ASSET_TEXTURE};
-                serialized_texture->width = bitmap.width;
-                serialized_texture->height = bitmap.height;
+                BinaryTexture *binary_texture =
+                    allocate_with_flexible_array_member(allocator, BinaryTexture, bitmap_size);
 
-                memcpy(serialized_texture->bitmap, bitmap.data, ssize_to_usize(bitmap_size));
+                binary_texture->header = (BinaryAsset){ASSET_TEXTURE, next_id++};
+                binary_texture->width = bitmap.width;
+                binary_texture->height = bitmap.height;
+
+                memcpy(binary_texture->bitmap, bitmap.data, ssize_to_usize(bitmap_size));
 
                 CompiledAsset *asset = la_allocate_item(arena, CompiledAsset);
                 asset->name = *name;
                 asset->path = *file;
-                asset->asset = &serialized_texture->header;
+                asset->asset = &binary_texture->header;
 
                 sl_list_push_back(&result, asset);
             }

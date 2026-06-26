@@ -347,7 +347,6 @@ b32 platform_create_directory(String path, Allocator allocator)
 {
     // TODO: validate that path is valid
     LinearArena scratch = la_create(allocator, KB(8));
-    Allocator scratch_allocator = la_allocator(&scratch);
 
     b32 result = platform_create_directory_recursive(path, allocator);
 

@@ -23,8 +23,8 @@ static void generate_asset_enum(CompiledAssetList assets, AssetKind2 asset_kind,
 
     ssize count = 0;
     for (CompiledAsset *a = list_head(&assets); a; a = list_next(a)) {
-        String s = format(arena, "\n    " FMT_STR "(" FMT_STR "),", FMT_STR_ARG(macro_name),
-            FMT_STR_ARG(a->name));
+        String s = format(arena, "\n    " FMT_STR "(" FMT_STR ") = %u,",
+            FMT_STR_ARG(macro_name), FMT_STR_ARG(a->name), a->asset->asset_id);
 
         str_builder_append(sb, s);
 

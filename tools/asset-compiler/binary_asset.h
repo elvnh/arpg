@@ -1,6 +1,8 @@
 #ifndef BINARY_ASSET_H
 #define BINARY_ASSET_H
 
+#include "base/typedefs.h"
+
 typedef enum {
     ASSET_TEXTURE,
 } AssetKind2; // TODO: rename

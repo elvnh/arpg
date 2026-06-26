@@ -7,7 +7,10 @@ typedef enum {
 
 typedef struct {
     AssetKind2 kind;
+    u32 asset_id;
 } AssetHeader;
+
+// TODO: change "Serialized"/"Compiled" prefix to "Binary"
 
 typedef struct {
     AssetHeader header;

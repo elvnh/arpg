@@ -11,26 +11,41 @@
 
 // TODO: clean up project structure
 
-static void generate_asset_enum(CompiledAssetList assets, String enum_name, String macro_name,
-    StringBuilder *sb, LinearArena *arena)
+static void generate_asset_enum(CompiledAssetList assets, AssetKind2 asset_kind,
+    String enum_name, String macro_name, StringBuilder *sb, LinearArena *arena)
 {
     String enum_prefix = str_to_upper(macro_name, la_allocator(arena));
-
-    str_builder_append(sb, str("#pragma once\n\n"));
 
     str_builder_append(sb, format(arena, "#define " FMT_STR "(a) " FMT_STR "_##a",
                                FMT_STR_ARG(macro_name), FMT_STR_ARG(enum_prefix)));
     str_builder_append(sb, str("\n\n"));
     str_builder_append(sb, str("typedef enum {"));
 
+    ssize count = 0;
     for (CompiledAsset *a = list_head(&assets); a; a = list_next(a)) {
         String s = format(arena, "\n    " FMT_STR "(" FMT_STR "),", FMT_STR_ARG(macro_name),
             FMT_STR_ARG(a->name));
 
         str_builder_append(sb, s);
+
+        ++count;
     }
 
-    str_builder_append(sb, format(arena, "\n} " FMT_STR ";", FMT_STR_ARG(enum_name)));
+    str_builder_append(sb, format(arena, "\n} " FMT_STR ";\n\n", FMT_STR_ARG(enum_name)));
+
+    String asset_kind_spelling = {0};
+
+    BEGIN_EXHAUSTIVE_SWITCH;
+    switch (asset_kind) {
+        case ASSET_TEXTURE: {
+            asset_kind_spelling = str("TEXTURE");
+        } break;
+
+            INVALID_DEFAULT_CASE;
+    }
+
+    str_builder_append(sb, format(arena, "#define " FMT_STR "_ASSET_COUNT %ld\n",
+                               FMT_STR_ARG(asset_kind_spelling), count));
 }
 
 static String generate_asset_enums(CompiledAssetList textures, LinearArena *arena,
@@ -38,7 +53,10 @@ static String generate_asset_enums(CompiledAssetList textures, LinearArena *aren
 {
     StringBuilder sb = str_builder_allocate(MB(8), allocator);
 
-    generate_asset_enum(textures, str("TextureHandle"), str("texture_handle"), &sb, arena);
+    str_builder_append(&sb, str("#pragma once\n\n"));
+
+    generate_asset_enum(textures, ASSET_TEXTURE, str("TextureHandle"), str("texture_handle"),
+        &sb, arena);
 
     return sb.buffer;
 }
@@ -64,6 +82,14 @@ static String generate_binary_asset_paths(CompiledAssetList textures, LinearAren
 
 #define GENERATED_ENUMS_PATH str("generated/asset_handle.h")
 #define GENERATED_FILES_PATH str("generated/binary_asset_paths.c")
+
+#if 0
+
+typedef struct {
+    SerializedTexture *textures[TEXTURE_COUNT];
+} AssetManager;
+
+#endif
 
 int main(int argc, char **argv)
 {

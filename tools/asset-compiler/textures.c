@@ -77,14 +77,22 @@ CompiledAssetList compile_textures(ValueList *textures, String assets_dir, Linea
             } else {
                 ASSERT(bitmap.channels == 4);
 
+                // TODO: helper for allocating with flexible array member
+                ssize bitmap_size = bitmap.width * bitmap.height * 4; // Channels are always 4
+                ssize asset_size = SIZEOF(SerializedTexture) + bitmap_size;
+
+                SerializedTexture *serialized_texture =
+                    allocate_aligned(allocator, 1, asset_size, ALIGNOF(SerializedTexture));
+                serialized_texture->header = (AssetHeader){ASSET_TEXTURE};
+                serialized_texture->width = bitmap.width;
+                serialized_texture->height = bitmap.height;
+
+                memcpy(serialized_texture->bitmap, bitmap.data, ssize_to_usize(bitmap_size));
+
                 CompiledAsset *asset = la_allocate_item(arena, CompiledAsset);
                 asset->name = *name;
                 asset->path = *file;
-                asset->kind = ASSET_TEXTURE;
-                asset->as.texture.width = bitmap.width;
-                asset->as.texture.height = bitmap.height;
-                asset->memory = bitmap.data;
-                asset->size = bitmap.width * bitmap.height * 4; // Channels are always 4
+                asset->asset = &serialized_texture->header;
 
                 sl_list_push_back(&result, asset);
             }

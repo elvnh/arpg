@@ -40,7 +40,19 @@ InputEvents platform_poll_input_events(struct PlatformInput *input,
     struct WindowHandle *window);
 void platform_initialize_input(struct PlatformInput *input, struct WindowHandle *window);
 
-/* Path */
+/* IO */
+typedef enum {
+    FILE_TYPE_FILE,
+    FILE_TYPE_DIRECTORY,
+    FILE_TYPE_OTHER,
+} FileType;
+
+typedef struct {
+    FileType type;
+    ssize file_size;
+    Timestamp last_modification_time;
+} FileInfo;
+
 String platform_get_executable_path(Allocator allocator);
 String platform_get_executable_directory(Allocator allocator, LinearArena *scratch_arena);
 bool platform_path_is_absolute(String path);
@@ -54,19 +66,6 @@ String platform_get_parent_path(String path, Allocator allocator, LinearArena *s
 String platform_get_filename(String path);
 String platform_make_relative_to(String a, String b, Allocator allocator);
 
-/* File */
-typedef enum {
-    FILE_TYPE_FILE,
-    FILE_TYPE_DIRECTORY,
-    FILE_TYPE_OTHER,
-} FileType;
-
-typedef struct {
-    FileType type;
-    ssize file_size;
-    Timestamp last_modification_time;
-} FileInfo;
-
 Span platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch);
 String platform_read_entire_file_as_string(String path, Allocator allocator,
     LinearArena *scratch);
@@ -75,6 +74,7 @@ b32 platform_file_exists(String path, LinearArena *scratch);
 FileInfo platform_get_file_info(String path, LinearArena *scratch);
 void platform_for_each_file_in_dir(String directory, void (*callback)(String),
     LinearArena *scratch);
+b32 platform_write_to_file(String path, const void *data, ssize count, Allocator allocator);
 
 /* Time */
 Timestamp platform_get_time(void);

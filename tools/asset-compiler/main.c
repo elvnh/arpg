@@ -48,7 +48,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "Could not open file\n");
     } else {
         Record *root = parse(source, &arena);
-
         ValueList *textures = value_as_list(record_get(root, str("textures")));
 
         CompiledAssetList compiled_textures = compile_textures(textures, assets_dir, &arena);
@@ -58,8 +57,6 @@ int main(int argc, char **argv)
 
         define_asset_list_enum(compiled_textures, str("TextureHandle"), str("texture_handle"),
             &sb, &arena);
-
-        str_print(sb.buffer);
 
         // generate enums
         // serialize to files

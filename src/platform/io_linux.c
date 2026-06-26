@@ -266,3 +266,27 @@ String platform_make_relative_to(String a, String b, Allocator allocator)
 
     return result;
 }
+
+b32 platform_write_to_file(String path, const void *data, ssize count, Allocator allocator)
+{
+    b32 result = false;
+
+    LinearArena scratch = la_create(allocator, 1024);
+
+    String nt_path = str_null_terminate(path, la_allocator(&scratch));
+
+    int fd = open(nt_path.data, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+
+    if (fd != -1) {
+        ssize_t bytes_written = write(fd, data, ssize_to_usize(count));
+
+        if (bytes_written == count) {
+            result = true;
+        }
+    }
+
+    la_destroy(&scratch);
+    close(fd);
+
+    return result;
+}

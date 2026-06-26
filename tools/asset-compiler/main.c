@@ -11,10 +11,12 @@
 
 // TODO: clean up project structure
 
-static void define_asset_list_enum(CompiledAssetList assets, String enum_name,
-    String macro_name, StringBuilder *sb, LinearArena *arena)
+static void generate_asset_enum(CompiledAssetList assets, String enum_name, String macro_name,
+    StringBuilder *sb, LinearArena *arena)
 {
     String enum_prefix = str_to_upper(macro_name, la_allocator(arena));
+
+    str_builder_append(sb, str("#pragma once\n\n"));
 
     str_builder_append(sb, format(arena, "#define " FMT_STR "(a) " FMT_STR "_##a",
                                FMT_STR_ARG(macro_name), FMT_STR_ARG(enum_prefix)));
@@ -30,6 +32,38 @@ static void define_asset_list_enum(CompiledAssetList assets, String enum_name,
 
     str_builder_append(sb, format(arena, "\n} " FMT_STR ";", FMT_STR_ARG(enum_name)));
 }
+
+static String generate_asset_enums(CompiledAssetList textures, LinearArena *arena,
+    Allocator allocator)
+{
+    StringBuilder sb = str_builder_allocate(MB(8), allocator);
+
+    generate_asset_enum(textures, str("TextureHandle"), str("texture_handle"), &sb, arena);
+
+    return sb.buffer;
+}
+
+static String generate_binary_asset_paths(CompiledAssetList textures, LinearArena *arena,
+    Allocator allocator)
+{
+    StringBuilder sb = str_builder_allocate(MB(8), allocator);
+
+    str_builder_append(&sb, str("static const char *binary_asset_paths[] = {"));
+
+    for (CompiledAsset *a = list_head(&textures); a; a = list_next(a)) {
+        String output_path = str_concat(a->name, str(".dat"), allocator);
+
+        String element = format(arena, "\n    \"" FMT_STR "\",", FMT_STR_ARG(output_path));
+        str_builder_append(&sb, element);
+    }
+
+    str_builder_append(&sb, str("\n}"));
+
+    return sb.buffer;
+}
+
+#define GENERATED_ENUMS_PATH str("generated/asset_handle.h")
+#define GENERATED_FILES_PATH str("generated/binary_asset_paths.c")
 
 int main(int argc, char **argv)
 {
@@ -53,11 +87,18 @@ int main(int argc, char **argv)
         CompiledAssetList compiled_textures = compile_textures(textures, assets_dir, &arena);
         // TODO: error check
 
-        StringBuilder sb = str_builder_allocate(MB(8), allocator);
+        String enums = generate_asset_enums(compiled_textures, &arena, allocator);
 
-        define_asset_list_enum(compiled_textures, str("TextureHandle"), str("texture_handle"),
-            &sb, &arena);
+        b32 write_result =
+            platform_write_to_file(GENERATED_ENUMS_PATH, enums.data, enums.length, allocator);
 
+        String binary_asset_paths =
+            generate_binary_asset_paths(compiled_textures, &arena, allocator);
+
+        write_result &= platform_write_to_file(GENERATED_FILES_PATH, binary_asset_paths.data,
+            binary_asset_paths.length, allocator);
+
+        ASSERT(write_result);
         // generate enums
         // serialize to files
         // generate list of binary files for asset loader to load

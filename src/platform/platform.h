@@ -62,7 +62,13 @@ String platform_get_canonical_path(String path, Allocator allocator,
     LinearArena *scratch_arena);
 String platform_get_working_directory(Allocator allocator);
 void platform_change_working_directory(String path);
+
+// TODO: These two should be the same function, meaning get_parent_path should
+// always return the relative path. Fix that once it is certain that doesn't
+// break anythingc
 String platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena);
+String platform_get_relative_parent_path(String path);
+
 String platform_get_filename(String path);
 String platform_make_relative_to(String a, String b, Allocator allocator);
 
@@ -75,6 +81,7 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch);
 void platform_for_each_file_in_dir(String directory, void (*callback)(String),
     LinearArena *scratch);
 b32 platform_write_to_file(String path, const void *data, ssize count, Allocator allocator);
+b32 platform_create_directory(String path, Allocator allocator);
 
 /* Time */
 Timestamp platform_get_time(void);

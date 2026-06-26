@@ -2,6 +2,7 @@
 #include "platform.h"
 
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <fenv.h>
 #include <pthread.h>
@@ -10,6 +11,8 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+
+// TODO: Get rid of the allocator + scratch parameters
 
 Span platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
 {
@@ -94,6 +97,20 @@ String platform_get_parent_path(String path, Allocator allocator, LinearArena *s
         .data = absolute.data,
         .length = MAX(1, last_slash_pos) // In case path is only a /
     };
+
+    return result;
+}
+
+String platform_get_relative_parent_path(String path)
+{
+    String result = {0};
+
+    ssize last_slash_pos = str_find_last_occurence(path, str("/"));
+
+    if (last_slash_pos != -1) {
+        result.data = path.data;
+        result.length = MAX(1, last_slash_pos); // In case path is only a /
+    }
 
     return result;
 }
@@ -287,6 +304,43 @@ b32 platform_write_to_file(String path, const void *data, ssize count, Allocator
 
     la_destroy(&scratch);
     close(fd);
+
+    return result;
+}
+
+static b32 platform_create_directory_recursive(String path, Allocator allocator)
+{
+    b32 result = false;
+
+    if (path.length > 0) {
+        String parent = platform_get_relative_parent_path(path);
+        platform_create_directory_recursive(parent, allocator);
+
+        String nt_path = str_null_terminate(path, allocator);
+        int mkdir_result = mkdir(nt_path.data, S_IRWXU);
+
+        // Don't count as a failure if a part of the path already exists.
+        // TODO: this will keep going even if mkdir failed because a FILE
+        // rather than directory with this name existed. Fix that.
+        if ((mkdir_result == -1) && (errno != EEXIST)) {
+            result = false;
+        } else {
+            result = true;
+        }
+    }
+
+    return result;
+}
+
+b32 platform_create_directory(String path, Allocator allocator)
+{
+    // TODO: validate that path is valid
+    LinearArena scratch = la_create(allocator, KB(8));
+    Allocator scratch_allocator = la_allocator(&scratch);
+
+    b32 result = platform_create_directory_recursive(path, allocator);
+
+    la_destroy(&scratch);
 
     return result;
 }

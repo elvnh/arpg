@@ -77,12 +77,11 @@ CompiledAssetList compile_textures(ValueList *textures, String assets_dir, Linea
             } else {
                 ASSERT(bitmap.channels == 4);
 
-                // TODO: helper for allocating with flexible array member
                 ssize bitmap_size = bitmap.width * bitmap.height * 4; // Channels are always 4
                 ssize asset_size = SIZEOF(SerializedTexture) + bitmap_size;
 
-                SerializedTexture *serialized_texture =
-                    allocate_aligned(allocator, 1, asset_size, ALIGNOF(SerializedTexture));
+                SerializedTexture *serialized_texture = allocate_with_flexible_array_member(
+                    allocator, SerializedTexture, bitmap_size);
                 serialized_texture->header = (AssetHeader){ASSET_TEXTURE};
                 serialized_texture->width = bitmap.width;
                 serialized_texture->height = bitmap.height;

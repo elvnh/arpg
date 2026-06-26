@@ -14,6 +14,8 @@
 #define allocate_aligned(a, count, item_size, alignment)                                 \
     (void *)(a).alloc((a).context, (count), (item_size), (alignment))
 #define deallocate(a, ptr) (a).dealloc((a).context, (ptr))
+#define allocate_with_flexible_array_member(a, t, arr_size)         \
+    allocate_aligned((a), 1, SIZEOF(t) + (arr_size), ALIGNOF(t))
 
 #define default_allocator                                                                \
     (Allocator)                                                                          \

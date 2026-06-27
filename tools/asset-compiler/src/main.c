@@ -140,11 +140,106 @@ static b32 write_binary_asset_files(CompiledAssetList assets, Allocator allocato
 
     return result;
 }
+typedef struct {
+    b32 ok;
+
+    String input_dir;
+    String enums_path;
+    String filenames_path;
+    String output_dir;
+} Args;
+
+typedef struct {
+    b32 ok;
+    int next_args_index;
+    String option;
+    String option_arg;
+} LongOption;
+
+static LongOption try_parse_long_option(char **argv, int argc, int args_index)
+{
+    LongOption result = {0};
+    result.next_args_index = args_index;
+
+    String arg = str_from_c_str(argv[args_index]);
+
+    if (str_starts_with(arg, str("--"))) {
+        Cut cut = str_cut(arg, str("="));
+
+        result.option = cut.head;
+
+        if (cut.ok) {
+            result.option_arg = cut.tail;
+        } else if (args_index < argc) {
+            ++result.next_args_index;
+            result.option_arg = str_from_c_str(argv[result.next_args_index]);
+        }
+
+        if (result.option_arg.data) {
+            ASSERT(result.option.data);
+            result.ok = true;
+        }
+    }
+
+    return result;
+}
+
+static Args parse_args(int argc, char **argv)
+{
+    Args result = {0};
+
+    for (int i = 1; i < argc; ++i) {
+        char *arg_cstr = argv[i];
+
+        LongOption parse_result = try_parse_long_option(argv, argc, i);
+
+        if (parse_result.ok) {
+            i = parse_result.next_args_index;
+
+            if (str_equal(parse_result.option, str("--input-dir"))) {
+                result.input_dir = parse_result.option_arg;
+            } else if (str_equal(parse_result.option, str("--enums-path"))) {
+                result.enums_path = parse_result.option_arg;
+            } else if (str_equal(parse_result.option, str("--filenames-path"))) {
+                result.filenames_path = parse_result.option_arg;
+            } else if (str_equal(parse_result.option, str("--output-dir"))) {
+                result.output_dir = parse_result.option_arg;
+            } else {
+                fprintf(stderr, "Unknown option '" FMT_STR "'.\n,",
+                    FMT_STR_ARG(parse_result.option));
+            }
+        }
+    }
+
+    if (!result.input_dir.data) {
+        fprintf(stderr, "Missing required option '--input-dir'.\n");
+    }
+
+    if (!result.enums_path.data) {
+        fprintf(stderr, "Missing required option '--enums-path'.\n");
+    }
+
+    if (!result.filenames_path.data) {
+        fprintf(stderr, "Missing required option '--filenames-path'.\n");
+    }
+
+    if (!result.output_dir.data) {
+        fprintf(stderr, "Missing required option '--output-dir'.\n");
+    }
+
+    result.ok = result.input_dir.data && result.enums_path.data && result.filenames_path.data
+                && result.output_dir.data;
+
+    return result;
+}
 
 int main(int argc, char **argv)
 {
-    ASSERT(argc > 2);
+    Args args = parse_args(argc, argv);
 
+    // TODO: print usage
+
+    return 0;
     LinearArena arena = la_create(default_allocator, MB(8));
     Allocator allocator = la_allocator(&arena);
 
@@ -175,9 +270,6 @@ int main(int argc, char **argv)
             binary_asset_paths.length, allocator);
 
         ASSERT(write_result);
-        // generate enums
-        // serialize to files
-        // generate list of binary files for asset loader to load
 
         platform_create_directory(BINARY_ASSETS_OUTPUT_DIR, allocator);
 

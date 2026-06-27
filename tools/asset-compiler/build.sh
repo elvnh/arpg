@@ -42,4 +42,4 @@ CFLAGS="
 "
 
 
-gcc *.c ../../src/base/*.c ../../src/platform/io_linux.c -I../../src ${CFLAGS} -lm
+gcc src/*.c ../../src/base/*.c ../../src/platform/io_linux.c -I../../src ${CFLAGS} -lm -Ideps deps/*.c

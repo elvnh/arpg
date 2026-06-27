@@ -11,6 +11,10 @@
 
 // TODO: clean up project structure
 
+// TODO: these should be a parameter
+#define GENERATED_ENUMS_PATH str("generated/asset_handle.h")
+#define GENERATED_FILES_PATH str("generated/binary_asset_paths.c")
+
 static void generate_asset_enum(CompiledAssetList assets, AssetKind2 asset_kind,
     String enum_name, String macro_name, StringBuilder *sb, LinearArena *arena)
 {
@@ -61,7 +65,7 @@ static String generate_asset_enums(CompiledAssetList textures, LinearArena *aren
     return sb.buffer;
 }
 
-static String generate_binary_asset_paths(CompiledAssetList textures, LinearArena *arena,
+static String generate_binary_asset_path_list(CompiledAssetList textures, LinearArena *arena,
     Allocator allocator)
 {
     StringBuilder sb = str_builder_allocate(MB(8), allocator);
@@ -79,9 +83,6 @@ static String generate_binary_asset_paths(CompiledAssetList textures, LinearAren
 
     return sb.buffer;
 }
-
-#define GENERATED_ENUMS_PATH str("generated/asset_handle.h")
-#define GENERATED_FILES_PATH str("generated/binary_asset_paths.c")
 
 #if 0
 
@@ -119,7 +120,7 @@ int main(int argc, char **argv)
             platform_write_to_file(GENERATED_ENUMS_PATH, enums.data, enums.length, allocator);
 
         String binary_asset_paths =
-            generate_binary_asset_paths(compiled_textures, &arena, allocator);
+            generate_binary_asset_path_list(compiled_textures, &arena, allocator);
 
         write_result &= platform_write_to_file(GENERATED_FILES_PATH, binary_asset_paths.data,
             binary_asset_paths.length, allocator);

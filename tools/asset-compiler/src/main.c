@@ -231,7 +231,7 @@ int main(int argc, char **argv)
         result = 1;
     } else {
         String assets_definition_path =
-            platform_make_relative_to(args.input_dir, str("assets.txt"), allocator);
+            str_concat(args.input_dir, str("/assets.txt"), allocator);
 
         String source =
             platform_read_entire_file_as_string(assets_definition_path, allocator, &arena);
@@ -248,20 +248,21 @@ int main(int argc, char **argv)
 
             String enums = generate_asset_enums(compiled_textures, &arena, allocator);
 
-            b32 write_result =
-                platform_write_to_file(args.enums_path, enums.data, enums.length, allocator);
-
             String binary_asset_paths =
                 generate_binary_asset_file_list(compiled_textures, &arena, allocator);
 
-            write_result &= platform_write_to_file(args.filenames_path,
-                binary_asset_paths.data, binary_asset_paths.length, allocator);
-
+            b32 write_result =
+                platform_write_to_file(args.enums_path, enums.data, enums.length, allocator)
+                && platform_write_to_file(args.filenames_path, binary_asset_paths.data,
+                    binary_asset_paths.length, allocator);
             ASSERT(write_result);
 
-            platform_create_directory(args.output_dir, allocator);
+            b32 dir_created = platform_create_directory(args.output_dir, allocator);
+            ASSERT(dir_created);
 
-            write_binary_asset_files(compiled_textures, args, allocator);
+            b32 asset_files_written =
+                write_binary_asset_files(compiled_textures, args, allocator);
+            ASSERT(asset_files_written);
         }
     }
 

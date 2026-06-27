@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 // TODO: Get rid of the allocator + scratch parameters
+// TODO: pretty much all path functions are broken
 
 Span platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
 {
@@ -301,7 +302,7 @@ b32 platform_write_to_file(String path, const void *data, ssize count, Allocator
     if (parent_dirs_exist) {
         String nt_path = str_null_terminate(path, la_allocator(&scratch));
 
-        int fd = open(nt_path.data, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+        int fd = open(nt_path.data, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
         if (fd != -1) {
             ssize_t bytes_written = write(fd, data, ssize_to_usize(count));

@@ -17,4 +17,14 @@ typedef struct {
     CompiledAsset *tail;
 } CompiledAssetList;
 
+static inline ssize binary_texture_size(BinaryAsset *asset)
+{
+    ASSERT(asset->kind == ASSET_TEXTURE);
+
+    BinaryTexture *texture = (BinaryTexture *)asset;
+    ssize result = texture->width * texture->height * 4;
+
+    return result;
+}
+
 #endif // COMPILED_ASSET_H

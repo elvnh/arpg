@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 // TODO: clean up project structure
+// TODO: Error when multiple assets with same name exist
 
 // TODO: these should be a parameter
 #define GENERATED_ENUMS_PATH str("generated/asset_handle.h")
@@ -65,17 +66,24 @@ static String generate_asset_enums(CompiledAssetList textures, LinearArena *aren
     return sb.buffer;
 }
 
-static String generate_binary_asset_path_list(CompiledAssetList textures, LinearArena *arena,
+static String get_binary_asset_filename(CompiledAsset *asset, Allocator allocator)
+{
+    String result = str_concat(asset->name, str(".dat"), allocator);
+
+    return result;
+}
+
+static String generate_binary_asset_file_list(CompiledAssetList textures, LinearArena *arena,
     Allocator allocator)
 {
     StringBuilder sb = str_builder_allocate(MB(8), allocator);
 
-    str_builder_append(&sb, str("static const char *binary_asset_paths[] = {"));
+    str_builder_append(&sb, str("static const char *binary_asset_files[] = {"));
 
     for (CompiledAsset *a = list_head(&textures); a; a = list_next(a)) {
-        String output_path = str_concat(a->name, str(".dat"), allocator);
+        String filename = get_binary_asset_filename(a, allocator);
 
-        String element = format(arena, "\n    \"" FMT_STR "\",", FMT_STR_ARG(output_path));
+        String element = format(arena, "\n    \"" FMT_STR "\",", FMT_STR_ARG(filename));
         str_builder_append(&sb, element);
     }
 
@@ -91,6 +99,47 @@ typedef struct {
 } AssetManager;
 
 #endif
+
+#define BINARY_ASSETS_OUTPUT_DIR str("binary-assets/")
+
+static b32 write_binary_asset_files(CompiledAssetList assets, Allocator allocator)
+{
+    b32 result = false;
+
+    for (CompiledAsset *a = list_head(&assets); a; a = list_next(a)) {
+        BinaryAsset *bin_asset = a->asset;
+
+        ssize asset_size_excluding_header = 0;
+
+        BEGIN_EXHAUSTIVE_SWITCH;
+        switch (bin_asset->kind) {
+            case ASSET_TEXTURE: {
+                asset_size_excluding_header = binary_texture_size(bin_asset);
+            } break;
+
+                INVALID_DEFAULT_CASE;
+        }
+        END_EXHAUSTIVE_SWITCH;
+
+        ASSERT(asset_size_excluding_header > 0);
+
+        String filename = get_binary_asset_filename(a, allocator);
+        String path = platform_make_relative_to(BINARY_ASSETS_OUTPUT_DIR, filename, allocator);
+
+        ssize total_size = asset_size_excluding_header + SIZEOF(BinaryAsset);
+        b32 success = platform_write_to_file(path, bin_asset, total_size, allocator);
+
+        if (!success) {
+            result = false;
+            ASSERT(0);
+            break;
+        } else {
+            result = true;
+        }
+    }
+
+    return result;
+}
 
 int main(int argc, char **argv)
 {
@@ -120,7 +169,7 @@ int main(int argc, char **argv)
             platform_write_to_file(GENERATED_ENUMS_PATH, enums.data, enums.length, allocator);
 
         String binary_asset_paths =
-            generate_binary_asset_path_list(compiled_textures, &arena, allocator);
+            generate_binary_asset_file_list(compiled_textures, &arena, allocator);
 
         write_result &= platform_write_to_file(GENERATED_FILES_PATH, binary_asset_paths.data,
             binary_asset_paths.length, allocator);
@@ -129,6 +178,10 @@ int main(int argc, char **argv)
         // generate enums
         // serialize to files
         // generate list of binary files for asset loader to load
+
+        platform_create_directory(BINARY_ASSETS_OUTPUT_DIR, allocator);
+
+        write_binary_asset_files(compiled_textures, allocator);
     }
 
     la_destroy(&arena);

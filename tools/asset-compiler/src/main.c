@@ -12,9 +12,14 @@
 // TODO: clean up project structure
 // TODO: Error when multiple assets with same name exist
 
-// TODO: these should be a parameter
-#define GENERATED_ENUMS_PATH str("generated/asset_handle.h")
-#define GENERATED_FILES_PATH str("generated/binary_asset_paths.c")
+typedef struct {
+    b32 ok;
+
+    String input_dir;
+    String enums_path;
+    String filenames_path;
+    String output_dir;
+} Args;
 
 static void generate_asset_enum(CompiledAssetList assets, AssetKind2 asset_kind,
     String enum_name, String macro_name, StringBuilder *sb, LinearArena *arena)
@@ -92,17 +97,7 @@ static String generate_binary_asset_file_list(CompiledAssetList textures, Linear
     return sb.buffer;
 }
 
-#if 0
-
-typedef struct {
-    SerializedTexture *textures[TEXTURE_COUNT];
-} AssetManager;
-
-#endif
-
-#define BINARY_ASSETS_OUTPUT_DIR str("binary-assets/")
-
-static b32 write_binary_asset_files(CompiledAssetList assets, Allocator allocator)
+static b32 write_binary_asset_files(CompiledAssetList assets, Args args, Allocator allocator)
 {
     b32 result = false;
 
@@ -124,7 +119,7 @@ static b32 write_binary_asset_files(CompiledAssetList assets, Allocator allocato
         ASSERT(asset_size_excluding_header > 0);
 
         String filename = get_binary_asset_filename(a, allocator);
-        String path = platform_make_relative_to(BINARY_ASSETS_OUTPUT_DIR, filename, allocator);
+        String path = platform_make_relative_to(args.output_dir, filename, allocator);
 
         ssize total_size = asset_size_excluding_header + SIZEOF(BinaryAsset);
         b32 success = platform_write_to_file(path, bin_asset, total_size, allocator);
@@ -140,14 +135,6 @@ static b32 write_binary_asset_files(CompiledAssetList assets, Allocator allocato
 
     return result;
 }
-typedef struct {
-    b32 ok;
-
-    String input_dir;
-    String enums_path;
-    String filenames_path;
-    String output_dir;
-} Args;
 
 typedef struct {
     b32 ok;
@@ -189,8 +176,6 @@ static Args parse_args(int argc, char **argv)
     Args result = {0};
 
     for (int i = 1; i < argc; ++i) {
-        char *arg_cstr = argv[i];
-
         LongOption parse_result = try_parse_long_option(argv, argc, i);
 
         if (parse_result.ok) {
@@ -235,48 +220,52 @@ static Args parse_args(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    Args args = parse_args(argc, argv);
-
-    // TODO: print usage
-
-    return 0;
     LinearArena arena = la_create(default_allocator, MB(8));
     Allocator allocator = la_allocator(&arena);
 
-    String assets_definition_path = str_from_c_str(argv[1]);
-    String assets_dir = str_from_c_str(argv[2]);
+    int result = 0;
 
-    String source =
-        platform_read_entire_file_as_string(assets_definition_path, allocator, &arena);
+    Args args = parse_args(argc, argv);
 
-    if (!source.data) {
-        fprintf(stderr, "Could not open file\n");
+    if (!args.ok) {
+        result = 1;
     } else {
-        Record *root = parse(source, &arena);
-        ValueList *textures = value_as_list(record_get(root, str("textures")));
+        String assets_definition_path =
+            platform_make_relative_to(args.input_dir, str("assets.txt"), allocator);
 
-        CompiledAssetList compiled_textures = compile_textures(textures, assets_dir, &arena);
-        // TODO: error check
+        String source =
+            platform_read_entire_file_as_string(assets_definition_path, allocator, &arena);
 
-        String enums = generate_asset_enums(compiled_textures, &arena, allocator);
+        if (!source.data) {
+            fprintf(stderr, "Could not open file\n");
+        } else {
+            Record *root = parse(source, &arena);
+            ValueList *textures = value_as_list(record_get(root, str("textures")));
 
-        b32 write_result =
-            platform_write_to_file(GENERATED_ENUMS_PATH, enums.data, enums.length, allocator);
+            CompiledAssetList compiled_textures =
+                compile_textures(textures, args.input_dir, &arena);
+            // TODO: error check
 
-        String binary_asset_paths =
-            generate_binary_asset_file_list(compiled_textures, &arena, allocator);
+            String enums = generate_asset_enums(compiled_textures, &arena, allocator);
 
-        write_result &= platform_write_to_file(GENERATED_FILES_PATH, binary_asset_paths.data,
-            binary_asset_paths.length, allocator);
+            b32 write_result =
+                platform_write_to_file(args.enums_path, enums.data, enums.length, allocator);
 
-        ASSERT(write_result);
+            String binary_asset_paths =
+                generate_binary_asset_file_list(compiled_textures, &arena, allocator);
 
-        platform_create_directory(BINARY_ASSETS_OUTPUT_DIR, allocator);
+            write_result &= platform_write_to_file(args.filenames_path,
+                binary_asset_paths.data, binary_asset_paths.length, allocator);
 
-        write_binary_asset_files(compiled_textures, allocator);
+            ASSERT(write_result);
+
+            platform_create_directory(args.output_dir, allocator);
+
+            write_binary_asset_files(compiled_textures, args, allocator);
+        }
     }
 
     la_destroy(&arena);
 
-    return 0;
+    return result;
 }

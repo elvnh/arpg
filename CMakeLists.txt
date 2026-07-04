@@ -33,6 +33,7 @@ set(
   src/platform/platform_linux.c
   src/platform/io_linux.c
   src/platform/asset_system.c
+  src/platform/asset_manager.c
   src/platform/stb.c
   src/platform/image_decode.c
 )

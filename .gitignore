@@ -1,4 +1,5 @@
 build/
+generated/
 *.out
 compile_commands.json
 compile_commands.events.json

@@ -1,0 +1,6 @@
+textures = [
+    {
+        name = fireball
+        file = "fireball.png"
+    },
+]

@@ -1,6 +1,7 @@
 #ifndef RENDERER_BACKEND_H
 #define RENDERER_BACKEND_H
 
+#include "asset2.h"
 #include "base/allocator.h"
 #include "base/image.h"
 #include "base/linear_arena.h"
@@ -32,7 +33,11 @@ typedef struct RendererBackend RendererBackend;
 RendererBackend *renderer_backend_initialize(Vector2i window_dims, Allocator allocator);
 ShaderAsset *renderer_backend_create_shader(String shader_source, Allocator allocator);
 void renderer_backend_destroy_shader(ShaderAsset *shader, Allocator allocator);
+
+// TODO: these functions shouldn't both exist
 TextureAsset *renderer_backend_create_texture(Image image, Allocator allocator);
+TextureAsset2 *renderer_backend_create_texture2(Image image, Allocator allocator);
+
 void renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator);
 void renderer_backend_use_shader(ShaderAsset *shader);
 void renderer_backend_bind_texture(TextureAsset *texture);

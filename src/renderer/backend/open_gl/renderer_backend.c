@@ -69,6 +69,10 @@ struct TextureAsset {
     GLuint native_handle;
 };
 
+struct TextureAsset2 {
+    GLuint native_handle;
+};
+
 static void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id,
     GLenum severity, GLsizei length, const GLchar *message, const void *user_param)
 {
@@ -369,6 +373,15 @@ TextureAsset *renderer_backend_create_texture(Image image, Allocator allocator)
     handle->native_handle = texture_id;
 
     return handle;
+}
+
+TextureAsset2 *renderer_backend_create_texture2(Image image, Allocator allocator)
+{
+    TextureAsset *asset = renderer_backend_create_texture(image, allocator);
+    TextureAsset2 *result = allocate_item(allocator, TextureAsset2);
+    result->native_handle = asset->native_handle;
+
+    return result;
 }
 
 void renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator)

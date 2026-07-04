@@ -65,7 +65,7 @@ static String generate_asset_enums(CompiledAssetList textures, LinearArena *aren
 
     str_builder_append(&sb, str("#pragma once\n\n"));
 
-    generate_asset_enum(textures, ASSET_TEXTURE, str("TextureHandle"), str("texture_handle"),
+    generate_asset_enum(textures, ASSET_TEXTURE, str("TextureHandle2"), str("texture_handle2"),
         &sb, arena);
 
     return sb.buffer;
@@ -92,7 +92,7 @@ static String generate_binary_asset_file_list(CompiledAssetList textures, Linear
         str_builder_append(&sb, element);
     }
 
-    str_builder_append(&sb, str("\n}"));
+    str_builder_append(&sb, str("\n};"));
 
     return sb.buffer;
 }

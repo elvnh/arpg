@@ -127,8 +127,8 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
                 SetupCmdUniformVec4 *cmd = (SetupCmdUniformVec4 *)setup_cmd;
                 ShaderAsset *shader = assets_get_shader(current_state->shader);
 
-                renderer_backend_set_uniform_vec4(shader, cmd->header.uniform_name, cmd->value,
-                    scratch);
+                renderer_backend_set_uniform_vec4(shader, cmd->header.uniform_name,
+                    cmd->value);
             } break;
 
             case RENDER_SETUP_COMMAND_ENUM_NAME(SetupCmdUniformFloat): {
@@ -136,7 +136,7 @@ static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
                 ShaderAsset *shader = assets_get_shader(current_state->shader);
 
                 renderer_backend_set_uniform_float(shader, cmd->header.uniform_name,
-                    cmd->value, scratch);
+                    cmd->value);
             } break;
 
                 INVALID_DEFAULT_CASE;

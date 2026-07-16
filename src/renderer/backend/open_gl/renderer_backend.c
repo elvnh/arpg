@@ -387,9 +387,9 @@ void renderer_backend_bind_texture(TextureAsset *texture)
     glBindTexture(GL_TEXTURE_2D, texture->native_handle);
 }
 
-static GLint get_uniform_location(ShaderAsset *shader, String uniform_name,
-    LinearArena *scratch)
+static GLint get_uniform_location(ShaderAsset *shader, String uniform_name)
 {
+    LinearArena *scratch = scratch_arena_get();
     String terminated = str_null_terminate(uniform_name, la_allocator(scratch));
 
     GLint location = glGetUniformLocation(shader->native_handle, terminated.data);
@@ -406,18 +406,16 @@ void renderer_backend_set_global_projection(RendererBackend *backend, Matrix4 ma
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec,
-    LinearArena *scratch)
+void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec)
 {
-    GLint location = get_uniform_location(shader, uniform_name, scratch);
+    GLint location = get_uniform_location(shader, uniform_name);
 
     glUniform4fv(location, 1, &vec.x);
 }
 
-void renderer_backend_set_uniform_float(ShaderAsset *shader, String uniform_name, f32 value,
-    LinearArena *scratch)
+void renderer_backend_set_uniform_float(ShaderAsset *shader, String uniform_name, f32 value)
 {
-    GLint location = get_uniform_location(shader, uniform_name, scratch);
+    GLint location = get_uniform_location(shader, uniform_name);
 
     glUniform1f(location, value);
 }

@@ -37,10 +37,8 @@ void renderer_backend_destroy_texture(TextureAsset *texture, Allocator allocator
 void renderer_backend_use_shader(ShaderAsset *shader);
 void renderer_backend_bind_texture(TextureAsset *texture);
 void renderer_backend_set_global_projection(RendererBackend *backend, Matrix4 matrix);
-void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec,
-    LinearArena *scratch);
-void renderer_backend_set_uniform_float(ShaderAsset *shader, String uniform_name, f32 value,
-    LinearArena *scratch);
+void renderer_backend_set_uniform_vec4(ShaderAsset *shader, String uniform_name, Vector4 vec);
+void renderer_backend_set_uniform_float(ShaderAsset *shader, String uniform_name, f32 value);
 void renderer_backend_clear_color_buffer(RGBA32 color);
 void renderer_backend_flush(RendererBackend *backend);
 void renderer_backend_draw_triangle(RendererBackend *backend, Vertex a, Vertex b, Vertex c);

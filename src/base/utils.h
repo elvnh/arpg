@@ -56,6 +56,7 @@
 #    define STATIC_ASSERT_ATTRIBUTE __attribute__((error("Static assertion failed")))
 #    define FILE_NAME               __FILE__
 #    define LINE                    __LINE__
+#    define THREAD_LOCAL            __thread
 #else
 #    error Unsupported compiler
 #endif

@@ -9,16 +9,16 @@
     _Pragma("GCC diagnostic ignored \"-Wpedantic\"");
 #define END_IGNORE_FUNCTION_PTR_WARNINGS _Pragma("GCC diagnostic pop")
 
-GameCode hot_reload_initialize_impl(GameMemory *game_memory)
+GameCode hot_reload_initialize_impl()
 {
     GameCode result = {0};
 
-    load_game_code(&result, &game_memory->temporary_memory);
+    load_game_code(&result);
 
     return result;
 }
 
-void load_game_code_impl(GameCode *game_code, LinearArena *scratch)
+void load_game_code_impl(GameCode *game_code)
 {
     // NOTE: this loop should only be entered if game was recompiled since checking
     // this before the call
@@ -66,14 +66,14 @@ void unload_game_code_impl(GameCode *game_code)
     game_code->handle = 0;
 }
 
-void reload_game_code_if_recompiled_impl(GameCode *game_code, LinearArena *frame_arena)
+void reload_game_code_if_recompiled_impl(GameCode *game_code)
 {
     Timestamp so_mod_time = platform_get_file_info(str(GAME_SO_PATH)).last_modification_time;
 
     if (timestamp_less_than(game_code->last_load_time, so_mod_time)
         && !platform_file_exists(str(COMPILATION_LOCK_FILE_PATH))) {
         unload_game_code(game_code);
-        load_game_code(game_code, frame_arena);
+        load_game_code(game_code);
 
         printf("Hot reloaded game.\n");
     }

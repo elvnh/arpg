@@ -228,8 +228,6 @@ static TextureAsset *load_asset_data_texture(String path)
 
 TextureHandle assets_register_texture(String name)
 {
-    LinearArena *scratch = scratch_arena_get();
-
     String path =
         get_canonical_asset_path(name, ASSET_KIND_TEXTURE, &g_asset_system.asset_arena);
 
@@ -285,7 +283,7 @@ FontAsset *assets_get_font(FontHandle handle)
     return result;
 }
 
-static b32 assets_reload_shader(AssetSlot *slot, LinearArena *scratch)
+static b32 assets_reload_shader(AssetSlot *slot)
 {
     ShaderAsset *new_shader = load_asset_data_shader(slot->canonical_asset_path);
 
@@ -300,7 +298,7 @@ static b32 assets_reload_shader(AssetSlot *slot, LinearArena *scratch)
     return false;
 }
 
-static b32 assets_reload_texture(AssetSlot *slot, LinearArena *scratch)
+static b32 assets_reload_texture(AssetSlot *slot)
 {
     TextureAsset *new_texture = load_asset_data_texture(slot->canonical_asset_path);
 
@@ -315,7 +313,7 @@ static b32 assets_reload_texture(AssetSlot *slot, LinearArena *scratch)
     return false;
 }
 
-static b32 assets_reload_font(AssetSlot *slot, LinearArena *scratch)
+static b32 assets_reload_font(AssetSlot *slot)
 {
     FontAsset *new_font = load_asset_data_font(slot->canonical_asset_path);
 
@@ -329,19 +327,17 @@ static b32 assets_reload_font(AssetSlot *slot, LinearArena *scratch)
 
 b32 assets_reload_asset_with_path(String path)
 {
-    LinearArena *scratch = scratch_arena_get();
-
     AssetSlot *slot = get_asset_by_path(path);
 
     if (slot) {
         BEGIN_EXHAUSTIVE_SWITCH;
         switch (slot->kind) {
             case ASSET_KIND_SHADER:
-                return assets_reload_shader(slot, scratch);
+                return assets_reload_shader(slot);
             case ASSET_KIND_TEXTURE:
-                return assets_reload_texture(slot, scratch);
+                return assets_reload_texture(slot);
             case ASSET_KIND_FONT:
-                return assets_reload_font(slot, scratch);
+                return assets_reload_font(slot);
 
                 INVALID_DEFAULT_CASE;
         }
@@ -387,7 +383,7 @@ f32 assets_get_font_baseline_offset(FontHandle font_handle, s32 text_size)
 
     return result;
 }
-AssetTable load_game_assets(LinearArena *scratch)
+AssetTable load_game_assets(void)
 {
     AssetTable result = {0};
 

@@ -6,14 +6,14 @@
 #include "renderer/frontend/render_batch.h"
 
 #if HOT_RELOAD
-#    define hot_reload_initialize(memory)      hot_reload_initialize_impl((memory))
-#    define load_game_code(game_code, scratch) load_game_code_impl((game_code), (scratch))
-#    define unload_game_code(game_code)        unload_game_code_impl((game_code))
-#    define reload_game_code_if_recompiled(code, arena)                                  \
-        reload_game_code_if_recompiled_impl((code), (arena))
+#    define hot_reload_initialize()       hot_reload_initialize_impl()
+#    define load_game_code(game_code)     load_game_code_impl((game_code))
+#    define unload_game_code(game_code)   unload_game_code_impl((game_code))
+#    define reload_game_code_if_recompiled(code)                                  \
+        reload_game_code_if_recompiled_impl((code))
 #else
 #    define hot_reload_initialize(memory)
-#    define load_game_code(game_code, scratch)
+#    define load_game_code(game_code)
 #    define unload_game_code(game_code)
 #    define reload_game_code_if_recompiled(code, arena)
 #endif
@@ -29,9 +29,9 @@ typedef struct {
     Timestamp last_load_time;
 } GameCode;
 
-GameCode hot_reload_initialize_impl(GameMemory *game_memory);
-void load_game_code_impl(GameCode *game_code, LinearArena *scratch);
+GameCode hot_reload_initialize_impl(void);
+void load_game_code_impl(GameCode *game_code);
 void unload_game_code_impl(GameCode *game_code);
-void reload_game_code_if_recompiled_impl(GameCode *game_code, LinearArena *frame_arena);
+void reload_game_code_if_recompiled_impl(GameCode *game_code);
 
 #endif //HOT_RELOAD_H

@@ -18,7 +18,7 @@
 #    define GAME_INITIALIZE(game, mem, gc) (gc).initialize(game, mem);
 #    define GAME_UPDATE_AND_RENDER(game, pf_code, rbs, frame_input, mem, gc) \
         (gc).update_and_render(game, pf_code, rbs, frame_input, mem);
-#    define HOT_RELOAD_IF_RECOMPILED(gc, mem) reload_game_code_if_recompiled(gc, mem)
+#    define HOT_RELOAD_IF_RECOMPILED(gc) reload_game_code_if_recompiled(gc)
 #else
 #    define GAME_INITIALIZE(game, mem, gc) game_initialize(game_state, game_memory);
 #    define GAME_UPDATE_AND_RENDER(game, pf_code, rbs, frame_input, mem, gc) \
@@ -53,7 +53,7 @@ int main(void)
     u64 rng_seed = (u64)time(0); // TODO: better seed
     rng_initialize(&game_state->rng_state, rng_seed);
 
-    game_state->asset_table = load_game_assets(&game_memory.temporary_memory);
+    game_state->asset_table = load_game_assets();
 
     // Function pointers to platform layer code that need to be called from game layer
     PlatformCode platform_code = {
@@ -63,7 +63,7 @@ int main(void)
     };
 
 #if HOT_RELOAD
-    GameCode game_code = hot_reload_initialize(&game_memory);
+    GameCode game_code = hot_reload_initialize();
 #endif
 
     PlatformInput input = {0};
@@ -88,7 +88,7 @@ int main(void)
 
         // TODO: Guard asset reloading behind macro too, just like code hot reloading
         file_watcher_reload_modified_assets(&asset_watcher);
-        HOT_RELOAD_IF_RECOMPILED(&game_code, &game_memory.temporary_memory);
+        HOT_RELOAD_IF_RECOMPILED(&game_code);
 
         Vector2i window_size = platform_get_window_size(window);
         FrameInput frame_input = {0};

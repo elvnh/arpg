@@ -237,7 +237,7 @@ void *la_copy_allocation(void *context, void *arr, ssize item_count, ssize item_
     return new_alloc;
 }
 
-LinearArena get_scratch_arena(void)
+LinearArena *scratch_arena_get(void)
 {
     b32 is_initialized = thread_scratch_arena.first_block != 0;
 
@@ -245,5 +245,10 @@ LinearArena get_scratch_arena(void)
         thread_scratch_arena = la_create(default_allocator, THREAD_SCRATCH_SPACE);
     }
 
-    return thread_scratch_arena;
+    return &thread_scratch_arena;
+}
+
+void scratch_arena_reset(void)
+{
+    la_reset(&thread_scratch_arena);
 }

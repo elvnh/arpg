@@ -119,10 +119,12 @@ void assets_initialize(Allocator parent_allocator)
     g_asset_system.next_asset_id = FIRST_VALID_ASSET_ID;
 }
 
-static AssetSlot *get_asset_by_path(String path, LinearArena *scratch)
+static AssetSlot *get_asset_by_path(String path)
 {
+    LinearArena *scratch = scratch_arena_get();
+
     // NOTE: if number of assets grow large, linear search could become slow, but should be fine for now
-    String abs_path = platform_get_canonical_path(path, la_allocator(scratch), scratch);
+    String abs_path = platform_get_canonical_path(path, la_allocator(scratch));
 
     for (ssize i = 0; i < g_asset_system.next_asset_id; ++i) {
         AssetSlot *slot = &g_asset_system.registered_assets[i];
@@ -135,48 +137,49 @@ static AssetSlot *get_asset_by_path(String path, LinearArena *scratch)
     return 0;
 }
 
-static String get_canonical_asset_path(String name, AssetKind kind, FreeListArena *arena,
-    LinearArena *scratch_arena)
+static String get_canonical_asset_path(String name, AssetKind kind, FreeListArena *arena)
 {
-    Allocator scratch = la_allocator(scratch_arena);
+    LinearArena *scratch = scratch_arena_get();
+    Allocator scratch_allocator = la_allocator(scratch);
 
     // NOTE: path is copied later which is why we allocate in scratch arena while building string
     // TODO: replace with format
-    String path = str_concat(platform_get_executable_directory(scratch, scratch_arena),
-        str("/../" ASSET_DIRECTORY), scratch);
+    String path = str_concat(platform_get_executable_directory(scratch_allocator),
+        str("/../" ASSET_DIRECTORY), scratch_allocator);
 
-    path = platform_get_canonical_path(path, scratch, scratch_arena);
+    path = platform_get_canonical_path(path, scratch_allocator);
 
     BEGIN_EXHAUSTIVE_SWITCH;
     switch (kind) {
         case ASSET_KIND_SHADER: {
-            path = str_concat(path, str("/" SHADER_DIRECTORY), scratch);
+            path = str_concat(path, str("/" SHADER_DIRECTORY), scratch_allocator);
         } break;
 
         case ASSET_KIND_TEXTURE: {
-            path = str_concat(path, str("/" SPRITE_DIRECTORY), scratch);
+            path = str_concat(path, str("/" SPRITE_DIRECTORY), scratch_allocator);
         } break;
 
         case ASSET_KIND_FONT: {
-            path = str_concat(path, str("/" FONT_DIRECTORY), scratch);
+            path = str_concat(path, str("/" FONT_DIRECTORY), scratch_allocator);
         } break;
 
             INVALID_DEFAULT_CASE;
     }
     END_EXHAUSTIVE_SWITCH;
 
-    path = str_concat(path, name, scratch);
+    path = str_concat(path, name, scratch_allocator);
 
     String result = str_copy(path, fl_allocator(arena));
 
     return result;
 }
 
-static ShaderAsset *load_asset_data_shader(String path, LinearArena *scratch)
+static ShaderAsset *load_asset_data_shader(String path)
 {
+    LinearArena *scratch = scratch_arena_get();
+
     ShaderAsset *result = 0;
-    String shader_source =
-        platform_read_entire_file_as_string(path, la_allocator(scratch), scratch);
+    String shader_source = platform_read_entire_file_as_string(path, la_allocator(scratch));
 
     if (shader_source.data) {
         ShaderAsset *shader = renderer_backend_create_shader(shader_source,
@@ -188,13 +191,13 @@ static ShaderAsset *load_asset_data_shader(String path, LinearArena *scratch)
     return result;
 }
 
-ShaderHandle assets_register_shader(String name, LinearArena *scratch)
+ShaderHandle assets_register_shader(String name)
 {
-    String path = get_canonical_asset_path(name, ASSET_KIND_SHADER,
-        &g_asset_system.asset_arena, scratch);
+    String path =
+        get_canonical_asset_path(name, ASSET_KIND_SHADER, &g_asset_system.asset_arena);
 
     AssetSlotWithID slot_and_id = allocate_asset_slot(path);
-    ShaderAsset *shader = load_asset_data_shader(path, scratch);
+    ShaderAsset *shader = load_asset_data_shader(path);
     ASSERT(shader);
 
     assign_asset_slot_data(slot_and_id.slot, ASSET_KIND_SHADER, shader);
@@ -202,10 +205,12 @@ ShaderHandle assets_register_shader(String name, LinearArena *scratch)
     return (ShaderHandle){slot_and_id.id};
 }
 
-static TextureAsset *load_asset_data_texture(String path, LinearArena *scratch)
+static TextureAsset *load_asset_data_texture(String path)
 {
+    LinearArena *scratch = scratch_arena_get();
+
     TextureAsset *result = 0;
-    Span file_contents = platform_read_entire_file(path, la_allocator(scratch), scratch);
+    Span file_contents = platform_read_entire_file(path, la_allocator(scratch));
 
     if (file_contents.data && file_contents.size) {
         Image image = image_decode_png(file_contents, la_allocator(scratch));
@@ -221,13 +226,15 @@ static TextureAsset *load_asset_data_texture(String path, LinearArena *scratch)
     return result;
 }
 
-TextureHandle assets_register_texture(String name, LinearArena *scratch)
+TextureHandle assets_register_texture(String name)
 {
-    String path = get_canonical_asset_path(name, ASSET_KIND_TEXTURE,
-        &g_asset_system.asset_arena, scratch);
+    LinearArena *scratch = scratch_arena_get();
+
+    String path =
+        get_canonical_asset_path(name, ASSET_KIND_TEXTURE, &g_asset_system.asset_arena);
 
     AssetSlotWithID slot_and_id = allocate_asset_slot(path);
-    TextureAsset *texture = load_asset_data_texture(path, scratch);
+    TextureAsset *texture = load_asset_data_texture(path);
     ASSERT(texture);
 
     assign_asset_slot_data(slot_and_id.slot, ASSET_KIND_TEXTURE, texture);
@@ -235,22 +242,20 @@ TextureHandle assets_register_texture(String name, LinearArena *scratch)
     return (TextureHandle){slot_and_id.id};
 }
 
-static FontAsset *load_asset_data_font(String path, LinearArena *scratch)
+static FontAsset *load_asset_data_font(String path)
 {
-    FontAsset *result =
-        font_create_atlas(path, fl_allocator(&g_asset_system.asset_arena), scratch);
+    FontAsset *result = font_create_atlas(path, fl_allocator(&g_asset_system.asset_arena));
 
     return result;
 }
 
-FontHandle assets_register_font(String name, LinearArena *scratch)
+FontHandle assets_register_font(String name)
 {
     // TODO: reduce code duplication in assets_register functions
-    String path =
-        get_canonical_asset_path(name, ASSET_KIND_FONT, &g_asset_system.asset_arena, scratch);
+    String path = get_canonical_asset_path(name, ASSET_KIND_FONT, &g_asset_system.asset_arena);
 
     AssetSlotWithID slot_and_id = allocate_asset_slot(path);
-    FontAsset *font = load_asset_data_font(path, scratch);
+    FontAsset *font = load_asset_data_font(path);
     ASSERT(font);
 
     assign_asset_slot_data(slot_and_id.slot, ASSET_KIND_FONT, font);
@@ -282,7 +287,7 @@ FontAsset *assets_get_font(FontHandle handle)
 
 static b32 assets_reload_shader(AssetSlot *slot, LinearArena *scratch)
 {
-    ShaderAsset *new_shader = load_asset_data_shader(slot->canonical_asset_path, scratch);
+    ShaderAsset *new_shader = load_asset_data_shader(slot->canonical_asset_path);
 
     if (new_shader) {
         renderer_backend_destroy_shader(slot->as.shader_asset,
@@ -297,7 +302,7 @@ static b32 assets_reload_shader(AssetSlot *slot, LinearArena *scratch)
 
 static b32 assets_reload_texture(AssetSlot *slot, LinearArena *scratch)
 {
-    TextureAsset *new_texture = load_asset_data_texture(slot->canonical_asset_path, scratch);
+    TextureAsset *new_texture = load_asset_data_texture(slot->canonical_asset_path);
 
     if (new_texture) {
         renderer_backend_destroy_texture(slot->as.texture_asset,
@@ -312,7 +317,7 @@ static b32 assets_reload_texture(AssetSlot *slot, LinearArena *scratch)
 
 static b32 assets_reload_font(AssetSlot *slot, LinearArena *scratch)
 {
-    FontAsset *new_font = load_asset_data_font(slot->canonical_asset_path, scratch);
+    FontAsset *new_font = load_asset_data_font(slot->canonical_asset_path);
 
     if (new_font) {
         font_destroy_atlas(slot->as.font_asset, fl_allocator(&g_asset_system.asset_arena));
@@ -322,9 +327,11 @@ static b32 assets_reload_font(AssetSlot *slot, LinearArena *scratch)
     return false;
 }
 
-b32 assets_reload_asset_with_path(String path, LinearArena *scratch)
+b32 assets_reload_asset_with_path(String path)
 {
-    AssetSlot *slot = get_asset_by_path(path, scratch);
+    LinearArena *scratch = scratch_arena_get();
+
+    AssetSlot *slot = get_asset_by_path(path);
 
     if (slot) {
         BEGIN_EXHAUSTIVE_SWITCH;
@@ -388,15 +395,15 @@ AssetTable load_game_assets(LinearArena *scratch)
     switch (get_game_asset_kind(ASSET_NAME_TO_ENUM(name))) {                             \
         case ASSET_KIND_TEXTURE: {                                                       \
             result.textures[ASSET_NAME_TO_ENUM(name)] =                                  \
-                assets_register_texture(str(path), scratch);                             \
+                assets_register_texture(str(path));                             \
         } break;                                                                         \
         case ASSET_KIND_SHADER: {                                                        \
             result.shaders[ASSET_NAME_TO_ENUM(name)] =                                   \
-                assets_register_shader(str(path), scratch);                              \
+                assets_register_shader(str(path));                              \
         } break;                                                                         \
         case ASSET_KIND_FONT: {                                                          \
             result.fonts[ASSET_NAME_TO_ENUM(name)] =                                     \
-                assets_register_font(str(path), scratch);                                \
+                assets_register_font(str(path));                                \
         } break;                                                                         \
     }
 

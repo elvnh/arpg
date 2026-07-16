@@ -42,15 +42,13 @@ void platform_initialize_input(struct PlatformInput *input, struct WindowHandle 
 
 /* Path */
 String platform_get_executable_path(Allocator allocator);
-String platform_get_executable_directory(Allocator allocator, LinearArena *scratch_arena);
+String platform_get_executable_directory(Allocator allocator);
 bool platform_path_is_absolute(String path);
-String platform_get_absolute_path(String path, Allocator allocator,
-    LinearArena *scratch_arena);
-String platform_get_canonical_path(String path, Allocator allocator,
-    LinearArena *scratch_arena);
+String platform_get_absolute_path(String path, Allocator allocator);
+String platform_get_canonical_path(String path, Allocator allocator);
 String platform_get_working_directory(Allocator allocator);
 void platform_change_working_directory(String path);
-String platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena);
+String platform_get_parent_path(String path, Allocator allocator);
 String platform_get_filename(String path);
 
 /* File */
@@ -66,14 +64,12 @@ typedef struct {
     Timestamp last_modification_time;
 } FileInfo;
 
-Span platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch);
-String platform_read_entire_file_as_string(String path, Allocator allocator,
-    LinearArena *scratch);
-ssize platform_get_file_size(String path, LinearArena *scratch);
-b32 platform_file_exists(String path, LinearArena *scratch);
-FileInfo platform_get_file_info(String path, LinearArena *scratch);
-void platform_for_each_file_in_dir(String directory, void (*callback)(String),
-    LinearArena *scratch);
+Span platform_read_entire_file(String path, Allocator allocator);
+String platform_read_entire_file_as_string(String path, Allocator allocator);
+ssize platform_get_file_size(String path);
+b32 platform_file_exists(String path);
+FileInfo platform_get_file_info(String path);
+void platform_for_each_file_in_dir(String directory, void (*callback)(String));
 
 /* Time */
 Timestamp platform_get_time(void);

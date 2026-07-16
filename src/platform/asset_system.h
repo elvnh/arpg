@@ -16,13 +16,13 @@
 #define FONT_DIRECTORY   "fonts/"
 
 void assets_initialize(Allocator parent_allocator);
-ShaderHandle assets_register_shader(String name, LinearArena *scratch);
-TextureHandle assets_register_texture(String name, LinearArena *scratch);
-FontHandle assets_register_font(String name, LinearArena *scratch);
+ShaderHandle assets_register_shader(String name);
+TextureHandle assets_register_texture(String name);
+FontHandle assets_register_font(String name);
 ShaderAsset *assets_get_shader(ShaderHandle handle);
 TextureAsset *assets_get_texture(TextureHandle handle);
 FontAsset *assets_get_font(FontHandle handle);
-b32 assets_reload_asset_with_path(String path, LinearArena *scratch);
+b32 assets_reload_asset_with_path(String path);
 TextureHandle assets_create_texture_from_memory(Image image);
 Vector2 assets_get_text_dimensions(FontHandle font_handle, String text, s32 text_size);
 f32 assets_get_text_newline_advance(FontHandle font_handle, s32 text_size);

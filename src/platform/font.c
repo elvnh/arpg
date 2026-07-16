@@ -49,10 +49,12 @@ static inline s32 char_index(char ch)
 }
 
 // TODO: Most calculations in this file are pretty hacky, fix them
-FontAsset *font_create_atlas(String font_path, Allocator allocator, LinearArena *scratch)
+FontAsset *font_create_atlas(String font_path, Allocator allocator)
 {
+    LinearArena *scratch = scratch_arena_get();
+
     FontAsset *result = allocate_item(allocator, FontAsset);
-    Span font_file_contents = platform_read_entire_file(font_path, allocator, scratch);
+    Span font_file_contents = platform_read_entire_file(font_path, allocator);
 
     if (!font_file_contents.data) {
         goto error;

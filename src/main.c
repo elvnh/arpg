@@ -87,7 +87,7 @@ int main(void)
         la_reset(&game_memory.temporary_memory);
 
         // TODO: Guard asset reloading behind macro too, just like code hot reloading
-        file_watcher_reload_modified_assets(&asset_watcher, &game_memory.temporary_memory);
+        file_watcher_reload_modified_assets(&asset_watcher);
         HOT_RELOAD_IF_RECOMPILED(&game_code, &game_memory.temporary_memory);
 
         Vector2i window_size = platform_get_window_size(window);

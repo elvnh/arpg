@@ -225,11 +225,10 @@ String platform_get_executable_path(Allocator allocator)
     return result;
 }
 
-String platform_get_executable_directory(Allocator allocator, LinearArena *scratch_arena)
+String platform_get_executable_directory(Allocator allocator)
 {
     String executable_path = platform_get_executable_path(allocator);
-    String directory_path =
-        platform_get_parent_path(executable_path, allocator, scratch_arena);
+    String directory_path = platform_get_parent_path(executable_path, allocator);
 
     return directory_path;
 }
@@ -239,12 +238,13 @@ bool platform_path_is_absolute(String path)
     return str_starts_with(path, str("/"));
 }
 
-String platform_get_absolute_path(String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_absolute_path(String path, Allocator allocator)
 {
     if (platform_path_is_absolute(path)) {
         return path;
     }
 
+    LinearArena *scratch_arena = scratch_arena_get();
     Allocator scratch = la_allocator(scratch_arena);
 
     String working_dir =
@@ -254,12 +254,12 @@ String platform_get_absolute_path(String path, Allocator allocator, LinearArena 
     return result;
 }
 
-String platform_get_canonical_path(String path, Allocator allocator,
-    LinearArena *scratch_arena)
+String platform_get_canonical_path(String path, Allocator allocator)
 {
+    LinearArena *scratch_arena = scratch_arena_get();
     Allocator scratch = la_allocator(scratch_arena);
 
-    String absolute = platform_get_absolute_path(path, scratch, scratch_arena);
+    String absolute = platform_get_absolute_path(path, scratch);
     absolute = str_null_terminate(absolute, scratch);
 
     String canonical = str_allocate(PATH_MAX, allocator);
@@ -303,9 +303,9 @@ void platform_change_working_directory(String path)
     ASSERT(result == 0);
 }
 
-String platform_get_parent_path(String path, Allocator allocator, LinearArena *scratch_arena)
+String platform_get_parent_path(String path, Allocator allocator)
 {
-    String absolute = platform_get_absolute_path(path, allocator, scratch_arena);
+    String absolute = platform_get_absolute_path(path, allocator);
     ssize last_slash_pos = str_find_last_occurence(absolute, str("/"));
     ASSERT(last_slash_pos != -1);
 
@@ -331,14 +331,15 @@ String platform_get_filename(String path)
 }
 
 /* File */
-Span platform_read_entire_file(String path, Allocator allocator, LinearArena *scratch)
+Span platform_read_entire_file(String path, Allocator allocator)
 {
     Span result = {0};
+    LinearArena *scratch = scratch_arena_get();
 
     String null_terminated = str_null_terminate(path, la_allocator(scratch));
     s32 fd = open(null_terminated.data, O_RDONLY);
 
-    ssize file_size = platform_get_file_size(null_terminated, scratch);
+    ssize file_size = platform_get_file_size(null_terminated);
 
     if ((fd == -1) || (file_size == -1) || add_overflows_ssize(file_size, 1)) {
         goto done;
@@ -363,24 +364,24 @@ done:
     return result;
 }
 
-String platform_read_entire_file_as_string(String path, Allocator allocator,
-    LinearArena *scratch)
+String platform_read_entire_file_as_string(String path, Allocator allocator)
 {
-    Span file_contents = platform_read_entire_file(path, allocator, scratch);
+    Span file_contents = platform_read_entire_file(path, allocator);
     String result = {(char *)file_contents.data, file_contents.size};
 
     return result;
 }
 
-ssize platform_get_file_size(String path, LinearArena *scratch)
+ssize platform_get_file_size(String path)
 {
-    FileInfo info = platform_get_file_info(path, scratch);
+    FileInfo info = platform_get_file_info(path);
 
     return info.file_size;
 }
 
-b32 platform_file_exists(String path, LinearArena *scratch)
+b32 platform_file_exists(String path)
 {
+    LinearArena *scratch = scratch_arena_get();
     String null_terminated = str_null_terminate(path, la_allocator(scratch));
 
     s32 result = access(null_terminated.data, F_OK);
@@ -388,9 +389,11 @@ b32 platform_file_exists(String path, LinearArena *scratch)
     return (result == 0);
 }
 
-FileInfo platform_get_file_info(String path, LinearArena *scratch)
+FileInfo platform_get_file_info(String path)
 {
+    LinearArena *scratch = scratch_arena_get();
     String null_terminated = str_null_terminate(path, la_allocator(scratch));
+
     struct stat st;
     s32 stat_result = stat(null_terminated.data, &st);
 
@@ -417,9 +420,10 @@ FileInfo platform_get_file_info(String path, LinearArena *scratch)
     return result;
 }
 
-void platform_for_each_file_in_dir(String directory, void (*callback)(String),
-    LinearArena *scratch)
+void platform_for_each_file_in_dir(String directory, void (*callback)(String))
 {
+    LinearArena *scratch = scratch_arena_get();
+
     String null_terminated = str_null_terminate(directory, la_allocator(scratch));
     DIR *dir = opendir(null_terminated.data);
     ASSERT(dir);
@@ -433,7 +437,7 @@ void platform_for_each_file_in_dir(String directory, void (*callback)(String),
 
         if (entry->d_type == DT_DIR) {
             if (!str_equal(name, str(".")) && !str_equal(name, str(".."))) {
-                platform_for_each_file_in_dir(full_path, callback, scratch);
+                platform_for_each_file_in_dir(full_path, callback);
             }
         } else {
             callback(full_path);

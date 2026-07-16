@@ -22,7 +22,7 @@ void load_game_code_impl(GameCode *game_code, LinearArena *scratch)
 {
     // NOTE: this loop should only be entered if game was recompiled since checking
     // this before the call
-    while (platform_file_exists(str(COMPILATION_LOCK_FILE_PATH), scratch)) {
+    while (platform_file_exists(str(COMPILATION_LOCK_FILE_PATH))) {
     }
 
     ASSERT(dlopen(GAME_SO_PATH, RTLD_NOLOAD) == 0);
@@ -68,11 +68,10 @@ void unload_game_code_impl(GameCode *game_code)
 
 void reload_game_code_if_recompiled_impl(GameCode *game_code, LinearArena *frame_arena)
 {
-    Timestamp so_mod_time =
-        platform_get_file_info(str(GAME_SO_PATH), frame_arena).last_modification_time;
+    Timestamp so_mod_time = platform_get_file_info(str(GAME_SO_PATH)).last_modification_time;
 
     if (timestamp_less_than(game_code->last_load_time, so_mod_time)
-        && !platform_file_exists(str(COMPILATION_LOCK_FILE_PATH), frame_arena)) {
+        && !platform_file_exists(str(COMPILATION_LOCK_FILE_PATH))) {
         unload_game_code(game_code);
         load_game_code(game_code, frame_arena);
 

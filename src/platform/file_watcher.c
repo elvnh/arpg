@@ -20,7 +20,7 @@ typedef struct ModifiedAsset {
 
 static String get_assets_directory(LinearArena *arena)
 {
-    String executable_dir = platform_get_executable_directory(la_allocator(arena), arena);
+    String executable_dir = platform_get_executable_directory(la_allocator(arena));
     String result = format(arena, FMT_STR "/../" ASSET_DIRECTORY, FMT_STR_ARG(executable_dir));
     result = str_null_terminate(result, la_allocator(arena));
 
@@ -119,8 +119,7 @@ void *file_watcher_thread(void *user_data)
 
                 // TODO: instead store the canonical path
                 String asset_path = str_concat(parent_path, name, ctx->allocator);
-                modified_asset->path =
-                    platform_get_canonical_path(asset_path, ctx->allocator, &scratch);
+                modified_asset->path = platform_get_canonical_path(asset_path, ctx->allocator);
 
                 mutex_lock(ctx->lock);
                 list_push_back(&ctx->asset_reload_queue, modified_asset);
@@ -151,13 +150,15 @@ void file_watcher_stop(AssetWatcherContext *ctx)
     mutex_destroy(ctx->lock, ctx->allocator);
 }
 
-void file_watcher_reload_modified_assets(AssetWatcherContext *ctx, LinearArena *scratch)
+void file_watcher_reload_modified_assets(AssetWatcherContext *ctx)
 {
+    LinearArena *scratch = scratch_arena_get();
+
     mutex_lock(ctx->lock);
 
     for (ModifiedAsset *asset = list_head(&ctx->asset_reload_queue); asset;) {
         ModifiedAsset *next = asset->next;
-        b32 reloaded = assets_reload_asset_with_path(asset->path, scratch);
+        b32 reloaded = assets_reload_asset_with_path(asset->path);
 
         if (reloaded) {
             printf("Reloaded asset '%s'.\n",

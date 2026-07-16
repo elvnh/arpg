@@ -108,7 +108,7 @@ static void render_line(RendererBackend *backend, Vector2 start, Vector2 end, f3
 }
 
 static void execute_render_command(RenderEntry *entry, RenderBatch *rb,
-    RendererState *current_state, RendererBackend *backend, LinearArena *scratch)
+    RendererState *current_state, RendererBackend *backend)
 {
     RenderCmdHeader *header = entry->data;
 
@@ -470,7 +470,7 @@ void execute_render_commands(RenderBatch *rb, RendererBackend *backend, LinearAr
     for (ssize i = 0; i < rb->entry_count; ++i) {
         RenderEntry *entry = &rb->entries[i];
 
-        execute_render_command(entry, rb, &current_state, backend, scratch);
+        execute_render_command(entry, rb, &current_state, backend);
     }
 
     renderer_backend_flush(backend);

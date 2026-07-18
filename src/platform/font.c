@@ -4,6 +4,7 @@
 #include "base/linear_arena.h"
 #include "base/matrix.h"
 #include "base/rectangle.h"
+#include "base/scratch.h"
 #include "base/utils.h"
 #include "platform.h"
 
@@ -51,7 +52,7 @@ static inline s32 char_index(char ch)
 // TODO: Most calculations in this file are pretty hacky, fix them
 FontAsset *font_create_atlas(String font_path, Allocator allocator)
 {
-    LinearArena *scratch = scratch_arena_get();
+    TempArena scratch = temp_arena_begin();
 
     FontAsset *result = allocate_item(allocator, FontAsset);
     Span font_file_contents = platform_read_entire_file(font_path, allocator);
@@ -67,7 +68,7 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator)
     }
 
     byte *mono_font_bitmap =
-        la_allocate_array(scratch, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT);
+        la_allocate_array(scratch.arena, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT);
 
     stbtt_pack_context pack_ctx;
     if (!stbtt_PackBegin(&pack_ctx, mono_font_bitmap, FONT_ATLAS_WIDTH, FONT_ATLAS_HEIGHT, 0,
@@ -78,7 +79,7 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator)
     stbtt_PackSetOversampling(&pack_ctx, 2, 2);
 
     stbtt_packedchar *glyph_metrics =
-        la_allocate_array(scratch, stbtt_packedchar, FONT_CHAR_COUNT);
+        la_allocate_array(scratch.arena, stbtt_packedchar, FONT_CHAR_COUNT);
     if (!stbtt_PackFontRange(&pack_ctx, font_file_contents.data, 0, FONT_RASTERIZED_SIZE,
             FONT_FIRST_CHAR, FONT_CHAR_COUNT, glyph_metrics)) {
         goto error;
@@ -107,7 +108,7 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator)
     }
 
     byte *rgba_font_bitmap =
-        la_allocate_array(scratch, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT * 4);
+        la_allocate_array(scratch.arena, byte, FONT_ATLAS_WIDTH * FONT_ATLAS_HEIGHT * 4);
 
     for (s32 y = 0; y < FONT_ATLAS_HEIGHT; ++y) {
         for (s32 x = 0; x < FONT_ATLAS_WIDTH; ++x) {
@@ -135,6 +136,8 @@ FontAsset *font_create_atlas(String font_path, Allocator allocator)
     result->descent = (f32)descent;
     result->line_gap = (f32)line_gap;
     result->texture_handle = assets_create_texture_from_memory(font_image);
+
+    temp_arena_end(scratch);
 
     return result;
 

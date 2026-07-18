@@ -21,6 +21,7 @@ set(
   src/base/string8.c
   src/base/allocator.c
   src/base/random.c
+  src/base/scratch.c
   src/base/free_list_arena.c
 )
 

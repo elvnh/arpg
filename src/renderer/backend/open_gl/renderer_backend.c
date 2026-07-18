@@ -3,6 +3,7 @@
 #include "base/allocator.h"
 #include "base/rectangle.h"
 #include "base/rgba.h"
+#include "base/scratch.h"
 #include "base/string8.h"
 #include "base/utils.h"
 #include "base/vector.h"
@@ -389,12 +390,15 @@ void renderer_backend_bind_texture(TextureAsset *texture)
 
 static GLint get_uniform_location(ShaderAsset *shader, String uniform_name)
 {
-    LinearArena *scratch = scratch_arena_get();
-    String terminated = str_null_terminate(uniform_name, la_allocator(scratch));
+    TempArena scratch = temp_arena_begin();
+
+    String terminated = str_null_terminate(uniform_name, la_allocator(scratch.arena));
 
     GLint location = glGetUniformLocation(shader->native_handle, terminated.data);
     // TODO: instead log error on failure
     ASSERT(location != -1);
+
+    temp_arena_end(scratch);
 
     return location;
 }

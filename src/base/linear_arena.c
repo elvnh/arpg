@@ -5,15 +5,11 @@
 
 #include <string.h>
 
-#define THREAD_SCRATCH_SPACE MB(8)
-
 typedef struct ArenaBlock {
     struct ArenaBlock *next_block;
     struct ArenaBlock *prev_block;
     ssize capacity;
 } ArenaBlock;
-
-static THREAD_LOCAL LinearArena thread_scratch_arena;
 
 static ArenaBlock *allocate_block(Allocator parent, ArenaBlock *previous, ssize size)
 {
@@ -235,20 +231,4 @@ void *la_copy_allocation(void *context, void *arr, ssize item_count, ssize item_
     memcpy(new_alloc, arr, ssize_to_usize(item_count * item_size));
 
     return new_alloc;
-}
-
-LinearArena *scratch_arena_get(void)
-{
-    b32 is_initialized = thread_scratch_arena.first_block != 0;
-
-    if (!is_initialized) {
-        thread_scratch_arena = la_create(default_allocator, THREAD_SCRATCH_SPACE);
-    }
-
-    return &thread_scratch_arena;
-}
-
-void scratch_arena_reset(void)
-{
-    la_reset(&thread_scratch_arena);
 }

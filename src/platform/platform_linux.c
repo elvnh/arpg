@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
 #define _DEFAULT_SOURCE
 
+#include "base/linear_arena.h"
+#include "base/scratch.h"
 #include "base/string8.h"
 #include "input.h"
 #include "platform.h"
@@ -240,29 +242,32 @@ bool platform_path_is_absolute(String path)
 
 String platform_get_absolute_path(String path, Allocator allocator)
 {
-    if (platform_path_is_absolute(path)) {
-        return path;
+    TempArena scratch = temp_arena_begin();
+    Allocator scratch_alloc = la_allocator(scratch.arena);
+
+    String result = path;
+
+    if (!platform_path_is_absolute(path)) {
+        String working_dir =
+            str_concat(platform_get_working_directory(scratch_alloc), str("/"), scratch_alloc);
+
+        result = str_concat(working_dir, path, allocator);
     }
 
-    LinearArena *scratch_arena = scratch_arena_get();
-    Allocator scratch = la_allocator(scratch_arena);
-
-    String working_dir =
-        str_concat(platform_get_working_directory(scratch), str("/"), scratch);
-    String result = str_concat(working_dir, path, allocator);
+    temp_arena_end(scratch);
 
     return result;
 }
 
 String platform_get_canonical_path(String path, Allocator allocator)
 {
-    LinearArena *scratch_arena = scratch_arena_get();
-    Allocator scratch = la_allocator(scratch_arena);
+    TempArena scratch = temp_arena_begin();
+    Allocator scratch_alloc = la_allocator(scratch.arena);
 
-    String absolute = platform_get_absolute_path(path, scratch);
-    absolute = str_null_terminate(absolute, scratch);
+    String absolute = platform_get_absolute_path(path, scratch_alloc);
+    absolute = str_null_terminate(absolute, scratch_alloc);
 
-    String canonical = str_allocate(PATH_MAX, allocator);
+    String canonical = str_allocate(PATH_MAX, scratch_alloc);
     char *realpath_result = realpath(absolute.data, canonical.data);
 
     if (!realpath_result) {
@@ -274,6 +279,8 @@ String platform_get_canonical_path(String path, Allocator allocator)
         ssize path_length = str_get_null_terminated_length(canonical);
         canonical.length = path_length;
     }
+
+    temp_arena_end(scratch);
 
     return canonical;
 }
@@ -333,10 +340,11 @@ String platform_get_filename(String path)
 /* File */
 Span platform_read_entire_file(String path, Allocator allocator)
 {
-    Span result = {0};
-    LinearArena *scratch = scratch_arena_get();
+    TempArena scratch = temp_arena_begin();
 
-    String null_terminated = str_null_terminate(path, la_allocator(scratch));
+    Span result = {0};
+
+    String null_terminated = str_null_terminate(path, la_allocator(scratch.arena));
     s32 fd = open(null_terminated.data, O_RDONLY);
 
     ssize file_size = platform_get_file_size(null_terminated);
@@ -361,6 +369,8 @@ Span platform_read_entire_file(String path, Allocator allocator)
 done:
     close(fd);
 
+    temp_arena_end(scratch);
+
     return result;
 }
 
@@ -381,50 +391,54 @@ ssize platform_get_file_size(String path)
 
 b32 platform_file_exists(String path)
 {
-    LinearArena *scratch = scratch_arena_get();
-    String null_terminated = str_null_terminate(path, la_allocator(scratch));
+    TempArena scratch = temp_arena_begin();
+
+    String null_terminated = str_null_terminate(path, la_allocator(scratch.arena));
 
     s32 result = access(null_terminated.data, F_OK);
+
+    temp_arena_end(scratch);
 
     return (result == 0);
 }
 
 FileInfo platform_get_file_info(String path)
 {
-    LinearArena *scratch = scratch_arena_get();
-    String null_terminated = str_null_terminate(path, la_allocator(scratch));
+    TempArena scratch = temp_arena_begin();
+
+    String null_terminated = str_null_terminate(path, la_allocator(scratch.arena));
 
     struct stat st;
     s32 stat_result = stat(null_terminated.data, &st);
 
     FileInfo result = {(FileType)-1, -1, {0}};
 
-    if ((stat_result == -1) || !S_ISREG(st.st_mode)) {
-        return result;
+    if ((stat_result != -1) || S_ISREG(st.st_mode)) {
+        Timestamp mod_time = {.seconds = st.st_mtim.tv_sec, .nanoseconds = st.st_mtim.tv_nsec};
+
+        FileType type = FILE_TYPE_OTHER;
+
+        if (S_ISREG(st.st_mode)) {
+            type = FILE_TYPE_FILE;
+        } else if (S_ISDIR(st.st_mode)) {
+            type = FILE_TYPE_DIRECTORY;
+        }
+
+        result.type = type;
+        result.file_size = st.st_size;
+        result.last_modification_time = mod_time;
     }
 
-    Timestamp mod_time = {.seconds = st.st_mtim.tv_sec, .nanoseconds = st.st_mtim.tv_nsec};
-
-    FileType type = FILE_TYPE_OTHER;
-
-    if (S_ISREG(st.st_mode)) {
-        type = FILE_TYPE_FILE;
-    } else if (S_ISDIR(st.st_mode)) {
-        type = FILE_TYPE_DIRECTORY;
-    }
-
-    result.type = type;
-    result.file_size = st.st_size;
-    result.last_modification_time = mod_time;
+    temp_arena_end(scratch);
 
     return result;
 }
 
 void platform_for_each_file_in_dir(String directory, void (*callback)(String))
 {
-    LinearArena *scratch = scratch_arena_get();
+    TempArena scratch = temp_arena_begin();
 
-    String null_terminated = str_null_terminate(directory, la_allocator(scratch));
+    String null_terminated = str_null_terminate(directory, la_allocator(scratch.arena));
     DIR *dir = opendir(null_terminated.data);
     ASSERT(dir);
 
@@ -432,8 +446,9 @@ void platform_for_each_file_in_dir(String directory, void (*callback)(String))
         String name = {entry->d_name, (ssize)strlen(entry->d_name)};
 
         // TODO: use new format function for constructing paths
-        String full_path = str_concat(str_concat(directory, str("/"), la_allocator(scratch)),
-            name, la_allocator(scratch));
+        String full_path =
+            str_concat(str_concat(directory, str("/"), la_allocator(scratch.arena)), name,
+                la_allocator(scratch.arena));
 
         if (entry->d_type == DT_DIR) {
             if (!str_equal(name, str(".")) && !str_equal(name, str(".."))) {
@@ -445,6 +460,8 @@ void platform_for_each_file_in_dir(String directory, void (*callback)(String))
     }
 
     closedir(dir);
+
+    temp_arena_end(scratch);
 }
 
 /* Time */

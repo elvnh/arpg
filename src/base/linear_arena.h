@@ -26,7 +26,5 @@ ssize la_get_memory_usage(LinearArena *arena);
 void la_pop_to(LinearArena *arena, void *ptr);
 void *la_copy_allocation(void *context, void *arr, ssize item_count, ssize item_size,
     ssize alignment);
-LinearArena *scratch_arena_get(void);
-void scratch_arena_reset(void);
 
 #endif //LINEAR_ARENA_H

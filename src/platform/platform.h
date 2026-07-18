@@ -41,6 +41,7 @@ InputEvents platform_poll_input_events(struct PlatformInput *input,
 void platform_initialize_input(struct PlatformInput *input, struct WindowHandle *window);
 
 /* Path */
+// TODO: some of these should be moved to path.c
 String platform_get_executable_path(Allocator allocator);
 String platform_get_executable_directory(Allocator allocator);
 bool platform_path_is_absolute(String path);

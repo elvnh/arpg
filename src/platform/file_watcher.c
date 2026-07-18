@@ -2,7 +2,7 @@
 
 #include "asset_system.h"
 #include "base/format.h"
-#include "base/scratch.h"
+#include "base/temp_arena.h"
 #include "platform/platform.h"
 
 #include <linux/limits.h>

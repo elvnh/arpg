@@ -1,4 +1,4 @@
-#include "scratch.h"
+#include "temp_arena.h"
 
 #include "linear_arena.h"
 #include "utils.h"

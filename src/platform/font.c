@@ -4,7 +4,7 @@
 #include "base/linear_arena.h"
 #include "base/matrix.h"
 #include "base/rectangle.h"
-#include "base/scratch.h"
+#include "base/temp_arena.h"
 #include "base/utils.h"
 #include "platform.h"
 

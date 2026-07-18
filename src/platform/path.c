@@ -1,7 +1,7 @@
 #include "path.h"
 
 #include "base/dynamic_array.h"
-#include "base/scratch.h"
+#include "base/temp_arena.h"
 #include "platform.h"
 
 static ssize path_common_prefix_length(Path a, Path b)

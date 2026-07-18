@@ -2,8 +2,8 @@
 #define _DEFAULT_SOURCE
 
 #include "base/linear_arena.h"
-#include "base/scratch.h"
 #include "base/string8.h"
+#include "base/temp_arena.h"
 #include "input.h"
 #include "platform.h"
 #include "platform/input_event.h"

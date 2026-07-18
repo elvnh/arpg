@@ -14,15 +14,13 @@
         (allocator)),                                               \
         (allocator))
 
-// TODO: test macro REQUIRE_STR_EQ
-
 TEST_CASE(path_from_str_basic)
 {
     Path p = path_from_str(str("home/foo"), default_allocator);
 
     REQUIRE(p.count == 2);
-    REQUIRE(str_equal(p.items[0], str("home")));
-    REQUIRE(str_equal(p.items[1], str("foo")));
+    REQUIRE_STR_EQ(p.items[0], str("home"));
+    REQUIRE_STR_EQ(p.items[1], str("foo"));
 }
 
 TEST_CASE(path_from_str_leading_slash)
@@ -30,9 +28,9 @@ TEST_CASE(path_from_str_leading_slash)
     Path p = path_from_str(str("/home/foo"), default_allocator);
 
     REQUIRE(p.count == 3);
-    REQUIRE(str_equal(p.items[0], str("/")));
-    REQUIRE(str_equal(p.items[1], str("home")));
-    REQUIRE(str_equal(p.items[2], str("foo")));
+    REQUIRE_STR_EQ(p.items[0], str("/"));
+    REQUIRE_STR_EQ(p.items[1], str("home"));
+    REQUIRE_STR_EQ(p.items[2], str("foo"));
 }
 
 TEST_CASE(path_from_str_trailing_slash)
@@ -40,8 +38,8 @@ TEST_CASE(path_from_str_trailing_slash)
     Path p = path_from_str(str("home/foo/"), default_allocator);
 
     REQUIRE(p.count == 2);
-    REQUIRE(str_equal(p.items[0], str("home")));
-    REQUIRE(str_equal(p.items[1], str("foo")));
+    REQUIRE_STR_EQ(p.items[0], str("home"));
+    REQUIRE_STR_EQ(p.items[1], str("foo"));
 }
 
 TEST_CASE(path_from_str_leading_and_trailing_slash)
@@ -49,9 +47,9 @@ TEST_CASE(path_from_str_leading_and_trailing_slash)
     Path p = path_from_str(str("/home/foo/"), default_allocator);
 
     REQUIRE(p.count == 3);
-    REQUIRE(str_equal(p.items[0], str("/")));
-    REQUIRE(str_equal(p.items[1], str("home")));
-    REQUIRE(str_equal(p.items[2], str("foo")));
+    REQUIRE_STR_EQ(p.items[0], str("/"));
+    REQUIRE_STR_EQ(p.items[1], str("home"));
+    REQUIRE_STR_EQ(p.items[2], str("foo"));
 }
 
 TEST_CASE(path_from_str_single_component)
@@ -59,7 +57,7 @@ TEST_CASE(path_from_str_single_component)
     Path p = path_from_str(str("home"), default_allocator);
 
     REQUIRE(p.count == 1);
-    REQUIRE(str_equal(p.items[0], str("home")));
+    REQUIRE_STR_EQ(p.items[0], str("home"));
 }
 
 TEST_CASE(path_from_str_single_component_trailing_slash)
@@ -67,7 +65,7 @@ TEST_CASE(path_from_str_single_component_trailing_slash)
     Path p = path_from_str(str("home/"), default_allocator);
 
     REQUIRE(p.count == 1);
-    REQUIRE(str_equal(p.items[0], str("home")));
+    REQUIRE_STR_EQ(p.items[0], str("home"));
 }
 
 TEST_CASE(path_from_str_single_component_root)
@@ -75,7 +73,7 @@ TEST_CASE(path_from_str_single_component_root)
     Path p = path_from_str(str("/"), default_allocator);
 
     REQUIRE(p.count == 1);
-    REQUIRE(str_equal(p.items[0], str("/")));
+    REQUIRE_STR_EQ(p.items[0], str("/"));
 }
 
 TEST_CASE(path_from_str_root_subdir)
@@ -83,8 +81,8 @@ TEST_CASE(path_from_str_root_subdir)
     Path p = path_from_str(str("/home"), default_allocator);
 
     REQUIRE(p.count == 2);
-    REQUIRE(str_equal(p.items[0], str("/")));
-    REQUIRE(str_equal(p.items[1], str("home")));
+    REQUIRE_STR_EQ(p.items[0], str("/"));
+    REQUIRE_STR_EQ(p.items[1], str("home"));
 }
 
 TEST_CASE(path_from_str_root_subdir_trailing_slash)
@@ -92,8 +90,8 @@ TEST_CASE(path_from_str_root_subdir_trailing_slash)
     Path p = path_from_str(str("/home/"), default_allocator);
 
     REQUIRE(p.count == 2);
-    REQUIRE(str_equal(p.items[0], str("/")));
-    REQUIRE(str_equal(p.items[1], str("home")));
+    REQUIRE_STR_EQ(p.items[0], str("/"));
+    REQUIRE_STR_EQ(p.items[1], str("home"));
 }
 
 TEST_CASE(path_to_str_basic)
@@ -101,7 +99,7 @@ TEST_CASE(path_to_str_basic)
     Path p = path_from_str(str("home"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("home")));
+    REQUIRE_STR_EQ(s, str("home"));
 }
 
 TEST_CASE(path_to_str_root)
@@ -109,7 +107,7 @@ TEST_CASE(path_to_str_root)
     Path p = path_from_str(str("/"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("/")));
+    REQUIRE_STR_EQ(s, str("/"));
 }
 
 TEST_CASE(path_to_str_multiple)
@@ -117,7 +115,7 @@ TEST_CASE(path_to_str_multiple)
     Path p = path_from_str(str("/home/foo"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("/home/foo")));
+    REQUIRE_STR_EQ(s, str("/home/foo"));
 }
 
 TEST_CASE(path_to_str_multiple_trailing_slash)
@@ -125,7 +123,7 @@ TEST_CASE(path_to_str_multiple_trailing_slash)
     Path p = path_from_str(str("/home/foo/"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("/home/foo")));
+    REQUIRE_STR_EQ(s, str("/home/foo"));
 }
 
 TEST_CASE(path_append_inplace_basic)
@@ -134,7 +132,7 @@ TEST_CASE(path_append_inplace_basic)
     path_append_inplace(&p, str("foo"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("/home/foo")));
+    REQUIRE_STR_EQ(s, str("/home/foo"));
 }
 
 TEST_CASE(path_append_inplace_trailing_slash)
@@ -143,7 +141,7 @@ TEST_CASE(path_append_inplace_trailing_slash)
     path_append_inplace(&p, str("foo/"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("/home/foo")));
+    REQUIRE_STR_EQ(s, str("/home/foo"));
 }
 
 TEST_CASE(path_append_inplace_root_to_empty)
@@ -152,7 +150,7 @@ TEST_CASE(path_append_inplace_root_to_empty)
     path_append_inplace(&p, str("/"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("/")));
+    REQUIRE_STR_EQ(s, str("/"));
 }
 
 TEST_CASE(path_append_inplace_non_root_to_empty)
@@ -161,7 +159,7 @@ TEST_CASE(path_append_inplace_non_root_to_empty)
     path_append_inplace(&p, str("foo"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("foo")));
+    REQUIRE_STR_EQ(s, str("foo"));
 }
 
 TEST_CASE(path_append_inplace_trailing_slash_to_empty)
@@ -170,7 +168,7 @@ TEST_CASE(path_append_inplace_trailing_slash_to_empty)
     path_append_inplace(&p, str("foo/"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("foo")));
+    REQUIRE_STR_EQ(s, str("foo"));
 }
 
 TEST_CASE(path_append_inplace_leading_slash_to_empty)
@@ -179,7 +177,7 @@ TEST_CASE(path_append_inplace_leading_slash_to_empty)
     path_append_inplace(&p, str("/foo"), default_allocator);
     String s = path_to_str(p, default_allocator);
 
-    REQUIRE(str_equal(s, str("/foo")));
+    REQUIRE_STR_EQ(s, str("/foo"));
 }
 
 TEST_CASE(path_append)
@@ -190,8 +188,8 @@ TEST_CASE(path_append)
     String a_str = path_to_str(a, default_allocator);
     String b_str = path_to_str(b, default_allocator);
 
-    REQUIRE(str_equal(a_str, str("foo")));
-    REQUIRE(str_equal(b_str, str("foo/bar")));
+    REQUIRE_STR_EQ(a_str, str("foo"));
+    REQUIRE_STR_EQ(b_str, str("foo/bar"));
 }
 
 TEST_CASE(path_make_relative_to_entire_base_is_common_prefix)
@@ -200,7 +198,7 @@ TEST_CASE(path_make_relative_to_entire_base_is_common_prefix)
     String b = TEST_INPUT_SUBDIR("foo/bar", default_allocator);
 
     String c = path_make_relative_to(b, a, default_allocator);
-    REQUIRE(str_equal(c, str("bar")));
+    REQUIRE_STR_EQ(c, str("bar"));
 }
 
 TEST_CASE(path_make_relative_to_part_of_base_is_common_prefix)
@@ -209,7 +207,7 @@ TEST_CASE(path_make_relative_to_part_of_base_is_common_prefix)
     String b = TEST_INPUT_SUBDIR("foo/baz", default_allocator);
 
     String c = path_make_relative_to(b, a, default_allocator);
-    REQUIRE(str_equal(c, str("../baz")));
+    REQUIRE_STR_EQ(c, str("../baz"));
 }
 
 TEST_CASE(path_make_relative_to_path_is_common_prefix)
@@ -218,7 +216,7 @@ TEST_CASE(path_make_relative_to_path_is_common_prefix)
     String p = TEST_INPUT_SUBDIR("foo", default_allocator);
 
     String result = path_make_relative_to(p, base, default_allocator);
-    REQUIRE(str_equal(result, str("..")));
+    REQUIRE_STR_EQ(result, str(".."));
 }
 
 TEST_CASE(path_make_relative_to_equal_paths)
@@ -227,7 +225,7 @@ TEST_CASE(path_make_relative_to_equal_paths)
     String p = TEST_INPUT_SUBDIR("foo", default_allocator);
 
     String result = path_make_relative_to(p, base, default_allocator);
-    REQUIRE(str_equal(result, str("")));
+    REQUIRE_STR_EQ(result, str(""));
 }
 
 TEST_CASE(path_make_relative_base_deep)
@@ -236,7 +234,7 @@ TEST_CASE(path_make_relative_base_deep)
     String p = TEST_INPUT_SUBDIR("foo/baz", default_allocator);
 
     String result = path_make_relative_to(p, base, default_allocator);
-    REQUIRE(str_equal(result, str("../../baz")));
+    REQUIRE_STR_EQ(result, str("../../baz"));
 }
 
 TEST_CASE(path_make_relative_base_deep2)
@@ -245,7 +243,7 @@ TEST_CASE(path_make_relative_base_deep2)
     String p = TEST_INPUT_SUBDIR("foo", default_allocator);
 
     String result = path_make_relative_to(p, base, default_allocator);
-    REQUIRE(str_equal(result, str("../..")));
+    REQUIRE_STR_EQ(result, str("../.."));
 }
 
 TEST_CASE(path_make_relative_base_deep3)
@@ -254,7 +252,7 @@ TEST_CASE(path_make_relative_base_deep3)
     String p = TEST_INPUT_SUBDIR("abc", default_allocator);
 
     String result = path_make_relative_to(p, base, default_allocator);
-    REQUIRE(str_equal(result, str("../../../abc")));
+    REQUIRE_STR_EQ(result, str("../../../abc"));
 }
 
 TEST_CASE(path_make_relative_dot_slash)
@@ -263,5 +261,5 @@ TEST_CASE(path_make_relative_dot_slash)
     String p = TEST_INPUT_SUBDIR("./", default_allocator);
 
     String result = path_make_relative_to(p, base, default_allocator);
-    REQUIRE(str_equal(result, str("../../..")));
+    REQUIRE_STR_EQ(result, str("../../.."));
 }

@@ -7,8 +7,8 @@ TEST_CASE(string_equal)
     String b = str("world");
     String c = str("hello ");
 
-    REQUIRE(!str_equal(a, b));
-    REQUIRE(str_equal(a, c));
+    REQUIRE_STR_NE(a, b);
+    REQUIRE_STR_EQ(a, c);
 }
 
 TEST_CASE(string_equal_zero_length)
@@ -17,8 +17,8 @@ TEST_CASE(string_equal_zero_length)
     String b = str("abc");
     String c = str("");
 
-    REQUIRE(!str_equal(a, b));
-    REQUIRE(str_equal(a, c));
+    REQUIRE_STR_NE(a, b);
+    REQUIRE_STR_EQ(a, c);
 }
 
 TEST_CASE(string_equal_null)
@@ -27,8 +27,8 @@ TEST_CASE(string_equal_null)
     String b = str("abc");
     String c = {0};
 
-    REQUIRE(!str_equal(a, b));
-    REQUIRE(str_equal(a, c));
+    REQUIRE_STR_NE(a, b);
+    REQUIRE_STR_EQ(a, c);
 }
 
 TEST_CASE(string_concat)
@@ -39,7 +39,7 @@ TEST_CASE(string_concat)
     String b = str("world");
 
     String c = str_concat(a, b, la_allocator(&arena));
-    REQUIRE(str_equal(c, str("hello world")));
+    REQUIRE_STR_EQ(c, str("hello world"));
     REQUIRE(c.data != a.data);
     REQUIRE(c.data != b.data);
 
@@ -54,7 +54,7 @@ TEST_CASE(string_copy)
     String lit = str("abcdef");
     String copy = str_copy(lit, allocator);
 
-    REQUIRE(str_equal(lit, copy));
+    REQUIRE_STR_EQ(lit, copy);
     REQUIRE(lit.data != copy.data);
 
     la_destroy(&arena);
@@ -70,7 +70,7 @@ TEST_CASE(string_null_terminate_maybe_grow_in_place)
     lit.data[lit.length] = 'C';
     String terminated = str_null_terminate(lit, allocator);
 
-    REQUIRE(str_equal(lit, terminated));
+    REQUIRE_STR_EQ(lit, terminated);
     REQUIRE(terminated.data[terminated.length] == '\0');
 
     la_destroy(&arena);
@@ -90,7 +90,7 @@ TEST_CASE(string_null_terminate_no_grow_in_place)
     String terminated = str_null_terminate(lit, allocator);
 
     REQUIRE(lit.data != terminated.data);
-    REQUIRE(str_equal(lit, terminated));
+    REQUIRE_STR_EQ(lit, terminated);
     REQUIRE(terminated.data[terminated.length] == '\0');
 
     la_destroy(&arena);
@@ -105,7 +105,7 @@ TEST_CASE(string_null_terminate_literal)
     String terminated = str_null_terminate(lit, allocator);
 
     REQUIRE(lit.data != terminated.data);
-    REQUIRE(str_equal(lit, terminated));
+    REQUIRE_STR_EQ(lit, terminated);
     REQUIRE(terminated.data[terminated.length] == '\0');
 
     la_destroy(&arena);
@@ -171,7 +171,7 @@ TEST_CASE(string_create_span)
     String a = str("abcdef");
     String span = str_create_span(a, 1, 3);
 
-    REQUIRE(str_equal(span, str("bcd")));
+    REQUIRE_STR_EQ(span, str("bcd"));
 }
 
 TEST_CASE(string_create_span_up_to_end)
@@ -179,7 +179,7 @@ TEST_CASE(string_create_span_up_to_end)
     String a = str("abcdef");
     String span = str_create_span(a, 2, 4);
 
-    REQUIRE(str_equal(span, str("cdef")));
+    REQUIRE_STR_EQ(span, str("cdef"));
 }
 
 TEST_CASE(string_create_span_entire_string)
@@ -187,7 +187,7 @@ TEST_CASE(string_create_span_entire_string)
     String a = str("a");
     String span = str_create_span(a, 0, 1);
 
-    REQUIRE(str_equal(span, str("a")));
+    REQUIRE_STR_EQ(span, str("a"));
 }
 
 TEST_CASE(string_create_span_only_last_char)
@@ -195,7 +195,7 @@ TEST_CASE(string_create_span_only_last_char)
     String a = str("ab");
     String span = str_create_span(a, 1, 1);
 
-    REQUIRE(str_equal(span, str("b")));
+    REQUIRE_STR_EQ(span, str("b"));
 }
 
 TEST_CASE(string_common_prefix_length)
@@ -215,23 +215,23 @@ TEST_CASE(string_cut_single_char)
 {
     Cut cut = str_cut(str("abc!def"), str("!"));
     REQUIRE(cut.ok);
-    REQUIRE(str_equal(cut.head, str("abc")));
-    REQUIRE(str_equal(cut.tail, str("def")));
+    REQUIRE_STR_EQ(cut.head, str("abc"));
+    REQUIRE_STR_EQ(cut.tail, str("def"));
 }
 
 TEST_CASE(string_cut_multi_char)
 {
     Cut cut = str_cut(str("abc!!def"), str("!!"));
     REQUIRE(cut.ok);
-    REQUIRE(str_equal(cut.head, str("abc")));
-    REQUIRE(str_equal(cut.tail, str("def")));
+    REQUIRE_STR_EQ(cut.head, str("abc"));
+    REQUIRE_STR_EQ(cut.tail, str("def"));
 }
 
 TEST_CASE(string_cut_separator_not_present)
 {
     Cut cut = str_cut(str("abcdef"), str("!!"));
     REQUIRE(!cut.ok);
-    REQUIRE(str_equal(cut.head, str("abcdef")));
+    REQUIRE_STR_EQ(cut.head, str("abcdef"));
 }
 
 TEST_CASE(string_cut_separator_at_start)
@@ -239,14 +239,14 @@ TEST_CASE(string_cut_separator_at_start)
     Cut cut = str_cut(str("!!abcdef"), str("!!"));
     REQUIRE(cut.ok);
     REQUIRE(str_is_empty(cut.head));
-    REQUIRE(str_equal(cut.tail, str("abcdef")));
+    REQUIRE_STR_EQ(cut.tail, str("abcdef"));
 }
 
 TEST_CASE(string_cut_separator_at_end)
 {
     Cut cut = str_cut(str("abcdef!!"), str("!!"));
     REQUIRE(cut.ok);
-    REQUIRE(str_equal(cut.head, str("abcdef")));
+    REQUIRE_STR_EQ(cut.head, str("abcdef"));
     REQUIRE(str_is_empty(cut.tail));
 }
 

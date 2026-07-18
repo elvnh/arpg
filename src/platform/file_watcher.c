@@ -153,7 +153,7 @@ void file_watcher_stop(AssetWatcherContext *ctx)
 
 void file_watcher_reload_modified_assets(AssetWatcherContext *ctx)
 {
-    TempArena scratch = temp_arena_begin();
+    LinearArena scratch = temp_arena_begin();
 
     mutex_lock(ctx->lock);
 
@@ -163,7 +163,7 @@ void file_watcher_reload_modified_assets(AssetWatcherContext *ctx)
 
         if (reloaded) {
             printf("Reloaded asset '%s'.\n",
-                str_null_terminate(asset->path, la_allocator(scratch.arena)).data);
+                str_null_terminate(asset->path, la_allocator(&scratch)).data);
 
             list_pop_head(&ctx->asset_reload_queue);
             deallocate(ctx->allocator, asset->path.data);
@@ -175,5 +175,5 @@ void file_watcher_reload_modified_assets(AssetWatcherContext *ctx)
 
     mutex_release(ctx->lock);
 
-    temp_arena_end(scratch);
+    temp_arena_end(&scratch);
 }

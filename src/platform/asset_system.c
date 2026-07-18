@@ -122,10 +122,10 @@ void assets_initialize(Allocator parent_allocator)
 
 static AssetSlot *get_asset_by_path(String path)
 {
-    TempArena scratch = temp_arena_begin();
+    LinearArena scratch = temp_arena_begin();
 
     // NOTE: if number of assets grow large, linear search could become slow, but should be fine for now
-    String abs_path = platform_get_canonical_path(path, la_allocator(scratch.arena));
+    String abs_path = platform_get_canonical_path(path, la_allocator(&scratch));
 
     AssetSlot *slot = 0;
     for (ssize i = 0; i < g_asset_system.next_asset_id; ++i) {
@@ -136,16 +136,16 @@ static AssetSlot *get_asset_by_path(String path)
         }
     }
 
-    temp_arena_end(scratch);
+    temp_arena_end(&scratch);
 
     return slot;
 }
 
 static String get_canonical_asset_path(String name, AssetKind kind, FreeListArena *arena)
 {
-    TempArena scratch = temp_arena_begin();
+    LinearArena scratch = temp_arena_begin();
 
-    Allocator scratch_allocator = la_allocator(scratch.arena);
+    Allocator scratch_allocator = la_allocator(&scratch);
 
     // NOTE: path is copied later which is why we allocate in scratch arena while building string
     // TODO: replace with format
@@ -176,18 +176,17 @@ static String get_canonical_asset_path(String name, AssetKind kind, FreeListAren
 
     String result = str_copy(path, fl_allocator(arena));
 
-    temp_arena_end(scratch);
+    temp_arena_end(&scratch);
 
     return result;
 }
 
 static ShaderAsset *load_asset_data_shader(String path)
 {
-    TempArena scratch = temp_arena_begin();
+    LinearArena scratch = temp_arena_begin();
 
     ShaderAsset *result = 0;
-    String shader_source =
-        platform_read_entire_file_as_string(path, la_allocator(scratch.arena));
+    String shader_source = platform_read_entire_file_as_string(path, la_allocator(&scratch));
 
     if (shader_source.data) {
         ShaderAsset *shader = renderer_backend_create_shader(shader_source,
@@ -196,7 +195,7 @@ static ShaderAsset *load_asset_data_shader(String path)
         result = shader;
     }
 
-    temp_arena_end(scratch);
+    temp_arena_end(&scratch);
 
     return result;
 }
@@ -217,13 +216,13 @@ ShaderHandle assets_register_shader(String name)
 
 static TextureAsset *load_asset_data_texture(String path)
 {
-    TempArena scratch = temp_arena_begin();
+    LinearArena scratch = temp_arena_begin();
 
     TextureAsset *result = 0;
-    Span file_contents = platform_read_entire_file(path, la_allocator(scratch.arena));
+    Span file_contents = platform_read_entire_file(path, la_allocator(&scratch));
 
     if (file_contents.data && file_contents.size) {
-        Image image = image_decode_png(file_contents, la_allocator(scratch.arena));
+        Image image = image_decode_png(file_contents, la_allocator(&scratch));
 
         if (image.data) {
             TextureAsset *texture = renderer_backend_create_texture(image,
@@ -233,7 +232,7 @@ static TextureAsset *load_asset_data_texture(String path)
         }
     }
 
-    temp_arena_end(scratch);
+    temp_arena_end(&scratch);
 
     return result;
 }

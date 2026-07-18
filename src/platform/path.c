@@ -102,8 +102,8 @@ String path_to_str(Path path, Allocator allocator)
 
 String path_make_relative_to(String path, String base, Allocator allocator)
 {
-    TempArena temp = temp_arena_begin();
-    Allocator temp_allocator = la_allocator(&temp.arena);
+    LinearArena temp = temp_arena_begin();
+    Allocator temp_allocator = la_allocator(&temp);
 
     String canonical_path = platform_get_canonical_path(path, temp_allocator);
     String canonical_base = platform_get_canonical_path(base, temp_allocator);
@@ -129,7 +129,7 @@ String path_make_relative_to(String path, String base, Allocator allocator)
 
     String result = path_to_str(result_path, allocator);
 
-    temp_arena_end(temp);
+    temp_arena_end(&temp);
 
     return result;
 }

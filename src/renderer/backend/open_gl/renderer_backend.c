@@ -390,15 +390,15 @@ void renderer_backend_bind_texture(TextureAsset *texture)
 
 static GLint get_uniform_location(ShaderAsset *shader, String uniform_name)
 {
-    TempArena scratch = temp_arena_begin();
+    LinearArena scratch = temp_arena_begin();
 
-    String terminated = str_null_terminate(uniform_name, la_allocator(scratch.arena));
+    String terminated = str_null_terminate(uniform_name, la_allocator(&scratch));
 
     GLint location = glGetUniformLocation(shader->native_handle, terminated.data);
     // TODO: instead log error on failure
     ASSERT(location != -1);
 
-    temp_arena_end(scratch);
+    temp_arena_end(&scratch);
 
     return location;
 }

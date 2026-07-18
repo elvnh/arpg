@@ -247,3 +247,21 @@ TEST_CASE(path_make_relative_base_deep2)
     String result = path_make_relative_to(p, base, default_allocator);
     REQUIRE(str_equal(result, str("../..")));
 }
+
+TEST_CASE(path_make_relative_base_deep3)
+{
+    String base = TEST_INPUT_SUBDIR("foo/bar/quux", default_allocator);
+    String p = TEST_INPUT_SUBDIR("abc", default_allocator);
+
+    String result = path_make_relative_to(p, base, default_allocator);
+    REQUIRE(str_equal(result, str("../../../abc")));
+}
+
+TEST_CASE(path_make_relative_dot_slash)
+{
+    String base = TEST_INPUT_SUBDIR("foo/bar/quux", default_allocator);
+    String p = TEST_INPUT_SUBDIR("./", default_allocator);
+
+    String result = path_make_relative_to(p, base, default_allocator);
+    REQUIRE(str_equal(result, str("../../..")));
+}

@@ -2,6 +2,8 @@
 #  - don't make all options global
 #  - debug flag so that asserts etc are disabled
 #  - move warnings to separate file
+#  - code duplication between hot reloaded and normal builds
+#  - clean up this file in general
 
 cmake_minimum_required(VERSION 3.12)
 
@@ -16,6 +18,11 @@ find_package(OpenGL REQUIRED)
 find_package(X11 REQUIRED)
 
 set(
+  EXECUTABLE_SOURCES
+  src/main.c
+)
+
+set(
   BASE_LAYER_SOURCES
   src/base/linear_arena.c
   src/base/string8.c
@@ -27,12 +34,12 @@ set(
 
 set(
   PLATFORM_LAYER_SOURCES
-  src/main.c
   src/platform/file_watcher.c
   src/platform/font.c
   src/platform/platform_linux.c
   src/platform/asset_system.c
   src/platform/stb.c
+  src/platform/path.c
   src/platform/image_decode.c
 )
 
@@ -93,6 +100,7 @@ set(
 set(BASE_LIB_NAME base)
 set(GAME_LIB_NAME game)
 set(RENDERER_LIB_NAME renderer)
+set(PLATFORM_LIB_NAME platform)
 
 set(COMPILATION_LOCK_FILE ${CMAKE_CURRENT_BINARY_DIR}/lock)
 
@@ -173,12 +181,6 @@ include_directories(
   deps
 )
 
-add_library(
-    ${RENDERER_LIB_NAME}
-    SHARED
-    ${RENDERER_BACKEND_SOURCES}
-)
-
 if(${HOT_RELOAD} EQUAL 1)
 
   set(
@@ -188,9 +190,14 @@ if(${HOT_RELOAD} EQUAL 1)
 
   add_executable(
     ${PROJECT_NAME}
-    ${PLATFORM_LAYER_SOURCES}
-    ${RENDERER_BACKEND_SOURCES}
+    ${EXECUTABLE_SOURCES}
   )
+
+  add_library(
+    ${PLATFORM_LIB_NAME}
+    SHARED
+    ${PLATFORM_LAYER_SOURCES}
+    )
 
   add_library(
     ${BASE_LIB_NAME}
@@ -205,7 +212,13 @@ if(${HOT_RELOAD} EQUAL 1)
     ${RENDERER_FRONTEND_SOURCES}
   )
 
-  target_compile_definitions(
+  add_library(
+    ${RENDERER_LIB_NAME}
+    SHARED
+    ${RENDERER_BACKEND_SOURCES}
+  )
+
+  add_compile_definitions(
     ${PROJECT_NAME}
     PRIVATE
     -DGAME_SO_PATH="$<TARGET_FILE:${GAME_LIB_NAME}>"
@@ -216,6 +229,9 @@ if(${HOT_RELOAD} EQUAL 1)
     ${PROJECT_NAME}
     PRIVATE
     ${BASE_LIB_NAME}
+    ${PLATFORM_LIB_NAME}
+    ${RENDERER_LIB_NAME}
+    # Omit game library as we'll link it dynamically during runtime
   )
 
   # Create lock file during build so we don't try to hot reload before compilation is finished
@@ -262,12 +278,34 @@ else()
 endif()
 
 target_link_libraries(
-  ${PROJECT_NAME}
+  ${PLATFORM_LIB_NAME}
   PRIVATE
   GL
   GLEW
   glfw
   X11
+  m
+)
+
+target_link_libraries(
+  ${PLATFORM_LIB_NAME}
+  PRIVATE
+  ${RENDERER_LIB_NAME}
+)
+
+target_link_libraries(
+  ${RENDERER_LIB_NAME}
+  PRIVATE
+  GL
+  GLEW
+  glfw
+  X11
+  m
+)
+
+target_link_libraries(
+  ${PROJECT_NAME}
+  PRIVATE
   m
 )
 

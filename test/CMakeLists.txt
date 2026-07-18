@@ -21,6 +21,7 @@ target_link_libraries(
   PRIVATE
   ${BASE_LIB_NAME}
   ${GAME_LIB_NAME}
+  ${PLATFORM_LIB_NAME}
   m
 )
 
